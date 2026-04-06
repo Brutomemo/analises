@@ -1,0 +1,10 @@
+streamlit
+requests
+fpdf
+pandas
+matplotlib
+seaborn
+wordcloud
+scikit-learn
+pymupdf
+fpdf
