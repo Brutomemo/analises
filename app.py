@@ -51,9 +51,9 @@ elif os.path.exists(path_assets_absoluto):
 else:
     path_assets = path_assets_absoluto
 
-path_teste_gate = os.path.join(path_assets, "teste-gate.PNG")
-path_brasao_gate = os.path.join(path_assets, "BRASÃO GATE.PNG")
-path_novo_prata = os.path.join(path_assets, "negociacao-novo-prata.PNG")
+path_teste_gate = os.path.join(path_assets, "teste-gate.png")
+path_brasao_gate = os.path.join(path_assets, "BRASÃO GATE.png")
+path_novo_prata = os.path.join(path_assets, "negociacao-novo-prata.png")
 
 
 # --- 3. INJEÇÃO DE CSS (Vibe Premium/Electric Orange) ---
