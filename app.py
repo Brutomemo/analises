@@ -596,9 +596,27 @@ else:
                         </div>
                         """, unsafe_allow_html=True)
 
-                        # 6. Geração de PDF Blindada
-                        def limpar_texto_pdf(texto):
-                            return unicodedata.normalize('NFKD', str(texto)).encode('ASCII', 'ignore').decode('ASCII')
+                        # 6. Geração de PDF Blindada (À prova de falhas e dicionários)
+                        def limpar_texto_pdf(texto_bruto):
+                            """
+                            Transforma qualquer retorno da IA em texto puro, 
+                            remove acentos para o FPDF não quebrar e limpa marcações de Markdown.
+                            """
+                            # 1. Se a IA mandou um Dicionário, converte para texto contínuo
+                            if isinstance(texto_bruto, dict):
+                                partes = []
+                                for chave, valor in texto_bruto.items():
+                                    partes.append(f"{chave.upper()}:\n{valor}")
+                                texto_str = "\n\n".join(partes)
+                            else:
+                                texto_str = str(texto_bruto)
+                            
+                            # 2. Limpa a "sujeira" do Markdown (**, ###)
+                            texto_str = texto_str.replace("**", "").replace("### ", "")
+                            
+                            # 3. Remove acentos (O FPDF padrão trava com Ç, Ã, É)
+                            texto_limpo = unicodedata.normalize('NFKD', texto_str).encode('ASCII', 'ignore').decode('ASCII')
+                            return texto_limpo
 
                         pdf = FPDF()
                         pdf.add_page()
@@ -616,13 +634,33 @@ else:
                         pdf.set_font("Arial", "B", 14)
                         pdf.cell(0, 10, "1. Leitura Analitica", ln=True)
                         pdf.set_font("Arial", "", 12)
-                        pdf.multi_cell(0, 8, txt=limpar_texto_pdf(parecer_ia))
                         
-                        pdf_bytes = pdf.output(dest="S")
-                        st.download_button(label="📥 BAIXAR ANÁLISE COMPLETA (PDF)", data=pdf_bytes, file_name=f"Laudo_GATE_{apa_selecionada}.pdf", mime="application/pdf")
+                        # Processa a variável parecer_ia com o nosso novo filtro robusto
+                        texto_final_pdf = limpar_texto_pdf(parecer_ia)
+                        
+                        # multi_cell garante a quebra de linha automática
+                        pdf.multi_cell(0, 8, txt=texto_final_pdf)
+                        
+                        # ========================================================
+                        # TRUQUE DE MESTRE: CONVERSÃO DE STRING PARA BYTES
+                        # ========================================================
+                        pdf_saida = pdf.output(dest="S")
+                        
+                        # Garante que o Streamlit receba o formato exato que ele exige
+                        if isinstance(pdf_saida, str):
+                            pdf_bytes = pdf_saida.encode('latin-1', errors='replace')
+                        else:
+                            pdf_bytes = bytes(pdf_saida)
+                            
+                        st.download_button(
+                            label="📥 BAIXAR ANÁLISE COMPLETA (PDF)", 
+                            data=pdf_bytes, 
+                            file_name=f"Laudo_GATE_{apa_selecionada}.pdf", 
+                            mime="application/pdf"
+                        )
 
                     except Exception as e:
-                        st.error(f"Erro no processamento: {e}")
+                        st.error(f"Erro na geração do PDF: {str(e)}")
 
     # =========================================================
     # ABA 2: PAINEL ESTRATÉGICO (HISTÓRICO)
@@ -912,7 +950,7 @@ else:
         # MÓDULO NOVO: RELATÓRIO INTERPRETATIVO COM IA
         # =========================================================
         st.markdown("---")
-        st.markdown("<h4 style='color: #06C755;'>🧠 Síntese Interpretativa Avançada (Elaborado por Inteligência Artificial - modelo OpenAi 4o-mini)</h4>", unsafe_allow_html=True)
+        st.markdown("<h4 style='color: #06C755;'>🧠 Síntese Interpretativa Avançada (Interpretação descritiva dos resultados estatísticos assistida por modelo de linguagem (LLM – OpenAI GPT-4o-mini), com base em dados previamente processados por métodos estatísticos.)</h4>", unsafe_allow_html=True)
         st.markdown("<p style='color: #bbb;'>Este módulo traduz a matriz matemática gerada acima em um relatório estratégico doutrinário.</p>", unsafe_allow_html=True)
 
         if st.button("🤖 GERAR RELATÓRIO ESTATÍSTICO DESCRITIVO"):
