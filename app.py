@@ -834,13 +834,15 @@ else:
                         st.warning(f"O modelo Ordinal não convergiu. Geralmente ocorre por separação perfeita (técnicas com pouquíssimas amostras). Detalhe: {str(e)[:100]}")
                 st.markdown("</div>", unsafe_allow_html=True)
                 
+                # =========================================================
                 # 3. Modelo Multinível (GEE)
+                # =========================================================
                 st.markdown("<div class='info-card'>", unsafe_allow_html=True)
                 st.markdown("##### 3. Robustez Hierárquica (Equações de Estimação Generalizadas - GEE)")
-                st.write("Controla matematicamente o efeito de 'cluster' (negociador).")
+                st.write("Controla o efeito de 'cluster' (negociador).")
                 
                 try:
-                    # Verifica se a coluna existe para não dar erro de execução
+                    # Só roda se a coluna 'Tecnica_Patsy' existir
                     if 'Tecnica_Patsy' in df_adv_clean.columns:
                         modelo_gee = smf.gee("Sucesso ~ C(Tecnica_Patsy)", 
                                              groups=df_adv_clean['Neg_Patsy'], 
@@ -849,7 +851,7 @@ else:
                                              cov_struct=sm.cov_struct.Exchangeable())
                         res_gee = modelo_gee.fit()
                         
-                        # Extração de resultados
+                        # Extraindo resultados do modelo
                         gee_coefs = res_gee.params[res_gee.params.index.str.contains('Tecnica')]
                         gee_pvals = res_gee.pvalues[res_gee.params.index.str.contains('Tecnica')]
                         
@@ -863,22 +865,22 @@ else:
                             st.dataframe(df_gee.style.format({'Coeficiente_GEE': '{:.2f}', 'P_Valor': '{:.4f}'}), 
                                          use_container_width=True, hide_index=True)
                             
-                            # --- TRAVA DE SEGURANÇA PARA AMOSTRAS PEQUENAS ---
+                            # TRAVA DE SEGURANÇA: N < 10
                             if len(df_adv_clean) < 10:
-                                st.warning(f"⚠️ **Aviso:** Amostra reduzida (N={len(df_adv_clean)}). Resultados instáveis.")
+                                st.warning(f"⚠️ **Amostra Crítica (N={len(df_adv_clean)}):** Coeficientes instáveis. Não valide doutrina com este volume de dados.")
                             else:
                                 st.success("💡 **Doutrina Validada:** Técnica sobreviveu ao controle de viés.")
                         else:
                             st.info("Nenhuma técnica atingiu significância (P < 0.05).")
                     else:
-                        st.error("Coluna 'TÉCNICAS' não processada corretamente.")
+                        st.error("Erro: Colunas de modelagem não encontradas.")
 
                 except Exception as e:
-                    # ESSA LINHA É A QUE FECHA O BLOCO E MATA O ERRO
+                    # ESTA LINHA FECHA O BLOCO E MATA O ERRO DE SINTAXE
                     st.error(f"Erro no processamento GEE: {str(e)[:50]}")
                 
                 st.markdown("</div>", unsafe_allow_html=True)
-                st.markdown("---") # Esta é a sua linha 884 agora protegida
+                st.markdown("---") # Esta é a sua linha 884, agora o Python sabe que o bloco anterior acabou.
 
                 # --- 4. TENDÊNCIA TEMPORAL ---
         st.markdown("---")
