@@ -371,7 +371,7 @@ else:
             # =========================================================
             # GRÁFICO DE TENDÊNCIA E EVOLUÇÃO (Com Seletor de Perspectiva)
             # =========================================================
-            st.markdown("### 📈 Evolução Emocional")
+            st.markdown("### 📈 Percepção dos Negociadores sobre a escala de agressividade e receptividade do causador frente ao Negociador Principal")
             p_escolhida = st.selectbox(
                 "Visualizar evolução sob a perspectiva do:", 
                 ["Negociador Principal", "Negociador Secundário", "Negociador Líder"],
@@ -401,7 +401,7 @@ else:
             st.markdown("---")
 
             # 2. BLOCO DE PERCEPÇÕES (COM EFEITO DE VIDRO E CORES TÁTICAS)
-            st.markdown("### 🧠 Percepções da Equipe (Textual)")
+            st.markdown("### 🧠 Percepção dos Negociadores sobre a escala de agressividade e receptividade do causador (Textual)")
             tab_chegada, tab_encerramento = st.tabs(["➡️ Na Chegada à Ocorrência", "🛑 No Encerramento"])
             
             # Função para desenhar o card de vidro com a cor tática escolhida
@@ -476,7 +476,7 @@ else:
                             
                             st.dataframe(df_freq, use_container_width=True, hide_index=True)
                             
-                            st.markdown("<h5 style='text-align:center; color: #FFFFFF; margin-top: 20px;'>Frequencias de aplicações das Técnicas (Treemap)</h5>", unsafe_allow_html=True)
+                            st.markdown("<h5 style='text-align:center; color: #FFFFFF; margin-top: 20px;'>Frequencias das Técnicas Aplicadas (Treemap)</h5>", unsafe_allow_html=True)
                             fig_tree = px.treemap(df_freq, path=['Técnica Empregada'], values='Frequência Absoluta', color='Frequência Absoluta', color_continuous_scale='Oranges')
                             fig_tree.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font_color="#FFF", margin=dict(t=10, l=10, r=10, b=10))
                             st.plotly_chart(fig_tree, use_container_width=True)
