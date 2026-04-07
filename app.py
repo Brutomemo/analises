@@ -267,7 +267,7 @@ except: pass # Se der erro, img_topo_b64 continua vazio
 try:
     with open(path_negociacao_fundo, "rb") as img_file: 
         img_fundo_header_b64 = base64.b64encode(img_file.read()).decode()
-exceptException as e: 
+except Exception as e:
     # Usar um erro visível durante o teste para confirmar se ele acha o arquivo
     st.error(f"Erro ao carregar imagem de fundo (faint): Verifique se o arquivo existe em {path_negociacao_fundo}")
 
@@ -353,6 +353,7 @@ with col_titulo:
 
 # Fechar o container do cabeçalho
 st.markdown('</div>', unsafe_allow_html=True)
+
 # =========================================================
 # 3. CONEXÃO E NAVEGAÇÃO PRINCIPAL (ABAS)
 # =========================================================
