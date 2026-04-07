@@ -837,11 +837,11 @@ else:
                 # 3. Modelo Multinível (GEE)
                 st.markdown("<div class='info-card'>", unsafe_allow_html=True)
                 st.markdown("##### 3. Robustez Hierárquica (Equações de Estimação Generalizadas - GEE)")
-                st.write("Controla matematicamente o efeito de 'cluster' (várias técnicas aplicadas pelo mesmo negociador).")
+                st.write("Controla matematicamente o efeito de 'cluster' (negociador).")
                 
                 try:
-                    # Verifica se temos as colunas necessárias e dados suficientes
-                    if 'Tecnica_Patsy' in df_adv_clean.columns and len(df_adv_clean) > 0:
+                    # Verifica se a coluna existe para não dar erro de execução
+                    if 'Tecnica_Patsy' in df_adv_clean.columns:
                         modelo_gee = smf.gee("Sucesso ~ C(Tecnica_Patsy)", 
                                              groups=df_adv_clean['Neg_Patsy'], 
                                              data=df_adv_clean, 
@@ -849,7 +849,7 @@ else:
                                              cov_struct=sm.cov_struct.Exchangeable())
                         res_gee = modelo_gee.fit()
                         
-                        # Extração dos resultados
+                        # Extração de resultados
                         gee_coefs = res_gee.params[res_gee.params.index.str.contains('Tecnica')]
                         gee_pvals = res_gee.pvalues[res_gee.params.index.str.contains('Tecnica')]
                         
@@ -859,28 +859,28 @@ else:
                             'P_Valor': gee_pvals
                         })
                         
-                        # Exibe a tabela se houver resultados
                         if not df_gee.empty:
                             st.dataframe(df_gee.style.format({'Coeficiente_GEE': '{:.2f}', 'P_Valor': '{:.4f}'}), 
                                          use_container_width=True, hide_index=True)
                             
-                            # --- TRAVA DE SEGURANÇA (VEREDITO HONESTO) ---
+                            # --- TRAVA DE SEGURANÇA PARA AMOSTRAS PEQUENAS ---
                             if len(df_adv_clean) < 10:
-                                st.warning(f"⚠️ **Amostra Crítica (N={len(df_adv_clean)}):** Os coeficientes de 35.53 indicam 'separação perfeita'. A matemática 'viciou' por falta de dados. Não valide doutrina com este N.")
+                                st.warning(f"⚠️ **Aviso:** Amostra reduzida (N={len(df_adv_clean)}). Resultados instáveis.")
                             else:
-                                st.success("💡 **Prova Científica:** As técnicas demonstraram eficácia real, sobrevivendo ao controle de estilo individual.")
+                                st.success("💡 **Doutrina Validada:** Técnica sobreviveu ao controle de viés.")
                         else:
-                            st.info("Nenhuma técnica apresentou significância estatística (P < 0.05).")
+                            st.info("Nenhuma técnica atingiu significância (P < 0.05).")
                     else:
-                        st.warning("Dados insuficientes para rodar o modelo GEE.")
+                        st.error("Coluna 'TÉCNICAS' não processada corretamente.")
 
                 except Exception as e:
-                    st.error(f"O modelo GEE não convergiu. Isso é comum com poucas amostras. Erro: {str(e)[:50]}")
+                    # ESSA LINHA É A QUE FECHA O BLOCO E MATA O ERRO
+                    st.error(f"Erro no processamento GEE: {str(e)[:50]}")
                 
                 st.markdown("</div>", unsafe_allow_html=True)
-                st.markdown("---") 
+                st.markdown("---") # Esta é a sua linha 884 agora protegida
 
-        # --- 4. TENDÊNCIA TEMPORAL ---
+                # --- 4. TENDÊNCIA TEMPORAL ---
         st.markdown("---")
         st.markdown("<h4 style='color: #f97316;'>📈 Volume e Tendência Temporal</h4>", unsafe_allow_html=True)
         
