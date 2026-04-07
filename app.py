@@ -114,7 +114,7 @@ st.markdown("""
         background: linear-gradient(180deg, #FFFFFF 0%, #BBBBBB 100%);
         -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin: 0; line-height: 1.1;
     }
-    .sub-title { color: #f97316; font-weight: 600; font-size: 1.1rem; margin-top: 5px; margin-bottom: 0; }
+    .sub-title { color: #FFD700; font-weight: 600; font-size: 1.1rem; margin-top: 5px; margin-bottom: 0; }
     
     /* Efeito Vidro (Glassmorphism) e Animação de Luz (Sweep) nas Caixas */
     .info-card { 
@@ -147,7 +147,7 @@ st.markdown("""
 
     /* Efeito Expansivo nos Botões (Magnifying/Scale) */
     div.stButton > button { 
-        background: linear-gradient(90deg, #f97316 0%, #fb923c 100%); 
+        background: linear-gradient(90deg, #FFD700 0%, #fb923c 100%); 
         color: white; border: none; padding: 0.7rem 2rem; border-radius: 10px; font-weight: bold; 
         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); width: 100%; position: relative;
     }
@@ -161,7 +161,7 @@ st.markdown("""
         position: fixed; border-radius: 60%; filter: blur(80px); opacity: 0.15; z-index: -1;
         animation: float 10s infinite alternate cubic-bezier(0.4, 0, 0.2, 1); pointer-events: none;
     }
-    .blob1 { background-color: #f97316; width: 500px; height: 500px; top: -100px; left: -100px; animation-duration: 15s; }
+    .blob1 { background-color: #FFD700; width: 500px; height: 500px; top: -100px; left: -100px; animation-duration: 15s; }
     .blob2 { background-color: #fb923c; width: 400px; height: 400px; top: 40%; right: -100px; animation-duration: 20s; animation-delay: -10s; }
     .blob3 { background-color: #c2410c; width: 600px; height: 600px; bottom: -150px; left: 20%; animation-duration: 25s; animation-delay: -15s; }
     
@@ -174,7 +174,7 @@ st.markdown("""
     [data-testid="stDataFrame"] { background-color: rgba(255, 255, 255, 0.03); border-radius: 8px; }
     #MainMenu {visibility: hidden;} footer {visibility: hidden;}
     div[data-testid="stTabs"] button { font-size: 1.2rem; font-weight: bold; transition: color 0.3s;}
-    div[data-testid="stTabs"] button[data-baseweb="tab"]:hover { color: #f97316; }
+    div[data-testid="stTabs"] button[data-baseweb="tab"]:hover { color: #FFD700; }
 
     /* Cores Táticas para o Efeito de Vidro (Agressividade e Receptividade) */
     .card-red { border-left: 4px solid #ef4444 !important; }
@@ -221,7 +221,7 @@ components.html("""
         doc.addEventListener('mousedown', () => {
             cursor.style.width = '15px';
             cursor.style.height = '15px';
-            cursor.style.backgroundColor = '#f97316';
+            cursor.style.backgroundColor = '#FFD700';
         });
         
         doc.addEventListener('mouseup', () => {
@@ -371,7 +371,7 @@ else:
             # =========================================================
             # GRÁFICO DE TENDÊNCIA E EVOLUÇÃO (Com Seletor de Perspectiva)
             # =========================================================
-            st.markdown("### 📈 Percepção dos Negociadores sobre a escala de agressividade e receptividade do causador frente ao Negociador Principal")
+            st.markdown("### 📈 Percepção do Negociador sobre a escala de agressividade e receptividade do causador frente ao Negociador Principal")
             p_escolhida = st.selectbox(
                 "Visualizar evolução sob a perspectiva do:", 
                 ["Negociador Principal", "Negociador Secundário", "Negociador Líder"],
@@ -453,7 +453,7 @@ else:
             st.markdown("---")
 
             # 4. TABELA DE FREQUÊNCIA (CRUZAMENTO DEFINITIVO)
-            st.markdown("<h4 style='color: #f97316;'>📉 Frequência das Técnicas Aplicadas (Nesta APA)</h4>", unsafe_allow_html=True)
+            st.markdown("<h4 style='color: #FFD700;'>📉 Frequência das Técnicas Aplicadas (Nesta APA)</h4>", unsafe_allow_html=True)
             
             if not df_tec.empty:
                 col_vinculo = next((c for c in df_tec.columns if 'VINCULO' in c.upper() or 'VÍNCULO' in c.upper()), None)
@@ -508,19 +508,19 @@ else:
 
             if st.session_state['stats_calculados']:
                 stats = st.session_state['stats_calculados']
-                st.markdown('<div class="info-card"><h4 style="color: #f97316; margin-top: 0;">🧠 Temas Dominantes Globais (N-Gramas)</h4>', unsafe_allow_html=True)
+                st.markdown('<div class="info-card"><h4 style="color: #FFD700; margin-top: 0;">🧠 Temas Dominantes Globais (N-Gramas)</h4>', unsafe_allow_html=True)
                 for t in stats['topicos']: st.markdown(t)
                 st.markdown('</div>', unsafe_allow_html=True)
                 
                 c_w1, c_w2, c_w3 = st.columns(3)
                 with c_w1:
-                    st.markdown('<p style="color: #f97316; font-weight: bold; text-align:center;">Causador</p>', unsafe_allow_html=True)
+                    st.markdown('<p style="color: #FFD700; font-weight: bold; text-align:center;">Causador</p>', unsafe_allow_html=True)
                     if stats['wc_c']: st.pyplot(stats['wc_c'])
                 with c_w2:
-                    st.markdown('<p style="color: #f97316; font-weight: bold; text-align:center;">Negociador Principal</p>', unsafe_allow_html=True)
+                    st.markdown('<p style="color: #FFD700; font-weight: bold; text-align:center;">Negociador Principal</p>', unsafe_allow_html=True)
                     if stats['wc_np']: st.pyplot(stats['wc_np'])
                 with c_w3:
-                    st.markdown('<p style="color: #f97316; font-weight: bold; text-align:center;">Negociador Secundário</p>', unsafe_allow_html=True)
+                    st.markdown('<p style="color: #FFD700; font-weight: bold; text-align:center;">Negociador Secundário</p>', unsafe_allow_html=True)
                     if stats['wc_ns']: st.pyplot(stats['wc_ns'])
 
             st.markdown("---")
@@ -587,8 +587,8 @@ else:
 
                         # Exibição na Tela (Glassmorphism)
                         st.markdown(f"""
-                        <div class="info-card" style="border-left: 4px solid #f97316;">
-                            <h4 style="color: #f97316; margin-top: 0;">Inferência Estatística (Motor Frio)</h4>
+                        <div class="info-card" style="border-left: 4px solid #FFD700;">
+                            <h4 style="color: #FFD700; margin-top: 0;">Inferência Estatística (Motor Frio)</h4>
                             <p style="font-size: 1.05rem; line-height: 1.6;">{laudo_frio}</p>
                             <hr style="border-color: rgba(255,255,255,0.1); margin: 15px 0;">
                             <h4 style="color: #06C755; margin-top: 0;">Leitura Analítica (Interpretação descritiva dos resultados)</h4>
@@ -675,7 +675,7 @@ else:
     # =========================================================
     with aba_geral:
         st.markdown("### 🧠 Série Histórica - Negociações GATE")
-        st.markdown("<h5 style='color: #f97316;'>Filtros de Cenário</h5>", unsafe_allow_html=True)
+        st.markdown("<h5 style='color: #f97;'>Filtros de Cenário</h5>", unsafe_allow_html=True)
         
         # Filtros Globais (Com 3 colunas e chaves blindadas contra duplicação)
         col_f1, col_f2, col_f3 = st.columns(3)
@@ -731,7 +731,7 @@ else:
         # MOTOR ESTATÍSTICO BÁSICO (SPEARMAN & QUI-QUADRADO)
         # =========================================================
         st.markdown("---")
-        st.markdown("<h4 style='color: #f97316;'>🔬 Análise Inferencial Básica</h4>", unsafe_allow_html=True)
+        st.markdown("<h4 style='color: #FFD700;'>🔬 Análise Inferencial Básica</h4>", unsafe_allow_html=True)
         
         def achar_coluna(df, papel, metrica, momento):
             import unicodedata
@@ -792,7 +792,7 @@ else:
         # MOTOR ESTATÍSTICO AVANÇADO (VIÉS, REGRESSÃO ORDINAL E GEE)
         # =========================================================
         st.markdown("---")
-        st.markdown("<h4 style='color: #f97316;'>📐 Modelagem Avançada: Viés e Eficácia Real das Técnicas</h4>", unsafe_allow_html=True)
+        st.markdown("<h4 style='color: #FFD700;'>📐 Modelagem Avançada: Viés e Eficácia Real das Técnicas</h4>", unsafe_allow_html=True)
         
         # Caça a coluna independentemente se for a de números ou a de texto com emojis
         col_resposta = next((col for col in df_tec_filt.columns if 'ATITUDE' in col.upper()), None)
@@ -937,7 +937,7 @@ else:
 
         # --- 4. TENDÊNCIA TEMPORAL ---
         st.markdown("---")
-        st.markdown("<h4 style='color: #f97316;'>📈 Volume e Tendência Temporal</h4>", unsafe_allow_html=True)
+        st.markdown("<h4 style='color: #FFD700;'>📈 Volume e Tendência Temporal</h4>", unsafe_allow_html=True)
         
         col_data = next((col for col in ['Data da ocorrência', 'Data', 'DATA'] if col in df_quali_filt.columns), None)
         if col_data:
@@ -949,7 +949,7 @@ else:
                 df_trend = df_time['Mes_Ano'].value_counts().sort_index().reset_index()
                 df_trend.columns = ['Mês', 'Qtd Ocorrências']
                 
-                fig_time = px.line(df_trend, x='Mês', y='Qtd Ocorrências', markers=True, line_shape='spline', color_discrete_sequence=['#f97316'])
+                fig_time = px.line(df_trend, x='Mês', y='Qtd Ocorrências', markers=True, line_shape='spline', color_discrete_sequence=['#FFD700'])
                 fig_time.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font_color="#FFF")
                 st.plotly_chart(fig_time, use_container_width=True)
             else: st.info("Não há datas válidas suficientes no Airtable para desenhar o gráfico.")
