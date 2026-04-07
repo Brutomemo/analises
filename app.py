@@ -526,7 +526,7 @@ else:
             st.markdown("---")
             
             # =========================================================
-            # ETAPA 3: INTELIGÊNCIA ARTIFICIAL E LAUDO TÉCNICO
+            # ETAPA 3: INTELIGÊNCIA ARTIFICIAL E ANÁLISE TÉCNICA
             # =========================================================
             st.markdown("### 📄 Etapa 3: Inteligência de Apoio à Decisão e Exportação")
             
@@ -596,51 +596,86 @@ else:
                         </div>
                         """, unsafe_allow_html=True)
 
-                        # 6. Geração de PDF Blindada (À prova de falhas e dicionários)
+                        # =========================================================
+                        # 6. Geração de PDF com Layout Tático (Cores e Estrutura)
+                        # =========================================================
+                        
+                        # Função auxiliar de limpeza (mantém a segurança contra acentos)
                         def limpar_texto_pdf(texto_bruto):
-                            """
-                            Transforma qualquer retorno da IA em texto puro, 
-                            remove acentos para o FPDF não quebrar e limpa marcações de Markdown.
-                            """
-                            # 1. Se a IA mandou um Dicionário, converte para texto contínuo
                             if isinstance(texto_bruto, dict):
-                                partes = []
-                                for chave, valor in texto_bruto.items():
-                                    partes.append(f"{chave.upper()}:\n{valor}")
+                                partes = [f"{chave.upper()}:\n{valor}" for chave, valor in texto_bruto.items()]
                                 texto_str = "\n\n".join(partes)
                             else:
                                 texto_str = str(texto_bruto)
-                            
-                            # 2. Limpa a "sujeira" do Markdown (**, ###)
                             texto_str = texto_str.replace("**", "").replace("### ", "")
+                            return unicodedata.normalize('NFKD', texto_str).encode('ASCII', 'ignore').decode('ASCII')
+
+                        try:
+                            pdf = FPDF()
+                            pdf.add_page()
                             
-                            # 3. Remove acentos (O FPDF padrão trava com Ç, Ã, É)
-                            texto_limpo = unicodedata.normalize('NFKD', texto_str).encode('ASCII', 'ignore').decode('ASCII')
-                            return texto_limpo
+                            # --- CABEÇALHO ESTILIZADO (LARANJA GATE) ---
+                            pdf.set_fill_color(249, 115, 22) # Cor Laranja
+                            pdf.rect(0, 0, 210, 40, 'F')
+                            
+                            pdf.set_font("Arial", "B", 18)
+                            pdf.set_text_color(255, 255, 255) # Texto Branco
+                            pdf.cell(0, 15, "RELATÓRIO DE ANALISE POS-AÇÃO (APA)", ln=True, align="C")
+                            pdf.set_font("Arial", "I", 12)
+                            pdf.cell(0, 5, f"Unidade: GATE - Grupo de Acoes Taticas Especiais | ID: {apa_selecionada}", ln=True, align="C")
+                            
+                            # --- METADADOS (ESTILO CARD) ---
+                            pdf.ln(20)
+                            pdf.set_text_color(0, 0, 0) # Volta para Texto Preto
+                            pdf.set_font("Arial", "B", 14)
+                            pdf.set_fill_color(240, 240, 240) # Fundo Cinza Claro
+                            pdf.cell(0, 10, " 1. INFORMACOES DO INCIDENTE", ln=True, fill=True)
+                            
+                            pdf.set_font("Arial", "", 11)
+                            # Puxa os dados com segurança
+                            dt_oc = limpar_valor(df_apa.get('Data da ocorrência'))
+                            tip = limpar_valor(df_apa.get('Tipologia'))
+                            neg = limpar_valor(df_apa.get('Negociador Principal'))
+                            info_str = f"Data: {dt_oc} | Tipologia: {tip} | Negociador: {neg}"
+                            
+                            pdf.multi_cell(0, 8, txt=limpar_texto_pdf(info_str), border='L')
+                            
+                            # --- LEITURA ANALÍTICA IA ---
+                            pdf.ln(10)
+                            pdf.set_font("Arial", "B", 14)
+                            pdf.set_fill_color(249, 115, 22) # Laranja GATE
+                            pdf.set_text_color(255, 255, 255) # Texto Branco
+                            pdf.cell(0, 10, " 2. INTELIGENCIA DE APOIO AO PROCESSO DECISÓRIO (IA)", ln=True, fill=True)
+                            
+                            pdf.ln(5)
+                            pdf.set_text_color(0, 0, 0) # Texto Preto
+                            pdf.set_font("Arial", "", 11)
+                            
+                            # Passa a análise da IA pelo filtro e joga no PDF
+                            texto_final_pdf = limpar_texto_pdf(parecer_ia)
+                            pdf.multi_cell(0, 7, txt=texto_final_pdf)
+                            
+                            # ========================================================
+                            # CONVERSÃO BLINDADA PARA DOWNLOAD
+                            # ========================================================
+                            pdf_saida = pdf.output(dest="S")
+                            
+                            if isinstance(pdf_saida, str):
+                                pdf_bytes = pdf_saida.encode('latin-1', errors='replace')
+                            else:
+                                pdf_bytes = bytes(pdf_saida)
+                                
+                            st.download_button(
+                                label="📥 BAIXAR ANÁLISE COMPLETA (PDF)", 
+                                data=pdf_bytes, 
+                                file_name=f"Análise_Negociação_{apa_selecionada}.pdf", 
+                                mime="application/pdf"
+                            )
 
-                        pdf = FPDF()
-                        pdf.add_page()
-                        pdf.set_font("Arial", "B", 16)
-                        pdf.cell(0, 10, "RELATÓRIO GERADO PELA INTELIGÊNCIA ARTIFICIAL REFERENTE A ANÁLISE POS-ACAO (APA)", ln=True, align="C")
-                        pdf.set_font("Arial", "B", 12)
-                        pdf.cell(0, 10, "Delta Negociacao - GATE / PMESP", ln=True, align="C")
-                        pdf.ln(10)
-                        
-                        pdf.set_font("Arial", "", 12)
-                        pdf.cell(0, 8, f"ID da APA: {apa_selecionada}", ln=True)
-                        pdf.cell(0, 8, limpar_texto_pdf(f"Tipologia: {limpar_valor(df_apa.get('Tipologia'))}"), ln=True)
-                        pdf.ln(5)
-
-                        pdf.set_font("Arial", "B", 14)
-                        pdf.cell(0, 10, "1. Leitura Analitica", ln=True)
-                        pdf.set_font("Arial", "", 12)
-                        
-                        # Processa a variável parecer_ia com o nosso novo filtro robusto
-                        texto_final_pdf = limpar_texto_pdf(parecer_ia)
-                        
-                        # multi_cell garante a quebra de linha automática
-                        pdf.multi_cell(0, 8, txt=texto_final_pdf)
-                        
+                        except Exception as e:
+                            st.error(f"Erro na geração do PDF da análise: {str(e)}")
+                            
+                                            
                         # ========================================================
                         # TRUQUE DE MESTRE: CONVERSÃO DE STRING PARA BYTES
                         # ========================================================
