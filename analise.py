@@ -7,7 +7,7 @@ from sklearn.feature_extraction.text import CountVectorizer
 from scipy.stats import spearmanr, chi2_contingency
 import re
 
-# 1. LISTA DE BLOQUEIO AGRESSIVA (Fim das alucinações nas nuvens e tópicos)
+# 1. LISTA DE BLOQUEIO DO GATE
 STOPWORDS_GATE = {
     'o','a','os','as','um','uma','de','do','da','em','no','na','para','com','por','que','se','não',
     'é','dos','das','ao','aos','foi','houve','como','mas','ou','ele','ela','eu','você','nós','nos',
@@ -18,17 +18,15 @@ STOPWORDS_GATE = {
 }
 
 def limpar_texto(texto):
-    """Remove pontuações e números, deixando apenas palavras em minúsculo."""
     if not isinstance(texto, str) or not texto.strip():
         return ""
     texto = re.sub(r'[^a-záàâãéèêíïóôõöúçñ\s]', ' ', texto.lower())
     return texto
 
 def gerar_wordcloud(texto):
-    """Gera a nuvem de palavras com design Dark/Orange e sem palavras inúteis."""
     texto_limpo = limpar_texto(texto)
     if len(texto_limpo.split()) < 3:
-        return None # Retorna nulo se não houver texto suficiente
+        return None
 
     wc = WordCloud(
         background_color="rgba(15, 15, 15, 1)", 
@@ -56,10 +54,6 @@ DICIONARIO_TATICO = {
 }
 
 def extrair_topicos_ngrams(texto):
-    """
-    Motor Híbrido: Extrai n-grams matemáticos e cruza com a Ontologia Tática do GATE
-    para devolver o entendimento semântico da ocorrência de forma dinâmica.
-    """
     texto_limpo = limpar_texto(texto)
     palavras = [p for p in texto_limpo.split() if p not in STOPWORDS_GATE and len(p) > 2]
     texto_processado = " ".join(palavras)
@@ -68,131 +62,111 @@ def extrair_topicos_ngrams(texto):
         return ["*Texto insuficiente para análise semântica.*"]
     
     temas_encontrados = {}
-    
-    # Varredura Semântica
     for categoria, palavras_chave in DICIONARIO_TATICO.items():
         ocorrencias = sum(1 for p in palavras if p in palavras_chave)
         if ocorrencias > 0:
             temas_encontrados[categoria] = ocorrencias
 
     resultado = []
-    
-    # 1. Se encontrou contexto semântico na doutrina do GATE
     if temas_encontrados:
-        # Ordena as categorias que mais apareceram
         temas_ordenados = sorted(temas_encontrados.items(), key=lambda x: x[1], reverse=True)
         for i, (tema, peso) in enumerate(temas_ordenados):
             resultado.append(f"**Tema {i+1}:** {tema} *(Evidência semântica: {peso} menções relacionadas)*")
     
-    # 2. Padrão matemático bruto (O que o Scikit-Learn pegou de repetição pura)
     try:
         vectorizer = CountVectorizer(ngram_range=(2, 3), max_features=2)
         counts = vectorizer.fit_transform([texto_processado])
         features = vectorizer.get_feature_names_out()
         scores = counts.toarray()[0]
-        
         for i, idx in enumerate(scores.argsort()[::-1]):
-            if scores[idx] > 1: # Só mostra se repetiu de verdade
+            if scores[idx] > 1:
                 resultado.append(f"*(Padrão de Fala Recorrente: '{features[idx].title()}' - {scores[idx]}x)*")
     except:
         pass
 
-    if not resultado:
-        return ["*Diálogo pulverizado: Nenhum tema dominante ou padrão repetitivo detectado.*"]
-        
-    return resultado
+    return resultado if resultado else ["*Diálogo pulverizado: Nenhum tema dominante detectado.*"]
+
+# =========================================================
+# GERAÇÃO DE GRÁFICOS (TREEMAP ATUALIZADO)
+# =========================================================
 
 def gerar_treemap(df_tecnicas):
     """
-    Gera o Mapa de Árvore (Item 34) aplicando o degradê Laranja baseado na frequência.
-    Espera um DataFrame com as colunas ['tecnica', 'frequencia', 'percepcao']
+    Treemap com Frequência Absoluta (Contagem) e Relativa (%).
+    Mapeia a coluna 'TÉCNICAS' do Airtable.
     """
-    if df_tecnicas.empty or 'tecnica' not in df_tecnicas.columns or 'frequencia' not in df_tecnicas.columns:
+    # Padronização de coluna para garantir leitura
+    col_alvo = "TÉCNICAS"
+    if col_alvo not in df_tecnicas.columns:
+        # Tenta localizar por aproximação se o nome vier diferente
+        cols = [c for c in df_tecnicas.columns if "TECNICA" in c.upper()]
+        if cols: col_alvo = cols[0]
+        else: return None
+        
+    if df_tecnicas.empty:
         return None
+
+    # Cálculo da Frequência Relativa (%)
+    total_frequencia = df_tecnicas['frequencia'].sum()
+    df_tecnicas['freq_relativa'] = (df_tecnicas['frequencia'] / total_frequencia * 100).round(1)
+    
+    # Criando o label customizado: Nome da Técnica + Qtd + %
+    df_tecnicas['label_completo'] = (
+        df_tecnicas[col_alvo] + "<br>" +
+        "Qtd: " + df_tecnicas['frequencia'].astype(str) + "<br>" +
+        df_tecnicas['freq_relativa'].astype(str) + "%"
+    )
         
     fig = px.treemap(
         df_tecnicas, 
-        path=['tecnica'], 
+        path=['label_completo'], # Usa o novo label com numerador
         values='frequencia', 
-        color='frequencia', # AQUI ESTÁ A CORREÇÃO DO DEGRADÊ
+        color='frequencia',
         color_continuous_scale='Oranges',
-        title="Mapeamento de Técnicas Empregadas"
+        title="Dominância de Técnicas (Frequência Absoluta e Relativa)"
     )
     
-    # Fundo transparente e texto branco para casar com a UI do Streamlit
     fig.update_layout(
-        margin=dict(t=30, b=0, l=0, r=0), 
+        margin=dict(t=50, b=10, l=10, r=10), 
         paper_bgcolor="rgba(0,0,0,0)", 
         plot_bgcolor="rgba(0,0,0,0)",
         font_color="#FFFFFF"
     )
+    
+    # Remove a legenda de cor se preferir um visual mais limpo
+    fig.update_coloraxes(showscale=False)
+    
     return fig
 
 # =========================================================
-# MOTOR ESTATÍSTICO (NOVO)
+# MOTOR ESTATÍSTICO INFERENCIAL
 # =========================================================
 
 def calcular_spearman(df_historico, col_x, col_y):
-    """
-    Calcula a correlação de Spearman entre duas variáveis ordinais/contínuas no DataFrame.
-    """
-    # Remove valores nulos ou N/D para a matemática não quebrar
     df_limpo = df_historico[[col_x, col_y]].dropna().copy()
     df_limpo = df_limpo[(df_limpo[col_x] != 'N/D') & (df_limpo[col_y] != 'N/D')]
     
-    if len(df_limpo) < 3: # Precisamos de pelo menos 3 pontos
+    if len(df_limpo) < 3:
         return {'valido': False, 'p_value': 0.0, 'rho': 0.0, 'msg': 'Dados insuficientes (N<3).'}
         
     try:
-        # Tenta converter para numérico
         x = pd.to_numeric(df_limpo[col_x])
         y = pd.to_numeric(df_limpo[col_y])
-        
         rho, p_val = spearmanr(x, y)
-        
-        return {
-            'valido': True,
-            'rho': float(rho),
-            'p_value': float(p_val),
-            'msg': 'Cálculo realizado.'
-        }
-    except Exception as e:
-        return {'valido': False, 'rho': 0.0, 'p_value': 0.0, 'erro': str(e)}
+        return {'valido': True, 'rho': float(rho), 'p_value': float(p_val), 'msg': 'Sucesso.'}
+    except:
+        return {'valido': False, 'rho': 0.0, 'p_value': 0.0, 'msg': 'Erro na conversão numérica.'}
 
-def calcular_qui_quadrado(df_historico, col_categoria_1, col_categoria_2):
-    """
-    Calcula o Qui-Quadrado (Chi-Square) para ver se há dependência entre duas categorias.
-    """
-    df_limpo = df_historico[[col_categoria_1, col_categoria_2]].dropna().copy()
-    df_limpo = df_limpo[(df_limpo[col_categoria_1] != 'N/D') & (df_limpo[col_categoria_2] != 'N/D')]
+def calcular_qui_quadrado(df_historico, col_cat1, col_cat2):
+    df_limpo = df_historico[[col_cat1, col_cat2]].dropna().copy()
+    if df_limpo.empty: return {'valido': False}
     
-    if df_limpo.empty:
-        return {'valido': False, 'p_value': 0.0}
-        
-    # Cria a tabela de contingência cruzada
-    tabela_contingencia = pd.crosstab(df_limpo[col_categoria_1], df_limpo[col_categoria_2])
-    
-    # O teste exige pelo menos uma matriz 2x2
-    if tabela_contingencia.shape[0] < 2 or tabela_contingencia.shape[1] < 2:
-        return {'valido': False, 'p_value': 0.0, 'msg': 'Variância insuficiente para Qui-Quadrado.'}
+    tabela = pd.crosstab(df_limpo[col_cat1], df_limpo[col_cat2])
+    if tabela.shape[0] < 2 or tabela.shape[1] < 2:
+        return {'valido': False, 'msg': 'Variância insuficiente.'}
     
     try:
-        chi2, p_val, dof, expected = chi2_contingency(tabela_contingencia)
-        return {
-            'valido': True,
-            'chi2': float(chi2),
-            'p_value': float(p_val),
-            'tabela': tabela_contingencia
-        }
-    except Exception as e:
-        return {'valido': False, 'erro': str(e)}
-
-def calcular_spearman_arrays(array_x, array_y):
-    """
-    Calcula a correlação diretamente de duas listas/arrays (Mantido para compatibilidade legado).
-    """
-    if len(array_x) < 3 or len(array_y) < 3 or len(array_x) != len(array_y):
-        return {"rho": None, "p_value": None, "valido": False, "msg": "Dados insuficientes (N<3)."}
-        
-    rho, p_value = spearmanr(array_x, array_y)
-    return {"rho": rho, "p_value": p_value, "valido": True, "msg": "Cálculo realizado."}
+        chi2, p_val, dof, expected = chi2_contingency(tabela)
+        return {'valido': True, 'chi2': float(chi2), 'p_value': float(p_val), 'tabela': tabela}
+    except:
+        return {'valido': False}
