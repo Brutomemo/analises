@@ -3,7 +3,7 @@ import requests
 import json
 import re
 
-def processar_ia_gate(dados_extraidos):
+def analisar_ocorrencia_gate(dados_extraidos):
     """
     Versão segura para GitHub/Streamlit Cloud.
     """
