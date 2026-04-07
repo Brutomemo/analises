@@ -786,8 +786,8 @@ else:
         st.markdown("---")
         col_m1, col_m2, col_m3 = st.columns(3)
         with col_m1: st.metric("Ocorrências Analisadas", len(df_quali_filt))
-        with col_m2: st.metric("Tempo Total Real", somar_tempos_segundos(df_quali_filt.get('Tempo de Negociação Real', [])))
-        with col_m3: st.metric("Tempo Total Tático", somar_tempos_segundos(df_quali_filt.get('Tempo de Negociação Tática', [])))
+        with col_m2: st.metric("Tempo Total de Negociação Real", somar_tempos_segundos(df_quali_filt.get('Tempo de Negociação Real', [])))
+        with col_m3: st.metric("Tempo Total de Negociação Tática", somar_tempos_segundos(df_quali_filt.get('Tempo de Negociação Tática', [])))
 
         st.markdown("---")
         st.markdown("#### Ranking de Técnicas (Filtrado)")
