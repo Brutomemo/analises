@@ -591,78 +591,84 @@ else:
                             <h4 style="color: #f97316; margin-top: 0;">Inferência Estatística (Motor Frio)</h4>
                             <p style="font-size: 1.05rem; line-height: 1.6;">{laudo_frio}</p>
                             <hr style="border-color: rgba(255,255,255,0.1); margin: 15px 0;">
-                            <h4 style="color: #06C755; margin-top: 0;">Leitura Analítica (Interpretação descritiva dos resultados estatísticos assistida por modelo de linguagem (LLM – OpenAI GPT-4o-mini), com base em dados previamente processados por métodos estatísticos.</h4>
+                            <h4 style="color: #06C755; margin-top: 0;">Leitura Analítica (Interpretação descritiva dos resultados)</h4>
                             <p style="font-size: 1.05rem; line-height: 1.6;">{parecer_ia}</p>
                         </div>
                         """, unsafe_allow_html=True)
 
-            # ========================================================
-            # 6. Geração de PDF com Layout Tático (Aba Individual)
-            # ========================================================
-            
-            # 1. Tratamento do Texto da IA (Antes de gerar o PDF)
-            if isinstance(parecer_ia, dict):
-                partes = [f"{k.upper()}:\n{v}" for k, v in parecer_ia.items()]
-                texto_str = "\n\n".join(partes)
-            else:
-                texto_str = str(parecer_ia)
-            
-            texto_str = texto_str.replace("**", "").replace("### ", "")
-            texto_final_pdf = unicodedata.normalize('NFKD', texto_str).encode('ASCII', 'ignore').decode('ASCII')
+                        # ========================================================
+                        # 6. Geração de PDF com Layout Tático (Aba Individual)
+                        # ========================================================
+                        
+                        # Tratamento do Texto da IA
+                        if isinstance(parecer_ia, dict):
+                            partes = [f"{k.upper()}:\n{v}" for k, v in parecer_ia.items()]
+                            texto_str = "\n\n".join(partes)
+                        else:
+                            texto_str = str(parecer_ia)
+                        
+                        texto_str = texto_str.replace("**", "").replace("### ", "")
+                        texto_final_pdf = unicodedata.normalize('NFKD', texto_str).encode('ASCII', 'ignore').decode('ASCII')
 
-            # 2. Criação do PDF
-            pdf = FPDF()
-            pdf.add_page()
-            
-            # --- CABEÇALHO ---
-            pdf.set_fill_color(249, 115, 22) # Laranja
-            pdf.rect(0, 0, 210, 40, 'F')
-            pdf.set_font("Arial", "B", 18)
-            pdf.set_text_color(255, 255, 255)
-            pdf.cell(0, 15, "LAUDO DE ANALISE POS-ACAO (APA)", ln=True, align="C")
-            pdf.set_font("Arial", "I", 12)
-            pdf.cell(0, 5, f"Unidade: GATE | ID: {apa_selecionada}", ln=True, align="C")
-            
-            # --- METADADOS ---
-            pdf.ln(20)
-            pdf.set_text_color(0, 0, 0) # Preto
-            pdf.set_font("Arial", "B", 14)
-            pdf.set_fill_color(240, 240, 240)
-            pdf.cell(0, 10, " 1. INFORMACOES DO INCIDENTE", ln=True, fill=True)
-            pdf.set_font("Arial", "", 11)
-            
-            dt_oc = limpar_valor(df_apa.get('Data da ocorrência'))
-            tip = limpar_valor(df_apa.get('Tipologia'))
-            neg = limpar_valor(df_apa.get('Negociador Principal'))
-            info_str = f"Data: {dt_oc} | Tipologia: {tip} | Negociador: {neg}"
-            
-            pdf.multi_cell(0, 8, txt=unicodedata.normalize('NFKD', info_str).encode('ASCII', 'ignore').decode('ASCII'), border='L')
-            
-            # --- LEITURA ANALÍTICA ---
-            pdf.ln(10)
-            pdf.set_font("Arial", "B", 14)
-            pdf.set_fill_color(249, 115, 22)
-            pdf.set_text_color(255, 255, 255)
-            pdf.cell(0, 10, " 2. INTELIGENCIA DE APOIO A DECISAO (IA)", ln=True, fill=True)
-            pdf.ln(5)
-            pdf.set_text_color(0, 0, 0)
-            pdf.set_font("Arial", "", 11)
-            
-            pdf.multi_cell(0, 7, txt=texto_final_pdf)
-            
-            # 3. Conversão e Download
-            pdf_saida = pdf.output(dest="S")
-            if isinstance(pdf_saida, str):
-                pdf_bytes = pdf_saida.encode('latin-1', errors='replace')
-            else:
-                pdf_bytes = bytes(pdf_saida)
-                
-            st.download_button(
-                label="📥 BAIXAR ANÁLISE COMPLETA (PDF)", 
-                data=pdf_bytes, 
-                file_name=f"Laudo_GATE_{apa_selecionada}.pdf", 
-                mime="application/pdf"
-            )
+                        # Criação do PDF
+                        pdf = FPDF()
+                        pdf.add_page()
+                        
+                        # --- CABEÇALHO ---
+                        pdf.set_fill_color(249, 115, 22)
+                        pdf.rect(0, 0, 210, 40, 'F')
+                        pdf.set_font("Arial", "B", 18)
+                        pdf.set_text_color(255, 255, 255)
+                        pdf.cell(0, 15, "LAUDO DE ANALISE POS-ACAO (APA)", ln=True, align="C")
+                        pdf.set_font("Arial", "I", 12)
+                        pdf.cell(0, 5, f"Unidade: GATE | ID: {apa_selecionada}", ln=True, align="C")
+                        
+                        # --- METADADOS ---
+                        pdf.ln(20)
+                        pdf.set_text_color(0, 0, 0)
+                        pdf.set_font("Arial", "B", 14)
+                        pdf.set_fill_color(240, 240, 240)
+                        pdf.cell(0, 10, " 1. INFORMACOES DO INCIDENTE", ln=True, fill=True)
+                        pdf.set_font("Arial", "", 11)
+                        
+                        dt_oc = limpar_valor(df_apa.get('Data da ocorrência'))
+                        tip = limpar_valor(df_apa.get('Tipologia'))
+                        neg = limpar_valor(df_apa.get('Negociador Principal'))
+                        info_str = f"Data: {dt_oc} | Tipologia: {tip} | Negociador: {neg}"
+                        
+                        pdf.multi_cell(0, 8, txt=unicodedata.normalize('NFKD', info_str).encode('ASCII', 'ignore').decode('ASCII'), border='L')
+                        
+                        # --- LEITURA ANALÍTICA ---
+                        pdf.ln(10)
+                        pdf.set_font("Arial", "B", 14)
+                        pdf.set_fill_color(249, 115, 22)
+                        pdf.set_text_color(255, 255, 255)
+                        pdf.cell(0, 10, " 2. INTELIGENCIA DE APOIO A DECISAO (IA)", ln=True, fill=True)
+                        pdf.ln(5)
+                        pdf.set_text_color(0, 0, 0)
+                        pdf.set_font("Arial", "", 11)
+                        
+                        pdf.multi_cell(0, 7, txt=texto_final_pdf)
+                        
+                        # Conversão e Download
+                        pdf_saida = pdf.output(dest="S")
+                        if isinstance(pdf_saida, str):
+                            pdf_bytes = pdf_saida.encode('latin-1', errors='replace')
+                        else:
+                            pdf_bytes = bytes(pdf_saida)
+                            
+                        st.download_button(
+                            label="📥 BAIXAR ANÁLISE COMPLETA (PDF)", 
+                            data=pdf_bytes, 
+                            file_name=f"Laudo_GATE_{apa_selecionada}.pdf", 
+                            mime="application/pdf"
+                        )
+
+                    # ========================================================
+                    # AQUI ESTÁ A CHAVE DE OURO: O EXCEPT QUE FALTAVA
+                    # ========================================================
+                    except Exception as e:
+                        st.error(f"Erro na análise da IA ou geração do PDF: {str(e)}")
 
     # =========================================================
     # ABA 2: PAINEL ESTRATÉGICO (HISTÓRICO)
