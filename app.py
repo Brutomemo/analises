@@ -664,16 +664,17 @@ else:
                                 pdf_bytes = pdf_saida.encode('latin-1', errors='replace')
                             else:
                                 pdf_bytes = bytes(pdf_saida)
-                                
+                            # O botão de download que arrumamos antes
                             st.download_button(
                                 label="📥 BAIXAR ANÁLISE COMPLETA (PDF)", 
                                 data=pdf_bytes, 
-                                file_name=f"Análise_Negociação_{apa_selecionada}.pdf", 
+                                file_name=f"Laudo_GATE_{apa_selecionada}.pdf", 
                                 mime="application/pdf"
                             )
 
+                        # >>> ESSA É A LINHA QUE O PYTHON ESTÁ PROCURANDO <<<
                         except Exception as e:
-                            st.error(f"Erro na geração do PDF da análise: {str(e)}")
+                            st.error(f"Erro na geração do PDF: {str(e)}")
                                                                         
                       
     # =========================================================
