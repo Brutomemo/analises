@@ -1,64 +1,71 @@
+import streamlit as st # Adicione este import no topo
 import requests
 import json
 import re
 
-# =========================================================
-# 1. COMUNICAÇÃO COM O N8N E LIMPEZA DE JSON
-# =========================================================
+def consultar_openai_aba1(dados_extraidos):
+    """
+    Versão segura para GitHub/Streamlit Cloud.
+    """
+    # Em vez de colar a chave aqui, chamamos o "cofre" do Streamlit
+    if "OPENAI_API_KEY" in st.secrets:
+        api_key = st.secrets["OPENAI_API_KEY"]
+    else:
+        # Caso você rode localmente e esqueça de configurar
+        return {"parecer": "Erro: Chave da OpenAI não configurada nos Secrets."}
 
-def enviar_para_n8n(dados_extraidos, url_n8n):
-    """
-    Envia os dados crus da APA para o webhook do n8n.
-    Adiciona timeout para evitar que o Streamlit trave infinitamente.
-    """
+    endpoint = "https://api.openai.com/v1/chat/completions"
+    
+    # ... o restante do seu código continua IGUAL ...
+    
+    system_prompt = """Você é um Especialista Sênior em Negociação Policial (GATE).
+Sua missão é analisar as transcrições de áudio e os metadados de uma ocorrência crítica.
+Você DEVE retornar a sua análise obrigatoriamente no formato JSON, contendo uma única chave chamada "parecer".
+
+O conteúdo dentro da chave "parecer" deve ser um texto analítico e direto (usando formatação Markdown), dividido em:
+1. **Diagnóstico Emocional do Causador**
+2. **Avaliação Tática da Equipe de Negociação** (uso de rapport, escuta ativa, etc)
+3. **Pontos Fortes e Oportunidades de Melhoria**"""
+    
+    # Prepara os dados para enviar à IA
     try:
-        # Envia apenas o texto necessário para a IA não se perder
-        payload = {
-            "transcricao_completa": dados_extraidos["transcricao"].to_dict(orient="records"),
-            "metadados": dados_extraidos["metadados"].to_dict(orient="records")[0]
-        }
-        
-        response = requests.post(url_n8n, json=payload, timeout=90) # 90s de limite
-        
-        if response.status_code == 200:
-            return limpar_e_carregar_json(response.text)
+        if isinstance(dados_extraidos["transcricao"], dict):
+            transcricao_str = json.dumps(dados_extraidos["transcricao"], ensure_ascii=False)
         else:
-            return {"erro": f"Servidor retornou erro: {response.status_code}", "bruto": response.text}
+            transcricao_str = dados_extraidos["transcricao"].to_json(orient="records", force_ascii=False)
             
-    except requests.exceptions.Timeout:
-        return {"erro": "O n8n demorou muito para responder (Timeout)."}
-    except requests.exceptions.RequestException as e:
-        return {"erro": f"Falha de conexão com o n8n: {e}"}
-
-def limpar_e_carregar_json(texto_sujo):
-    """
-    O 'Triturador de Alucinações'. Remove crases, markdown e 
-    garante que o Python receba um dicionário limpo.
-    """
-    if not texto_sujo or not texto_sujo.strip():
-        return {"erro": "O n8n retornou uma resposta vazia."}
-        
-    texto = texto_sujo.strip()
+        metadados_str = dados_extraidos["metadados"].to_json(orient="records", force_ascii=False)
+        user_prompt = f"Metadados da ocorrência:\n{metadados_str}\n\nTranscrições do Áudio:\n{transcricao_str}"
+    except Exception:
+        user_prompt = f"Dados do incidente crítico:\n{dados_extraidos}"
     
-    # 1. Limpa blocos de código Markdown
-    texto = re.sub(r'^```json\s*', '', texto, flags=re.MULTILINE)
-    texto = re.sub(r'^```\s*', '', texto, flags=re.MULTILINE)
-    texto = re.sub(r'```$', '', texto, flags=re.MULTILINE)
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {api_key}"
+    }
+    
+    data = {
+        "model": "gpt-4o-mini",
+        "messages": [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_prompt}
+        ],
+        "temperature": 0.3, # Baixa temperatura para foco analítico
+        "response_format": { "type": "json_object" } # Força o retorno estrito em JSON
+    }
     
     try:
-        # 2. Tenta o parse direto
-        dados = json.loads(texto.strip())
+        response = requests.post(endpoint, headers=headers, json=data, timeout=60)
+        response.raise_for_status() 
+        raw_json = response.json()['choices'][0]['message']['content']
+        return json.loads(raw_json)
         
-        # 3. Desempacotamento de segurança (Se a IA mandar string dentro de array ou objeto)
-        if isinstance(dados, list) and len(dados) > 0:
-            dados = dados[0]
-        if isinstance(dados, str):
-            dados = json.loads(dados)
-            
-        return dados
-    except json.JSONDecodeError as e:
-        return {"erro": "A IA gerou um JSON inválido que não pôde ser reparado.", "bruto": texto}
-
+    except requests.exceptions.HTTPError as err:
+        return {"parecer": f"Erro de comunicação com a OpenAI (Verifique a sua Chave de API). Detalhe: {err.response.text}"}
+    except json.JSONDecodeError:
+        return {"parecer": "Erro: A Inteligência Artificial falhou em estruturar o laudo analítico."}
+    except Exception as e:
+        return {"parecer": f"Falha na execução da IA: {str(e)}"}
 
 # =========================================================
 # 2. MOTOR DE INFERÊNCIA ESTATÍSTICA (SEM VIÉS DA IA)
@@ -66,8 +73,8 @@ def limpar_e_carregar_json(texto_sujo):
 
 def gerar_laudo_frio(likert_inicio, likert_fim, stats_spearman):
     """
-    Escreve o parecer tático puramente baseado nos números.
-    Se a agressividade não caiu, ele vai dizer de forma direta.
+    Escreve o parecer tático puramente baseado nos números matemáticos.
+    Se a agressividade não caiu, ele vai dizer de forma direta, sem eufemismos.
     """
     laudo = []
     
@@ -77,17 +84,17 @@ def gerar_laudo_frio(likert_inicio, likert_fim, stats_spearman):
     
     # 1. Análise de Receptividade (Fato Frio)
     if delta_r > 0:
-        laudo.append(f"A receptividade média do causador apresentou aumento durante a ocorrência ($\Delta = +{delta_r:.1f}$).")
+        laudo.append(f"A receptividade média do causador apresentou aumento durante a ocorrência (Delta = +{delta_r:.1f}).")
     elif delta_r < 0:
-        laudo.append(f"A receptividade média do causador sofreu redução durante a ocorrência ($\Delta = {delta_r:.1f}$).")
+        laudo.append(f"A receptividade média do causador sofreu redução durante a ocorrência (Delta = {delta_r:.1f}).")
     else:
         laudo.append("A receptividade média do causador permaneceu inalterada/estagnada ao longo da ocorrência.")
 
     # 2. Análise de Agressividade (Fato Frio)
     if delta_a < 0:
-        laudo.append(f"Observou-se mitigação na agressividade média ($\Delta = {delta_a:.1f}$).")
+        laudo.append(f"Observou-se mitigação na agressividade média (Delta = {delta_a:.1f}).")
     elif delta_a > 0:
-        laudo.append(f"Houve escalada na agressividade média ($\Delta = +{delta_a:.1f}$).")
+        laudo.append(f"Houve escalada na agressividade média (Delta = +{delta_a:.1f}).")
     else:
         laudo.append("A agressividade média não apresentou variação direcional.")
 
@@ -103,15 +110,15 @@ def gerar_laudo_frio(likert_inicio, likert_fim, stats_spearman):
             forca = "forte" if abs(rho) > 0.6 else "moderada"
             direcao = "positiva" if rho > 0 else "negativa"
             laudo.append(
-                f"A análise de Spearman confirma validade estatística ($p < 0.05$). "
-                f"Existe uma correlação {forca} e {direcao} ($Rho = {rho:.2f}$) entre o emprego das técnicas e o progresso da ocorrência. "
-                "Conclui-se que as intervenções tiveram impacto direto e quantificável no desfecho."
+                f"A análise de Spearman confirma validade estatística (p < 0.05). "
+                f"Existe uma correlação {forca} e {direcao} (Rho = {rho:.2f}) entre o tempo de negociação e o desfecho da agressividade. "
+                "Conclui-se que as intervenções tiveram impacto direto e quantificável no cenário."
             )
         else:
             laudo.append(
-                f"A análise de Spearman NÃO identificou significância estatística ($p = {p_val:.3f}$, o que é $> 0.05$). "
-                f"O coeficiente de $Rho$ de {rho:.2f} sugere que qualquer variação observada pode ter ocorrido ao acaso (fator sorte) "
-                "ou que o desfecho dependeu de fatores táticos além da negociação verbal isolada."
+                f"A análise de Spearman NÃO identificou significância estatística (p = {p_val:.3f}, o que é > 0.05). "
+                f"O coeficiente Rho de {rho:.2f} sugere que a variação emocional não possui aderência matemática forte ao tempo gasto, "
+                "indicando forte interferência de outras variáveis não isoladas no momento."
             )
             
     return "\n\n".join(laudo)
