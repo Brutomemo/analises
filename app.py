@@ -476,7 +476,7 @@ else:
                             
                             st.dataframe(df_freq, use_container_width=True, hide_index=True)
                             
-                            st.markdown("<h5 style='text-align:center; color: #FFFFFF; margin-top: 20px;'>Mapa de Árvore (Treemap)</h5>", unsafe_allow_html=True)
+                            st.markdown("<h5 style='text-align:center; color: #FFFFFF; margin-top: 20px;'>Frequencias de aplicações das Técnicas (Treemap)</h5>", unsafe_allow_html=True)
                             fig_tree = px.treemap(df_freq, path=['Técnica Empregada'], values='Frequência Absoluta', color='Frequência Absoluta', color_continuous_scale='Oranges')
                             fig_tree.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font_color="#FFF", margin=dict(t=10, l=10, r=10, b=10))
                             st.plotly_chart(fig_tree, use_container_width=True)
@@ -492,7 +492,7 @@ else:
             st.markdown("---")
 
             # ETAPA 2 DA ABA INDIVIDUAL
-            st.markdown("### 📊 Etapa 2: Análise Semântica (Scikit-Learn)")
+            st.markdown("### 📊 Etapa 2: Análise Semântica (Scikit-learn: Machine Learning in Python)")
             if st.button("⚙️ 2. GERAR NUVEM DE PALAVRAS E N-GRAMS"):
                 with st.spinner("Processando N-Grams e plotando gráficos..."):
                     texto_c = limpar_valor(df_apa.get('TRANSCRIÇÃO DO CAUSADOR'))
@@ -561,7 +561,7 @@ else:
                         }
 
                         # 4. Envio para IA python
-                        resultado_ia = ia_link.consultar_openai_aba1(dados_extraidos)
+                        resultado_ia = ia_link.processar_ia_gate(dados_extraidos)
                         
                         # Processamento do Parecer (Modo RAIO-X incluído)
                         if isinstance(resultado_ia, dict) and 'parecer' in resultado_ia:
@@ -881,7 +881,7 @@ else:
         # MÓDULO NOVO: RELATÓRIO INTERPRETATIVO COM IA
         # =========================================================
         st.markdown("---")
-        st.markdown("<h4 style='color: #06C755;'>🧠 Síntese Interpretativa Avançada (IA)</h4>", unsafe_allow_html=True)
+        st.markdown("<h4 style='color: #06C755;'>🧠 Síntese Interpretativa Avançada (Elaborado por Inteligência Artificial - modelo OpenAi 4o-mini)</h4>", unsafe_allow_html=True)
         st.markdown("<p style='color: #bbb;'>Este módulo traduz a matriz matemática gerada acima em um relatório estratégico doutrinário.</p>", unsafe_allow_html=True)
 
         if st.button("🤖 GERAR RELATÓRIO ESTATÍSTICO DESCRITIVO"):
