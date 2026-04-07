@@ -508,7 +508,7 @@ else:
 
             if st.session_state['stats_calculados']:
                 stats = st.session_state['stats_calculados']
-                st.markdown('<div class="info-card"><h4 style="color: #FFD700; margin-top: 0;">🧠 Temas Dominantes Globais (N-Gramas)</h4>', unsafe_allow_html=True)
+                st.markdown('<div class="info-card"><h4 style="color: #f97316; margin-top: 0;">🧠 Temas Dominantes Globais (N-Gramas)</h4>', unsafe_allow_html=True)
                 for t in stats['topicos']: st.markdown(t)
                 st.markdown('</div>', unsafe_allow_html=True)
                 
