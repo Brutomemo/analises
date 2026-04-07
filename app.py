@@ -534,7 +534,7 @@ else:
             url_n8n = "http://host.docker.internal:5680/webhook/analise-doc"
             
             if st.button("📡 3. GERAR ANALYTICS E EXPORTAR ANÁLISE (PDF)"):
-                with st.spinner("Compilando dados táticos, consultando IA e desenhando PDF..."):
+                with st.spinner("Compilando dados técnicos, consultando IA e desenhando PDF..."):
                     try:
                         # 1. Captura direta para evitar campos "Não informados"
                         t_causador = limpar_valor(df_apa.get('TRANSCRIÇÃO DO CAUSADOR'))
@@ -591,7 +591,7 @@ else:
                             <h4 style="color: #f97316; margin-top: 0;">Inferência Estatística (Motor Frio)</h4>
                             <p style="font-size: 1.05rem; line-height: 1.6;">{laudo_frio}</p>
                             <hr style="border-color: rgba(255,255,255,0.1); margin: 15px 0;">
-                            <h4 style="color: #06C755; margin-top: 0;">Leitura Analítica (IA)</h4>
+                            <h4 style="color: #06C755; margin-top: 0;">Leitura Analítica (Interpretação descritiva dos resultados estatísticos assistida por modelo de linguagem (LLM – OpenAI GPT-4o-mini), com base em dados previamente processados por métodos estatísticos.</h4>
                             <p style="font-size: 1.05rem; line-height: 1.6;">{parecer_ia}</p>
                         </div>
                         """, unsafe_allow_html=True)
