@@ -323,8 +323,8 @@ else:
 
             c5, c6, c7, _ = st.columns(4)
             with c5: st.markdown(f"<div class='info-card'><strong>Negociador Principal:</strong><br>{limpar_valor(df_apa.get('Negociador Principal'))}</div>", unsafe_allow_html=True)
-            with c6: st.markdown(f"<div class='info-card'><strong>Tempo Real:</strong><br>{formatar_tempo_airtable(df_apa.get('Tempo de Negociação Real'))}</div>", unsafe_allow_html=True)
-            with c7: st.markdown(f"<div class='info-card'><strong>Tempo Tático:</strong><br>{formatar_tempo_airtable(df_apa.get('Tempo de Negociação Tática'))}</div>", unsafe_allow_html=True)
+            with c6: st.markdown(f"<div class='info-card'><strong>Tempo de Negociação Real:</strong><br>{formatar_tempo_airtable(df_apa.get('Tempo de Negociação Real'))}</div>", unsafe_allow_html=True)
+            with c7: st.markdown(f"<div class='info-card'><strong>Tempo de Negociação Tática:</strong><br>{formatar_tempo_airtable(df_apa.get('Tempo de Negociação Tática'))}</div>", unsafe_allow_html=True)
 
             st.markdown("---")
 
@@ -561,7 +561,7 @@ else:
                         }
 
                         # 4. Envio para IA python
-                        resultado_ia = ia_link.processar_ia_gate(dados_extraidos)
+                        resultado_ia = ia_link.analisar_ocorrencia_gate(dados_extraidos)
                         
                         # Processamento do Parecer (Modo RAIO-X incluído)
                         if isinstance(resultado_ia, dict) and 'parecer' in resultado_ia:
@@ -822,9 +822,14 @@ else:
                         
                         if not df_or.empty:
                             st.dataframe(df_or.style.format({'Odds_Ratio': '{:.2f}', 'P_Valor': '{:.4f}'}), use_container_width=True, hide_index=True)
-                            st.success("💡 **Como interpretar:** Um Odds Ratio (OR) de `2.0` significa que aplicar esta técnica *dobra* a chance de subir um nível na resposta do causador (ex: de Neutro para Positivo), controlando pelo viés do negociador.")
+                            
+                            # TRAVA DE SEGURANÇA N < 10
+                            if len(df_adv_clean) < 10:
+                                st.warning(f"⚠️ **Amostra Reduzida (N={len(df_adv_clean)}):** Os Odds Ratios acima são instáveis. Com amostras pequenas, o modelo tende a superestimar o impacto (separação perfeita). Não use para validar doutrina ainda.")
+                            else:
+                                st.success("💡 **Como interpretar:** Um Odds Ratio (OR) de `2.0` significa que aplicar esta técnica *dobra* a chance de subir um nível na resposta do causador, controlando pelo viés do negociador.")
                         else:
-                            st.write("Nenhuma técnica isolada apresentou significância estatística (P < 0.05) quando controlada pelos outros fatores.")
+                            st.write("Nenhuma técnica isolada apresentou significância estatística (P < 0.05).")
                     except Exception as e:
                         st.warning(f"O modelo Ordinal não convergiu. Geralmente ocorre por separação perfeita (técnicas com pouquíssimas amostras). Detalhe: {str(e)[:100]}")
                 st.markdown("</div>", unsafe_allow_html=True)
@@ -834,29 +839,48 @@ else:
                 st.markdown("##### 3. Robustez Hierárquica (Equações de Estimação Generalizadas - GEE)")
                 st.write("Controla matematicamente o efeito de 'cluster' (várias técnicas aplicadas pelo mesmo negociador).")
                 
-                df_adv_clean['Sucesso'] = np.where(df_adv_clean['Resposta_Cat'] == 'Positiva', 1, 0)
                 try:
-                    if 'Tecnica_Patsy' in df_adv_clean.columns:
-                        modelo_gee = smf.gee("Sucesso ~ C(Tecnica_Patsy)", groups=df_adv_clean['Neg_Patsy'], data=df_adv_clean, family=sm.families.Binomial(), cov_struct=sm.cov_struct.Exchangeable())
-                        res_gee = modelo_gee.fit()
+                    # O modelo agora usa as colunas limpas
+                    modelo_gee = smf.gee("Sucesso ~ C(Tecnica_Patsy)",
+                        groups=df_adv_clean['Neg_Patsy'],
+                        data=df_adv_clean,
+                        family=sm.families.Binomial(),
+                        cov_struct=sm.cov_struct.Exchangeable())
+                    res_gee = modelo_gee.fit()
                         
-                        # Filtra Técnicas Significativas
-                        gee_coefs = res_gee.params[res_gee.params.index.str.contains('Tecnica')]
-                        gee_pvals = res_gee.pvalues[res_gee.params.index.str.contains('Tecnica')]
-                        df_gee = pd.DataFrame({'Técnica': gee_coefs.index.str.extract(r'\[T\.(.*?)\]')[0], 'Coeficiente_GEE': gee_coefs, 'P_Valor': gee_pvals})
-                        df_gee = df_gee[df_gee['P_Valor'] < 0.05].sort_values('Coeficiente_GEE', ascending=False)
-                        
-                        if not df_gee.empty:
-                            st.dataframe(df_gee.style.format({'Coeficiente_GEE': '{:.2f}', 'P_Valor': '{:.4f}'}), use_container_width=True, hide_index=True)
-                            st.success("💡 **Por que isso importa?** Se uma técnica sobrevive ao GEE, você tem a **prova científica** de que sua eficácia não é apenas uma ilusão ou estilo pessoal de um negociador específico. É doutrina pura.")
-                        else:
-                            st.write("Após o controle hierárquico GEE, as variâncias foram absorvidas pelo cluster. Nenhuma técnica se destacou com P < 0.05.")
-                except Exception as e:
-                    st.warning(f"O modelo GEE não convergiu devido à baixa variabilidade intrar-cluster. Detalhe: {str(e)[:100]}")
-                st.markdown("</div>", unsafe_allow_html=True)
+                        # Extração de Coeficientes
+                    gee_coefs = res_gee.params[res_gee.params.index.str.contains('Tecnica_Patsy')]
+                    gee_pvals = res_gee.pvalues[res_gee.params.index.str.contains('Tecnica_Patsy')]
+                    gee_coefs = res_gee.params[res_gee.params.index.str.contains('Tecnica')]
 
-            except ImportError:
-                st.error("A biblioteca **statsmodels** não está instalada no servidor. Rode `pip install statsmodels` para ativar a modelagem preditiva.")
+                        # Monta o DataFrame de resultados
+                    df_gee = pd.DataFrame({
+                            'Técnica': gee_coefs.index.str.extract(r'\[T\.(.*?)\]')[0],
+                            'Coeficiente_GEE': gee_coefs,
+                            'P_Valor': gee_pvals
+                            })
+                    
+                        # Filtra apenas as significativas para o destaque, mas você pode mostrar todas
+                    df_gee_sig = df_gee[df_gee['P_Valor'] < 0.05].sort_values('Coeficiente_GEE', ascending=False)
+                    if not df_gee.empty:
+                        st.dataframe(df_gee.style.format({'Coeficiente_GEE': '{:.2f}', 'P_Valor': '{:.4f}'}), 
+                     use_container_width=True, hide_index=True)
+                        
+                        # --- A TRAVA DE SEGURANÇA CONTRA MAL-ENTENDIDOS ---
+                        if len(df_adv_clean) < 10:
+                            st.warning(f"⚠️ **Amostra Crítica (N={len(df_adv_clean)}):** Os coeficientes de 35.53 indicam 'separação perfeita'. A matemática 'viciou' porque há poucos casos. Não utilize esses dados para validar doutrina até atingir N > 30.")
+                        else:
+                            st.success("💡 **Prova Científica:** As técnicas acima demonstraram eficácia real, controlando o estilo individual dos negociadores.")
+                    else:
+                        st.write("Nenhuma técnica apresentou P < 0.05 após o controle hierárquico.")
+
+                except Exception as e:
+                    st.error(f"Erro no GEE: Amostra insuficiente ou sem variabilidade entre negociadores. Detalhe: {str(e)[:50]}")
+
+                    st.markdown("</div>", unsafe_allow_html=True)
+
+                except ImportError:
+                    st.error("A biblioteca **statsmodels** não está instalada no servidor. Rode `pip install statsmodels` para ativar a modelagem preditiva.")
 
         # --- TENDÊNCIA TEMPORAL ---
         st.markdown("---")

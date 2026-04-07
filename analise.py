@@ -92,48 +92,37 @@ def extrair_topicos_ngrams(texto):
 
 def gerar_treemap(df_tecnicas):
     """
-    Treemap com Frequência Absoluta (Contagem) e Relativa (%).
-    Mapeia a coluna 'TÉCNICAS' do Airtable.
+    Gera o Treemap com Nome - Frequência e degradê Oranges proporcional.
     """
-    # Padronização de coluna para garantir leitura
-    col_alvo = "TÉCNICAS"
-    if col_alvo not in df_tecnicas.columns:
-        # Tenta localizar por aproximação se o nome vier diferente
-        cols = [c for c in df_tecnicas.columns if "TECNICA" in c.upper()]
-        if cols: col_alvo = cols[0]
-        else: return None
-        
-    if df_tecnicas.empty:
+    col_alvo = "TÉCNICAS" # Nome exato da coluna no seu Airtable
+    
+    if df_tecnicas.empty or col_alvo not in df_tecnicas.columns:
         return None
 
-    # Cálculo da Frequência Relativa (%)
-    total_frequencia = df_tecnicas['frequencia'].sum()
-    df_tecnicas['freq_relativa'] = (df_tecnicas['frequencia'] / total_frequencia * 100).round(1)
-    
-    # Criando o label customizado: Nome da Técnica + Qtd + %
-    df_tecnicas['label_completo'] = (
-        df_tecnicas[col_alvo] + "<br>" +
-        "Qtd: " + df_tecnicas['frequencia'].astype(str) + "<br>" +
-        df_tecnicas['freq_relativa'].astype(str) + "%"
+    # 1. Criando o rótulo visual (Nome - Qtd)
+    df_tecnicas['label_treemap'] = (
+        df_tecnicas[col_alvo].astype(str) + " - " + df_tecnicas['frequencia'].astype(str)
     )
         
     fig = px.treemap(
         df_tecnicas, 
-        path=['label_completo'], # Usa o novo label com numerador
-        values='frequencia', 
-        color='frequencia',
+        path=['label_treemap'], 
+        values='frequencia',           # Define o TAMANHO do bloco
+        color='frequencia',            # Define a INTENSIDADE da cor (O degradê)
         color_continuous_scale='Oranges',
-        title="Dominância de Técnicas (Frequência Absoluta e Relativa)"
+        title="Frequência de Técnicas Empregadas (GATE)"
     )
     
+    # 2. Ajuste Estético (UI Dark Mode)
     fig.update_layout(
-        margin=dict(t=50, b=10, l=10, r=10), 
+        margin=dict(t=30, b=10, l=10, r=10), 
         paper_bgcolor="rgba(0,0,0,0)", 
         plot_bgcolor="rgba(0,0,0,0)",
         font_color="#FFFFFF"
     )
     
-    # Remove a legenda de cor se preferir um visual mais limpo
+    # Remove a barra lateral de cores para um visual mais limpo, 
+    # mantendo o degradê nos blocos.
     fig.update_coloraxes(showscale=False)
     
     return fig
