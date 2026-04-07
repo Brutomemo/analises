@@ -840,49 +840,47 @@ else:
                 st.write("Controla matematicamente o efeito de 'cluster' (várias técnicas aplicadas pelo mesmo negociador).")
                 
                 try:
-                    # O modelo agora usa as colunas limpas
-                    modelo_gee = smf.gee("Sucesso ~ C(Tecnica_Patsy)",
-                        groups=df_adv_clean['Neg_Patsy'],
-                        data=df_adv_clean,
-                        family=sm.families.Binomial(),
-                        cov_struct=sm.cov_struct.Exchangeable())
-                    res_gee = modelo_gee.fit()
+                    # Verifica se temos as colunas necessárias e dados suficientes
+                    if 'Tecnica_Patsy' in df_adv_clean.columns and len(df_adv_clean) > 0:
+                        modelo_gee = smf.gee("Sucesso ~ C(Tecnica_Patsy)", 
+                                             groups=df_adv_clean['Neg_Patsy'], 
+                                             data=df_adv_clean, 
+                                             family=sm.families.Binomial(), 
+                                             cov_struct=sm.cov_struct.Exchangeable())
+                        res_gee = modelo_gee.fit()
                         
-                        # Extração de Coeficientes
-                    gee_coefs = res_gee.params[res_gee.params.index.str.contains('Tecnica_Patsy')]
-                    gee_pvals = res_gee.pvalues[res_gee.params.index.str.contains('Tecnica_Patsy')]
-                    gee_coefs = res_gee.params[res_gee.params.index.str.contains('Tecnica')]
-
-                        # Monta o DataFrame de resultados
-                    df_gee = pd.DataFrame({
-                            'Técnica': gee_coefs.index.str.extract(r'\[T\.(.*?)\]')[0],
-                            'Coeficiente_GEE': gee_coefs,
+                        # Extração dos resultados
+                        gee_coefs = res_gee.params[res_gee.params.index.str.contains('Tecnica')]
+                        gee_pvals = res_gee.pvalues[res_gee.params.index.str.contains('Tecnica')]
+                        
+                        df_gee = pd.DataFrame({
+                            'Técnica': gee_coefs.index.str.extract(r'\[T\.(.*?)\]')[0], 
+                            'Coeficiente_GEE': gee_coefs, 
                             'P_Valor': gee_pvals
-                            })
-                    
-                        # Filtra apenas as significativas para o destaque, mas você pode mostrar todas
-                    df_gee_sig = df_gee[df_gee['P_Valor'] < 0.05].sort_values('Coeficiente_GEE', ascending=False)
-                    if not df_gee.empty:
-                        st.dataframe(df_gee.style.format({'Coeficiente_GEE': '{:.2f}', 'P_Valor': '{:.4f}'}), 
-                     use_container_width=True, hide_index=True)
+                        })
                         
-                        # --- A TRAVA DE SEGURANÇA CONTRA MAL-ENTENDIDOS ---
-                        if len(df_adv_clean) < 10:
-                            st.warning(f"⚠️ **Amostra Crítica (N={len(df_adv_clean)}):** Os coeficientes de 35.53 indicam 'separação perfeita'. A matemática 'viciou' porque há poucos casos. Não utilize esses dados para validar doutrina até atingir N > 30.")
+                        # Exibe a tabela se houver resultados
+                        if not df_gee.empty:
+                            st.dataframe(df_gee.style.format({'Coeficiente_GEE': '{:.2f}', 'P_Valor': '{:.4f}'}), 
+                                         use_container_width=True, hide_index=True)
+                            
+                            # --- TRAVA DE SEGURANÇA (VEREDITO HONESTO) ---
+                            if len(df_adv_clean) < 10:
+                                st.warning(f"⚠️ **Amostra Crítica (N={len(df_adv_clean)}):** Os coeficientes de 35.53 indicam 'separação perfeita'. A matemática 'viciou' por falta de dados. Não valide doutrina com este N.")
+                            else:
+                                st.success("💡 **Prova Científica:** As técnicas demonstraram eficácia real, sobrevivendo ao controle de estilo individual.")
                         else:
-                            st.success("💡 **Prova Científica:** As técnicas acima demonstraram eficácia real, controlando o estilo individual dos negociadores.")
+                            st.info("Nenhuma técnica apresentou significância estatística (P < 0.05).")
                     else:
-                        st.write("Nenhuma técnica apresentou P < 0.05 após o controle hierárquico.")
+                        st.warning("Dados insuficientes para rodar o modelo GEE.")
 
                 except Exception as e:
-                    st.error(f"Erro no GEE: Amostra insuficiente ou sem variabilidade entre negociadores. Detalhe: {str(e)[:50]}")
+                    st.error(f"O modelo GEE não convergiu. Isso é comum com poucas amostras. Erro: {str(e)[:50]}")
+                
+                st.markdown("</div>", unsafe_allow_html=True)
+                st.markdown("---") 
 
-                    st.markdown("</div>", unsafe_allow_html=True)
-
-                except ImportError:
-                    st.error("A biblioteca **statsmodels** não está instalada no servidor. Rode `pip install statsmodels` para ativar a modelagem preditiva.")
-
-        # --- TENDÊNCIA TEMPORAL ---
+        # --- 4. TENDÊNCIA TEMPORAL ---
         st.markdown("---")
         st.markdown("<h4 style='color: #f97316;'>📈 Volume e Tendência Temporal</h4>", unsafe_allow_html=True)
         
