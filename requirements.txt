@@ -8,3 +8,6 @@ scikit-learn
 scipy
 fpdf
 kaleido
+statsmodels
+patsy
+python-docx
