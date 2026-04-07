@@ -835,13 +835,15 @@ else:
                 st.markdown("</div>", unsafe_allow_html=True)
                 
                 # =========================================================
+                # =========================================================
                 # 3. Modelo Multinível (GEE)
+                # =========================================================
                 st.markdown("<div class='info-card'>", unsafe_allow_html=True)
                 st.markdown("##### 3. Robustez Hierárquica (Equações de Estimação Generalizadas - GEE)")
-                st.write("Controla matematicamente o efeito de 'cluster' (negociador).")
+                st.write("Controla o efeito de 'cluster' (negociador).")
                 
                 try:
-                    # Verifica se a coluna foi processada para evitar erro de execução
+                    # Só executa se a coluna existir
                     if 'Tecnica_Patsy' in df_adv_clean.columns:
                         modelo_gee = smf.gee("Sucesso ~ C(Tecnica_Patsy)", 
                                              groups=df_adv_clean['Neg_Patsy'], 
@@ -861,24 +863,25 @@ else:
                         })
                         
                         if not df_gee.empty:
-                            st.dataframe(df_gee.style.format({'Coeficiente_GEE': '{:.2f}', 'P_Valor': '{:.4f}'}), use_container_width=True, hide_index=True)
+                            st.dataframe(df_gee.style.format({'Coeficiente_GEE': '{:.2f}', 'P_Valor': '{:.4f}'}), 
+                                         use_container_width=True, hide_index=True)
                             
-                            # TRAVA DE SEGURANÇA PARA N REDUZIDO
+                            # TRAVA DE SEGURANÇA: N < 10
                             if len(df_adv_clean) < 10:
-                                st.warning(f"⚠️ **Rigor Doutrinário:** Amostra de {len(df_adv_clean)} casos insuficiente. Coeficientes altos (35.53) são instáveis neste volume de dados.")
+                                st.warning(f"⚠️ **Aviso:** Amostra reduzida (N={len(df_adv_clean)}). Coeficientes de 35.53 indicam instabilidade matemática.")
                             else:
-                                st.success("💡 **Doutrina Validada:** Técnica sobreviveu ao controle de viés individual.")
+                                st.success("💡 **Doutrina Validada:** Técnica sobreviveu ao controle de viés.")
                         else:
-                            st.info("Nenhuma técnica atingiu significância estatística (P < 0.05).")
+                            st.info("Nenhuma técnica atingiu significância (P < 0.05).")
                     else:
-                        st.error("Coluna 'TÉCNICAS' não encontrada para modelagem.")
+                        st.error("Coluna 'TÉCNICAS' não processada.")
 
                 except Exception as e:
-                    # ESTA LINHA É O FECHAMENTO QUE O PYTHON ESTÁ COBRANDO
+                    # ESTA LINHA É O FECHAMENTO OBRIGATÓRIO (O "EXCEPT")
                     st.error(f"Erro no processamento GEE: {str(e)[:50]}")
                 
                 st.markdown("</div>", unsafe_allow_html=True)
-                st.markdown("---") # ESTA É A LINHA 886. AGORA ELA ESTÁ PROTEGIDA.
+                st.markdown("---") # LINHA 884: AGORA ELA ESTÁ FORA DO BLOCO PROTEGIDO
 
                 # --- 4. TENDÊNCIA TEMPORAL ---
         st.markdown("---")
