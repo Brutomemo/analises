@@ -621,7 +621,7 @@ else:
                         pdf = FPDF()
                         pdf.add_page()
                         pdf.set_font("Arial", "B", 16)
-                        pdf.cell(0, 10, "LAUDO DE ANALISE POS-ACAO (APA)", ln=True, align="C")
+                        pdf.cell(0, 10, "RELATÓRIO GERADO PELA INTELIGÊNCIA ARTIFICIAL REFERENTE A ANÁLISE POS-ACAO (APA)", ln=True, align="C")
                         pdf.set_font("Arial", "B", 12)
                         pdf.cell(0, 10, "Delta Negociacao - GATE / PMESP", ln=True, align="C")
                         pdf.ln(10)
@@ -1018,3 +1018,56 @@ else:
 
                 except Exception as e:
                     st.error(f"Erro na geração do relatório de IA: {str(e)}")
+                    # =========================================================
+                # EXPORTAÇÃO DE PDF - SÉRIE HISTÓRICA
+                # =========================================================
+                st.markdown("---")
+                st.markdown("### 🖨️ Exportar Relatório Doutrinário")
+                
+                # Aproveitamos a mesma função de limpeza que criamos antes
+                def limpar_texto_pdf_historico(texto_bruto):
+                    if isinstance(texto_bruto, dict):
+                        partes = [f"{k.upper()}:\n{v}" for k, v in texto_bruto.items()]
+                        texto_str = "\n\n".join(partes)
+                    else:
+                        texto_str = str(texto_bruto)
+                    texto_str = texto_str.replace("**", "").replace("### ", "")
+                    return unicodedata.normalize('NFKD', texto_str).encode('ASCII', 'ignore').decode('ASCII')
+
+                # Verifica se a IA gerou a resposta (supondo que a variável se chame 'relatorio_ia_historico')
+                if 'relatorio_ia_historico' in locals() and relatorio_ia_historico:
+                    try:
+                        pdf_hist = FPDF()
+                        pdf_hist.add_page()
+                        
+                        # Cabeçalho Oficial
+                        pdf_hist.set_font("Arial", "B", 16)
+                        pdf_hist.cell(0, 10, "RELATORIO DE EFICACIA DOUTRINARIA (GATE)", ln=True, align="C")
+                        pdf_hist.set_font("Arial", "B", 12)
+                        pdf_hist.cell(0, 10, f"Amostra Analisada: {len(df_adv_clean)} Ocorrencias", ln=True, align="C")
+                        pdf_hist.ln(10)
+                        
+                        # Corpo do Texto Analítico
+                        pdf_hist.set_font("Arial", "B", 14)
+                        pdf_hist.cell(0, 10, "Conclusoes da Inteligencia Artificial", ln=True)
+                        pdf_hist.set_font("Arial", "", 12)
+                        
+                        texto_pdf_limpo = limpar_texto_pdf_historico(relatorio_ia_historico)
+                        pdf_hist.multi_cell(0, 8, txt=texto_pdf_limpo)
+                        
+                        # Conversão Blindada para Download
+                        pdf_saida_hist = pdf_hist.output(dest="S")
+                        
+                        if isinstance(pdf_saida_hist, str):
+                            pdf_bytes_hist = pdf_saida_hist.encode('latin-1', errors='replace')
+                        else:
+                            pdf_bytes_hist = bytes(pdf_saida_hist)
+                            
+                        st.download_button(
+                            label="📥 BAIXAR RELATÓRIO DOUTRINÁRIO (PDF)", 
+                            data=pdf_bytes_hist, 
+                            file_name="Relatorio_Serie_Historica_GATE.pdf", 
+                            mime="application/pdf"
+                        )
+                    except Exception as e:
+                        st.error(f"Erro na geração do PDF Histórico: {str(e)}")
