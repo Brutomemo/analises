@@ -3,7 +3,7 @@ import requests
 import json
 import re
 
-def consultar_openai_aba1(dados_extraidos):
+def processar_ia_gate(dados_extraidos):
     """
     Versão segura para GitHub/Streamlit Cloud.
     """
