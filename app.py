@@ -177,7 +177,7 @@ st.markdown("""
     div[data-testid="stTabs"] button[data-baseweb="tab"]:hover { color: #FFD700; }
 
     /* Cores Táticas para o Efeito de Vidro (Agressividade e Receptividade) */
-    .card-red { border-left: 4px solid #ef4444 !important; }
+    .card-red { border-left: 4px solid #DDD !important; }
     .card-red:hover { box-shadow: 0 15px 40px rgba(239, 68, 68, 0.25) !important; border-color: rgba(239, 68, 68, 0.6) !important; }
     .card-red::before { background: linear-gradient(90deg, transparent, rgba(239, 68, 68, 0.15), transparent) !important; }
 

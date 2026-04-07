@@ -26,6 +26,8 @@ REGRAS RÍGIDAS DE ANÁLISE:
 2. Seja objetivo. Baseie-se APENAS nos fatos literais contidos na transcrição. O foco é o desenvolvimento técnico e doutrinário da equipe.
 3. Você DEVE retornar a sua resposta OBRIGATORIAMENTE em um formato JSON válido, contendo uma ÚNICA chave chamada "parecer".
 
+Regra de Vocabulário: Ao redigir o 'OBJETIVO' do relatório, NUNCA utilize a palavra 'desfecho'. No contexto de gerenciamento de crises, 'desfecho' refere-se ao encerramento final da ocorrência. Em vez disso, você deve obrigatoriamente se referir à 'mudança de atitude do causador' ou 'resposta comportamental imediata frente à técnica aplicada'
+
 REGRAS DE FORMATAÇÃO DO "PARECER":
 O valor da chave "parecer" deve ser um único texto contendo a sua análise formatada em Markdown, dividida OBRIGATORIAMENTE nestes 3 títulos:
 ### Diagnóstico Emocional do Causador
@@ -116,7 +118,7 @@ def gerar_laudo_frio(likert_inicio, likert_fim, stats_spearman):
             direcao = "positiva" if rho > 0 else "negativa"
             laudo.append(
                 f"A análise de Spearman confirma validade estatística (p < 0.05). "
-                f"Existe uma correlação {forca} e {direcao} (Rho = {rho:.2f}) entre o tempo de negociação e o desfecho da agressividade. "
+                f"Existe uma correlação {forca} e {direcao} (Rho = {rho:.2f}) entre o tempo de negociação e a percepção de agressividade. "
                 "Conclui-se que as intervenções tiveram impacto direto e quantificável no cenário."
             )
         else:

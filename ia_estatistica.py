@@ -7,7 +7,7 @@ def estruturar_resultado_para_ia(amostra_total, resultados_chi, resultados_ordin
     """
     payload = {
         "metadados_analise": {
-            "objetivo": "Investigar a associação entre técnicas de negociação e desfecho da interação, avaliando simultaneamente a existência de viés na percepção dos negociadores, com controle estatístico para variáveis de contexto (cenário) e efeitos agrupados por avaliador.",
+            "objetivo": "Investigar a associação entre técnicas de negociação e a reação comportamental do causador frente à intervenção, avaliando simultaneamente a existência de viés na percepção dos negociadores, com controle estatístico para variáveis de contexto (cenário) e efeitos agrupados por avaliador.",
             "metodos_aplicados": ["Qui-Quadrado (Viés)", "Regressão Logística Ordinal", "GEE - Equações de Estimação Generalizadas"],
             "tamanho_amostra_filtrada": amostra_total
         },
@@ -31,6 +31,8 @@ REGRAS RÍGIDAS:
 3. Diferencie claramente viés de percepção (relatado no Qui-Quadrado) da eficácia controlada (GEE/Ordinal).
 4. Explicite limitações se as amostras forem baixas.
 5. VOCÊ DEVE RESPONDER ÚNICA E EXCLUSIVAMENTE COM UM OBJETO JSON VÁLIDO. Nenhuma palavra fora do JSON.
+
+Regra de Vocabulário: Ao redigir o 'OBJETIVO' do relatório, NUNCA utilize a palavra 'desfecho'. No contexto de gerenciamento de crises, 'desfecho' refere-se ao encerramento final da ocorrência. Em vez disso, você deve obrigatoriamente se referir à 'mudança de atitude do causador' ou 'resposta comportamental imediata frente à técnica aplicada
 
 O JSON deve seguir EXATAMENTE esta estrutura de chaves:
 {
