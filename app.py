@@ -754,7 +754,7 @@ else:
         if not col_resposta:
             st.warning("⚠️ **Ativação Necessária:** Para desbloquear os motores de Regressão e GEE, crie uma coluna chamada **'Resposta da Técnica'** na aba de Técnicas no seu Airtable, contendo os valores: `-1` (Negativa), `0` (Neutra), `1` (Positiva) ou `N/D`.")
         else:
-            try:
+            try: # ---> ESTE É O TRY QUE ESTAVA SEM FECHAMENTO <---
                 import statsmodels.api as sm
                 import statsmodels.formula.api as smf
                 from statsmodels.miscmodels.ordinal_model import OrderedModel
@@ -770,6 +770,9 @@ else:
                 # Aplica a limpeza transformando tudo em minúsculo na hora de ler para não dar erro de maiúscula
                 df_adv['Resposta_Cat'] = df_adv[col_resposta].astype(str).str.lower().str.strip().map(mapa_resp).fillna('Nao_Observado')
                 df_adv_clean = df_adv[df_adv['Resposta_Cat'] != 'Nao_Observado'].copy()
+                
+                # LIMPEZA OBRIGATÓRIA PARA NÃO DAR ERRO DE 'NONE'
+                df_adv_clean = df_adv_clean.dropna(subset=['TÉCNICAS'])
                 
                 df_adv_clean['Resposta_Ord'] = pd.Categorical(df_adv_clean['Resposta_Cat'], categories=['Negativa', 'Neutra', 'Positiva'], ordered=True)
                 
@@ -825,25 +828,23 @@ else:
                             
                             # TRAVA DE SEGURANÇA N < 10
                             if len(df_adv_clean) < 10:
-                                st.warning(f"⚠️ **Amostra Reduzida (N={len(df_adv_clean)}):** Os Odds Ratios acima são instáveis. Com amostras pequenas, o modelo tende a superestimar o impacto (separação perfeita). Não use para validar doutrina ainda.")
+                                st.warning(f"⚠️ **Amostra Reduzida (N={len(df_adv_clean)}):** Os Odds Ratios acima são instáveis. Com amostras pequenas, o modelo tende a superestimar o impacto. Não use para validar doutrina ainda.")
                             else:
-                                st.success("💡 **Como interpretar:** Um Odds Ratio (OR) de `2.0` significa que aplicar esta técnica *dobra* a chance de subir um nível na resposta do causador, controlando pelo viés do negociador.")
+                                st.success("💡 **Como interpretar:** Um Odds Ratio (OR) de `2.0` significa que aplicar esta técnica *dobra* a chance de subir um nível na resposta do causador.")
                         else:
                             st.write("Nenhuma técnica isolada apresentou significância estatística (P < 0.05).")
                     except Exception as e:
-                        st.warning(f"O modelo Ordinal não convergiu. Geralmente ocorre por separação perfeita (técnicas com pouquíssimas amostras). Detalhe: {str(e)[:100]}")
+                        st.warning(f"O modelo Ordinal não convergiu. Geralmente ocorre por separação perfeita. Detalhe: {str(e)[:100]}")
                 st.markdown("</div>", unsafe_allow_html=True)
                 
-                # =========================================================
-                # =========================================================
                 # 3. Modelo Multinível (GEE)
-                # =========================================================
                 st.markdown("<div class='info-card'>", unsafe_allow_html=True)
                 st.markdown("##### 3. Robustez Hierárquica (Equações de Estimação Generalizadas - GEE)")
                 st.write("Controla o efeito de 'cluster' (negociador).")
                 
+                df_adv_clean['Sucesso'] = np.where(df_adv_clean['Resposta_Cat'] == 'Positiva', 1, 0)
+                
                 try:
-                    # Só executa se a coluna existir
                     if 'Tecnica_Patsy' in df_adv_clean.columns:
                         modelo_gee = smf.gee("Sucesso ~ C(Tecnica_Patsy)", 
                                              groups=df_adv_clean['Neg_Patsy'], 
@@ -852,7 +853,6 @@ else:
                                              cov_struct=sm.cov_struct.Exchangeable())
                         res_gee = modelo_gee.fit()
                         
-                        # Extração de resultados
                         gee_coefs = res_gee.params[res_gee.params.index.str.contains('Tecnica')]
                         gee_pvals = res_gee.pvalues[res_gee.params.index.str.contains('Tecnica')]
                         
@@ -868,7 +868,7 @@ else:
                             
                             # TRAVA DE SEGURANÇA: N < 10
                             if len(df_adv_clean) < 10:
-                                st.warning(f"⚠️ **Aviso:** Amostra reduzida (N={len(df_adv_clean)}). Coeficientes de 35.53 indicam instabilidade matemática.")
+                                st.warning(f"⚠️ **Aviso:** Amostra reduzida (N={len(df_adv_clean)}). Coeficientes altos indicam instabilidade matemática.")
                             else:
                                 st.success("💡 **Doutrina Validada:** Técnica sobreviveu ao controle de viés.")
                         else:
@@ -877,13 +877,19 @@ else:
                         st.error("Coluna 'TÉCNICAS' não processada.")
 
                 except Exception as e:
-                    # ESTA LINHA É O FECHAMENTO OBRIGATÓRIO (O "EXCEPT")
                     st.error(f"Erro no processamento GEE: {str(e)[:50]}")
                 
                 st.markdown("</div>", unsafe_allow_html=True)
-                st.markdown("---") # LINHA 884: AGORA ELA ESTÁ FORA DO BLOCO PROTEGIDO
 
-                # --- 4. TENDÊNCIA TEMPORAL ---
+            # ===============================================================
+            # AQUI ESTÁ O FECHAMENTO QUE FALTAVA DESDE A LINHA 25 DO SEU CÓDIGO
+            # ===============================================================
+            except ImportError:
+                st.error("🚨 A biblioteca **statsmodels** não está instalada no servidor. Rode `pip install statsmodels`.")
+            except Exception as e:
+                st.error(f"🚨 Erro geral na modelagem avançada: {str(e)}")
+
+        # --- 4. TENDÊNCIA TEMPORAL ---
         st.markdown("---")
         st.markdown("<h4 style='color: #f97316;'>📈 Volume e Tendência Temporal</h4>", unsafe_allow_html=True)
         
