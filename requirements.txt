@@ -1,10 +1,10 @@
 streamlit
-requests
-fpdf
 pandas
-matplotlib
-seaborn
+requests
+plotly
 wordcloud
+matplotlib
 scikit-learn
-pymupdf
+scipy
 fpdf
+kaleido
