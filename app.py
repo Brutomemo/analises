@@ -596,87 +596,76 @@ else:
                         </div>
                         """, unsafe_allow_html=True)
 
-                        # =========================================================
-                        # 6. Geração de PDF com Layout Tático (Cores e Estrutura)
-                        # =========================================================
-                        
-                        # Função auxiliar de limpeza (mantém a segurança contra acentos)
-                        def limpar_texto_pdf(texto_bruto):
-                            if isinstance(texto_bruto, dict):
-                                partes = [f"{chave.upper()}:\n{valor}" for chave, valor in texto_bruto.items()]
-                                texto_str = "\n\n".join(partes)
-                            else:
-                                texto_str = str(texto_bruto)
-                            texto_str = texto_str.replace("**", "").replace("### ", "")
-                            return unicodedata.normalize('NFKD', texto_str).encode('ASCII', 'ignore').decode('ASCII')
+                        # ========================================================
+            # 6. Geração de PDF com Layout Tático (Aba Individual)
+            # ========================================================
+            try:
+                pdf = FPDF()
+                pdf.add_page()
+                
+                # --- CABEÇALHO ---
+                pdf.set_fill_color(249, 115, 22)
+                pdf.rect(0, 0, 210, 40, 'F')
+                pdf.set_font("Arial", "B", 18)
+                pdf.set_text_color(255, 255, 255)
+                pdf.cell(0, 15, "LAUDO DE ANALISE POS-ACAO (APA)", ln=True, align="C")
+                pdf.set_font("Arial", "I", 12)
+                pdf.cell(0, 5, f"Unidade: GATE | ID: {apa_selecionada}", ln=True, align="C")
+                
+                # --- METADADOS ---
+                pdf.ln(20)
+                pdf.set_text_color(0, 0, 0)
+                pdf.set_font("Arial", "B", 14)
+                pdf.set_fill_color(240, 240, 240)
+                pdf.cell(0, 10, " 1. INFORMACOES DO INCIDENTE", ln=True, fill=True)
+                pdf.set_font("Arial", "", 11)
+                
+                dt_oc = limpar_valor(df_apa.get('Data da ocorrência'))
+                tip = limpar_valor(df_apa.get('Tipologia'))
+                neg = limpar_valor(df_apa.get('Negociador Principal'))
+                info_str = f"Data: {dt_oc} | Tipologia: {tip} | Negociador: {neg}"
+                
+                pdf.multi_cell(0, 8, txt=unicodedata.normalize('NFKD', info_str).encode('ASCII', 'ignore').decode('ASCII'), border='L')
+                
+                # --- LEITURA ANALÍTICA ---
+                pdf.ln(10)
+                pdf.set_font("Arial", "B", 14)
+                pdf.set_fill_color(249, 115, 22)
+                pdf.set_text_color(255, 255, 255)
+                pdf.cell(0, 10, " 2. INTELIGENCIA DE APOIO A DECISAO (IA)", ln=True, fill=True)
+                pdf.ln(5)
+                pdf.set_text_color(0, 0, 0)
+                pdf.set_font("Arial", "", 11)
+                
+                # Tratamento do texto
+                if isinstance(parecer_ia, dict):
+                    partes = [f"{k.upper()}:\n{v}" for k, v in parecer_ia.items()]
+                    texto_str = "\n\n".join(partes)
+                else:
+                    texto_str = str(parecer_ia)
+                texto_str = texto_str.replace("**", "").replace("### ", "")
+                texto_final_pdf = unicodedata.normalize('NFKD', texto_str).encode('ASCII', 'ignore').decode('ASCII')
+                
+                pdf.multi_cell(0, 7, txt=texto_final_pdf)
+                
+                # Conversão e Download
+                pdf_saida = pdf.output(dest="S")
+                if isinstance(pdf_saida, str):
+                    pdf_bytes = pdf_saida.encode('latin-1', errors='replace')
+                else:
+                    pdf_bytes = bytes(pdf_saida)
+                    
+                st.download_button(
+                    label="📥 BAIXAR ANÁLISE COMPLETA (PDF)", 
+                    data=pdf_bytes, 
+                    file_name=f"Laudo_GATE_{apa_selecionada}.pdf", 
+                    mime="application/pdf"
+                )
 
-                        try:
-                            pdf = FPDF()
-                            pdf.add_page()
-                            
-                            # --- CABEÇALHO ESTILIZADO (LARANJA GATE) ---
-                            pdf.set_fill_color(249, 115, 22) # Cor Laranja
-                            pdf.rect(0, 0, 210, 40, 'F')
-                            
-                            pdf.set_font("Arial", "B", 18)
-                            pdf.set_text_color(255, 255, 255) # Texto Branco
-                            pdf.cell(0, 15, "RELATÓRIO DE ANALISE POS-AÇÃO (APA)", ln=True, align="C")
-                            pdf.set_font("Arial", "I", 12)
-                            pdf.cell(0, 5, f"Unidade: GATE - Grupo de Acoes Taticas Especiais | ID: {apa_selecionada}", ln=True, align="C")
-                            
-                            # --- METADADOS (ESTILO CARD) ---
-                            pdf.ln(20)
-                            pdf.set_text_color(0, 0, 0) # Volta para Texto Preto
-                            pdf.set_font("Arial", "B", 14)
-                            pdf.set_fill_color(240, 240, 240) # Fundo Cinza Claro
-                            pdf.cell(0, 10, " 1. INFORMACOES DO INCIDENTE", ln=True, fill=True)
-                            
-                            pdf.set_font("Arial", "", 11)
-                            # Puxa os dados com segurança
-                            dt_oc = limpar_valor(df_apa.get('Data da ocorrência'))
-                            tip = limpar_valor(df_apa.get('Tipologia'))
-                            neg = limpar_valor(df_apa.get('Negociador Principal'))
-                            info_str = f"Data: {dt_oc} | Tipologia: {tip} | Negociador: {neg}"
-                            
-                            pdf.multi_cell(0, 8, txt=limpar_texto_pdf(info_str), border='L')
-                            
-                            # --- LEITURA ANALÍTICA IA ---
-                            pdf.ln(10)
-                            pdf.set_font("Arial", "B", 14)
-                            pdf.set_fill_color(249, 115, 22) # Laranja GATE
-                            pdf.set_text_color(255, 255, 255) # Texto Branco
-                            pdf.cell(0, 10, " 2. INTELIGENCIA DE APOIO AO PROCESSO DECISÓRIO (IA)", ln=True, fill=True)
-                            
-                            pdf.ln(5)
-                            pdf.set_text_color(0, 0, 0) # Texto Preto
-                            pdf.set_font("Arial", "", 11)
-                            
-                            # Passa a análise da IA pelo filtro e joga no PDF
-                            texto_final_pdf = limpar_texto_pdf(parecer_ia)
-                            pdf.multi_cell(0, 7, txt=texto_final_pdf)
-                            
-                            # ========================================================
-                            # CONVERSÃO BLINDADA PARA DOWNLOAD
-                            # ========================================================
-                            pdf_saida = pdf.output(dest="S")
-                            
-                            if isinstance(pdf_saida, str):
-                                pdf_bytes = pdf_saida.encode('latin-1', errors='replace')
-                            else:
-                                pdf_bytes = bytes(pdf_saida)
-                            # O botão de download que arrumamos antes
-                            st.download_button(
-                                label="📥 BAIXAR ANÁLISE COMPLETA (PDF)", 
-                                data=pdf_bytes, 
-                                file_name=f"Laudo_GATE_{apa_selecionada}.pdf", 
-                                mime="application/pdf"
-                            )
+            # >>> FECHAMENTO ALINHADO CORRETAMENTE <<<
+            except Exception as e:
+                st.error(f"Erro na geração do PDF: {str(e)}")
 
-                        # >>> ESSA É A LINHA QUE O PYTHON ESTÁ PROCURANDO <<<
-                        except Exception as e:
-                            st.error(f"Erro na geração do PDF: {str(e)}")
-                                                                        
-                      
     # =========================================================
     # ABA 2: PAINEL ESTRATÉGICO (HISTÓRICO)
     # =========================================================
@@ -1031,66 +1020,54 @@ else:
                             st.markdown("**JSON Retornado pela IA:**")
                             st.json(relatorio_json)
 
+                        # =========================================================
+                        # EXPORTAÇÃO DE PDF - SÉRIE HISTÓRICA (AGORA NO LUGAR CERTO)
+                        # =========================================================
+                        st.markdown("---")
+                        st.markdown("### 🖨️ Exportar Relatório")
+                        
+                        try:
+                            pdf_hist = FPDF()
+                            pdf_hist.add_page()
+                            
+                            pdf_hist.set_fill_color(249, 115, 22)
+                            pdf_hist.rect(0, 0, 210, 40, 'F')
+                            pdf_hist.set_font("Arial", "B", 16)
+                            pdf_hist.set_text_color(255, 255, 255)
+                            pdf_hist.cell(0, 15, "RELATORIO DA ANÁLISE - SÉRIE HISTÓRICA", ln=True, align="C")
+                            pdf_hist.set_font("Arial", "I", 12)
+                            pdf_hist.cell(0, 5, "GATE - Inteligencia de Apoio ao Processo Decisório", ln=True, align="C")
+                            
+                            pdf_hist.ln(20)
+                            pdf_hist.set_text_color(0, 0, 0)
+                            pdf_hist.set_font("Arial", "B", 14)
+                            pdf_hist.set_fill_color(240, 240, 240)
+                            pdf_hist.cell(0, 10, " 1. SINTESE DAS TECNICAS APLICADAS", ln=True, fill=True)
+                            pdf_hist.ln(5)
+                            
+                            pdf_hist.set_font("Arial", "", 12)
+                            
+                            # Puxa os dados que a IA acabou de gerar (relatorio_json)
+                            partes_hist = [f"{k.upper()}:\n{v}" for k, v in relatorio_json.items() if isinstance(v, str)]
+                            texto_hist_str = "\n\n".join(partes_hist).replace("**", "").replace("### ", "")
+                            texto_pdf_limpo_hist = unicodedata.normalize('NFKD', texto_hist_str).encode('ASCII', 'ignore').decode('ASCII')
+                            
+                            pdf_hist.multi_cell(0, 8, txt=texto_pdf_limpo_hist)
+                            
+                            pdf_saida_hist = pdf_hist.output(dest="S")
+                            if isinstance(pdf_saida_hist, str):
+                                pdf_bytes_hist = pdf_saida_hist.encode('latin-1', errors='replace')
+                            else:
+                                pdf_bytes_hist = bytes(pdf_saida_hist)
+                                
+                            st.download_button(
+                                label="📥 BAIXAR RELATÓRIO (PDF)", 
+                                data=pdf_bytes_hist, 
+                                file_name="Relatorio_de_análise_GATE.pdf", 
+                                mime="application/pdf"
+                            )
+                        except Exception as e:
+                            st.error(f"Erro na geração do PDF Série Histórica: {str(e)}")
+
                 except Exception as e:
                     st.error(f"Erro na geração do relatório de IA: {str(e)}")
-                    # =========================================================
-        # 5. EXPORTAÇÃO DE PDF - SÉRIE HISTÓRICA
-        # =========================================================
-        st.markdown("---")
-        st.markdown("### 🖨️ Exportar Relatório Doutrinário")
-        
-        # Garante que a IA gerou algum texto para colocar no PDF
-        # Substitua 'texto_da_ia_historica' pelo nome da sua variável real!
-        texto_para_pdf = texto_da_ia_historica if 'texto_da_ia_historica' in locals() else "Relatório gerado sem análise da IA."
-
-        def limpar_texto_pdf_historico(texto_bruto):
-            if isinstance(texto_bruto, dict):
-                partes = [f"{k.upper()}:\n{v}" for k, v in texto_bruto.items()]
-                texto_str = "\n\n".join(partes)
-            else:
-                texto_str = str(texto_bruto)
-            texto_str = texto_str.replace("**", "").replace("### ", "")
-            return unicodedata.normalize('NFKD', texto_str).encode('ASCII', 'ignore').decode('ASCII')
-
-        try:
-            pdf_hist = FPDF()
-            pdf_hist.add_page()
-            
-            # Cabeçalho Oficial
-            pdf_hist.set_fill_color(249, 115, 22) # Laranja GATE
-            pdf_hist.rect(0, 0, 210, 40, 'F')
-            
-            pdf_hist.set_font("Arial", "B", 16)
-            pdf_hist.set_text_color(255, 255, 255)
-            pdf_hist.cell(0, 15, "RELATORIO DE EFICACIA DOUTRINARIA", ln=True, align="C")
-            pdf_hist.set_font("Arial", "I", 12)
-            pdf_hist.cell(0, 5, "GATE - Inteligencia de Apoio a Decisao", ln=True, align="C")
-            
-            # Corpo do Texto
-            pdf_hist.ln(20)
-            pdf_hist.set_text_color(0, 0, 0)
-            pdf_hist.set_font("Arial", "B", 14)
-            pdf_hist.set_fill_color(240, 240, 240)
-            pdf_hist.cell(0, 10, " 1. CONCLUSAO ANALITICA DAS TECNICAS", ln=True, fill=True)
-            pdf_hist.ln(5)
-            
-            pdf_hist.set_font("Arial", "", 12)
-            texto_pdf_limpo = limpar_texto_pdf_historico(texto_para_pdf)
-            pdf_hist.multi_cell(0, 8, txt=texto_pdf_limpo)
-            
-            # Conversão e Download
-            pdf_saida_hist = pdf_hist.output(dest="S")
-            
-            if isinstance(pdf_saida_hist, str):
-                pdf_bytes_hist = pdf_saida_hist.encode('latin-1', errors='replace')
-            else:
-                pdf_bytes_hist = bytes(pdf_saida_hist)
-                
-            st.download_button(
-                label="📥 BAIXAR RELATÓRIO DOUTRINÁRIO (PDF)", 
-                data=pdf_bytes_hist, 
-                file_name="Relatorio_Doutrinario_GATE.pdf", 
-                mime="application/pdf"
-            )
-        except Exception as e:
-            st.error(f"Erro na geração do PDF Histórico: {str(e)}")
