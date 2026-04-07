@@ -244,10 +244,13 @@ import base64
 from PIL import Image
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
-# ATENÇÃO: Garanta que no GitHub a pasta se chama exatamente "Assets" com A maiúsculo
+# Verifique se a pasta no GitHub está com 'A' maiúsculo (Assets) ou minúsculo (assets). 
+# Se estiver minúsculo lá, mude aqui também!
 path_assets = os.path.join(script_dir, "Assets") 
-path_teste_gate = os.path.join(path_assets, "teste-gate.PNG")
-path_brasao_gate = os.path.join(path_assets, "BRASÃO GATE.PNG")
+
+# Atualize para os nomes limpos, todos em minúsculo
+path_teste_gate = os.path.join(path_assets, "teste_gate.png")
+path_brasao_gate = os.path.join(path_assets, "brasao_gate.png")
 
 try:
     with open(path_teste_gate, "rb") as img_file: 
