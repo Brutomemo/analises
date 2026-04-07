@@ -237,42 +237,112 @@ if 'stats_calculados' not in st.session_state: st.session_state['stats_calculado
 if 'dados_n8n' not in st.session_state: st.session_state['dados_n8n'] = None
 
 # =========================================================
-# 2. CABEÇALHO VISUAL
+# 2. CABEÇALHO VISUAL E FUNDO DO CABEÇALHO
 # =========================================================
 import os
 import base64
 from PIL import Image
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
-# Verifique se a pasta no GitHub está com 'A' maiúsculo (Assets) ou minúsculo (assets). 
-# Se estiver minúsculo lá, mude aqui também!
+# ATENÇÃO: Garanta que no GitHub a pasta se chama exatamente "Assets"
 path_assets = os.path.join(script_dir, "Assets") 
 
-# Atualize para os nomes limpos, todos em minúsculo
+# Padronizando todos os caminhos para nomes limpos e minúsculos
 path_teste_gate = os.path.join(path_assets, "teste_gate.png")
 path_brasao_gate = os.path.join(path_assets, "brasao_gate.png")
+path_negociacao_fundo = os.path.join(path_assets, "negociacao_novo_prata.png") # Nova Imagem
 
+# --- 1. PREPARAR IMAGENS (Codificar para Base64) ---
+# Inicializar como strings vazias para não quebrar se houver erro
+img_topo_b64 = ""
+img_fundo_header_b64 = ""
+
+# Topo (Banner principal)
 try:
     with open(path_teste_gate, "rb") as img_file: 
         img_topo_b64 = base64.b64encode(img_file.read()).decode()
+except: pass # Se der erro, img_topo_b64 continua vazio
+
+# Fundo do Header (Nova imagem faint na direita)
+try:
+    with open(path_negociacao_fundo, "rb") as img_file: 
+        img_fundo_header_b64 = base64.b64encode(img_file.read()).decode()
+exceptException as e: 
+    # Usar um erro visível durante o teste para confirmar se ele acha o arquivo
+    st.error(f"Erro ao carregar imagem de fundo (faint): Verifique se o arquivo existe em {path_negociacao_fundo}")
+
+# --- 2. RENDERIZAR BANNER TOPO (Existente) ---
+if img_topo_b64:
     st.markdown(f"""<div style="position: relative; width: 100%; height: 200px; border-radius: 2px; overflow: hidden; background-image: url('data:image/png;base64,{img_topo_b64}'); background-size: cover; background-position: center 40%; margin-bottom: 1rem;"><div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(180deg, rgba(5,5,5,0.1) 0%, rgba(249, 115, 22, 0.6) 100%);"></div></div>""", unsafe_allow_html=True)
-except Exception as e: 
-    # Agora ele vai te mostrar o erro na tela ao invés de esconder
-    st.error(f"Erro ao carregar topo: Verifique se o arquivo existe em {path_teste_gate}")
+
+
+# --- 3. CRIAR O RECIPIENTE DO CABEÇALHO COM O FUNDO FAINT ---
+# Este HTML cria um container que envolve todo o seu título e info-card,
+# aplicando a imagem 'negociacao_novo_prata.png' faint atrás dele.
+
+style_fundo_header = ""
+if img_fundo_header_b64:
+    # Este CSS aplica a imagem como fundo de um pseudo-elemento ::before,
+    # permitindo controlar a opacidade e o blur sem afetar o texto dentro.
+    style_fundo_header = f"""
+    <style>
+        .header-container-com-fundo {{
+            position: relative;
+            padding: 20px 0;
+            overflow: hidden; /* Garante que o blur não vaze */
+        }}
+        
+        .header-container-com-fundo::before {{
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0; /* Começa na direita */
+            width: 70%; /* Ocupa 70% da largura, da direita para o centro */
+            height: 100%;
+            background-image: url('data:image/png;base64,{img_fundo_header_b64}');
+            background-size: contain; /* Ajusta sem cortar a imagem tática */
+            background-position: right center; /* Gruda na direita, centraliza verticalmente */
+            background-repeat: no-repeat;
+            
+            /* Ajustes de faint (A opacidade é a chave aqui) */
+            opacity: 0.15; /* MUITO baixa opacidade, para ser apenas uma silhueta faint */
+            
+            /* Ajuste de Blur (levemente desfocada) */
+            filter: blur(10px); 
+            
+            z-index: -1; /* Garante que fica ATRAZ de todos os outros elementos */
+        }}
+    </style>
+    """
+
+# Injetar o CSS e abrir o container HTML
+st.markdown(style_fundo_header, unsafe_allow_html=True)
+st.markdown('<div class="header-container-com-fundo">', unsafe_allow_html=True)
+
+# --- 4. CONTEÚDO DO CABEÇALHO (Existente, dentro do novo container) ---
+# O brasão do GATE não muda, mas vamos usar o nome limpo no código
+path_brasao_gate_limpo = os.path.join(path_assets, "brasao_gate.png")
 
 col_logo, col_titulo, col_espaco = st.columns([1, 6, 1])
 
 with col_logo:
     try: 
-        st.image(Image.open(path_brasao_gate), use_container_width=True)
+        # Tenta carregar usando o nome limpo
+        st.image(Image.open(path_brasao_gate_limpo), use_container_width=True)
     except Exception as e: 
-        # Agora ele vai te mostrar o erro na tela ao invés de esconder
-        st.error(f"Erro ao carregar logo: Verifique se o arquivo existe em {path_brasao_gate}")
+        # Se falhar, tenta o nome antigo (para não quebrar tudo de uma vez)
+        try:
+            old_path_brasao = os.path.join(path_assets, "BRASÃO GATE.PNG")
+            st.image(Image.open(old_path_brasao), use_container_width=True)
+        except:
+            st.error(f"Erro ao carregar logo: Verifique se o arquivo existe em {path_brasao_gate_limpo}")
 
 with col_titulo:
     st.markdown('<h1 class="main-title">Sistema de Análise Qualitativa das Negociações - Estudo das Técnicas aplicadas</h1>', unsafe_allow_html=True)
     st.markdown('<p class="sub-title">Delta Negociação - GATE / PMESP</p>', unsafe_allow_html=True)
     st.markdown('<p style="color: #999; margin-top: 5px;">Desenvolvido por Cb PM Marcos - Supervisão: Cap PM Pavão</p>', unsafe_allow_html=True)
+    
+    # O info-card continua aqui, ele agora vai interagir com a imagem faint atrás dele
     st.markdown(f"""
 <div class="info-card">
     <p><strong>Sistema automatizado de análise qualitativa das Negociações em Incidentes Críticos atendidos pelo Grupo de Ações Táticas Especiais.</strong></p>
@@ -281,6 +351,8 @@ with col_titulo:
 </div>
 """, unsafe_allow_html=True)
 
+# Fechar o container do cabeçalho
+st.markdown('</div>', unsafe_allow_html=True)
 # =========================================================
 # 3. CONEXÃO E NAVEGAÇÃO PRINCIPAL (ABAS)
 # =========================================================
