@@ -1,284 +1,755 @@
 import streamlit as st
-import requests
-import fitz  # PyMuPDF
-from PIL import Image, ImageEnhance
+from PIL import Image
 import os
-import io
 import base64
+import pandas as pd
+import plotly.express as px
+import plotly.graph_objects as go
+import streamlit.components.v1 as components
+import tempfile
+from fpdf import FPDF
+import unicodedata
 
-# 1. CONFIGURAÇÃO DA PÁGINA (Fundamental para Layout Wide)
-st.set_page_config(
-    page_title="GATE - Analisador de APAs",
-    layout="wide",
-    initial_sidebar_state="collapsed"
-)
+# Importação dos nossos módulos blindados
+import airtable_link
+import analise
+import ia_link
 
-# --- 2. FUNÇÕES AUXILIARES ---
-def aplicar_opacidade_e_brilho(image_path, opacity=1.0, brightness=1.0):
-    """Abre uma imagem e aplica níveis de opacidade e brilho (usado na imagem de fundo)."""
+# =========================================================
+# FUNÇÕES AUXILIARES (TRATAMENTO DE DADOS DO AIRTABLE)
+# =========================================================
+def limpar_valor(val):
+    if isinstance(val, list): return val[0] if len(val) > 0 else "N/D"
+    return str(val) if pd.notna(val) else "N/D"
+
+def limpar_id(v):
+    if isinstance(v, list) and len(v) > 0: v = v[0]
+    v_str = str(v).strip()
+    if v_str.endswith('.0'): v_str = v_str[:-2]
+    return v_str
+
+def formatar_tempo_airtable(val):
     try:
-        img = Image.open(image_path)
-        if brightness != 1.0:
-            enhancer = ImageEnhance.Brightness(img)
-            img = enhancer.enhance(brightness)
-        if img.mode != 'RGBA':
-            img = img.convert('RGBA')
-        if opacity < 1.0:
-            alpha = img.getchannel('A')
-            new_alpha = alpha.point(lambda i: i * opacity)
-            img.putalpha(new_alpha)
-        return img
-    except FileNotFoundError:
-        return None
+        if isinstance(val, list): val = val[0]
+        if pd.isna(val) or val == "N/D" or val == "": return "N/D"
+        s = int(float(val))
+        h = s // 3600
+        m = (s % 3600) // 60
+        return f"{h:02d}h {m:02d}m"
+    except:
+        return str(val)
 
-def get_image_base64(image_path):
-    """Converte a imagem para Base64 para permitir sobreposição de degradê em HTML."""
-    try:
-        with open(image_path, "rb") as img_file:
-            return base64.b64encode(img_file.read()).decode()
-    except FileNotFoundError:
-        return None
+def somar_tempos_segundos(serie):
+    total_s = 0
+    for val in serie:
+        try:
+            if isinstance(val, list): val = val[0]
+            if pd.notna(val) and val != "N/D" and val != "":
+                total_s += int(float(val))
+        except: pass
+    h = total_s // 3600
+    m = (total_s % 3600) // 60
+    return f"{h:02d}h {m:02d}m"
 
-# --- RESOLUÇÃO DE CAMINHOS: ESTRATÉGIA DUAL (PC PESSOAL + TRABALHO) ---
-script_dir = os.path.dirname(os.path.abspath(__file__))
-path_assets_relativo = os.path.join(script_dir, "Assets")
-path_assets_absoluto = r"C:\Users\marco\Desktop\Analises\streamlit_app\Assets"
+# --- MOTOR GRÁFICO (MAPA EMOCIONAL COMPLETO & BLINDADO) ---
+escala_likert = {
+    # 1. Opções de Sistema / Inaudíveis
+    "❓ inaudível / não observado": 0, "inaudível": 0, "não observado": 0, "n/d": 0, "nao observado": 0,
 
-if os.path.exists(path_assets_relativo):
-    path_assets = path_assets_relativo
-elif os.path.exists(path_assets_absoluto):
-    path_assets = path_assets_absoluto
-else:
-    path_assets = path_assets_absoluto
+    # 2. Novos Termos da sua Base (Blinda contra erros de digitação)
+    "não agressivo": 1, "nao agressivo": 1, "não agresssivo": 1, "nao agresssivo": 1, "muito baixa": 1, "muito baixo": 1,
+    "baixo": 2, "baixa": 2, "pouco receptivo": 2,
+    "neutro": 3, "moderada": 3, "moderado": 3,
+    "receptivo": 4, "alta": 4, "alto": 4,
+    "muito receptivo": 5, "muito alta": 5, "muito alto": 5,
 
-path_teste_gate = os.path.join(path_assets, "teste-gate.png")
-path_brasao_gate = os.path.join(path_assets, "BRASÃO GATE.png")
-path_novo_prata = os.path.join(path_assets, "negociacao-novo-prata.png")
+    # 3. Mapeamento das Fórmulas com Emojis 
+    "🔴 reação negativa": 1, "⚪ reação neutra": 3, "🟢 reação positiva": 5
+}
 
+def converter_escala(val):
+    if not val: return 0
+    # Limpa emojis e espaços para garantir o "match"
+    v = str(val).lower().strip()
+    return escala_likert.get(v, 0)
 
-# --- 3. INJEÇÃO DE CSS (Vibe Premium/Electric Orange) ---
+# =========================================================
+# 1. CONFIGURAÇÃO DA PÁGINA E CSS (Estilo Positiv+ & GATE)
+# =========================================================
+st.set_page_config(page_title="GATE - Analisador de APAs", layout="wide", initial_sidebar_state="collapsed")
+
 st.markdown("""
 <style>
-    /* REDUZIR MARGEM SUPERIOR DO STREAMLIT */
-    .block-container {
-        padding-top: 1.5rem !important;
-        padding-bottom: 2rem !important;
+    /* Configurações Globais */
+    .block-container { padding-top: 1.5rem !important; padding-bottom: 2rem !important; z-index: 10;}
+    header {visibility: hidden;}
+    .stApp { background-color: #050505; color: #FFFFFF; overflow-x: hidden; }
+    
+    /* Fontes e Títulos */
+    .main-title {
+        font-family: 'Inter', sans-serif; font-size: 2.8rem; font-weight: 800;
+        background: linear-gradient(180deg, #FFFFFF 0%, #BBBBBB 100%);
+        -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin: 0; line-height: 1.1;
+    }
+    .sub-title { color: #f97316; font-weight: 600; font-size: 1.1rem; margin-top: 5px; margin-bottom: 0; }
+    
+    /* Efeito Vidro (Glassmorphism) e Animação de Luz (Sweep) nas Caixas */
+    .info-card { 
+        background: rgba(255, 255, 255, 0.03);
+        backdrop-filter: blur(16px) saturate(180%);
+        -webkit-backdrop-filter: blur(16px) saturate(180%);
+        border-top: 1px solid rgba(255, 255, 255, 0.15);
+        border-left: 1px solid rgba(255, 255, 255, 0.08);
+        border-right: 1px solid rgba(255, 255, 255, 0.08);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+        border-radius: 12px; padding: 15px; margin-top: 15px; margin-bottom: 15px; 
+        position: relative; overflow: hidden;
+        transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .info-card::before {
+        content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(249, 115, 22, 0.15), transparent);
+        transition: 0.5s; pointer-events: none; z-index: 20;
+    }
+    .info-card:hover {
+        background: rgba(249, 115, 22, 0.05);
+        border-color: rgba(249, 115, 22, 0.3);
+        transform: translateY(-5px);
+        box-shadow: 0 15px 40px rgba(249, 115, 22, 0.15);
+    }
+    .info-card:hover::before {
+        left: 100%; transition: 0.7s ease-in-out;
+    }
+
+    /* Efeito Expansivo nos Botões (Magnifying/Scale) */
+    div.stButton > button { 
+        background: linear-gradient(90deg, #f97316 0%, #fb923c 100%); 
+        color: white; border: none; padding: 0.7rem 2rem; border-radius: 8px; font-weight: bold; 
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); width: 100%; position: relative;
+    }
+    div.stButton > button:hover { 
+        box-shadow: 0 0 25px rgba(249, 115, 22, 0.6); 
+        transform: scale(1.03) translateY(-2px); 
     }
     
-    /* ESCONDER O HEADER PADRÃO (A faixa do topo do Streamlit) */
-    header {visibility: hidden;}
-
-    /* FUNDO PRINCIPAL - Preto profundo */
-    .stApp {
-        background-color: #050505;
-        color: #FFFFFF;
+    /* Efeito Ambient Blobs (Degradês Flutuantes no Fundo) */
+    .liquid-blob {
+        position: fixed; border-radius: 50%; filter: blur(80px); opacity: 0.15; z-index: -1;
+        animation: float 10s infinite alternate cubic-bezier(0.4, 0, 0.2, 1); pointer-events: none;
+    }
+    .blob1 { background-color: #f97316; width: 500px; height: 500px; top: -100px; left: -100px; animation-duration: 15s; }
+    .blob2 { background-color: #fb923c; width: 400px; height: 400px; top: 40%; right: -100px; animation-duration: 20s; animation-delay: -5s; }
+    .blob3 { background-color: #c2410c; width: 600px; height: 600px; bottom: -150px; left: 20%; animation-duration: 25s; animation-delay: -10s; }
+    
+    @keyframes float {
+        0% { transform: translate(0, 0) scale(1); }
+        100% { transform: translate(30px, 50px) scale(1.1); }
     }
 
-    /* TÍTULO PRINCIPAL - Com gradiente */
-    .main-title {
-        font-family: 'Inter', sans-serif;
-        font-size: 2.8rem;
-        font-weight: 800;
-        background: linear-gradient(180deg, #FFFFFF 0%, #BBBBBB 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        margin: 0;
-        line-height: 1.1;
-    }
+    /* Tabelas e Menus Base */
+    [data-testid="stDataFrame"] { background-color: rgba(255, 255, 255, 0.03); border-radius: 8px; }
+    #MainMenu {visibility: hidden;} footer {visibility: hidden;}
+    div[data-testid="stTabs"] button { font-size: 1.2rem; font-weight: bold; transition: color 0.3s;}
+    div[data-testid="stTabs"] button[data-baseweb="tab"]:hover { color: #f97316; }
 
-    /* SUBTÍTULO */
-    .sub-title {
-        color: #f97316; /* Laranja principal da referência */
-        font-weight: 600;
-        font-size: 1.1rem;
-        margin-top: 5px;
-        margin-bottom: 0;
-    }
+    /* Cores Táticas para o Efeito de Vidro (Agressividade e Receptividade) */
+    .card-red { border-left: 4px solid #ef4444 !important; }
+    .card-red:hover { box-shadow: 0 15px 40px rgba(239, 68, 68, 0.25) !important; border-color: rgba(239, 68, 68, 0.6) !important; }
+    .card-red::before { background: linear-gradient(90deg, transparent, rgba(239, 68, 68, 0.15), transparent) !important; }
 
-    /* CARD DE INFO - Glassmorphism sutil */
-    .info-card {
-        background: rgba(15, 15, 15, 0.7);
-        border: 1px solid rgba(249, 115, 22, 0.15);
-        border-radius: 12px;
-        padding: 15px;
-        margin-top: 25px;
-        margin-bottom: 25px;
-    }
-
-    /* AJUSTE DE IMAGENS - Força arredondamento e bordas para o tema */
-    [data-testid="stImage"] img {
-        border-radius: 8px;
-    }
-
-    /* BOTÃO - Gradiente e Efeito Glow */
-    div.stButton > button {
-        background: linear-gradient(90deg, #f97316 0%, #fb923c 100%);
-        color: white;
-        border: none;
-        padding: 0.7rem 2rem;
-        border-radius: 8px;
-        font-weight: bold;
-        transition: all 0.3s ease;
-        width: 100%;
-    }
-    div.stButton > button:hover {
-        box-shadow: 0 0 15px rgba(249, 115, 22, 0.6);
-        transform: translateY(-2px);
-    }
-
-    /* ESCONDER ELEMENTOS PADRÃO */
-    #MainMenu {visibility: hidden;}
-    footer {visibility: hidden;}
+    .card-green { border-left: 4px solid #22c55e !important; }
+    .card-green:hover { box-shadow: 0 15px 40px rgba(34, 197, 94, 0.25) !important; border-color: rgba(34, 197, 94, 0.6) !important; }
+    .card-green::before { background: linear-gradient(90deg, transparent, rgba(34, 197, 94, 0.15), transparent) !important; }
 </style>
+
+<div class="liquid-blob blob1"></div>
+<div class="liquid-blob blob2"></div>
+<div class="liquid-blob blob3"></div>
 """, unsafe_allow_html=True)
 
+# Cursor Customizado Global via JavaScript
+components.html("""
+<script>
+    const doc = window.parent.document;
+    if (!doc.getElementById('cursor-gate')) {
+        const cursor = doc.createElement('div');
+        cursor.id = 'cursor-gate';
+        cursor.style.position = 'fixed';
+        cursor.style.top = '0';
+        cursor.style.left = '0';
+        cursor.style.width = '20px';
+        cursor.style.height = '20px';
+        cursor.style.backgroundColor = 'rgba(255, 255, 255, 0.8)';
+        cursor.style.borderRadius = '50%';
+        cursor.style.pointerEvents = 'none';
+        cursor.style.zIndex = '999999';
+        cursor.style.transform = 'translate(-50%, -50%)';
+        cursor.style.transition = 'width 0.2s, height 0.2s, background-color 0.2s';
+        cursor.style.mixBlendMode = 'overlay';
+        cursor.style.backdropFilter = 'blur(2px)';
+        doc.body.appendChild(cursor);
+
+        doc.addEventListener('mousemove', (e) => {
+            cursor.style.left = e.clientX + 'px';
+            cursor.style.top = e.clientY + 'px';
+        });
+
+        doc.addEventListener('mousedown', () => {
+            cursor.style.width = '15px';
+            cursor.style.height = '15px';
+            cursor.style.backgroundColor = '#f97316';
+        });
+        
+        doc.addEventListener('mouseup', () => {
+            cursor.style.width = '20px';
+            cursor.style.height = '20px';
+            cursor.style.backgroundColor = 'rgba(255, 255, 255, 0.8)';
+        });
+    }
+</script>
+""", height=0, width=0)
+
+if 'stats_calculados' not in st.session_state: st.session_state['stats_calculados'] = None
+if 'dados_n8n' not in st.session_state: st.session_state['dados_n8n'] = None
 
 # =========================================================
-# --- ESTRUTURA VISUAL DA PÁGINA ---
+# 2. CABEÇALHO VISUAL
 # =========================================================
+script_dir = os.path.dirname(os.path.abspath(__file__))
+path_assets = os.path.join(script_dir, "Assets")
+path_teste_gate = os.path.join(path_assets, "teste-gate.PNG")
+path_brasao_gate = os.path.join(path_assets, "BRASÃO GATE.PNG")
 
-# 1. IMAGEM DO TOPO COM DEGRADÊ LARANJA (HTML/CSS)
-img_topo_b64 = get_image_base64(path_teste_gate)
-if img_topo_b64:
-    st.markdown(f"""
-    <div style="
-        position: relative;
-        width: 100%;
-        height: 250px;
-        border-radius: 8px;
-        overflow: hidden;
-        background-image: url('data:image/png;base64,{img_topo_b64}');
-        background-size: cover;
-        background-position: center 20%;
-        margin-bottom: 1rem;
-    ">
-        <div style="
-            position: absolute;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: linear-gradient(180deg, rgba(5,5,5,0.1) 0%, rgba(249, 115, 22, 0.6) 100%);
-        "></div>
-    </div>
-    """, unsafe_allow_html=True)
-else:
-    st.error(f"Erro: Imagem do topo não localizada em {path_teste_gate}")
+try:
+    with open(path_teste_gate, "rb") as img_file: img_topo_b64 = base64.b64encode(img_file.read()).decode()
+    st.markdown(f"""<div style="position: relative; width: 100%; height: 200px; border-radius: 2px; overflow: hidden; background-image: url('data:image/png;base64,{img_topo_b64}'); background-size: cover; background-position: center 40%; margin-bottom: 1rem;"><div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(180deg, rgba(5,5,5,0.1) 0%, rgba(249, 115, 22, 0.6) 100%);"></div></div>""", unsafe_allow_html=True)
+except: pass
 
-
-# 2. CABEÇALHO (Brasão | Título | Imagem de Fundo Novo Prata)
-col_logo, col_titulo, col_img_fundo = st.columns([1, 4, 3])
-
+col_logo, col_titulo, col_espaco = st.columns([1, 6, 1])
 with col_logo:
-    try:
-        img_brasao_original = Image.open(path_brasao_gate)
-        st.image(img_brasao_original, use_container_width=True)
-    except FileNotFoundError:
-        st.error(f"Brasão não localizado em {path_brasao_gate}")
-
+    try: st.image(Image.open(path_brasao_gate), use_container_width=True)
+    except: pass
 with col_titulo:
     st.markdown('<h1 class="main-title">Sistema de Análise Qualitativa</h1>', unsafe_allow_html=True)
     st.markdown('<p class="sub-title">Delta Negociação - GATE / PMESP</p>', unsafe_allow_html=True)
-
-with col_img_fundo:
-    img_op_processada = aplicar_opacidade_e_brilho(path_novo_prata, opacity=0.4, brightness=0.6)
-    if img_op_processada:
-        st.image(img_op_processada, use_container_width=True)
-    else:
-        st.warning(f"Imagem operacional não localizada em {path_novo_prata}")
-
-
-# 3. ÁREA DE INFO (Card)
-st.markdown(f"""
+    st.markdown('<p style="color: #888; margin-top: 5px;">Desenvolvido por Cb PM Marcos - Supervisão: Cap PM Pavão</p>', unsafe_allow_html=True)
+    st.markdown(f"""
 <div class="info-card">
-    <p><strong>Desenvolvido por Marcos Batista.</strong> Este sistema processa as Análises Pós-Ação (APAs) com rigor metodológico e estatístico.</p>
-    <p style="font-size: 0.9rem; color: #888;">A extração e os cálculos matemáticos são realizados localmente utilizando <strong>PyMuPDF</strong>, 
-    <strong>SciPy</strong> (Correlação de Spearman) e <strong>Scikit-Learn</strong> (Modelagem de Tópicos LDA). A IA atua exclusivamente como estruturadora de metadados qualitativos, garantindo a reprodutibilidade dos dados.</p>
+    <p><strong>Sistema automatizado de análise qualitativa das Negociações em Incidentes Críticos atendidos pelo Grupo de Ações Táticas Especiais.</strong></p>
+    <p style="font-size: 0.9rem; color: #888;">Os dados são geridos de forma automatizada em nuvem via <strong>Airtable</strong>. Cálculos matemáticos realizados localmente utilizando  
+    <strong>SciPy</strong> (Correlação de Spearman com Quartis) e <strong>Scikit-Learn</strong> (Modelagem N-Gramas). Modelo integra Inteligência Artificial atuando exclusivamente como estruturadora de metadados qualitativos da perspectiva tripla.</p>
 </div>
 """, unsafe_allow_html=True)
 
-
-# 4. ÁREA DE UPLOAD E INÍCIO DA ANÁLISE
-st.markdown("### 🛠️ Preparação da Análise")
-col_upload, col_espaco = st.columns([2, 1])
-
-with col_upload:
-    uploaded_file = st.file_uploader("Selecione a APA (PDF)", type=['pdf'])
-    st.markdown("<br>", unsafe_allow_html=True)
-
-
 # =========================================================
-# --- LÓGICA E RENDERIZAÇÃO ORIGINAL (Preservada) ---
+# 3. CONEXÃO E NAVEGAÇÃO PRINCIPAL (ABAS)
 # =========================================================
+with st.spinner("Sincronizando com Banco de Dados Seguro (Airtable)..."):
+    df_quali, status_q = airtable_link.buscar_dados_apa()
+    df_tec, status_t = airtable_link.buscar_todas_tecnicas()
 
-def extrair_dados_pdf(file_bytes):
-    doc = fitz.open(stream=file_bytes, filetype="pdf")
-    dados = {"causador": [], "negociador_p": [], "negociador_s": [], "texto_completo": ""}
-    for page in doc:
-        blocks = page.get_text("dict")["blocks"]
-        for b in blocks:
-            if "lines" in b:
-                for l in b["lines"]:
-                    for s in l["spans"]:
-                        texto = s["text"].strip()
-                        if not texto: continue
-                        color = s["color"]
-                        if color == 16711680 or color == 13500416: dados["causador"].append(texto)
-                        elif color == 255 or color == 128: dados["negociador_p"].append(texto)
-                        elif color == 32768 or color == 65280: dados["negociador_s"].append(texto)
-                        dados["texto_completo"] += texto + " "
-    return {k: " ".join(v) if isinstance(v, list) else v for k, v in dados.items()}
+if df_quali.empty:
+    st.error(f"Erro na conexão com Airtable: {status_q}")
+else:
+    aba_individual, aba_geral = st.tabs(["🎯 Visão Analítica por seleção", "📊 Painel Histórico"])
 
-def renderizar_relatorio_autoridade(dados_ia):
-    st.markdown("<hr style='border: 0.5px solid rgba(249,115,22,0.15)'>", unsafe_allow_html=True)
-    st.markdown('<h2 style="color: #f97316; margin-bottom: 20px;">📑 Relatório de Inteligência Pós-Ação</h2>', unsafe_allow_html=True)
-    
-    with st.expander("🔬 Metodologia Estatística Aplicada"):
-        st.markdown("""
-        <div style="color: #999; font-size: 0.9rem; line-height: 1.6;">
-        • <b>Modelagem de Tópicos (LDA):</b> Decomposição semântica para identificar convergência temática.<br>
-        • <b>Coeficiente de Spearman:</b> Validação de correlação técnica/comportamental.<br>
-        • <b>Diferença de Médias (Delta):</b> Comprovação matemática do desarme emocional.
-        </div>
-        """, unsafe_allow_html=True)
+    # =========================================================
+    # ABA 1: VISÃO DA NEGOCIAÇÃO SOBRE O INCIDENTE EM ANÁLISE
+    # =========================================================
+    with aba_individual:
+        st.markdown("### 🛠️ Etapa 1: Seleção e Metadados da Ocorrência")
+        
+        df_quali['Neg_Limpo'] = df_quali.get('Negociador Principal', '').apply(limpar_valor)
+        df_quali['Tip_Limpa'] = df_quali.get('Tipologia', '').apply(limpar_valor)
+        df_quali['Mod_Limpa'] = df_quali.get('Modalidade do incidente', '').apply(limpar_valor)
+        
+        if 'ID' not in df_quali.columns: df_quali['ID'] = "APA " + df_quali.index.astype(str)
+        df_quali['ID_Busca'] = df_quali.get('ID', df_quali.index).apply(limpar_id)
 
-    st.markdown('<h3 style="font-size: 1.2rem; color: #FFFFFF; margin-top:15px;">📝 Parecer Técnico</h3>', unsafe_allow_html=True)
-    parecer = dados_ia.get("parecer_tecnico", "Aguardando processamento...")
-    st.markdown(f"""
-    <div style="background: rgba(255,255,255,0.03); border-left: 4px solid #f97316; padding: 15px; border-radius: 4px; color: #DDD; font-style: italic; font-size:0.95rem;">
-        {parecer}
-    </div>
-    """, unsafe_allow_html=True)
+        # Filtros Locais (Agora com 3 colunas)
+        col_fi1, col_fi2, col_fi3 = st.columns(3)
+        with col_fi1:
+            lista_neg_ind = ["Todos"] + sorted(df_quali[df_quali['Neg_Limpo'] != 'N/D']['Neg_Limpo'].unique().tolist())
+            filtro_neg_ind = st.selectbox("Filtrar por Negociador:", lista_neg_ind, key="f_neg_ind")
+        with col_fi2:
+            lista_tip_ind = ["Todas"] + sorted(df_quali[df_quali['Tip_Limpa'] != 'N/D']['Tip_Limpa'].unique().tolist())
+            filtro_tip_ind = st.selectbox("Filtrar por Tipologia:", lista_tip_ind, key="f_tip_ind")
+        with col_fi3:
+            lista_mod_ind = ["Todas"] + sorted(df_quali[df_quali['Mod_Limpa'] != 'N/D']['Mod_Limpa'].unique().tolist())
+            filtro_mod_ind = st.selectbox("Filtrar por Modalidade:", lista_mod_ind, key="f_mod_ind")
 
-    st.markdown("<br>", unsafe_allow_html=True)
-    col1, col2 = st.columns(2)
-    chart_color = ["#f97316"] 
-
-    with col1:
-        st.markdown('<p style="color: #f97316; font-weight: bold; text-align:center;">Frequência de Técnicas</p>', unsafe_allow_html=True)
-        if "grafico_frequencia" in dados_ia:
-            st.bar_chart(dados_ia["grafico_frequencia"], color=chart_color)
-    
-    with col2:
-        st.markdown('<p style="color: #f97316; font-weight: bold; text-align:center;">Evolução de Receptividade</p>', unsafe_allow_html=True)
-        if "delta_emocional" in dados_ia:
-            st.line_chart(dados_ia["delta_emocional"], color=chart_color)
-
-    st.markdown("<br>", unsafe_allow_html=True)
-    col_btn, _ = st.columns([1, 2])
-    with col_btn:
-        st.button("🖨️ Exportar Relatório (PDF)")
-
-# --- PROCESSAMENTO ---
-if uploaded_file is not None:
-    if st.button("🚀 INICIAR ANÁLISE"):
-        with st.spinner('Executando algoritmos de extração e IA...'):
-            conteudo_extraido = extrair_dados_pdf(uploaded_file.getvalue())
-            n8n_url = "http://n8n:5678/webhook-test/analise-doc"
+        df_q_ind = df_quali.copy()
+        if filtro_neg_ind != "Todos": df_q_ind = df_q_ind[df_q_ind['Neg_Limpo'] == filtro_neg_ind]
+        if filtro_tip_ind != "Todas": df_q_ind = df_q_ind[df_q_ind['Tip_Limpa'] == filtro_tip_ind]
+        if filtro_mod_ind != "Todas": df_q_ind = df_q_ind[df_q_ind['Mod_Limpa'] == filtro_mod_ind]
+        
+        lista_apas = df_q_ind['ID_Busca'].tolist()
+        
+        if not lista_apas:
+            st.warning("Nenhuma ocorrência encontrada com estes filtros.")
+        else:
+            apa_selecionada = st.selectbox("Selecione a ID da APA para análise:", lista_apas, index=len(lista_apas)-1)
+            df_apa = df_quali[df_quali['ID_Busca'] == apa_selecionada].iloc[0]
             
-            try:
-                response = requests.post(n8n_url, json=conteudo_extraido) 
-                if response.status_code == 200:
-                    st.success("✅ Análise concluída com sucesso!")
-                    renderizar_relatorio_autoridade(response.json())
+            c1, c2, c3, c4 = st.columns(4)
+            with c1: st.markdown(f"<div class='info-card'><strong>Data:</strong><br>{limpar_valor(df_apa.get('Data da ocorrência'))}</div>", unsafe_allow_html=True)
+            with c2: st.markdown(f"<div class='info-card'><strong>Modalidade:</strong><br>{limpar_valor(df_apa.get('Modalidade do incidente'))}</div>", unsafe_allow_html=True)
+            with c3: st.markdown(f"<div class='info-card'><strong>Tipologia:</strong><br>{limpar_valor(df_apa.get('Tipologia'))}</div>", unsafe_allow_html=True)
+            with c4: st.markdown(f"<div class='info-card'><strong>Motivação:</strong><br>{limpar_valor(df_apa.get('Motivação'))}</div>", unsafe_allow_html=True)
+
+            c5, c6, c7, _ = st.columns(4)
+            with c5: st.markdown(f"<div class='info-card'><strong>Negociador Principal:</strong><br>{limpar_valor(df_apa.get('Negociador Principal'))}</div>", unsafe_allow_html=True)
+            with c6: st.markdown(f"<div class='info-card'><strong>Tempo Real:</strong><br>{formatar_tempo_airtable(df_apa.get('Tempo de Negociação Real'))}</div>", unsafe_allow_html=True)
+            with c7: st.markdown(f"<div class='info-card'><strong>Tempo Tático:</strong><br>{formatar_tempo_airtable(df_apa.get('Tempo de Negociação Tática'))}</div>", unsafe_allow_html=True)
+
+            st.markdown("---")
+
+            # --- BUSCA INTELIGENTE DE COLUNAS (Blinda contra mudanças de nome no Airtable) ---
+            def buscar_percepcao(papel, metrica, momento):
+                # Tira acentos e minúsculas para caçar a coluna independentemente de como foi digitada
+                def norm(t): return unicodedata.normalize('NFKD', str(t)).encode('ASCII', 'ignore').decode('ASCII').lower()
+                
+                for col in df_apa.index:
+                    col_norm = norm(col)
+                    if norm(papel) in col_norm and norm(metrica) in col_norm and norm(momento) in col_norm:
+                        return limpar_valor(df_apa[col])
+                return "N/D"
+
+            # VARIÁVEIS TEXTUAIS GLOBAIS DA APA (Extração Robusta dos 3 Observadores)
+            # Principal
+            p_agr_c_txt = buscar_percepcao('Principal', 'Agressividade', 'Chegada')
+            p_rec_c_txt = buscar_percepcao('Principal', 'Receptividade', 'Chegada')
+            p_agr_e_txt = buscar_percepcao('Principal', 'Agressividade', 'Encerramento')
+            p_rec_e_txt = buscar_percepcao('Principal', 'Receptividade', 'Encerramento')
+
+            # Secundário
+            s_agr_c_txt = buscar_percepcao('Secundario', 'Agressividade', 'Chegada')
+            s_rec_c_txt = buscar_percepcao('Secundario', 'Receptividade', 'Chegada')
+            s_agr_e_txt = buscar_percepcao('Secundario', 'Agressividade', 'Encerramento')
+            s_rec_e_txt = buscar_percepcao('Secundario', 'Receptividade', 'Encerramento')
+
+            # Líder
+            l_agr_c_txt = buscar_percepcao('Lider', 'Agressividade', 'Chegada')
+            l_rec_c_txt = buscar_percepcao('Lider', 'Receptividade', 'Chegada')
+            l_agr_e_txt = buscar_percepcao('Lider', 'Agressividade', 'Encerramento')
+            l_rec_e_txt = buscar_percepcao('Lider', 'Receptividade', 'Encerramento')
+
+            # Valores Numéricos (MANTIDOS PARA O GRÁFICO FUNCIONAR)
+            p_agr_c_num, p_rec_c_num = converter_escala(p_agr_c_txt), converter_escala(p_rec_c_txt)
+            p_agr_e_num, p_rec_e_num = converter_escala(p_agr_e_txt), converter_escala(p_rec_e_txt)
+            
+            s_agr_c_num, s_rec_c_num = converter_escala(s_agr_c_txt), converter_escala(s_rec_c_txt)
+            s_agr_e_num, s_rec_e_num = converter_escala(s_agr_e_txt), converter_escala(s_rec_e_txt)
+            
+            l_agr_c_num, l_rec_c_num = converter_escala(l_agr_c_txt), converter_escala(l_rec_c_txt)
+            l_agr_e_num, l_rec_e_num = converter_escala(l_agr_e_txt), converter_escala(l_rec_e_txt)
+
+            # =========================================================
+            # GRÁFICO DE TENDÊNCIA E EVOLUÇÃO (Com Seletor de Perspectiva)
+            # =========================================================
+            st.markdown("### 📈 Evolução Emocional")
+            p_escolhida = st.selectbox(
+                "Visualizar evolução sob a perspectiva do:", 
+                ["Negociador Principal", "Negociador Secundário", "Negociador Líder"],
+                key="selecao_negociador_grafico"
+            )
+
+            if p_escolhida == "Negociador Principal":
+                v_agr_c, v_rec_c = p_agr_c_num, p_rec_c_num
+                v_agr_e, v_rec_e = p_agr_e_num, p_rec_e_num
+            elif p_escolhida == "Negociador Secundário":
+                v_agr_c, v_rec_c = s_agr_c_num, s_rec_c_num
+                v_agr_e, v_rec_e = s_agr_e_num, s_rec_e_num
+            else:
+                v_agr_c, v_rec_c = l_agr_c_num, l_rec_c_num
+                v_agr_e, v_rec_e = l_agr_e_num, l_rec_e_num
+
+            fig_trend = go.Figure()
+            fig_trend.add_trace(go.Scatter(x=["Chegada", "Encerramento"], y=[v_agr_c, v_agr_e], mode='lines+markers', name='Agressividade', line=dict(color='#ef4444', width=4), marker=dict(size=12)))
+            fig_trend.add_trace(go.Scatter(x=["Chegada", "Encerramento"], y=[v_rec_c, v_rec_e], mode='lines+markers', name='Receptividade', line=dict(color='#22c55e', width=4), marker=dict(size=12)))
+            fig_trend.update_layout(
+                paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font_color="#FFF",
+                yaxis=dict(title="Nível Qualitativo", tickvals=[0,1,2,3,4,5], ticktext=["Não obs.", "Muito Baixa", "Baixa", "Moderada", "Alta", "Muito Alta"], range=[-0.5, 5.5]),
+                xaxis=dict(title="Momento da Ocorrência"), legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
+            )
+            st.plotly_chart(fig_trend, use_container_width=True)
+
+            st.markdown("---")
+
+            # 2. BLOCO DE PERCEPÇÕES (COM EFEITO DE VIDRO E CORES TÁTICAS)
+            st.markdown("### 🧠 Percepções da Equipe (Textual)")
+            tab_chegada, tab_encerramento = st.tabs(["➡️ Na Chegada à Ocorrência", "🛑 No Encerramento"])
+            
+            # Função para desenhar o card de vidro com a cor tática escolhida
+            def render_card(label, valor, cor_classe):
+                return f"<div class='info-card {cor_classe}' style='padding: 12px; margin-top: 5px; margin-bottom: 5px;'><strong style='color: #bbb;'>{label}:</strong><br><span style='font-size: 1.1rem; font-weight: bold;'>{valor}</span></div>"
+
+            with tab_chegada:
+                col_p_c, col_s_c, col_l_c = st.columns(3)
+                with col_p_c:
+                    st.markdown("**Negociador Principal**")
+                    st.markdown(render_card("Agressividade", p_agr_c_txt, "card-red"), unsafe_allow_html=True)
+                    st.markdown(render_card("Receptividade", p_rec_c_txt, "card-green"), unsafe_allow_html=True)
+                with col_s_c:
+                    st.markdown("**Negociador Secundário**")
+                    st.markdown(render_card("Agressividade", s_agr_c_txt, "card-red"), unsafe_allow_html=True)
+                    st.markdown(render_card("Receptividade", s_rec_c_txt, "card-green"), unsafe_allow_html=True)
+                with col_l_c:
+                    st.markdown("**Negociador Líder**")
+                    st.markdown(render_card("Agressividade", l_agr_c_txt, "card-red"), unsafe_allow_html=True)
+                    st.markdown(render_card("Receptividade", l_rec_c_txt, "card-green"), unsafe_allow_html=True)
+
+            with tab_encerramento:
+                col_p_e, col_s_e, col_l_e = st.columns(3)
+                with col_p_e:
+                    st.markdown("**Negociador Principal**")
+                    st.markdown(render_card("Agressividade", p_agr_e_txt, "card-red"), unsafe_allow_html=True)
+                    st.markdown(render_card("Receptividade", p_rec_e_txt, "card-green"), unsafe_allow_html=True)
+                with col_s_e:
+                    st.markdown("**Negociador Secundário**")
+                    st.markdown(render_card("Agressividade", s_agr_e_txt, "card-red"), unsafe_allow_html=True)
+                    st.markdown(render_card("Receptividade", s_rec_e_txt, "card-green"), unsafe_allow_html=True)
+                with col_l_e:
+                    st.markdown("**Negociador Líder**")
+                    st.markdown(render_card("Agressividade", l_agr_e_txt, "card-red"), unsafe_allow_html=True)
+                    st.markdown(render_card("Receptividade", l_rec_e_txt, "card-green"), unsafe_allow_html=True)
+
+            st.markdown("---")
+
+            # 3. TRANSCRIÇÕES
+            st.markdown("### 🗣️ Transcrições Literal")
+            with st.expander("Ver transcrições completas da ocorrência", expanded=False):
+                st.markdown("**Causador do Incidente:**")
+                st.write(limpar_valor(df_apa.get('TRANSCRIÇÃO DO CAUSADOR')))
+                st.markdown("**Negociador Principal:**")
+                st.write(limpar_valor(df_apa.get('TRANSCRIÇÃO DO NEGOCIADOR PRINCIPAL')))
+                st.markdown("**Negociador Secundário:**")
+                st.write(limpar_valor(df_apa.get('TRANSCRIÇÃO DO NEGOCIADOR SECUNDÁRIO')))
+
+            st.markdown("---")
+
+            # 4. TABELA DE FREQUÊNCIA (CRUZAMENTO DEFINITIVO)
+            st.markdown("<h4 style='color: #f97316;'>📉 Frequência das Técnicas Aplicadas (Nesta APA)</h4>", unsafe_allow_html=True)
+            
+            if not df_tec.empty:
+                col_vinculo = next((c for c in df_tec.columns if 'VINCULO' in c.upper() or 'VÍNCULO' in c.upper()), None)
+                
+                if col_vinculo:
+                    id_visivel = str(apa_selecionada).strip()
+                    df_tec['Vinculo_Str'] = df_tec[col_vinculo].astype(str).str.replace(r"[\[\]'\"]", "", regex=True).str.strip()
+                    df_tec_filtrado = df_tec[df_tec['Vinculo_Str'] == id_visivel]
+                    
+                    if df_tec_filtrado.empty and 'Airtable_Record_ID' in df_apa:
+                        id_interno = str(df_apa['Airtable_Record_ID']).strip()
+                        df_tec_filtrado = df_tec[df_tec[col_vinculo].astype(str).str.contains(id_interno, na=False, regex=False)]
+                    
+                    if not df_tec_filtrado.empty:
+                        col_tecnica = next((col for col in ['TÉCNICAS', 'TECNICAS', 'TÉCNICA', 'TECNICA'] if col in df_tec_filtrado.columns), None)
+                        if col_tecnica:
+                            freq_abs = df_tec_filtrado[col_tecnica].value_counts()
+                            freq_rel = (df_tec_filtrado[col_tecnica].value_counts(normalize=True) * 100).round(1)
+                            df_freq = pd.DataFrame({'Frequência Absoluta': freq_abs, 'Frequência Relativa (%)': freq_rel}).reset_index().rename(columns={col_tecnica: 'Técnica Empregada'})
+                            
+                            st.dataframe(df_freq, use_container_width=True, hide_index=True)
+                            
+                            st.markdown("<h5 style='text-align:center; color: #FFFFFF; margin-top: 20px;'>Mapa de Árvore (Treemap)</h5>", unsafe_allow_html=True)
+                            fig_tree = px.treemap(df_freq, path=['Técnica Empregada'], values='Frequência Absoluta', color='Frequência Absoluta', color_continuous_scale='Oranges')
+                            fig_tree.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font_color="#FFF", margin=dict(t=10, l=10, r=10, b=10))
+                            st.plotly_chart(fig_tree, use_container_width=True)
+                        else:
+                            st.warning("Técnicas encontradas, mas a coluna 'TÉCNICAS' não foi identificada no Airtable.")
+                    else:
+                        st.info(f"Nenhuma técnica cruzou com a APA atual.")
                 else:
-                    st.error(f"Erro no n8n: {response.status_code}")
-            except Exception as e:
-                st.error(f"Erro na comunicação com o servidor: {e}")
+                    st.warning("A coluna de vínculo (ex: 'Vinculo_APA') não foi encontrada na aba de técnicas.")
+            else:
+                st.warning("Tabela de técnicas vazia no Airtable.")
+            
+            st.markdown("---")
+
+            # ETAPA 2 DA ABA INDIVIDUAL
+            st.markdown("### 📊 Etapa 2: Análise Semântica (Scikit-Learn)")
+            if st.button("⚙️ 2. GERAR NUVEM DE PALAVRAS E N-GRAMS"):
+                with st.spinner("Processando N-Grams e plotando gráficos..."):
+                    texto_c = limpar_valor(df_apa.get('TRANSCRIÇÃO DO CAUSADOR'))
+                    texto_np = limpar_valor(df_apa.get('TRANSCRIÇÃO DO NEGOCIADOR PRINCIPAL'))
+                    texto_ns = limpar_valor(df_apa.get('TRANSCRIÇÃO DO NEGOCIADOR SECUNDÁRIO'))
+                    texto_total = f"{texto_c} {texto_np} {texto_ns}"
+                    st.session_state['stats_calculados'] = {
+                        "topicos": analise.extrair_topicos_ngrams(texto_total) if len(texto_total) > 10 else ["Texto insuficiente"],
+                        "wc_c": analise.gerar_wordcloud(texto_c) if len(texto_c) > 5 else None,
+                        "wc_np": analise.gerar_wordcloud(texto_np) if len(texto_np) > 5 else None,
+                        "wc_ns": analise.gerar_wordcloud(texto_ns) if len(texto_ns) > 5 else None
+                    }
+
+            if st.session_state['stats_calculados']:
+                stats = st.session_state['stats_calculados']
+                st.markdown('<div class="info-card"><h4 style="color: #f97316; margin-top: 0;">🧠 Temas Dominantes Globais (N-Gramas)</h4>', unsafe_allow_html=True)
+                for t in stats['topicos']: st.markdown(t)
+                st.markdown('</div>', unsafe_allow_html=True)
+                
+                c_w1, c_w2, c_w3 = st.columns(3)
+                with c_w1:
+                    st.markdown('<p style="color: #f97316; font-weight: bold; text-align:center;">Causador</p>', unsafe_allow_html=True)
+                    if stats['wc_c']: st.pyplot(stats['wc_c'])
+                with c_w2:
+                    st.markdown('<p style="color: #f97316; font-weight: bold; text-align:center;">Negociador Principal</p>', unsafe_allow_html=True)
+                    if stats['wc_np']: st.pyplot(stats['wc_np'])
+                with c_w3:
+                    st.markdown('<p style="color: #f97316; font-weight: bold; text-align:center;">Negociador Secundário</p>', unsafe_allow_html=True)
+                    if stats['wc_ns']: st.pyplot(stats['wc_ns'])
+
+            st.markdown("---")
+            
+            # =========================================================
+            # ETAPA 3: INTELIGÊNCIA ARTIFICIAL E LAUDO TÉCNICO
+            # =========================================================
+            st.markdown("### 📄 Etapa 3: Inteligência de Apoio à Decisão e Exportação")
+            
+            # ATENÇÃO: Substitui pela tua URL real do n8n (usando host.docker.internal ou o IP)
+            url_n8n = "http://host.docker.internal:5680/webhook/analise-doc"
+            
+            if st.button("📡 3. GERAR ANALYTICS E EXPORTAR ANÁLISE (PDF)"):
+                with st.spinner("Compilando dados táticos, consultando IA e desenhando PDF..."):
+                    try:
+                        # 1. Captura direta para evitar campos "Não informados"
+                        t_causador = limpar_valor(df_apa.get('TRANSCRIÇÃO DO CAUSADOR'))
+                        t_principal = limpar_valor(df_apa.get('TRANSCRIÇÃO DO NEGOCIADOR PRINCIPAL'))
+                        t_secundario = limpar_valor(df_apa.get('TRANSCRIÇÃO DO NEGOCIADOR SECUNDÁRIO'))
+
+                        df_transcricoes = pd.DataFrame([{
+                            "Causador": t_causador,
+                            "Neg_Principal": t_principal,
+                            "Neg_Secundario": t_secundario
+                        }])
+
+                        # 2. Recupera tópicos da Etapa 2
+                        temas_extraidos = st.session_state['stats_calculados']['topicos'] if st.session_state.get('stats_calculados') else ["Etapa 2 não executada"]
+
+                        # 3. Prepara Metadados para a IA "ler" os gráficos
+                        meta_dict = df_apa.to_dict()
+                        meta_dict["temas_dominantes_scikit_learn"] = " | ".join(temas_extraidos)
+                        df_meta = pd.DataFrame([meta_dict])
+                                                
+                        dados_extraidos = {
+                            "transcricao": df_transcricoes,
+                            "metadados": df_meta
+                        }
+
+                        # 4. Envio para n8n
+                        resultado_ia = ia_link.enviar_para_n8n(dados_extraidos, url_n8n)
+                        
+                        # Processamento do Parecer (Modo RAIO-X incluído)
+                        if isinstance(resultado_ia, dict) and 'parecer' in resultado_ia:
+                            parecer_ia = resultado_ia['parecer']
+                        else:
+                            parecer_ia = f"Sinal recebido, mas os dados estão incompletos ou a URL precisa de ajuste. Bruto: {resultado_ia}"
+
+                        # 5. Laudo Frio (Estatístico) - Utilizando a Média Válida da Equipe!
+                        def calcular_media_equipe(*valores):
+                            validos = [v for v in valores if v > 0]
+                            return sum(validos) / len(validos) if validos else 0
+
+                        likert_inicio = {
+                            'agressividade_media': calcular_media_equipe(p_agr_c_num, s_agr_c_num, l_agr_c_num), 
+                            'receptividade_media': calcular_media_equipe(p_rec_c_num, s_rec_c_num, l_rec_c_num)
+                        }
+                        likert_fim = {
+                            'agressividade_media': calcular_media_equipe(p_agr_e_num, s_agr_e_num, l_agr_e_num), 
+                            'receptividade_media': calcular_media_equipe(p_rec_e_num, s_rec_e_num, l_rec_e_num)
+                        }
+                        stats_spearman = {'valido': False, 'p_value': 0.0, 'rho': 0.0} 
+                        laudo_frio = ia_link.gerar_laudo_frio(likert_inicio, likert_fim, stats_spearman)
+
+                        # Exibição na Tela (Glassmorphism)
+                        st.markdown(f"""
+                        <div class="info-card" style="border-left: 4px solid #f97316;">
+                            <h4 style="color: #f97316; margin-top: 0;">Inferência Estatística (Motor Frio)</h4>
+                            <p style="font-size: 1.05rem; line-height: 1.6;">{laudo_frio}</p>
+                            <hr style="border-color: rgba(255,255,255,0.1); margin: 15px 0;">
+                            <h4 style="color: #06C755; margin-top: 0;">Leitura Analítica (IA)</h4>
+                            <p style="font-size: 1.05rem; line-height: 1.6;">{parecer_ia}</p>
+                        </div>
+                        """, unsafe_allow_html=True)
+
+                        # 6. Geração de PDF Blindada
+                        def limpar_texto_pdf(texto):
+                            return unicodedata.normalize('NFKD', str(texto)).encode('ASCII', 'ignore').decode('ASCII')
+
+                        pdf = FPDF()
+                        pdf.add_page()
+                        pdf.set_font("Arial", "B", 16)
+                        pdf.cell(0, 10, "LAUDO DE ANALISE POS-ACAO (APA)", ln=True, align="C")
+                        pdf.set_font("Arial", "B", 12)
+                        pdf.cell(0, 10, "Delta Negociacao - GATE / PMESP", ln=True, align="C")
+                        pdf.ln(10)
+                        
+                        pdf.set_font("Arial", "", 12)
+                        pdf.cell(0, 8, f"ID da APA: {apa_selecionada}", ln=True)
+                        pdf.cell(0, 8, limpar_texto_pdf(f"Tipologia: {limpar_valor(df_apa.get('Tipologia'))}"), ln=True)
+                        pdf.ln(5)
+
+                        pdf.set_font("Arial", "B", 14)
+                        pdf.cell(0, 10, "1. Leitura Analitica", ln=True)
+                        pdf.set_font("Arial", "", 12)
+                        pdf.multi_cell(0, 8, txt=limpar_texto_pdf(parecer_ia))
+                        
+                        pdf_bytes = pdf.output(dest="S")
+                        st.download_button(label="📥 BAIXAR ANÁLISE COMPLETA (PDF)", data=pdf_bytes, file_name=f"Laudo_GATE_{apa_selecionada}.pdf", mime="application/pdf")
+
+                    except Exception as e:
+                        st.error(f"Erro no processamento: {e}")
+
+    # =========================================================
+    # ABA 2: PAINEL ESTRATÉGICO (HISTÓRICO)
+    # =========================================================
+    with aba_geral:
+        st.markdown("### 🧠 Inteligência Coletiva - Histórico GATE")
+        st.markdown("<h5 style='color: #f97316;'>Filtros de Cenário</h5>", unsafe_allow_html=True)
+        
+        # Filtros Globais (Com 3 colunas)
+        col_f1, col_f2, col_f3 = st.columns(3)
+        with col_f1:
+            lista_neg_g = ["Todos"] + sorted(df_quali[df_quali['Neg_Limpo'] != 'N/D']['Neg_Limpo'].unique().tolist())
+            filtro_neg_g = st.selectbox("Filtrar por Negociador:", lista_neg_g, key="f_neg_geral")
+        with col_f2:
+            lista_tip_g = ["Todas"] + sorted(df_quali[df_quali['Tip_Limpa'] != 'N/D']['Tip_Limpa'].unique().tolist())
+            filtro_tip_g = st.selectbox("Filtrar por Tipologia:", lista_tip_g, key="f_tip_geral")
+        with col_f3:
+            lista_mod_g = ["Todas"] + sorted(df_quali[df_quali['Mod_Limpa'] != 'N/D']['Mod_Limpa'].unique().tolist())
+            filtro_mod_g = st.selectbox("Filtrar por Modalidade:", lista_mod_g, key="f_mod_geral")
+
+        df_quali_filt = df_quali.copy()
+        if filtro_neg_g != "Todos": df_quali_filt = df_quali_filt[df_quali_filt['Neg_Limpo'] == filtro_neg_g]
+        if filtro_tip_g != "Todas": df_quali_filt = df_quali_filt[df_quali_filt['Tip_Limpa'] == filtro_tip_g]
+        if filtro_mod_g != "Todas": df_quali_filt = df_quali_filt[df_quali_filt['Mod_Limpa'] == filtro_mod_g]
+
+        st.markdown("---")
+        col_m1, col_m2, col_m3 = st.columns(3)
+        with col_m1: st.metric("Ocorrências Analisadas", len(df_quali_filt))
+        with col_m2: st.metric("Tempo Total Real", somar_tempos_segundos(df_quali_filt.get('Tempo de Negociação Real', [])))
+        with col_m3: st.metric("Tempo Total Tático", somar_tempos_segundos(df_quali_filt.get('Tempo de Negociação Tática', [])))
+
+        st.markdown("---")
+        st.markdown("#### Ranking de Técnicas (Filtrado)")
+        if not df_tec.empty:
+            df_tec['Neg_Limpo'] = df_tec['Negociador Principal do incidente crítico'].apply(limpar_valor) if 'Negociador Principal do incidente crítico' in df_tec.columns else 'N/D'
+            df_tec['Tip_Limpa'] = df_tec['Tipologia do incidente crítico'].apply(limpar_valor) if 'Tipologia do incidente crítico' in df_tec.columns else 'N/D'
+            df_tec['Mod_Limpa'] = df_tec['Modalidade do incidente crítico'].apply(limpar_valor) if 'Modalidade do incidente crítico' in df_tec.columns else 'N/D'
+            
+            df_tec_filt = df_tec.copy()
+            if filtro_neg_g != "Todos": df_tec_filt = df_tec_filt[df_tec_filt['Neg_Limpo'] == filtro_neg_g]
+            if filtro_tip_g != "Todas": df_tec_filt = df_tec_filt[df_tec_filt['Tip_Limpa'] == filtro_tip_g]
+            if filtro_mod_g != "Todas": df_tec_filt = df_tec_filt[df_tec_filt['Mod_Limpa'] == filtro_mod_g]
+            
+            if not df_tec_filt.empty:
+                col_t = next((col for col in ['TÉCNICAS', 'TECNICAS', 'TÉCNICA', 'TECNICA'] if col in df_tec_filt.columns), None)
+                if col_t:
+                    freq_global = df_tec_filt[col_t].value_counts().reset_index()
+                    freq_global.columns = ['Técnica', 'Vezes Utilizada']
+                    
+                    c_tab, c_tree = st.columns([1, 2])
+                    with c_tab: st.dataframe(freq_global, use_container_width=True, hide_index=True)
+                    with c_tree:
+                        fig_g = px.treemap(freq_global, path=['Técnica'], values='Vezes Utilizada', color='Vezes Utilizada', color_continuous_scale='Oranges')
+                        fig_g.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font_color="#FFF", margin=dict(t=0, l=0, r=0, b=0))
+                        st.plotly_chart(fig_g, use_container_width=True)
+                else: st.warning("Coluna 'TÉCNICAS' não encontrada.")
+            else: st.info("Nenhuma técnica encontrada para os filtros selecionados.")
+            
+        # =========================================================
+        # MOTOR ESTATÍSTICO AVANÇADO (SPEARMAN & QUI-QUADRADO)
+        # =========================================================
+        st.markdown("---")
+        st.markdown("<h4 style='color: #f97316;'>🔬 Análise Inferencial e Correlações</h4>", unsafe_allow_html=True)
+        
+        # Buscador Inteligente para as colunas do Histórico
+        def achar_coluna(df, papel, metrica, momento):
+            import unicodedata
+            def norm(t): return unicodedata.normalize('NFKD', str(t)).encode('ASCII', 'ignore').decode('ASCII').lower()
+            for col in df.columns:
+                col_norm = norm(col)
+                if norm(papel) in col_norm and norm(metrica) in col_norm and norm(momento) in col_norm:
+                    return col
+            return None
+
+        col_agr_c = achar_coluna(df_quali_filt, 'Principal', 'Agressividade', 'Chegada')
+        col_agr_e = achar_coluna(df_quali_filt, 'Principal', 'Agressividade', 'Encerramento')
+        
+        df_sp = df_quali_filt.copy()
+        
+        c_sp1, c_sp2 = st.columns(2)
+        
+        with c_sp1:
+            st.markdown("<div class='info-card'><strong>Teste de Spearman: Tempo vs. Desescalada</strong>", unsafe_allow_html=True)
+            if col_agr_c and col_agr_e and 'Tempo de Negociação Real' in df_sp.columns:
+                df_sp['Agr_Inicio'] = df_sp[col_agr_c].apply(converter_escala)
+                df_sp['Agr_Fim'] = df_sp[col_agr_e].apply(converter_escala)
+                # Delta = Queda de Agressividade (Início - Fim). Se for positivo, houve desescalada.
+                df_sp['Delta_Agressividade'] = df_sp['Agr_Inicio'] - df_sp['Agr_Fim']
+                
+                # Converte o tempo do Airtable para minutos numéricos para o motor SciPy não travar
+                def tempo_para_minutos(val):
+                    try:
+                        if isinstance(val, list): val = val[0]
+                        if pd.isna(val) or val == "N/D" or val == "": return 0
+                        return int(float(val)) / 60
+                    except:
+                        return 0
+                
+                df_sp['Tempo_Minutos'] = df_sp['Tempo de Negociação Real'].apply(tempo_para_minutos)
+                
+                res_sp = analise.calcular_spearman(df_sp, 'Tempo_Minutos', 'Delta_Agressividade')
+                if res_sp.get('valido', False):
+                    st.write(f"Coeficiente Rho: `{res_sp['rho']:.2f}`")
+                    st.write(f"P-Value: `{res_sp['p_value']:.4f}`")
+                    interprete = "Significativa" if res_sp['p_value'] < 0.05 else "Não Significativa"
+                    st.info(f"A correlação é estatisticamente **{interprete}**.")
+                else:
+                    st.warning(res_sp.get('msg', 'Dados insuficientes (N<3) para cálculo estatístico global.'))
+            else:
+                st.warning("Colunas de Agressividade ou Tempo não encontradas no banco de dados para realizar o cruzamento.")
+            st.markdown("</div>", unsafe_allow_html=True)
+
+        with c_sp2:
+            st.markdown("<div class='info-card'><strong>Teste Qui-Quadrado: Tipologia vs. Técnicas</strong>", unsafe_allow_html=True)
+            if not df_tec.empty and not df_tec_filt.empty:
+                col_t_chi = next((col for col in ['TÉCNICAS', 'TECNICAS', 'TÉCNICA', 'TECNICA'] if col in df_tec_filt.columns), None)
+                if col_t_chi and 'Tip_Limpa' in df_tec_filt.columns:
+                    res_chi = analise.calcular_qui_quadrado(df_tec_filt, 'Tip_Limpa', col_t_chi)
+                    if res_chi.get('valido', False):
+                        st.write(f"Qui-Quadrado: `{res_chi['chi2']:.2f}`")
+                        st.write(f"P-Value: `{res_chi['p_value']:.4f}`")
+                        dependencia = "Existe dependência doutrinária" if res_chi['p_value'] < 0.05 else "Distribuição aleatória"
+                        st.success(f"Resultado: **{dependencia}**.")
+                    else:
+                        st.warning(res_chi.get('msg', 'Variância estatística insuficiente nas técnicas e tipologias.'))
+                else:
+                    st.warning("Colunas de Tipologia ou Técnicas não estão prontas.")
+            else:
+                st.warning("Sem dados de técnicas carregados.")
+            st.markdown("</div>", unsafe_allow_html=True)
+
+        # --- TENDÊNCIA TEMPORAL ---
+        st.markdown("---")
+        st.markdown("<h4 style='color: #f97316;'>📈 Volume e Tendência Temporal</h4>", unsafe_allow_html=True)
+        
+        col_data = next((col for col in ['Data da ocorrência', 'Data', 'DATA'] if col in df_quali_filt.columns), None)
+        if col_data:
+            df_quali_filt['Data_DT'] = pd.to_datetime(df_quali_filt[col_data], errors='coerce')
+            df_time = df_quali_filt.dropna(subset=['Data_DT']).sort_values('Data_DT')
+            
+            if not df_time.empty:
+                df_time['Mes_Ano'] = df_time['Data_DT'].dt.to_period('M').astype(str)
+                df_trend = df_time['Mes_Ano'].value_counts().sort_index().reset_index()
+                df_trend.columns = ['Mês', 'Qtd Ocorrências']
+                
+                fig_time = px.line(df_trend, x='Mês', y='Qtd Ocorrências', markers=True, 
+                                   line_shape='spline', color_discrete_sequence=['#f97316'])
+                fig_time.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font_color="#FFF")
+                st.plotly_chart(fig_time, use_container_width=True)
+            else:
+                st.info("Não há datas válidas suficientes no Airtable para desenhar o gráfico.")
+        else:
+            st.info("Coluna de Data não encontrada para a tendência.")
