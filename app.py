@@ -239,20 +239,33 @@ if 'dados_n8n' not in st.session_state: st.session_state['dados_n8n'] = None
 # =========================================================
 # 2. CABEÇALHO VISUAL
 # =========================================================
+import os
+import base64
+from PIL import Image
+
 script_dir = os.path.dirname(os.path.abspath(__file__))
-path_assets = os.path.join(script_dir, "Assets")
+# ATENÇÃO: Garanta que no GitHub a pasta se chama exatamente "Assets" com A maiúsculo
+path_assets = os.path.join(script_dir, "Assets") 
 path_teste_gate = os.path.join(path_assets, "teste-gate.PNG")
 path_brasao_gate = os.path.join(path_assets, "BRASÃO GATE.PNG")
 
 try:
-    with open(path_teste_gate, "rb") as img_file: img_topo_b64 = base64.b64encode(img_file.read()).decode()
+    with open(path_teste_gate, "rb") as img_file: 
+        img_topo_b64 = base64.b64encode(img_file.read()).decode()
     st.markdown(f"""<div style="position: relative; width: 100%; height: 200px; border-radius: 2px; overflow: hidden; background-image: url('data:image/png;base64,{img_topo_b64}'); background-size: cover; background-position: center 40%; margin-bottom: 1rem;"><div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(180deg, rgba(5,5,5,0.1) 0%, rgba(249, 115, 22, 0.6) 100%);"></div></div>""", unsafe_allow_html=True)
-except: pass
+except Exception as e: 
+    # Agora ele vai te mostrar o erro na tela ao invés de esconder
+    st.error(f"Erro ao carregar topo: Verifique se o arquivo existe em {path_teste_gate}")
 
 col_logo, col_titulo, col_espaco = st.columns([1, 6, 1])
+
 with col_logo:
-    try: st.image(Image.open(path_brasao_gate), use_container_width=True)
-    except: pass
+    try: 
+        st.image(Image.open(path_brasao_gate), use_container_width=True)
+    except Exception as e: 
+        # Agora ele vai te mostrar o erro na tela ao invés de esconder
+        st.error(f"Erro ao carregar logo: Verifique se o arquivo existe em {path_brasao_gate}")
+
 with col_titulo:
     st.markdown('<h1 class="main-title">Sistema de Análise Qualitativa das Negociações - Estudo das Técnicas aplicadas</h1>', unsafe_allow_html=True)
     st.markdown('<p class="sub-title">Delta Negociação - GATE / PMESP</p>', unsafe_allow_html=True)
