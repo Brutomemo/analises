@@ -256,11 +256,11 @@ with col_logo:
 with col_titulo:
     st.markdown('<h1 class="main-title">Sistema de Análise Qualitativa das Negociações - Estudo das Técnicas aplicadas</h1>', unsafe_allow_html=True)
     st.markdown('<p class="sub-title">Delta Negociação - GATE / PMESP</p>', unsafe_allow_html=True)
-    st.markdown('<p style="color: #888; margin-top: 5px;">Desenvolvido por Cb PM Marcos - Supervisão: Cap PM Pavão</p>', unsafe_allow_html=True)
+    st.markdown('<p style="color: #999; margin-top: 5px;">Desenvolvido por Cb PM Marcos - Supervisão: Cap PM Pavão</p>', unsafe_allow_html=True)
     st.markdown(f"""
 <div class="info-card">
     <p><strong>Sistema automatizado de análise qualitativa das Negociações em Incidentes Críticos atendidos pelo Grupo de Ações Táticas Especiais.</strong></p>
-    <p style="font-size: 0.9rem; color: #888;">Os dados são geridos de forma automatizada em nuvem via <strong>Airtable</strong>. Cálculos matemáticos realizados localmente utilizando  
+    <p style="font-size: 0.9rem; color: #999;">Os dados são geridos de forma automatizada em nuvem via <strong>Airtable</strong>. Cálculos matemáticos realizados localmente utilizando  
     <strong>SciPy</strong> (Correlação de Spearman com Quartis) e <strong>Scikit-Learn</strong> (Modelagem N-Gramas). Modelo integra Inteligência Artificial atuando exclusivamente como estruturadora de metadados qualitativos da perspectiva tripla.</p>
 </div>
 """, unsafe_allow_html=True)
@@ -476,7 +476,7 @@ else:
                             
                             st.dataframe(df_freq, use_container_width=True, hide_index=True)
                             
-                            st.markdown("<h5 style='text-align:center; color: #FFFFFF; margin-top: 20px;'>Frequencias das Técnicas Aplicadas (Treemap)</h5>", unsafe_allow_html=True)
+                            st.markdown("<h4 style='text-align:center; color: #FFFFFF; margin-top: 20px;'>Frequencias das Técnicas Aplicadas (Treemap)</h5>", unsafe_allow_html=True)
                             fig_tree = px.treemap(df_freq, path=['Técnica Empregada'], values='Frequência Absoluta', color='Frequência Absoluta', color_continuous_scale='Oranges')
                             fig_tree.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font_color="#FFF", margin=dict(t=10, l=10, r=10, b=10))
                             st.plotly_chart(fig_tree, use_container_width=True)
