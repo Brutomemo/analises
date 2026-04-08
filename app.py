@@ -564,8 +564,6 @@ else:
                         from sklearn.feature_extraction.text import TfidfVectorizer
                         from sklearn.metrics.pairwise import cosine_similarity
                         import re
-                        from wordcloud import WordCloud
-                        import matplotlib.pyplot as plt
 
                         def limpar_texto(t):
                             return re.sub(r'[^\w\s]', '', t.lower())
@@ -714,6 +712,13 @@ else:
 
                             except Exception as e:
                                 st.error(f"Erro ao desenhar o grafo estrutural: {e}")
+                                
+                    except Exception as e:
+                        st.error(f"Erro no cálculo base de similaridade: {e}")
+            else:
+                st.info("Colunas de transcrição não encontradas para o cálculo de Sintonia Léxica.")
+                
+            st.markdown("</div>", unsafe_allow_html=True)
 
             # 4. TABELA DE FREQUÊNCIA (CRUZAMENTO DEFINITIVO)
             st.markdown("<h4 style='color: #FFD700;'>📉 Frequência das Técnicas Aplicadas (Nesta APA)</h4>", unsafe_allow_html=True)
