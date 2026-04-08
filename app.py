@@ -564,7 +564,7 @@ else:
                         from sklearn.feature_extraction.text import TfidfVectorizer
                         from sklearn.metrics.pairwise import cosine_similarity
                         import re
-                        import networkx as nx
+                        from wordcloud import WordCloud
                         import matplotlib.pyplot as plt
 
                         def limpar_texto(t):
@@ -605,40 +605,37 @@ else:
                             st.markdown("##### ☁️ Nuvens Semânticas (Negociador vs. Causador)")
                             st.write("<span style='font-size: 0.85rem; color: #aaa;'>O tamanho das palavras reflete a frequência e a importância no discurso de cada parte.</span>", unsafe_allow_html=True)
                             
-                            try:
-                                from wordcloud import WordCloud
-                                import matplotlib.pyplot as plt
+                            c_cloud1, c_cloud2 = st.columns(2)
 
-                                # Criamos duas colunas para colocar as nuvens lado a lado
-                                c_cloud1, c_cloud2 = st.columns(2)
+                            # Nuvem do Negociador (Tons de Azul)
+                            with c_cloud1:
+                                st.markdown("<div style='text-align: center; color: #2196F3; font-weight: bold;'>Discurso do Negociador</div>", unsafe_allow_html=True)
+                                wc_neg = WordCloud(width=500, height=400, background_color='#0E1117', 
+                                                   colormap='Blues', stopwords=stopwords_pt).generate(txt_neg_limpo)
+                                fig_neg, ax_neg = plt.subplots(figsize=(5, 4))
+                                ax_neg.imshow(wc_neg, interpolation='bilinear')
+                                ax_neg.axis('off')
+                                fig_neg.patch.set_facecolor('#0E1117')
+                                st.pyplot(fig_neg)
 
-                                # Nuvem do Negociador (Tons de Azul)
-                                with c_cloud1:
-                                    st.markdown("<div style='text-align: center; color: #2196F3; font-weight: bold;'>Discurso do Negociador</div>", unsafe_allow_html=True)
-                                    wc_neg = WordCloud(width=500, height=400, background_color='#0E1117', 
-                                                       colormap='Blues', stopwords=stopwords_pt).generate(txt_neg_limpo)
-                                    fig_neg, ax_neg = plt.subplots(figsize=(5, 4))
-                                    ax_neg.imshow(wc_neg, interpolation='bilinear')
-                                    ax_neg.axis('off')
-                                    fig_neg.patch.set_facecolor('#0E1117')
-                                    st.pyplot(fig_neg)
+                            # Nuvem do Causador (Tons de Vermelho/Laranja)
+                            with c_cloud2:
+                                st.markdown("<div style='text-align: center; color: #F44336; font-weight: bold;'>Discurso do Causador</div>", unsafe_allow_html=True)
+                                wc_caus = WordCloud(width=500, height=400, background_color='#0E1117', 
+                                                    colormap='Reds', stopwords=stopwords_pt).generate(txt_caus_limpo)
+                                fig_caus, ax_caus = plt.subplots(figsize=(5, 4))
+                                ax_caus.imshow(wc_caus, interpolation='bilinear')
+                                ax_caus.axis('off')
+                                fig_caus.patch.set_facecolor('#0E1117')
+                                st.pyplot(fig_caus)
 
-                                # Nuvem do Causador (Tons de Vermelho/Laranja)
-                                with c_cloud2:
-                                    st.markdown("<div style='text-align: center; color: #F44336; font-weight: bold;'>Discurso do Causador</div>", unsafe_allow_html=True)
-                                    wc_caus = WordCloud(width=500, height=400, background_color='#0E1117', 
-                                                        colormap='Reds', stopwords=stopwords_pt).generate(txt_caus_limpo)
-                                    fig_caus, ax_caus = plt.subplots(figsize=(5, 4))
-                                    ax_caus.imshow(wc_caus, interpolation='bilinear')
-                                    ax_caus.axis('off')
-                                    fig_caus.patch.set_facecolor('#0E1117')
-                                    st.pyplot(fig_caus)
-
-                            except ImportError:
-                                st.error("🚨 A biblioteca **wordcloud** não foi encontrada. Instale-a com `pip install wordcloud`.")
-                            except ValueError:
-                                st.info("Volume de palavras único insuficiente para gerar a nuvem de palavras visual.")
-                                
+                    except ImportError:
+                        st.error("🚨 Bibliotecas ausentes. Verifique se scikit-learn e wordcloud estão instaladas no requirements.")
+                    except ValueError:
+                        st.info("ℹ️ Volume de palavras único insuficiente para gerar a nuvem visual.")
+                    except Exception as e:
+                        st.error(f"Erro no cálculo de NLP/Nuvem: {e}")
+                        
             else:
                 st.info("Colunas de transcrição não encontradas para o cálculo de Sintonia Léxica.")
                 
