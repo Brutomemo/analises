@@ -638,6 +638,11 @@ else:
                                 st.error("🚨 A biblioteca **wordcloud** não foi encontrada. Instale-a com `pip install wordcloud`.")
                             except ValueError:
                                 st.info("Volume de palavras único insuficiente para gerar a nuvem de palavras visual.")
+                                
+            else:
+                st.info("Colunas de transcrição não encontradas para o cálculo de Sintonia Léxica.")
+                
+            st.markdown("</div>", unsafe_allow_html=True)
 
             # 4. TABELA DE FREQUÊNCIA (CRUZAMENTO DEFINITIVO)
             st.markdown("<h4 style='color: #FFD700;'>📉 Frequência das Técnicas Aplicadas (Nesta APA)</h4>", unsafe_allow_html=True)
