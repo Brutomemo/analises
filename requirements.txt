@@ -1,5 +1,6 @@
 streamlit
 pandas
+numpy
 requests
 plotly
 wordcloud
@@ -11,3 +12,4 @@ kaleido
 statsmodels
 patsy
 python-docx
+networkx
