@@ -834,13 +834,19 @@ else:
         col_agr_c = achar_coluna(df_quali_filt, 'Principal', 'Agressividade', 'Chegada')
         col_agr_e = achar_coluna(df_quali_filt, 'Principal', 'Agressividade', 'Encerramento')
         
+        # --- LIMPEZA E CONTAGEM DE APAs REAIS (A CHAVE DO PROBLEMA) ---
+        id_col = next((c for c in df_tec_filt.columns if 'ID' in c.upper() or 'VINCULO' in c.upper()), None)
+        # Filtra 'None' e vazios para não contar fantasmas
+        lixo = ['none', 'nan', 'n/d', '', 'null']
+        df_tec_limpo = df_tec_filt[~df_tec_filt[col_t].astype(str).str.strip().str.lower().isin(lixo)].copy() if 'col_t' in locals() and col_t else df_tec_filt
+        total_apas_reais = df_tec_limpo[id_col].nunique() if id_col else 0
+
         df_sp = df_quali_filt.copy()
         c_sp1, c_sp2 = st.columns(2)
         
         with c_sp1:
             st.markdown("<div class='info-card'><strong>Teste de Spearman: Tempo vs. Desescalada</strong><br><span style='font-size: 0.85rem; color: #aaa;'>O que mede: Verifica se ocorrências mais longas resultam matematicamente em uma maior queda de agressividade do causador.</span>", unsafe_allow_html=True)
             
-            # Trava para o Spearman (precisa de pelo menos 5 ocorrências com tempo válido)
             if len(df_sp) < 5:
                 st.warning(f"⚠️ **Aguardando dados (N={len(df_sp)}):** São necessárias mais ocorrências encerradas para calcular a correlação de tempo de forma confiável.")
             elif col_agr_c and col_agr_e and 'Tempo de Negociação Real' in df_sp.columns:
@@ -872,34 +878,21 @@ else:
         with c_sp2:
             st.markdown("<div class='info-card'><strong>Teste Qui-Quadrado: Tipologia vs. Técnicas</strong><br><span style='font-size: 0.85rem; color: #aaa;'>O que mede: Avalia se a equipe segue uma doutrina (aplicando técnicas específicas para cada tipo de crise) ou se age de forma improvisada/aleatória.</span>", unsafe_allow_html=True)
             
-            if not df_tec.empty and not df_tec_filt.empty and 'col_t' in locals() and col_t:
+            # --- CONDICIONAL CONTRA FALSO POSITIVO ---
+            if total_apas_reais < 10:
+                st.warning(f"⚠️ **Análise em Maturação:** Foram detectadas apenas {total_apas_reais} ocorrências distintas. Para evitar resultados distorcidos (falsos positivos), o Qui-Quadrado será liberado após a 10ª APA cadastrada.")
+            elif not df_tec.empty and not df_tec_filt.empty and 'col_t' in locals() and col_t:
                 if 'Tip_Limpa' in df_tec_filt.columns:
-                    
-                    # --- FILTRO CAÇA-FANTASMAS DEFINITIVO ---
-                    df_qui_clean = df_tec_filt.dropna(subset=['Tip_Limpa', col_t]).copy()
-                    lixo = ['none', 'nan', 'n/d', '', 'null']
-                    df_qui_clean = df_qui_clean[~df_qui_clean[col_t].astype(str).str.strip().str.lower().isin(lixo)]
-                    
-                    MIN_LINHAS_QUI2 = 15
-                    n_real_qui = len(df_qui_clean)
-                    
-                    # Condicional que barra os falsos positivos (ex: 78.00 irreal)
-                    if n_real_qui < MIN_LINHAS_QUI2:
-                        st.warning(f"⚠️ **Amostra Insuficiente (N Real={n_real_qui}):** O modelo exige no mínimo {MIN_LINHAS_QUI2} registros reais limpos para avaliar a dependência doutrinária com segurança.")
-                    else:
-                        res_chi = analise.calcular_qui_quadrado(df_qui_clean, 'Tip_Limpa', col_t)
-                        if res_chi.get('valido', False):
-                            st.write(f"Qui-Quadrado: `{res_chi['chi2']:.2f}`")
-                            st.write(f"P-Value: `{res_chi['p_value']:.4f}`")
-                            # Mensagem condicional dinâmica
-                            if res_chi['p_value'] < 0.05:
-                                st.success("✅ **Resultado:** Existe dependência doutrinária. As técnicas variam segundo a tipologia.")
-                            else:
-                                st.info("ℹ️ **Resultado:** Distribuição aleatória. Não há padrão fixo de técnica por tipologia.")
-                        else: 
-                            st.warning(res_chi.get('msg', 'Variância insuficiente para cruzar os dados.'))
-                else:
-                    st.warning("Coluna de Tipologia não encontrada.")
+                    res_chi = analise.calcular_qui_quadrado(df_tec_limpo, 'Tip_Limpa', col_t)
+                    if res_chi.get('valido', False):
+                        st.write(f"Qui-Quadrado: `{res_chi['chi2']:.2f}`")
+                        st.write(f"P-Value: `{res_chi['p_value']:.4f}`")
+                        if res_chi['p_value'] < 0.05:
+                            st.success("✅ **Resultado:** Existe dependência doutrinária. As técnicas variam segundo a tipologia.")
+                        else:
+                            st.info("ℹ️ **Resultado:** Distribuição aleatória. Não há padrão fixo de técnica por tipologia.")
+                    else: 
+                        st.warning(res_chi.get('msg', 'Variância insuficiente.'))
             else: 
                 st.warning("Sem dados de técnicas carregados.")
             st.markdown("</div>", unsafe_allow_html=True)
@@ -910,28 +903,17 @@ else:
         st.markdown("---")
         st.markdown("<h4 style='color: #FFD700;'>📐 Modelagem Avançada: Viés e Eficácia Real das Técnicas</h4>", unsafe_allow_html=True)
         
-        # Filtra fantasmas logo na entrada para proteger TODOS os modelos avançados
-        df_adv_master = df_tec_filt.copy()
-        lixo = ['none', 'nan', 'n/d', '', 'null']
-        if 'TÉCNICAS' in df_adv_master.columns:
-            df_adv_master = df_adv_master[~df_adv_master['TÉCNICAS'].astype(str).str.strip().str.lower().isin(lixo)]
-        
-        MINIMO_AVANCADO = 30
-        n_adv_real = len(df_adv_master)
-        
-        if n_adv_real < MINIMO_AVANCADO:
+        # --- TRAVA PARA MODELAGEM AVANÇADA ---
+        if total_apas_reais < 15:
             st.info(f"""
             💡 **Por que estas estatísticas estão ocultas? (Modo de Segurança)**
             
-            Modelos matemáticos avançados avaliam o comportamento histórico e doutrinário da equipe como um todo. Quando a amostra de dados é pequena (como no início da alimentação do sistema ou em filtros muito específicos), a matemática pode gerar "coincidências ilusórias" e falsos positivos.
+            Modelos matemáticos avançados (Regressão e GEE) exigem um volume histórico de ocorrências distintas para não gerarem "coincidências ilusórias". Atualmente, o cenário filtrado possui dados de apenas **{total_apas_reais} ocorrências**.
             
-            Para manter o rigor científico, o sistema só libera a Modelagem Avançada quando atinge um volume seguro de dados.
-            
-            * **Registros reais detectados no cenário atual:** {n_adv_real}
-            * **Meta para desbloqueio do motor analítico:** {MINIMO_AVANCADO}
+            * **Meta para desbloqueio:** 15 ocorrências únicas.
             """)
         else:
-            col_resposta = next((col for col in df_adv_master.columns if 'ATITUDE' in col.upper()), None)
+            col_resposta = next((col for col in df_tec_filt.columns if 'ATITUDE' in col.upper()), None)
             
             if not col_resposta:
                 st.warning("⚠️ **Ativação Necessária:** Crie a coluna 'Resposta da Técnica' no Airtable.")
@@ -943,7 +925,7 @@ else:
                     from scipy.stats import chi2_contingency
                     import numpy as np
 
-                    df_adv = df_adv_master.copy()
+                    df_adv = df_tec_limpo.copy()
                     mapa_resp = {'-1': 'Negativa', '-1.0': 'Negativa', -1: 'Negativa', '🔴 reação negativa': 'Negativa',
                                  '0': 'Neutra', '0.0': 'Neutra', 0: 'Neutra', '⚪ reação neutra': 'Neutra',
                                  '1': 'Positiva', '1.0': 'Positiva', 1: 'Positiva', '🟢 reação positiva': 'Positiva'}
@@ -956,18 +938,14 @@ else:
                     # -- 1. VIÉS --
                     st.markdown("<div class='info-card'>", unsafe_allow_html=True)
                     st.markdown("##### 1. Teste de Viés por Negociador (Qui-Quadrado de Resíduos)")
-                    st.markdown("<span style='font-size: 0.85rem; color: #aaa;'><strong>O que significa:</strong> Verifica se os relatos de 'sucesso' estão concentrados de forma anormal nas mãos de apenas um ou outro negociador. O ideal é que a percepção de resultado positivo seja distribuída de forma homogênea em toda a equipe.</span>", unsafe_allow_html=True)
+                    st.markdown("<span style='font-size: 0.85rem; color: #aaa;'><strong>O que significa:</strong> Verifica se os relatos de 'sucesso' estão concentrados anormalmente em apenas alguns negociadores.</span>", unsafe_allow_html=True)
                     
                     tab_vies = pd.crosstab(df_adv_clean['Neg_Limpo'], df_adv_clean['Resposta_Cat'])
                     if tab_vies.shape[0] > 1 and tab_vies.shape[1] > 1:
                         chi2, p, dof, exp = chi2_contingency(tab_vies)
                         residuos = (tab_vies - exp) / np.sqrt(exp)
-                        
-                        st.write(f"**P-Valor global:** `{p:.4e}` *(Se < 0.05, indica que existe viés individual de relato)*")
-                        
-                        fig_heat = px.imshow(residuos, text_auto=".2f", color_continuous_scale="RdBu",
-                                             title="Mapa de Calor do Viés",
-                                             labels=dict(color="Resíduo"))
+                        st.write(f"**P-Valor global:** `{p:.4e}`")
+                        fig_heat = px.imshow(residuos, text_auto=".2f", color_continuous_scale="RdBu", title="Mapa de Calor do Viés")
                         fig_heat.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font_color="#FFF")
                         st.plotly_chart(fig_heat, use_container_width=True)
                     else:
@@ -977,7 +955,7 @@ else:
                     # -- 2. ORDINAL --
                     st.markdown("<div class='info-card'>", unsafe_allow_html=True)
                     st.markdown("##### 2. Eficácia Isolada da Técnica (Regressão Ordinal)")
-                    st.markdown("<span style='font-size: 0.85rem; color: #aaa;'><strong>O que significa:</strong> Isola matematicamente a técnica, removendo a influência do tipo de crise ou de quem está negociando. Responde à pergunta: <em>'Essa técnica funciona por si só, independentemente do cenário?'</em></span>", unsafe_allow_html=True)
+                    st.markdown("<span style='font-size: 0.85rem; color: #aaa;'><strong>O que significa:</strong> Isola o peso da técnica, removendo a influência do negociador e da crise.</span>", unsafe_allow_html=True)
                     
                     if 'col_t' in locals() and col_t:
                         df_adv_clean['Tecnica_Patsy'] = df_adv_clean[col_t].str.replace(' ', '_').str.replace('-', '_')
@@ -987,69 +965,49 @@ else:
                         try:
                             mod_ord = OrderedModel.from_formula("Resposta_Ord ~ C(Tecnica_Patsy) + C(Neg_Patsy) + C(Tip_Patsy)", data=df_adv_clean, distr='logit')
                             res_ord = mod_ord.fit(method='bfgs', disp=False)
-                            
                             coefs = res_ord.params[res_ord.params.index.str.contains('Tecnica')]
                             pvals = res_ord.pvalues[res_ord.params.index.str.contains('Tecnica')]
-                            
                             df_or = pd.DataFrame({'Técnica': coefs.index.str.extract(r'\[T\.(.*?)\]')[0], 'Odds_Ratio': np.exp(coefs), 'P_Valor': pvals})
                             df_or = df_or[df_or['P_Valor'] < 0.05].sort_values('Odds_Ratio', ascending=False)
                             
                             if not df_or.empty:
                                 st.dataframe(df_or.style.format({'Odds_Ratio': '{:.2f}', 'P_Valor': '{:.4f}'}), use_container_width=True, hide_index=True)
-                                st.success("💡 **Como interpretar:** Um Odds Ratio (OR) de `2.0` significa que aplicar esta técnica específica *dobra* a chance de conseguir uma reação positiva do causador.")
+                                st.success("💡 **Doutrina Validada:** Um Odds Ratio de 2.0 indica que a técnica dobra a chance de sucesso.")
                             else:
-                                st.info("ℹ️ Nenhuma técnica isolada apresentou significância estatística neste cenário (P < 0.05).")
-                        except Exception as e:
-                            st.warning(f"O modelo Ordinal não convergiu. Detalhe: {str(e)[:100]}")
+                                st.info("ℹ️ Nenhuma técnica isolada apresentou significância estatística (P < 0.05).")
+                        except:
+                            st.warning("O modelo Ordinal não convergiu.")
                     st.markdown("</div>", unsafe_allow_html=True)
                     
                     # -- 3. GEE --
                     st.markdown("<div class='info-card'>", unsafe_allow_html=True)
                     st.markdown("##### 3. Robustez Hierárquica (Equações de Estimação Generalizadas - GEE)")
-                    st.markdown("<span style='font-size: 0.85rem; color: #aaa;'><strong>O que significa:</strong> É o teste final e mais rigoroso. Ele agrupa as ações para garantir que a eficácia da técnica é uma regra geral da equipe, e não apenas o resultado do talento de um único 'negociador estrela'.</span>", unsafe_allow_html=True)
+                    st.markdown("<span style='font-size: 0.85rem; color: #aaa;'><strong>O que significa:</strong> Valida se a eficácia da técnica é uma regra da equipe ou apenas talento individual.</span>", unsafe_allow_html=True)
                     
                     df_gee_real = df_adv_clean.copy()
-                    linhas_validas = len(df_gee_real)
-                    
-                    if linhas_validas < 30:
-                        st.warning(f"⚠️ O modelo hierárquico GEE necessita de múltiplos eventos reais por negociador para calcular a variância sem viés. O modelo permanecerá em espera.")
-                    else:
-                        df_gee_real['Sucesso'] = np.where(df_gee_real['Resposta_Cat'] == 'Positiva', 1, 0)
-                        try:
-                            if 'Tecnica_Patsy' in df_gee_real.columns:
-                                modelo_gee = smf.gee("Sucesso ~ C(Tecnica_Patsy)", 
-                                                     groups=df_gee_real['Neg_Patsy'], 
-                                                     data=df_gee_real, 
-                                                     family=sm.families.Binomial(), 
-                                                     cov_struct=sm.cov_struct.Exchangeable())
-                                res_gee = modelo_gee.fit()
-                                
-                                gee_coefs = res_gee.params[res_gee.params.index.str.contains('Tecnica')]
-                                gee_pvals = res_gee.pvalues[res_gee.params.index.str.contains('Tecnica')]
-                                
-                                df_gee = pd.DataFrame({
-                                    'Técnica': gee_coefs.index.str.extract(r'\[T\.(.*?)\]')[0], 
-                                    'Coeficiente_GEE': gee_coefs, 
-                                    'P_Valor': gee_pvals
-                                })
-                                
-                                if not df_gee.empty:
-                                    st.dataframe(df_gee.style.format({'Coeficiente_GEE': '{:.2f}', 'P_Valor': '{:.4f}'}), 
-                                                 use_container_width=True, hide_index=True)
-                                    
-                                    if (gee_pvals < 0.05).any():
-                                        st.success("✅ **Doutrina Validada:** Técnica sobreviveu ao controle de viés da tropa.")
-                                    else:
-                                        st.info("ℹ️ Nenhuma técnica atingiu significância (P < 0.05).")
-                        except Exception as e:
-                            st.error(f"Erro no processamento GEE: {str(e)[:50]}")
-                    
+                    df_gee_real['Sucesso'] = np.where(df_gee_real['Resposta_Cat'] == 'Positiva', 1, 0)
+                    try:
+                        if 'Tecnica_Patsy' in df_gee_real.columns:
+                            modelo_gee = smf.gee("Sucesso ~ C(Tecnica_Patsy)", groups=df_gee_real['Neg_Patsy'], data=df_gee_real, family=sm.families.Binomial(), cov_struct=sm.cov_struct.Exchangeable())
+                            res_gee = modelo_gee.fit()
+                            gee_coefs = res_gee.params[res_gee.params.index.str.contains('Tecnica')]
+                            gee_pvals = res_gee.pvalues[res_gee.params.index.str.contains('Tecnica')]
+                            df_gee = pd.DataFrame({'Técnica': gee_coefs.index.str.extract(r'\[T\.(.*?)\]')[0], 'Coeficiente_GEE': gee_coefs, 'P_Valor': gee_pvals})
+                            
+                            if not df_gee.empty:
+                                st.dataframe(df_gee.style.format({'Coeficiente_GEE': '{:.2f}', 'P_Valor': '{:.4f}'}), use_container_width=True, hide_index=True)
+                                if (gee_pvals < 0.05).any():
+                                    st.success("✅ **Doutrina Validada:** Técnica sobreviveu ao controle de viés.")
+                                else:
+                                    st.info("ℹ️ Nenhuma técnica atingiu significância.")
+                    except:
+                        st.error("Erro no processamento GEE.")
                     st.markdown("</div>", unsafe_allow_html=True)
                     
                 except ImportError:
-                    st.error("🚨 A biblioteca **statsmodels** não está instalada no servidor. Rode `pip install statsmodels`.")
+                    st.error("🚨 Biblioteca statsmodels não instalada.")
                 except Exception as e:
-                    st.error(f"🚨 Erro geral na modelagem avançada: {str(e)}")
+                    st.error(f"🚨 Erro geral: {str(e)}")
 
         # --- 4. TENDÊNCIA TEMPORAL ---
         st.markdown("---")
@@ -1059,19 +1017,15 @@ else:
         if col_data:
             df_quali_filt['Data_DT'] = pd.to_datetime(df_quali_filt[col_data], errors='coerce')
             df_time = df_quali_filt.dropna(subset=['Data_DT']).sort_values('Data_DT')
-            
             if not df_time.empty:
                 df_time['Mes_Ano'] = df_time['Data_DT'].dt.to_period('M').astype(str)
                 df_trend = df_time['Mes_Ano'].value_counts().sort_index().reset_index()
                 df_trend.columns = ['Mês', 'Qtd Ocorrências']
-                
-                fig_time = px.line(df_trend, x='Mês', y='Qtd Ocorrências', markers=True, line_shape='spline', color_discrete_sequence=['#FFD700'])
+                fig_time = px.line(df_trend, x='Mês', y='Qtd Ocorrências', markers=True, color_discrete_sequence=['#FFD700'])
                 fig_time.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font_color="#FFF")
                 st.plotly_chart(fig_time, use_container_width=True)
-            else: 
-                st.info("Não há datas válidas suficientes no Airtable para desenhar o gráfico.")
-        else: 
-            st.info("Coluna de Data não encontrada para a tendência.")
+            else: st.info("Sem datas válidas.")
+        else: st.info("Coluna de Data não encontrada.")
         # =========================================================
         # MÓDULO NOVO: RELATÓRIO INTERPRETATIVO COM IA
         # =========================================================
