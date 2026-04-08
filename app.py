@@ -884,25 +884,47 @@ else:
             st.markdown("</div>", unsafe_allow_html=True)
 
         with c_sp2:
-            st.markdown("<div class='info-card'><strong>Teste Qui-Quadrado: Tipologia vs. Técnicas</strong><br><span style='font-size: 0.85rem; color: #aaa;'>O que mede: Avalia se a equipe segue uma doutrina (aplicando técnicas específicas para cada tipo de crise) ou se age de forma improvisada/aleatória.</span>", unsafe_allow_html=True)
+            st.markdown("<div class='info-card'><strong>Teste Qui-Quadrado Dinâmico</strong><br><span style='font-size: 0.85rem; color: #aaa;'>Meda a dependência entre duas variáveis táticas para identificar padrões doutrinários.</span>", unsafe_allow_html=True)
             
-            # Trava robusta baseada em IDs únicos de ocorrências
+            # --- 1. SELEÇÃO DE VARIÁVEIS PELO USUÁRIO ---
+            # Criamos um dicionário para traduzir o nome técnico para o nome que o policial entende
+            opcoes_variaveis = {
+                "Tipologia": "Tip_Limpa",
+                "Negociador": "Neg_Limpo",
+                "Modalidade": "Modalidade", # Verifique se esse é o nome exato da coluna no seu DF
+                "Atitude do Causador": "Resposta_Cat" # Criada no bloco avançado
+            }
+            
+            # Deixamos 'Tipologia' como padrão para não quebrar o visual inicial
+            var_analise = st.selectbox("Selecione a Variável 1:", list(opcoes_variaveis.keys()), index=0)
+            col_v1 = opcoes_variaveis[var_analise]
+            
+            # A Variável 2 geralmente será as 'Técnicas', mas o usuário pode querer mudar
+            col_v2 = col_t # col_t já está definido no seu código como a coluna de Técnicas
+
+            # --- 2. TRAVA DE MATURIDADE ---
             if total_apas_reais < 10:
-                st.warning(f"⚠️ **Análise em Maturação:** Foram detectadas apenas {total_apas_reais} ocorrências distintas. O Qui-Quadrado será liberado após a 10ª APA cadastrada para evitar falsos positivos.")
-            elif not df_tec.empty and not df_tec_filt.empty and 'col_t' in locals() and col_t:
-                if 'Tip_Limpa' in df_tec_filt.columns:
-                    res_chi = analise.calcular_qui_quadrado(df_tec_limpo, 'Tip_Limpa', col_t)
+                st.warning(f"⚠️ **Análise em Maturação (N={total_apas_reais}):** O cruzamento de padrões exige no mínimo 10 APAs distintas para evitar que o talento (ou erro) de um único caso seja lido como regra.")
+            else:
+                # Limpeza de dados nulos nas colunas selecionadas
+                df_qui_clean = df_tec_filt.dropna(subset=[col_v1, col_v2]).copy()
+                
+                if not df_qui_clean.empty:
+                    res_chi = analise.calcular_qui_quadrado(df_qui_clean, col_v1, col_v2)
+                    
                     if res_chi.get('valido', False):
-                        st.write(f"Qui-Quadrado: `{res_chi['chi2']:.2f}`")
-                        st.write(f"P-Value: `{res_chi['p_value']:.4f}`")
+                        st.write(f"Estatística Qui-Quadrado: `{res_chi['chi2']:.2f}`")
+                        st.write(f"P-Valor: `{res_chi['p_value']:.4f}`")
+                        
+                        # TRADUÇÃO PARA O USUÁRIO FINAL
                         if res_chi['p_value'] < 0.05:
-                            st.success("✅ **Resultado:** Existe dependência doutrinária. As técnicas variam segundo a tipologia.")
+                            st.success(f"✅ **Existe Padrão:** O uso de técnicas **depende** do(a) {var_analise}. Isso indica uma atuação padronizada/doutrinária.")
                         else:
-                            st.info("ℹ️ **Resultado:** Distribuição aleatória. Não há padrão fixo de técnica por tipologia.")
-                    else: 
-                        st.warning(res_chi.get('msg', 'Variância insuficiente.'))
-            else: 
-                st.warning("Sem dados de técnicas carregados.")
+                            st.info(f"ℹ️ **Sem Padrão:** O uso de técnicas é independente do(a) {var_analise}. A aplicação parece ser situacional ou improvisada.")
+                    else:
+                        st.warning("Variância insuficiente para este cruzamento específico.")
+                else:
+                    st.warning("Sem dados suficientes após filtragem.")
             st.markdown("</div>", unsafe_allow_html=True)
 
         # =========================================================
