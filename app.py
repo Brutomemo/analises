@@ -872,21 +872,31 @@ else:
         with c_sp2:
             st.markdown("<div class='info-card'><strong>Teste Qui-Quadrado: Tipologia vs. Técnicas</strong><br><span style='font-size: 0.85rem; color: #aaa;'>O que mede: Avalia se a equipe segue uma doutrina (aplicando técnicas específicas para cada tipo de crise) ou se age de forma improvisada/aleatória.</span>", unsafe_allow_html=True)
             
-            # A TRAVA FORTE DO QUI-QUADRADO (Aumentada para 40 linhas de técnicas para evitar o falso positivo das 2 APAs)
-            MIN_LINHAS_QUI2 = 40
-            
             if not df_tec.empty and not df_tec_filt.empty and 'col_t' in locals() and col_t:
-                if len(df_tec_filt) < MIN_LINHAS_QUI2:
-                    st.warning(f"⚠️ **Aguardando maturidade dos dados:** O sistema bloqueou o cálculo automático para evitar falsos positivos. Para afirmar que existe um padrão doutrinário, o modelo exige um volume histórico maior (Meta: {MIN_LINHAS_QUI2} registros de técnicas).")
-                elif 'Tip_Limpa' in df_tec_filt.columns:
-                    res_chi = analise.calcular_qui_quadrado(df_tec_filt, 'Tip_Limpa', col_t)
-                    if res_chi.get('valido', False):
-                        st.write(f"Qui-Quadrado: `{res_chi['chi2']:.2f}`")
-                        st.write(f"P-Value: `{res_chi['p_value']:.4f}`")
-                        dependencia = "Existe dependência doutrinária" if res_chi['p_value'] < 0.05 else "Distribuição aleatória"
-                        st.success(f"Resultado: **{dependencia}**.")
-                    else: 
-                        st.warning(res_chi.get('msg', 'Variância insuficiente para cruzar os dados.'))
+                if 'Tip_Limpa' in df_tec_filt.columns:
+                    
+                    # --- O FILTRO CAÇA-FANTASMAS ---
+                    # Removemos as linhas vazias do Airtable antes de contar
+                    df_qui_clean = df_tec_filt.dropna(subset=['Tip_Limpa', col_t]).copy()
+                    df_qui_clean = df_qui_clean[df_qui_clean[col_t].astype(str).str.strip() != ""]
+                    
+                    # A trava agora usa os dados reais e limpos
+                    MIN_LINHAS_QUI2 = 40
+                    
+                    if len(df_qui_clean) < MIN_LINHAS_QUI2:
+                        st.warning(f"⚠️ **Aguardando dados (N={len(df_qui_clean)}):** O sistema bloqueou o cálculo automático para evitar falsos positivos. O modelo exige um volume histórico maior (Meta: {MIN_LINHAS_QUI2} registros de técnicas) para afirmar que existe um padrão doutrinário.")
+                    else:
+                        # Se passou na trava, calcula usando os dados limpos
+                        res_chi = analise.calcular_qui_quadrado(df_qui_clean, 'Tip_Limpa', col_t)
+                        if res_chi.get('valido', False):
+                            st.write(f"Qui-Quadrado: `{res_chi['chi2']:.2f}`")
+                            st.write(f"P-Value: `{res_chi['p_value']:.4f}`")
+                            dependencia = "Existe dependência doutrinária" if res_chi['p_value'] < 0.05 else "Distribuição aleatória"
+                            st.success(f"Resultado: **{dependencia}**.")
+                        else: 
+                            st.warning(res_chi.get('msg', 'Variância insuficiente para cruzar os dados.'))
+                else:
+                    st.warning("Coluna de Tipologia não encontrada.")
             else: 
                 st.warning("Sem dados de técnicas carregados.")
             st.markdown("</div>", unsafe_allow_html=True)
