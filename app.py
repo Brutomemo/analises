@@ -600,49 +600,44 @@ else:
                             else:
                                 st.error("🚨 **Divergência de Discurso:** Vocabulários quase completamente distintos. Indica ruptura ou negociação puramente transacional.")
 
-                        # --- GERAÇÃO DO GRAFO DE SIMILITUDE (Estilo IRaMuTeQ) ---
+                        # --- GERAÇÃO DAS NUVENS SEMÂNTICAS (VISUALIZAÇÃO LIMPA) ---
                         if sintonia_pct > 0:
-                            palavras_neg = set([w for w in txt_neg_limpo.split() if w not in stopwords_pt and len(w) > 2])
-                            palavras_caus = set([w for w in txt_caus_limpo.split() if w not in stopwords_pt and len(w) > 2])
+                            st.markdown("##### ☁️ Nuvens Semânticas (Negociador vs. Causador)")
+                            st.write("<span style='font-size: 0.85rem; color: #aaa;'>O tamanho das palavras reflete a frequência e a importância no discurso de cada parte.</span>", unsafe_allow_html=True)
                             
-                            palavras_comuns = palavras_neg.intersection(palavras_caus)
-                            
-                            if palavras_comuns:
-                                st.markdown("##### 🕸️ Núcleos Semânticos Compartilhados")
-                                st.write("<span style='font-size: 0.85rem; color: #aaa;'>Palavras em comum que serviram de ponte de conexão na negociação.</span>", unsafe_allow_html=True)
-                                
-                                G = nx.Graph()
-                                G.add_node("NEGOCIADOR", color="#2196F3", size=3000)
-                                G.add_node("CAUSADOR", color="#F44336", size=3000)
-                                
-                                for palavra in palavras_comuns:
-                                    G.add_node(palavra, color="#FFC107", size=1500)
-                                    G.add_edge("NEGOCIADOR", palavra, weight=2)
-                                    G.add_edge("CAUSADOR", palavra, weight=2)
+                            try:
+                                from wordcloud import WordCloud
+                                import matplotlib.pyplot as plt
 
-                                fig, ax = plt.subplots(figsize=(8, 4))
-                                fig.patch.set_facecolor('#0E1117') # Fundo escuro do Streamlit
-                                ax.set_facecolor('#0E1117')
-                                
-                                pos = nx.spring_layout(G, seed=42)
-                                node_colors = [nx.get_node_attributes(G, 'color')[node] for node in G.nodes()]
-                                node_sizes = [nx.get_node_attributes(G, 'size')[node] for node in G.nodes()]
-                                
-                                nx.draw(G, pos, ax=ax, with_labels=True, node_color=node_colors, node_size=node_sizes, 
-                                        font_size=10, font_weight="bold", font_color="white", edge_color="#555", width=2)
-                                
-                                st.pyplot(fig)
-                            else:
-                                st.info("Nenhuma palavra-chave significativa em comum encontrada para gerar o grafo.")
+                                # Criamos duas colunas para colocar as nuvens lado a lado
+                                c_cloud1, c_cloud2 = st.columns(2)
 
-                    except ImportError:
-                        st.error("🚨 Bibliotecas ausentes. Para exibir o grafo, instale: `pip install scikit-learn networkx matplotlib`")
-                    except Exception as e:
-                        st.error(f"Erro no cálculo de NLP/Grafo: {e}")
-            else:
-                st.info("Colunas de transcrição não encontradas.")
-                
-            st.markdown("</div>", unsafe_allow_html=True)
+                                # Nuvem do Negociador (Tons de Azul)
+                                with c_cloud1:
+                                    st.markdown("<div style='text-align: center; color: #2196F3; font-weight: bold;'>Discurso do Negociador</div>", unsafe_allow_html=True)
+                                    wc_neg = WordCloud(width=500, height=400, background_color='#0E1117', 
+                                                       colormap='Blues', stopwords=stopwords_pt).generate(txt_neg_limpo)
+                                    fig_neg, ax_neg = plt.subplots(figsize=(5, 4))
+                                    ax_neg.imshow(wc_neg, interpolation='bilinear')
+                                    ax_neg.axis('off')
+                                    fig_neg.patch.set_facecolor('#0E1117')
+                                    st.pyplot(fig_neg)
+
+                                # Nuvem do Causador (Tons de Vermelho/Laranja)
+                                with c_cloud2:
+                                    st.markdown("<div style='text-align: center; color: #F44336; font-weight: bold;'>Discurso do Causador</div>", unsafe_allow_html=True)
+                                    wc_caus = WordCloud(width=500, height=400, background_color='#0E1117', 
+                                                        colormap='Reds', stopwords=stopwords_pt).generate(txt_caus_limpo)
+                                    fig_caus, ax_caus = plt.subplots(figsize=(5, 4))
+                                    ax_caus.imshow(wc_caus, interpolation='bilinear')
+                                    ax_caus.axis('off')
+                                    fig_caus.patch.set_facecolor('#0E1117')
+                                    st.pyplot(fig_caus)
+
+                            except ImportError:
+                                st.error("🚨 A biblioteca **wordcloud** não foi encontrada. Instale-a com `pip install wordcloud`.")
+                            except ValueError:
+                                st.info("Volume de palavras único insuficiente para gerar a nuvem de palavras visual.")
 
             # 4. TABELA DE FREQUÊNCIA (CRUZAMENTO DEFINITIVO)
             st.markdown("<h4 style='color: #FFD700;'>📉 Frequência das Técnicas Aplicadas (Nesta APA)</h4>", unsafe_allow_html=True)
