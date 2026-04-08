@@ -545,7 +545,7 @@ else:
             # =========================================================
             st.markdown("### 🗣️ Índice de Sintonia Léxica e Grafo de Rapport")
             st.markdown("<div class='info-card'>", unsafe_allow_html=True)
-            st.markdown("<span style='font-size: 0.85rem; color: #aaa;'><strong>O que significa:</strong> Compara matematicamente as palavras utilizadas pelo Negociador Principal e pelo Causador. Índices mais altos indicam 'espelhamento' (mirroring). O grafo ilustra os núcleos semânticos que conectaram as duas partes.</span><br><br>", unsafe_allow_html=True)
+            st.markdown("<span style='font-size: 0.85rem; color: #aaa;'><strong>O que significa:</strong> Compara matematicamente as palavras utilizadas pelo Negociador Principal e pelo Causador. Índices mais altos indicam 'espelhamento' na estrutura da linguagem (mirroring). O grafo ilustra os núcleos semânticos que conectaram as duas partes.</span><br><br>", unsafe_allow_html=True)
 
             col_causador = "TRANSCRIÇÃO DO CAUSADOR"
             col_negociador = "TRANSCRIÇÃO DO NEGOCIADOR PRINCIPAL"
@@ -600,46 +600,120 @@ else:
                             else:
                                 st.error("🚨 **Divergência de Discurso:** Vocabulários quase completamente distintos. Indica ruptura ou negociação puramente transacional.")
 
-                        # --- GERAÇÃO DAS NUVENS SEMÂNTICAS (VISUALIZAÇÃO LIMPA) ---
+                        # --- GERAÇÃO DO GRAFO DE SIMILITUDE (ESTILO IRAMUTEQ LIMPO COM PLOTLY) ---
                         if sintonia_pct > 0:
-                            st.markdown("##### ☁️ Nuvens Semânticas (Negociador vs. Causador)")
-                            st.write("<span style='font-size: 0.85rem; color: #aaa;'>O tamanho das palavras reflete a frequência e a importância no discurso de cada parte.</span>", unsafe_allow_html=True)
+                            st.markdown("##### 🕸️ Grafo de Convergência Tática (Núcleos Semânticos Compartilhados)")
+                            st.write("<span style='font-size: 0.85rem; color: #aaa;'>Visualização interativa dos termos que serviram de ponte para o estabelecimento do Rapport.</span>", unsafe_allow_html=True)
                             
-                            c_cloud1, c_cloud2 = st.columns(2)
+                            try:
+                                import plotly.graph_objects as go
+                                from collections import Counter
 
-                            # Nuvem do Negociador (Tons de Azul)
-                            with c_cloud1:
-                                st.markdown("<div style='text-align: center; color: #2196F3; font-weight: bold;'>Discurso do Negociador</div>", unsafe_allow_html=True)
-                                wc_neg = WordCloud(width=500, height=400, background_color='#0E1117', 
-                                                   colormap='Blues', stopwords=stopwords_pt).generate(txt_neg_limpo)
-                                fig_neg, ax_neg = plt.subplots(figsize=(5, 4))
-                                ax_neg.imshow(wc_neg, interpolation='bilinear')
-                                ax_neg.axis('off')
-                                fig_neg.patch.set_facecolor('#0E1117')
-                                st.pyplot(fig_neg)
+                                # Isolar apenas as palavras comuns
+                                palavras_neg = [w for w in txt_neg_limpo.split() if w not in stopwords_pt and len(w) > 2]
+                                palavras_caus = [w for w in txt_caus_limpo.split() if w not in stopwords_pt and len(w) > 2]
+                                
+                                set_comuns = set(palavras_neg).intersection(set(palavras_caus))
+                                
+                                if set_comuns:
+                                    # Contar a força dessas palavras comuns somando as vezes que ambos falaram
+                                    contagem_comuns = Counter({w: palavras_neg.count(w) + palavras_caus.count(w) for w in set_comuns})
+                                    
+                                    # Pegar apenas o TOP 12 para não virar uma "teia de aranha" ilegível
+                                    top_comuns = dict(contagem_comuns.most_common(12))
+                                    
+                                    # --- CONSTRUÇÃO DO GRAFO ESTRUTURADO ---
+                                    node_x = []
+                                    node_y = []
+                                    node_text = []
+                                    node_color = []
+                                    node_size = []
 
-                            # Nuvem do Causador (Tons de Vermelho/Laranja)
-                            with c_cloud2:
-                                st.markdown("<div style='text-align: center; color: #F44336; font-weight: bold;'>Discurso do Causador</div>", unsafe_allow_html=True)
-                                wc_caus = WordCloud(width=500, height=400, background_color='#0E1117', 
-                                                    colormap='Reds', stopwords=stopwords_pt).generate(txt_caus_limpo)
-                                fig_caus, ax_caus = plt.subplots(figsize=(5, 4))
-                                ax_caus.imshow(wc_caus, interpolation='bilinear')
-                                ax_caus.axis('off')
-                                fig_caus.patch.set_facecolor('#0E1117')
-                                st.pyplot(fig_caus)
+                                    # Nó 1: Negociador (Esquerda)
+                                    node_x.append(-2)
+                                    node_y.append(0)
+                                    node_text.append("<b>NEGOCIADOR</b>")
+                                    node_color.append("#2196F3") # Azul Polícia
+                                    node_size.append(40)
 
-                    except ImportError:
-                        st.error("🚨 Bibliotecas ausentes. Verifique se scikit-learn e wordcloud estão instaladas no requirements.")
-                    except ValueError:
-                        st.info("ℹ️ Volume de palavras único insuficiente para gerar a nuvem visual.")
-                    except Exception as e:
-                        st.error(f"Erro no cálculo de NLP/Nuvem: {e}")
-                        
-            else:
-                st.info("Colunas de transcrição não encontradas para o cálculo de Sintonia Léxica.")
-                
-            st.markdown("</div>", unsafe_allow_html=True)
+                                    # Nó 2: Causador (Direita)
+                                    node_x.append(2)
+                                    node_y.append(0)
+                                    node_text.append("<b>CAUSADOR</b>")
+                                    node_color.append("#F44336") # Vermelho Crise
+                                    node_size.append(40)
+
+                                    # Nós Centrais (Palavras em Comum)
+                                    edge_x = []
+                                    edge_y = []
+                                    
+                                    y_pos = 1.5 # Ponto de partida vertical
+                                    passo_y = 3 / max(len(top_comuns), 1) # Espaçamento dinâmico
+                                    
+                                    for palavra, peso in top_comuns.items():
+                                        # Posição da Palavra
+                                        node_x.append(0)
+                                        node_y.append(y_pos)
+                                        node_text.append(palavra)
+                                        node_color.append("#FFC107") # Amarelo Destaque
+                                        # O tamanho do nó central varia conforme o peso da palavra (freq)
+                                        tamanho_calc = min(max(peso * 3, 15), 35) 
+                                        node_size.append(tamanho_calc)
+                                        
+                                        # Linha do Negociador para a Palavra
+                                        edge_x.extend([-2, 0, None])
+                                        edge_y.extend([0, y_pos, None])
+                                        
+                                        # Linha da Palavra para o Causador
+                                        edge_x.extend([0, 2, None])
+                                        edge_y.extend([y_pos, 0, None])
+                                        
+                                        y_pos -= passo_y
+
+                                    # Desenhando as Linhas (Arestas)
+                                    edge_trace = go.Scatter(
+                                        x=edge_x, y=edge_y,
+                                        line=dict(width=1, color='#555'),
+                                        hoverinfo='none',
+                                        mode='lines')
+
+                                    # Desenhando os Nós (Círculos)
+                                    node_trace = go.Scatter(
+                                        x=node_x, y=node_y,
+                                        mode='markers+text',
+                                        text=node_text,
+                                        textposition="bottom center",
+                                        hoverinfo='text',
+                                        marker=dict(
+                                            color=node_color,
+                                            size=node_size,
+                                            line=dict(width=2, color='white')
+                                        ),
+                                        textfont=dict(color='white', size=12)
+                                    )
+
+                                    # Montando a Figura
+                                    fig_grafo = go.Figure(data=[edge_trace, node_trace],
+                                                 layout=go.Layout(
+                                                    showlegend=False,
+                                                    hovermode='closest',
+                                                    margin=dict(b=20,l=5,r=5,t=40),
+                                                    paper_bgcolor="rgba(0,0,0,0)", 
+                                                    plot_bgcolor="rgba(0,0,0,0)",
+                                                    xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
+                                                    yaxis=dict(showgrid=False, zeroline=False, showticklabels=False)
+                                                ))
+                                    
+                                    # Ajuste para manter as proporções limpas
+                                    fig_grafo.update_layout(height=400)
+                                    
+                                    st.plotly_chart(fig_grafo, use_container_width=True)
+                                
+                                else:
+                                    st.info("ℹ️ Não há intersecção semântica suficiente para gerar um grafo estrutural (Discursos completamente isolados).")
+
+                            except Exception as e:
+                                st.error(f"Erro ao desenhar o grafo estrutural: {e}")
 
             # 4. TABELA DE FREQUÊNCIA (CRUZAMENTO DEFINITIVO)
             st.markdown("<h4 style='color: #FFD700;'>📉 Frequência das Técnicas Aplicadas (Nesta APA)</h4>", unsafe_allow_html=True)
