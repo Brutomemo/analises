@@ -875,18 +875,19 @@ else:
             if not df_tec.empty and not df_tec_filt.empty and 'col_t' in locals() and col_t:
                 if 'Tip_Limpa' in df_tec_filt.columns:
                     
-                    # --- O FILTRO CAÇA-FANTASMAS ---
-                    # Removemos as linhas vazias do Airtable antes de contar
+                    # --- FILTRO CAÇA-FANTASMAS DEFINITIVO ---
                     df_qui_clean = df_tec_filt.dropna(subset=['Tip_Limpa', col_t]).copy()
-                    df_qui_clean = df_qui_clean[df_qui_clean[col_t].astype(str).str.strip() != ""]
                     
-                    # A trava agora usa os dados reais e limpos
+                    # Lista negra de palavras que o Python cria sozinho quando a linha está vazia
+                    lixo = ['none', 'nan', 'n/d', '', 'null']
+                    # Só mantém a linha se o texto não estiver na lista negra
+                    df_qui_clean = df_qui_clean[~df_qui_clean[col_t].astype(str).str.strip().str.lower().isin(lixo)]
+                    
                     MIN_LINHAS_QUI2 = 40
                     
                     if len(df_qui_clean) < MIN_LINHAS_QUI2:
-                        st.warning(f"⚠️ **Aguardando dados (N={len(df_qui_clean)}):** O sistema bloqueou o cálculo automático para evitar falsos positivos. O modelo exige um volume histórico maior (Meta: {MIN_LINHAS_QUI2} registros de técnicas) para afirmar que existe um padrão doutrinário.")
+                        st.warning(f"⚠️ **Aguardando dados (N={len(df_qui_clean)}):** O sistema bloqueou o cálculo automático para evitar falsos positivos. O modelo exige um volume histórico maior (Meta: {MIN_LINHAS_QUI2} registros de técnicas limpas).")
                     else:
-                        # Se passou na trava, calcula usando os dados limpos
                         res_chi = analise.calcular_qui_quadrado(df_qui_clean, 'Tip_Limpa', col_t)
                         if res_chi.get('valido', False):
                             st.write(f"Qui-Quadrado: `{res_chi['chi2']:.2f}`")
@@ -998,11 +999,18 @@ else:
                     st.markdown("##### 3. Robustez Hierárquica (Equações de Estimação Generalizadas - GEE)")
                     st.markdown("<span style='font-size: 0.85rem; color: #aaa;'><strong>O que significa:</strong> É o teste final e mais rigoroso. Ele agrupa as ações para garantir que a eficácia da técnica é uma regra geral da equipe, e não apenas o resultado do talento de um único 'negociador estrela'.</span>", unsafe_allow_html=True)
                     
+                    # --- FILTRO CAÇA-FANTASMAS DEFINITIVO GEE ---
                     df_gee_real = df_adv_clean.dropna(subset=['TÉCNICAS']).copy()
-                    df_gee_real = df_gee_real[df_gee_real['TÉCNICAS'].astype(str).str.strip() != ""]
                     
-                    if len(df_gee_real) < 50:
-                        st.warning(f"⚠️ O modelo hierárquico GEE necessita de um banco de dados mais maduro. O modelo permanecerá em espera.")
+                    # A mesma lista negra
+                    lixo = ['none', 'nan', 'n/d', '', 'null']
+                    df_gee_real = df_gee_real[~df_gee_real['TÉCNICAS'].astype(str).str.strip().str.lower().isin(lixo)]
+                    
+                    linhas_validas = len(df_gee_real)
+                    LIMITE_LINHAS = 50
+                    
+                    if linhas_validas < LIMITE_LINHAS:
+                        st.warning(f"⚠️ O modelo hierárquico GEE necessita de um banco de dados mais maduro. Volume atual de técnicas reais: {linhas_validas}. O modelo permanecerá em espera até atingir {LIMITE_LINHAS} registros.")
                     else:
                         df_gee_real['Sucesso'] = np.where(df_gee_real['Resposta_Cat'] == 'Positiva', 1, 0)
                         try:
