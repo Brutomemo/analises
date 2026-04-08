@@ -877,23 +877,25 @@ else:
                     
                     # --- FILTRO CAÇA-FANTASMAS DEFINITIVO ---
                     df_qui_clean = df_tec_filt.dropna(subset=['Tip_Limpa', col_t]).copy()
-                    
-                    # Lista negra de palavras que o Python cria sozinho quando a linha está vazia
                     lixo = ['none', 'nan', 'n/d', '', 'null']
-                    # Só mantém a linha se o texto não estiver na lista negra
                     df_qui_clean = df_qui_clean[~df_qui_clean[col_t].astype(str).str.strip().str.lower().isin(lixo)]
                     
-                    MIN_LINHAS_QUI2 = 40
+                    MIN_LINHAS_QUI2 = 15
+                    n_real_qui = len(df_qui_clean)
                     
-                    if len(df_qui_clean) < MIN_LINHAS_QUI2:
-                        st.warning(f"⚠️ **Aguardando dados (N={len(df_qui_clean)}):** O sistema bloqueou o cálculo automático para evitar falsos positivos. O modelo exige um volume histórico maior (Meta: {MIN_LINHAS_QUI2} registros de técnicas limpas).")
+                    # Condicional que barra os falsos positivos (ex: 78.00 irreal)
+                    if n_real_qui < MIN_LINHAS_QUI2:
+                        st.warning(f"⚠️ **Amostra Insuficiente (N Real={n_real_qui}):** O modelo exige no mínimo {MIN_LINHAS_QUI2} registros reais limpos para avaliar a dependência doutrinária com segurança.")
                     else:
                         res_chi = analise.calcular_qui_quadrado(df_qui_clean, 'Tip_Limpa', col_t)
                         if res_chi.get('valido', False):
                             st.write(f"Qui-Quadrado: `{res_chi['chi2']:.2f}`")
                             st.write(f"P-Value: `{res_chi['p_value']:.4f}`")
-                            dependencia = "Existe dependência doutrinária" if res_chi['p_value'] < 0.05 else "Distribuição aleatória"
-                            st.success(f"Resultado: **{dependencia}**.")
+                            # Mensagem condicional dinâmica
+                            if res_chi['p_value'] < 0.05:
+                                st.success("✅ **Resultado:** Existe dependência doutrinária. As técnicas variam segundo a tipologia.")
+                            else:
+                                st.info("ℹ️ **Resultado:** Distribuição aleatória. Não há padrão fixo de técnica por tipologia.")
                         else: 
                             st.warning(res_chi.get('msg', 'Variância insuficiente para cruzar os dados.'))
                 else:
@@ -908,9 +910,16 @@ else:
         st.markdown("---")
         st.markdown("<h4 style='color: #FFD700;'>📐 Modelagem Avançada: Viés e Eficácia Real das Técnicas</h4>", unsafe_allow_html=True)
         
-        MINIMO_AVANCADO = 50
+        # Filtra fantasmas logo na entrada para proteger TODOS os modelos avançados
+        df_adv_master = df_tec_filt.copy()
+        lixo = ['none', 'nan', 'n/d', '', 'null']
+        if 'TÉCNICAS' in df_adv_master.columns:
+            df_adv_master = df_adv_master[~df_adv_master['TÉCNICAS'].astype(str).str.strip().str.lower().isin(lixo)]
         
-        if len(df_tec_filt) < MINIMO_AVANCADO:
+        MINIMO_AVANCADO = 30
+        n_adv_real = len(df_adv_master)
+        
+        if n_adv_real < MINIMO_AVANCADO:
             st.info(f"""
             💡 **Por que estas estatísticas estão ocultas? (Modo de Segurança)**
             
@@ -918,11 +927,11 @@ else:
             
             Para manter o rigor científico, o sistema só libera a Modelagem Avançada quando atinge um volume seguro de dados.
             
-            * **Registros de técnicas no cenário atual:** {len(df_tec_filt)}
-            * **Meta para desbloqueio:** {MINIMO_AVANCADO}
+            * **Registros reais detectados no cenário atual:** {n_adv_real}
+            * **Meta para desbloqueio do motor analítico:** {MINIMO_AVANCADO}
             """)
         else:
-            col_resposta = next((col for col in df_tec_filt.columns if 'ATITUDE' in col.upper()), None)
+            col_resposta = next((col for col in df_adv_master.columns if 'ATITUDE' in col.upper()), None)
             
             if not col_resposta:
                 st.warning("⚠️ **Ativação Necessária:** Crie a coluna 'Resposta da Técnica' no Airtable.")
@@ -934,7 +943,7 @@ else:
                     from scipy.stats import chi2_contingency
                     import numpy as np
 
-                    df_adv = df_tec_filt.copy()
+                    df_adv = df_adv_master.copy()
                     mapa_resp = {'-1': 'Negativa', '-1.0': 'Negativa', -1: 'Negativa', '🔴 reação negativa': 'Negativa',
                                  '0': 'Neutra', '0.0': 'Neutra', 0: 'Neutra', '⚪ reação neutra': 'Neutra',
                                  '1': 'Positiva', '1.0': 'Positiva', 1: 'Positiva', '🟢 reação positiva': 'Positiva'}
@@ -989,7 +998,7 @@ else:
                                 st.dataframe(df_or.style.format({'Odds_Ratio': '{:.2f}', 'P_Valor': '{:.4f}'}), use_container_width=True, hide_index=True)
                                 st.success("💡 **Como interpretar:** Um Odds Ratio (OR) de `2.0` significa que aplicar esta técnica específica *dobra* a chance de conseguir uma reação positiva do causador.")
                             else:
-                                st.write("Nenhuma técnica isolada apresentou significância estatística (P < 0.05).")
+                                st.info("ℹ️ Nenhuma técnica isolada apresentou significância estatística neste cenário (P < 0.05).")
                         except Exception as e:
                             st.warning(f"O modelo Ordinal não convergiu. Detalhe: {str(e)[:100]}")
                     st.markdown("</div>", unsafe_allow_html=True)
@@ -999,18 +1008,11 @@ else:
                     st.markdown("##### 3. Robustez Hierárquica (Equações de Estimação Generalizadas - GEE)")
                     st.markdown("<span style='font-size: 0.85rem; color: #aaa;'><strong>O que significa:</strong> É o teste final e mais rigoroso. Ele agrupa as ações para garantir que a eficácia da técnica é uma regra geral da equipe, e não apenas o resultado do talento de um único 'negociador estrela'.</span>", unsafe_allow_html=True)
                     
-                    # --- FILTRO CAÇA-FANTASMAS DEFINITIVO GEE ---
-                    df_gee_real = df_adv_clean.dropna(subset=['TÉCNICAS']).copy()
-                    
-                    # A mesma lista negra
-                    lixo = ['none', 'nan', 'n/d', '', 'null']
-                    df_gee_real = df_gee_real[~df_gee_real['TÉCNICAS'].astype(str).str.strip().str.lower().isin(lixo)]
-                    
+                    df_gee_real = df_adv_clean.copy()
                     linhas_validas = len(df_gee_real)
-                    LIMITE_LINHAS = 50
                     
-                    if linhas_validas < LIMITE_LINHAS:
-                        st.warning(f"⚠️ O modelo hierárquico GEE necessita de um banco de dados mais maduro. Volume atual de técnicas reais: {linhas_validas}. O modelo permanecerá em espera até atingir {LIMITE_LINHAS} registros.")
+                    if linhas_validas < 30:
+                        st.warning(f"⚠️ O modelo hierárquico GEE necessita de múltiplos eventos reais por negociador para calcular a variância sem viés. O modelo permanecerá em espera.")
                     else:
                         df_gee_real['Sucesso'] = np.where(df_gee_real['Resposta_Cat'] == 'Positiva', 1, 0)
                         try:
@@ -1036,18 +1038,18 @@ else:
                                                  use_container_width=True, hide_index=True)
                                     
                                     if (gee_pvals < 0.05).any():
-                                        st.success("💡 **Doutrina Validada:** Técnica sobreviveu ao controle de viés da tropa.")
+                                        st.success("✅ **Doutrina Validada:** Técnica sobreviveu ao controle de viés da tropa.")
                                     else:
-                                        st.info("Nenhuma técnica atingiu significância (P < 0.05).")
+                                        st.info("ℹ️ Nenhuma técnica atingiu significância (P < 0.05).")
                         except Exception as e:
                             st.error(f"Erro no processamento GEE: {str(e)[:50]}")
                     
                     st.markdown("</div>", unsafe_allow_html=True)
                     
                 except ImportError:
-                    st.error("🚨 A biblioteca **statsmodels** não está instalada.")
+                    st.error("🚨 A biblioteca **statsmodels** não está instalada no servidor. Rode `pip install statsmodels`.")
                 except Exception as e:
-                    st.error(f"🚨 Erro geral na modelagem: {str(e)}")
+                    st.error(f"🚨 Erro geral na modelagem avançada: {str(e)}")
 
         # --- 4. TENDÊNCIA TEMPORAL ---
         st.markdown("---")
