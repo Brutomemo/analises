@@ -543,7 +543,7 @@ else:
             # =========================================================
             # ANÁLISE DE SIMILITUDE LÉXICA E GRAFO SEMÂNTICO
             # =========================================================
-            st.markdown("### 🗣️ Índice de Sintonia Léxica e Grafo de Rapport")
+            st.markdown("### 🗣️ Índice de Similitude e Grafo de Espelhamento Léxico")
             st.markdown("<div class='info-card'>", unsafe_allow_html=True)
             st.markdown("<span style='font-size: 0.85rem; color: #aaa;'><strong>O que significa:</strong> Compara matematicamente as palavras utilizadas pelo Negociador Principal e pelo Causador. Índices mais altos indicam 'espelhamento' na estrutura da linguagem (mirroring). O grafo ilustra os núcleos semânticos que conectaram as duas partes.</span><br><br>", unsafe_allow_html=True)
 
@@ -571,7 +571,15 @@ else:
                         txt_caus_limpo = limpar_texto(txt_caus)
                         txt_neg_limpo = limpar_texto(txt_neg)
 
-                        stopwords_pt = ['o', 'a', 'os', 'as', 'um', 'uma', 'de', 'do', 'da', 'em', 'no', 'na', 'para', 'com', 'que', 'é', 'e', 'se', 'por', 'como', 'pra', 'ta', 'tá', 'eu', 'vc', 'você', 'me', 'meu', 'minha', 'aqui', 'vou', 'isso', 'mas', 'não', 'nao', 'sim', 'só']
+                        stopwords_pt = [
+                            'o', 'a', 'os', 'as', 'um', 'uma', 'de', 'do', 'da', 'em', 'no', 'na', 'para', 'com', 
+                            'que', 'é', 'e', 'se', 'por', 'como', 'pra', 'ta', 'tá', 'eu', 'vc', 'você', 'me', 
+                            'meu', 'minha', 'aqui', 'vou', 'isso', 'mas', 'não', 'nao', 'sim', 'só', 'ele', 'ela', 
+                            'eles', 'elas', 'vai', 'foi', 'fui', 'tudo', 'bem', 'tem', 'têm', 'bom', 'pode', 'então', 
+                            'gente', 'muito', 'mais', 'já', 'agora', 'quando', 'onde', 'quem', 'qual', 'ser', 'fazer', 
+                            'ter', 'estar', 'dizer', 'falar', 'quer', 'quero', 'sei', 'sabe', 'ver', 'lá', 'aí', 
+                            'pro', 'pra', 'dos', 'das', 'nas', 'nos', 'ou', 'nem', 'até', 'mesmo', 'porque', 'pq'
+                        ]
                         vectorizer = TfidfVectorizer(stop_words=stopwords_pt)
                         
                         tfidf_matrix = vectorizer.fit_transform([txt_neg_limpo, txt_caus_limpo])
