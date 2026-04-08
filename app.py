@@ -545,7 +545,7 @@ else:
             # =========================================================
             st.markdown("### 🗣️ Índice de Similitude e Grafo de Espelhamento Léxico")
             st.markdown("<div class='info-card'>", unsafe_allow_html=True)
-            st.markdown("<span style='font-size: 0.85rem; color: #aaa;'><strong>O que significa:</strong> Compara matematicamente as palavras utilizadas pelo Negociador Principal e pelo Causador. Índices mais altos indicam 'espelhamento' na estrutura da linguagem (mirroring). O grafo ilustra os núcleos semânticos que conectaram as duas partes.</span><br><br>", unsafe_allow_html=True)
+            st.markdown("<span style='font-size: 0.85rem; color: #aaa;'><strong>O que significa:</strong> Compara matematicamente as palavras utilizadas pelo Negociador Principal e pelo Causador, mensurando o espelhamento. Índices mais altos indicam 'espelhamento' na estrutura da linguagem (mirroring). Em negociações bem-sucedidas, o negociador e o causador passam a apresentar núcleos semânticos em comum, criando uma 'Sincronia Lexical'. O grafo ilustra os núcleos semânticos que conectaram as duas partes.</span><br><br>", unsafe_allow_html=True)
 
             col_causador = "TRANSCRIÇÃO DO CAUSADOR"
             col_negociador = "TRANSCRIÇÃO DO NEGOCIADOR PRINCIPAL"
@@ -554,7 +554,7 @@ else:
                 txt_caus = str(df_apa[col_causador]).strip()
                 txt_neg = str(df_apa[col_negociador]).strip()
                 
-                # VERIFICAÇÃO ATUALIZADA (O Caso do Gabriel)
+                
                 if txt_caus.lower() in ['nan', 'none', '', 'inaudível', 'n/d'] or txt_neg.lower() in ['nan', 'none', '', 'inaudível', 'n/d']:
                     st.warning("⚠️ **Diálogo unilateral ou ausente.** Não foi possível mensurar o espelhamento pois uma das partes não produziu volume verbal audível/registrado. Isso geralmente indica ausência de rapport verbal estruturado na fase registrada.")
                 elif len(txt_caus.split()) < 5 or len(txt_neg.split()) < 5:
@@ -578,7 +578,7 @@ else:
                             'eles', 'elas', 'vai', 'foi', 'fui', 'tudo', 'bem', 'tem', 'têm', 'bom', 'pode', 'então', 
                             'gente', 'muito', 'mais', 'já', 'agora', 'quando', 'onde', 'quem', 'qual', 'ser', 'fazer', 
                             'ter', 'estar', 'dizer', 'falar', 'quer', 'quero', 'sei', 'sabe', 'ver', 'lá', 'aí', 
-                            'pro', 'pra', 'dos', 'das', 'nas', 'nos', 'ou', 'nem', 'até', 'mesmo', 'porque', 'pq'
+                            'pro', 'pra', 'dos', 'das', 'nas', 'nos', 'ou', 'nem', 'até', 'mesmo', 'porque', 'pq', 'mim', 'assim', 'falou', 'dele', 'comigo', 'faz', 'ficar'
                         ]
                         vectorizer = TfidfVectorizer(stop_words=stopwords_pt)
                         
@@ -608,7 +608,7 @@ else:
 
                         # --- GERAÇÃO DO GRAFO DE SIMILITUDE (ESTILO IRAMUTEQ LIMPO COM PLOTLY) ---
                         if sintonia_pct > 0:
-                            st.markdown("##### 🕸️ Grafo de Convergência Tática (Núcleos Semânticos Compartilhados)")
+                            st.markdown("##### 🕸️ Grafo de Espelhamento Léxico (Núcleos Semânticos Compartilhados)")
                             st.write("<span style='font-size: 0.85rem; color: #aaa;'>Visualização interativa dos termos que serviram de ponte para o estabelecimento do Rapport.</span>", unsafe_allow_html=True)
                             
                             try:
