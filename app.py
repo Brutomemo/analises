@@ -865,24 +865,33 @@ else:
 
         with c_sp2:
             st.markdown("<div class='info-card'><strong>Teste Qui-Quadrado: Tipologia vs. Técnicas</strong>", unsafe_allow_html=True)
+            
+            # Trava de segurança para o Qui-Quadrado
+            MIN_APAS_QUI2 = 15
+            
             if not df_tec.empty and not df_tec_filt.empty and 'col_t' in locals() and col_t:
-                if 'Tip_Limpa' in df_tec_filt.columns:
+                # Verifica se há volume suficiente antes de calcular
+                if len(df_tec_filt) < MIN_APAS_QUI2:
+                    st.warning(f"Amostra insuficiente (N={len(df_tec_filt)}). O cálculo do Qui-Quadrado permanece em espera para evitar anomalias matemáticas e falsos positivos.")
+                elif 'Tip_Limpa' in df_tec_filt.columns:
                     res_chi = analise.calcular_qui_quadrado(df_tec_filt, 'Tip_Limpa', col_t)
                     if res_chi.get('valido', False):
                         st.write(f"Qui-Quadrado: `{res_chi['chi2']:.2f}`")
                         st.write(f"P-Value: `{res_chi['p_value']:.4f}`")
                         dependencia = "Existe dependência doutrinária" if res_chi['p_value'] < 0.05 else "Distribuição aleatória"
                         st.success(f"Resultado: **{dependencia}**.")
-                    else: st.warning(res_chi.get('msg', 'Variância insuficiente.'))
-            else: st.warning("Sem dados de técnicas carregados.")
+                    else: 
+                        st.warning(res_chi.get('msg', 'Variância insuficiente.'))
+            else: 
+                st.warning("Sem dados de técnicas carregados.")
             st.markdown("</div>", unsafe_allow_html=True)
 
         # =========================================================
         # MOTOR ESTATÍSTICO AVANÇADO (VIÉS, REGRESSÃO ORDINAL E GEE)
         # =========================================================
         
-        # ⚠️ ATENÇÃO: SUBSTITUA 'apa_selecionada' PELO NOME DA SUA VARIÁVEL DO FILTRO LÁ NO TOPO DO CÓDIGO
-        if apa_selecionada == "Todas":
+        
+        if "todas" in str(filtro_ocorrencia).lower() or not filtro_ocorrencia:
             
             st.markdown("---")
             st.markdown("<h4 style='color: #FFD700;'>📐 Modelagem Avançada: Viés e Eficácia Real das Técnicas</h4>", unsafe_allow_html=True)
