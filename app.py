@@ -1090,7 +1090,7 @@ else:
                             return f"""
                             <div class="info-card" style="border-left: 3px solid #06C755; padding: 15px; margin-bottom: 15px;">
                                 <h5 style="color: #06C755; margin-top: 0; font-size: 1.1rem;">{icone} {titulo}</h5>
-                                <p style="font-size: 1.05rem; line-height: 1.6; color: #EEE;">{texto}</p>
+                                <p style="font-size: 1.05rem; line-height: 1.6; color: #FFF;">{texto}</p>
                             </div>
                             """
 
