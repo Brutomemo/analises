@@ -235,7 +235,7 @@ st.markdown("""
     div[data-testid="stTabs"] button { font-size: 1.2rem; font-weight: bold; transition: color 0.3s;}
     div[data-testid="stTabs"] button[data-baseweb="tab"]:hover { color: #FFD700; }
 
-    /* Cores Táticas para o Efeito de Vidro (Agressividade e Receptividade) */
+    /* Cores para o Efeito de Vidro (Agressividade e Receptividade) */
     .card-red { border-left: 4px solid #DDD !important; }
     .card-red:hover { box-shadow: 0 15px 40px rgba(239, 68, 68, 0.25) !important; border-color: rgba(239, 68, 68, 0.6) !important; }
     .card-red::before { background: linear-gradient(90deg, transparent, rgba(239, 68, 68, 0.15), transparent) !important; }
@@ -652,7 +652,7 @@ else:
                             """, unsafe_allow_html=True)
                             
                             if sintonia_pct >= 25:
-                                st.success("✅ **Forte Vínculo (Rapport Tático):** Alto nível de ancoragem semântica. O negociador absorveu e espelhou o léxico de dor/interesse do causador.")
+                                st.success("✅ **Forte Vínculo (Espelhamento Tático):** Alto nível de ancoragem. O negociador adequou-se ao código linguístico do causador (espelhamento) e validou seus pontos de interesse.")
                             elif sintonia_pct >= 10:
                                 st.info("ℹ️ **Vínculo Moderado:** Há pontos de ancoragem semântica, mas os discursos ainda guardam distanciamento conceitual.")
                             else:
@@ -1108,7 +1108,7 @@ else:
             st.markdown("</div>", unsafe_allow_html=True)
 
         st.markdown("---")
-        st.markdown("<h4 style='color: #FFD700;'>📐 Modelagem Avançada: Viés do Negociador e Eficácia Real das Técnicas empregadas</h4>", unsafe_allow_html=True)
+        st.markdown("<h4 style='color: #FFD700;'>📐 Modelagem Avançada: Viés do Negociador e Eficácia das Técnicas empregadas</h4>", unsafe_allow_html=True)
         st.markdown("""
         <p style='color: #bbb; font-size: 1rem; line-height: 1.6; margin-bottom: 20px;'>
             Este módulo amplia a análise estatística ao empregar modelos inferenciais avançados, como Regressão Ordinal e Equações de Estimação Generalizadas (GEE), com o objetivo de avaliar a eficácia das técnicas aplicadas em diferentes contextos operacionais. A abordagem busca controlar variáveis de confusão — como diferenças individuais entre negociadores e características específicas dos cenários — permitindo uma análise mais precisa das associações observadas. O propósito é identificar padrões consistentes nos dados e subsidiar a construção de <strong>protocolos táticos orientados por evidências</strong>, reduzindo a influência de vieses e fortalecendo a avaliação da doutrina da Equipe de Negociação.
