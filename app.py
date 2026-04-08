@@ -1015,6 +1015,7 @@ else:
                     st.error(f"Erro no processamento GEE: {str(e)[:50]}")
                 
                 st.markdown("</div>", unsafe_allow_html=True)
+                
 
             # ===============================================================
             # AQUI ESTÁ O FECHAMENTO QUE FALTAVA DESDE A LINHA 25 DO SEU CÓDIGO
