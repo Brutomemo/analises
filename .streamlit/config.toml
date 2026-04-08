@@ -1,7 +1,7 @@
 [theme]
 # Força o modo escuro para evitar conflito com o tema do celular
 base="dark"
-primaryColor="#d33612"
+primaryColor="#FFD700"
 backgroundColor="#0e1117"
 secondaryBackgroundColor="#262730"
 textColor="#fafafa"
