@@ -395,3 +395,5 @@ def exibir_relatorio_ia_streamlit(
 
         with st.expander("Ver payload enviado para a IA"):
             st.json(payload)
+            st.write("RESPOSTA DA IA:")
+st.json(json.loads(raw_json))
