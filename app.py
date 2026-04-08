@@ -973,23 +973,29 @@ else:
                 st.markdown("</div>", unsafe_allow_html=True)
                 
                 # =========================================================
-                # 3. Modelo Multinível (GEE) - [DETALHES CORRIGIDOS AQUI]
+                # 3. Modelo Multinível (GEE) - VERSÃO DE TESTE
                 # =========================================================
                 st.markdown("<div class='info-card'>", unsafe_allow_html=True)
-                st.markdown("##### 3. Robustez Hierárquica (Equações de Estimação Generalizadas - GEE)")
+                # 🔴 TRUQUE VISUAL: Se essa palavra não aparecer na tela, o Streamlit não atualizou!
+                st.markdown("##### 3. Robustez Hierárquica (GEE) - [ATUALIZADO]") 
                 st.write("Controla o efeito de 'cluster' (negociador).")
                 
-                # A TRAVA DE SEGURANÇA AGORA VEM ANTES DOS CÁLCULOS
-                if len(df_adv_clean) < 15:
-                    st.warning(f"⚠️ **Amostra Reduzida (N={len(df_adv_clean)}):** O modelo hierárquico GEE necessita de múltiplos eventos por negociador para calcular a variância de cluster sem viés. Modelo em espera.")
+                # Destrói linhas vazias ou nulas que o Airtable pode ter mandado
+                df_gee_real = df_adv_clean.dropna(subset=['TÉCNICAS']).copy()
+                df_gee_real = df_gee_real[df_gee_real['TÉCNICAS'].astype(str).str.strip() != ""]
+                
+                # Conta quantas APAs REAIS existem
+                apas_reais = len(df_gee_real)
+                
+                if apas_reais < 15:
+                    st.warning(f"⚠️ **Amostra Reduzida (N={apas_reais}):** O modelo hierárquico GEE necessita de múltiplos eventos por negociador para calcular a variância de cluster sem viés. Modelo em espera.")
                 else:
-                    df_adv_clean['Sucesso'] = np.where(df_adv_clean['Resposta_Cat'] == 'Positiva', 1, 0)
-                    
+                    df_gee_real['Sucesso'] = np.where(df_gee_real['Resposta_Cat'] == 'Positiva', 1, 0)
                     try:
-                        if 'Tecnica_Patsy' in df_adv_clean.columns:
+                        if 'Tecnica_Patsy' in df_gee_real.columns:
                             modelo_gee = smf.gee("Sucesso ~ C(Tecnica_Patsy)", 
-                                                 groups=df_adv_clean['Neg_Patsy'], 
-                                                 data=df_adv_clean, 
+                                                 groups=df_gee_real['Neg_Patsy'], 
+                                                 data=df_gee_real, 
                                                  family=sm.families.Binomial(), 
                                                  cov_struct=sm.cov_struct.Exchangeable())
                             res_gee = modelo_gee.fit()
@@ -1007,14 +1013,10 @@ else:
                                 st.dataframe(df_gee.style.format({'Coeficiente_GEE': '{:.2f}', 'P_Valor': '{:.4f}'}), 
                                              use_container_width=True, hide_index=True)
                                 
-                                # SÓ VALIDA SE HOUVER SIGNIFICÂNCIA REAL
                                 if (gee_pvals < 0.05).any():
                                     st.success("💡 **Doutrina Validada:** Técnica sobreviveu ao controle de viés.")
                                 else:
                                     st.info("Nenhuma técnica atingiu significância (P < 0.05).")
-                        else:
-                            st.error("Coluna 'TÉCNICAS' não processada.")
-
                     except Exception as e:
                         st.error(f"Erro no processamento GEE: {str(e)[:50]}")
                 
