@@ -244,7 +244,7 @@ import base64
 from PIL import Image
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
-# ATENÇÃO: Garanta que no GitHub a pasta se chama exatamente "Assets"
+
 path_assets = os.path.join(script_dir, "Assets") 
 
 # Padronizando todos os caminhos para nomes limpos e minúsculos
@@ -274,7 +274,6 @@ except Exception as e:
 # --- 2. RENDERIZAR BANNER TOPO (Existente) ---
 if img_topo_b64:
     st.markdown(f"""<div style="position: relative; width: 100%; height: 200px; border-radius: 2px; overflow: hidden; background-image: url('data:image/png;base64,{img_topo_b64}'); background-size: cover; background-position: center 40%; margin-bottom: 1rem;"><div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(180deg, rgba(5,5,5,0.1) 0%, rgba(249, 115, 22, 0.6) 100%);"></div></div>""", unsafe_allow_html=True)
-
 
 # --- 3. CRIAR O RECIPIENTE DO CABEÇALHO COM O FUNDO FAINT ---
 # Este HTML cria um container que envolve todo o seu título e info-card,
@@ -540,6 +539,74 @@ else:
                 st.write(limpar_valor(df_apa.get('TRANSCRIÇÃO DO NEGOCIADOR SECUNDÁRIO')))
 
             st.markdown("---")
+
+            # =========================================================
+            # ANÁLISE DE SIMILITUDE LÉXICA (RAPPORT MATEMÁTICO)
+            # =========================================================
+            st.markdown("### 🗣️ Índice de Sintonia Léxica (Validação de Rapport)")
+            st.markdown("<div class='info-card'>", unsafe_allow_html=True)
+            st.markdown("<span style='font-size: 0.85rem; color: #aaa;'><strong>O que significa:</strong> Compara matematicamente as palavras utilizadas pelo Negociador Principal e pelo Causador. Índices mais altos indicam 'espelhamento' (mirroring) efetivo e construção sólida de vínculo tático.</span><br><br>", unsafe_allow_html=True)
+
+            col_causador = "TRANSCRIÇÃO DO CAUSADOR"
+            col_negociador = "TRANSCRIÇÃO DO NEGOCIADOR PRINCIPAL"
+
+            if col_causador in df_apa and col_negociador in df_apa:
+                txt_caus = str(df_apa[col_causador]).strip()
+                txt_neg = str(df_apa[col_negociador]).strip()
+                
+                if txt_caus.lower() in ['nan', 'none', '', 'inaudível', 'n/d'] or txt_neg.lower() in ['nan', 'none', '', 'inaudível', 'n/d']:
+                    st.warning("⚠️ Transcrições insuficientes ou ausentes nesta APA para o cálculo de similaridade.")
+                elif len(txt_caus.split()) < 5 or len(txt_neg.split()) < 5:
+                    st.info("ℹ️ Diálogo muito curto. O motor semântico necessita de mais de 5 palavras válidas de cada parte para um cálculo confiável.")
+                else:
+                    try:
+                        from sklearn.feature_extraction.text import TfidfVectorizer
+                        from sklearn.metrics.pairwise import cosine_similarity
+                        import re
+
+                        def limpar_texto(t):
+                            t = re.sub(r'[^\w\s]', '', t.lower())
+                            return t
+
+                        txt_caus_limpo = limpar_texto(txt_caus)
+                        txt_neg_limpo = limpar_texto(txt_neg)
+
+                        stopwords_pt = ['o', 'a', 'os', 'as', 'um', 'uma', 'de', 'do', 'da', 'em', 'no', 'na', 'para', 'com', 'que', 'é', 'e', 'se', 'por', 'como']
+                        vectorizer = TfidfVectorizer(stop_words=stopwords_pt)
+                        
+                        tfidf_matrix = vectorizer.fit_transform([txt_neg_limpo, txt_caus_limpo])
+                        similaridade = cosine_similarity(tfidf_matrix[0:1], tfidf_matrix[1:2])[0][0]
+                        
+                        sintonia_pct = similaridade * 100
+
+                        col_sin1, col_sin2 = st.columns([1, 3])
+                        
+                        with col_sin1:
+                            st.metric(label="Grau de Espelhamento", value=f"{sintonia_pct:.1f}%")
+                        
+                        with col_sin2:
+                            cor_barra = "#28a745" if sintonia_pct > 25 else "#ffc107" if sintonia_pct > 10 else "#dc3545"
+                            st.markdown(f"""
+                            <div style='background-color: #333; border-radius: 5px; width: 100%; height: 25px; margin-top: 15px;'>
+                                <div style='background-color: {cor_barra}; width: {sintonia_pct}%; height: 100%; border-radius: 5px;'></div>
+                            </div>
+                            """, unsafe_allow_html=True)
+                            
+                            if sintonia_pct >= 25:
+                                st.success("✅ **Forte Vínculo (Rapport Tático):** O negociador absorveu o léxico do causador, demonstrando excelente sintonia e validação.")
+                            elif sintonia_pct >= 10:
+                                st.info("ℹ️ **Vínculo Moderado:** Há pontos de ancoragem semântica, mas os discursos ainda guardam distanciamento.")
+                            else:
+                                st.error("🚨 **Divergência de Discurso:** As partes utilizaram vocabulários quase completamente distintos. Indica ruptura de vínculo ou negociação puramente transacional.")
+
+                    except ImportError:
+                        st.error("🚨 A biblioteca **scikit-learn** não está instalada no servidor. É necessária para a análise de similitude. Rode `pip install scikit-learn`.")
+                    except Exception as e:
+                        st.error(f"Erro no cálculo de NLP: {e}")
+            else:
+                st.info("Colunas de transcrição não encontradas para o cálculo de Sintonia Léxica.")
+                
+            st.markdown("</div>", unsafe_allow_html=True)
 
             # 4. TABELA DE FREQUÊNCIA (CRUZAMENTO DEFINITIVO)
             st.markdown("<h4 style='color: #FFD700;'>📉 Frequência das Técnicas Aplicadas (Nesta APA)</h4>", unsafe_allow_html=True)
@@ -884,7 +951,7 @@ else:
             st.markdown("</div>", unsafe_allow_html=True)
 
         with c_sp2:
-            st.markdown("<div class='info-card'><strong>Teste Qui-Quadrado Dinâmico</strong><br><span style='font-size: 0.85rem; color: #aaa;'>Meda a dependência entre duas variáveis táticas para identificar padrões doutrinários.</span>", unsafe_allow_html=True)
+            st.markdown("<div class='info-card'><strong>Teste Qui-Quadrado Dinâmico</strong><br><span style='font-size: 0.85rem; color: #aaa;'>Analisa a dependência entre duas variáveis com o objetivo de identificar padrões de associação entre elas.</span>", unsafe_allow_html=True)
             
             # --- 1. SELEÇÃO DE VARIÁVEIS PELO USUÁRIO ---
             # Criamos um dicionário para traduzir o nome técnico para o nome que o policial entende
