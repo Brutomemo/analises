@@ -866,13 +866,10 @@ else:
         with c_sp2:
             st.markdown("<div class='info-card'><strong>Teste Qui-Quadrado: Tipologia vs. Técnicas</strong>", unsafe_allow_html=True)
             
-            # Trava de segurança para o Qui-Quadrado
-            MIN_APAS_QUI2 = 15
-            
             if not df_tec.empty and not df_tec_filt.empty and 'col_t' in locals() and col_t:
-                # Verifica se há volume suficiente antes de calcular
-                if len(df_tec_filt) < MIN_APAS_QUI2:
-                    st.warning(f"Amostra insuficiente (N={len(df_tec_filt)}). O cálculo do Qui-Quadrado permanece em espera para evitar anomalias matemáticas e falsos positivos.")
+                # Verifica se há volume suficiente (N >= 15) antes de calcular
+                if len(df_tec_filt) < 15:
+                    st.warning(f"Amostra insuficiente (N={len(df_tec_filt)}). O cálculo do Qui-Quadrado requer mais dados para evitar distorções matemáticas e falsos positivos.")
                 elif 'Tip_Limpa' in df_tec_filt.columns:
                     res_chi = analise.calcular_qui_quadrado(df_tec_filt, 'Tip_Limpa', col_t)
                     if res_chi.get('valido', False):
@@ -889,13 +886,15 @@ else:
         # =========================================================
         # MOTOR ESTATÍSTICO AVANÇADO (VIÉS, REGRESSÃO ORDINAL E GEE)
         # =========================================================
+        st.markdown("---")
+        st.markdown("<h4 style='color: #FFD700;'>📐 Modelagem Avançada: Viés e Eficácia Real das Técnicas</h4>", unsafe_allow_html=True)
         
+        # --- A NOVA TRAVA DE SEGURANÇA (Baseada apenas no volume de dados) ---
+        MINIMO_AVANCADO = 15
         
-        if "todas" in str(filtro_ocorrencia).lower() or not filtro_ocorrencia:
-            
-            st.markdown("---")
-            st.markdown("<h4 style='color: #FFD700;'>📐 Modelagem Avançada: Viés e Eficácia Real das Técnicas</h4>", unsafe_allow_html=True)
-            
+        if len(df_tec_filt) < MINIMO_AVANCADO:
+            st.info(f"💡 **Modelagem Oculta (Amostra Reduzida):** Os motores de *Eficácia Real* e *Controle de Viés* avaliam o comportamento histórico da equipe e exigem um volume mínimo de {MINIMO_AVANCADO} registros para rodar sem distorções estatísticas. \n\n**Volume atual no cenário filtrado: {len(df_tec_filt)}**. \n\nAguarde a alimentação do banco de dados ou amplie os filtros de pesquisa.")
+        else:
             # Caça a coluna independentemente se for a de números ou a de texto com emojis
             col_resposta = next((col for col in df_tec_filt.columns if 'ATITUDE' in col.upper()), None)
             
@@ -1026,11 +1025,6 @@ else:
                     st.error("🚨 A biblioteca **statsmodels** não está instalada no servidor. Rode `pip install statsmodels`.")
                 except Exception as e:
                     st.error(f"🚨 Erro geral na modelagem avançada: {str(e)}")
-
-        # AQUI É O COMPORTAMENTO SE O USUÁRIO FILTRAR UMA APA ESPECÍFICA
-        else:
-            st.markdown("---")
-            st.info("💡 **Modelagem Avançada Oculta:** Os motores de *Eficácia Real* e *Controle de Viés* avaliam o comportamento histórico e doutrinário da equipe como um todo. Para visualizar estas estatísticas, remova o filtro de APA específica (selecione 'Todas').")
 
         # --- 4. TENDÊNCIA TEMPORAL ---
         st.markdown("---")
