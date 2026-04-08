@@ -960,7 +960,7 @@ else:
     # =========================================================
     with aba_geral:
         st.markdown("### 🧠 Série Histórica - Negociações GATE")
-        st.markdown("<h5 style='color: #f97;'>Filtros de Cenário</h5>", unsafe_allow_html=True)
+        st.markdown("<h5 style='color: #f97;'>Filtros por: Negociador, Tipologia e Modalidade do Incidente</h5>", unsafe_allow_html=True)
         
         col_f1, col_f2, col_f3 = st.columns(3)
         with col_f1:
@@ -985,7 +985,7 @@ else:
         with col_m3: st.metric("Tempo Total de Negociação Tática", somar_tempos_segundos(df_quali_filt.get('Tempo de Negociação Tática', [])))
 
         st.markdown("---")
-        st.markdown("#### Ranking de Técnicas (Filtrado)")
+        st.markdown("#### Ranking de Técnicas Aplicadas")
         if not df_tec.empty:
             df_tec['Neg_Limpo'] = df_tec['Negociador Principal do incidente crítico'].apply(limpar_valor) if 'Negociador Principal do incidente crítico' in df_tec.columns else 'N/D'
             df_tec['Tip_Limpa'] = df_tec['Tipologia do incidente crítico'].apply(limpar_valor) if 'Tipologia do incidente crítico' in df_tec.columns else 'N/D'
@@ -1108,7 +1108,12 @@ else:
             st.markdown("</div>", unsafe_allow_html=True)
 
         st.markdown("---")
-        st.markdown("<h4 style='color: #FFD700;'>📐 Modelagem Avançada: Viés e Eficácia Real das Técnicas</h4>", unsafe_allow_html=True)
+        st.markdown("<h4 style='color: #FFD700;'>📐 Modelagem Avançada: Viés do Negociador e Eficácia Real das Técnicas empregadas</h4>", unsafe_allow_html=True)
+        st.markdown("""
+        <p style='color: #bbb; font-size: 1rem; line-height: 1.6; margin-bottom: 20px;'>
+            Este módulo amplia a análise estatística ao empregar modelos inferenciais avançados, como Regressão Ordinal e Equações de Estimação Generalizadas (GEE), com o objetivo de avaliar a eficácia das técnicas aplicadas em diferentes contextos operacionais. A abordagem busca controlar variáveis de confusão — como diferenças individuais entre negociadores e características específicas dos cenários — permitindo uma análise mais precisa das associações observadas. O propósito é identificar padrões consistentes nos dados e subsidiar a construção de <strong>protocolos táticos orientados por evidências</strong>, reduzindo a influência de vieses e fortalecendo a avaliação da doutrina da Equipe de Negociação.
+        </p>
+        """, unsafe_allow_html=True)
         
         if total_apas_reais < 15:
             st.info(f"""
