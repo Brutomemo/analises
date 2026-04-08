@@ -973,22 +973,24 @@ else:
                 st.markdown("</div>", unsafe_allow_html=True)
                 
                 # =========================================================
-                # 3. Modelo Multinível (GEE) - VERSÃO DE TESTE
+                # 3. Modelo Multinível (GEE)
                 # =========================================================
                 st.markdown("<div class='info-card'>", unsafe_allow_html=True)
-                # 🔴 TRUQUE VISUAL: Se essa palavra não aparecer na tela, o Streamlit não atualizou!
-                st.markdown("##### 3. Robustez Hierárquica (GEE) - [ATUALIZADO]") 
+                st.markdown("##### 3. Robustez Hierárquica (Equações de Estimação Generalizadas - GEE)")
                 st.write("Controla o efeito de 'cluster' (negociador).")
                 
-                # Destrói linhas vazias ou nulas que o Airtable pode ter mandado
+                # Destrói qualquer linha vazia garantindo que só conte técnicas reais
                 df_gee_real = df_adv_clean.dropna(subset=['TÉCNICAS']).copy()
                 df_gee_real = df_gee_real[df_gee_real['TÉCNICAS'].astype(str).str.strip() != ""]
                 
-                # Conta quantas APAs REAIS existem
-                apas_reais = len(df_gee_real)
+                # Conta quantas linhas de dados o Python realmente encontrou
+                linhas_validas = len(df_gee_real)
                 
-                if apas_reais < 15:
-                    st.warning(f"⚠️ **Amostra Reduzida (N={apas_reais}):** O modelo hierárquico GEE necessita de múltiplos eventos por negociador para calcular a variância de cluster sem viés. Modelo em espera.")
+                # Subimos a trava para 50, pois 1 APA gera múltiplas linhas de técnicas
+                LIMITE_LINHAS = 50
+                
+                if linhas_validas < LIMITE_LINHAS:
+                    st.warning(f"⚠️ **Amostra Reduzida (Registros atuais: {linhas_validas} | Necessários: {LIMITE_LINHAS}):** O modelo hierárquico GEE necessita de múltiplos eventos reais por negociador para calcular a variância de cluster sem viés matemático. O modelo permanecerá em espera até o banco de dados atingir a maturidade.")
                 else:
                     df_gee_real['Sucesso'] = np.where(df_gee_real['Resposta_Cat'] == 'Positiva', 1, 0)
                     try:
