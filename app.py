@@ -972,53 +972,56 @@ else:
                         st.warning(f"O modelo Ordinal não convergiu. Geralmente ocorre por separação perfeita. Detalhe: {str(e)[:100]}")
                 st.markdown("</div>", unsafe_allow_html=True)
                 
-                # 3. Modelo Multinível (GEE)
+                # =========================================================
+                # 3. Modelo Multinível (GEE) - [DETALHES CORRIGIDOS AQUI]
+                # =========================================================
                 st.markdown("<div class='info-card'>", unsafe_allow_html=True)
                 st.markdown("##### 3. Robustez Hierárquica (Equações de Estimação Generalizadas - GEE)")
                 st.write("Controla o efeito de 'cluster' (negociador).")
                 
-                df_adv_clean['Sucesso'] = np.where(df_adv_clean['Resposta_Cat'] == 'Positiva', 1, 0)
-                
-                try:
-                    if 'Tecnica_Patsy' in df_adv_clean.columns:
-                        modelo_gee = smf.gee("Sucesso ~ C(Tecnica_Patsy)", 
-                                             groups=df_adv_clean['Neg_Patsy'], 
-                                             data=df_adv_clean, 
-                                             family=sm.families.Binomial(), 
-                                             cov_struct=sm.cov_struct.Exchangeable())
-                        res_gee = modelo_gee.fit()
-                        
-                        gee_coefs = res_gee.params[res_gee.params.index.str.contains('Tecnica')]
-                        gee_pvals = res_gee.pvalues[res_gee.params.index.str.contains('Tecnica')]
-                        
-                        df_gee = pd.DataFrame({
-                            'Técnica': gee_coefs.index.str.extract(r'\[T\.(.*?)\]')[0], 
-                            'Coeficiente_GEE': gee_coefs, 
-                            'P_Valor': gee_pvals
-                        })
-                        
-                        if not df_gee.empty:
-                            st.dataframe(df_gee.style.format({'Coeficiente_GEE': '{:.2f}', 'P_Valor': '{:.4f}'}), 
-                                         use_container_width=True, hide_index=True)
+                # A TRAVA DE SEGURANÇA AGORA VEM ANTES DOS CÁLCULOS
+                if len(df_adv_clean) < 15:
+                    st.warning(f"⚠️ **Amostra Reduzida (N={len(df_adv_clean)}):** O modelo hierárquico GEE necessita de múltiplos eventos por negociador para calcular a variância de cluster sem viés. Modelo em espera.")
+                else:
+                    df_adv_clean['Sucesso'] = np.where(df_adv_clean['Resposta_Cat'] == 'Positiva', 1, 0)
+                    
+                    try:
+                        if 'Tecnica_Patsy' in df_adv_clean.columns:
+                            modelo_gee = smf.gee("Sucesso ~ C(Tecnica_Patsy)", 
+                                                 groups=df_adv_clean['Neg_Patsy'], 
+                                                 data=df_adv_clean, 
+                                                 family=sm.families.Binomial(), 
+                                                 cov_struct=sm.cov_struct.Exchangeable())
+                            res_gee = modelo_gee.fit()
                             
-                            # TRAVA DE SEGURANÇA: N < 10
-                            if len(df_adv_clean) < 10:
-                                st.warning(f"⚠️ **Aviso:** Amostra reduzida (N={len(df_adv_clean)}). Coeficientes altos indicam instabilidade matemática.")
-                            else:
-                                st.success("💡 **Doutrina Validada:** Técnica sobreviveu ao controle de viés.")
+                            gee_coefs = res_gee.params[res_gee.params.index.str.contains('Tecnica')]
+                            gee_pvals = res_gee.pvalues[res_gee.params.index.str.contains('Tecnica')]
+                            
+                            df_gee = pd.DataFrame({
+                                'Técnica': gee_coefs.index.str.extract(r'\[T\.(.*?)\]')[0], 
+                                'Coeficiente_GEE': gee_coefs, 
+                                'P_Valor': gee_pvals
+                            })
+                            
+                            if not df_gee.empty:
+                                st.dataframe(df_gee.style.format({'Coeficiente_GEE': '{:.2f}', 'P_Valor': '{:.4f}'}), 
+                                             use_container_width=True, hide_index=True)
+                                
+                                # SÓ VALIDA SE HOUVER SIGNIFICÂNCIA REAL
+                                if (gee_pvals < 0.05).any():
+                                    st.success("💡 **Doutrina Validada:** Técnica sobreviveu ao controle de viés.")
+                                else:
+                                    st.info("Nenhuma técnica atingiu significância (P < 0.05).")
                         else:
-                            st.info("Nenhuma técnica atingiu significância (P < 0.05).")
-                    else:
-                        st.error("Coluna 'TÉCNICAS' não processada.")
+                            st.error("Coluna 'TÉCNICAS' não processada.")
 
-                except Exception as e:
-                    st.error(f"Erro no processamento GEE: {str(e)[:50]}")
+                    except Exception as e:
+                        st.error(f"Erro no processamento GEE: {str(e)[:50]}")
                 
                 st.markdown("</div>", unsafe_allow_html=True)
                 
-
             # ===============================================================
-            # AQUI ESTÁ O FECHAMENTO QUE FALTAVA DESDE A LINHA 25 DO SEU CÓDIGO
+            # AQUI ESTÁ O FECHAMENTO ALINHADO COM O "TRY"
             # ===============================================================
             except ImportError:
                 st.error("🚨 A biblioteca **statsmodels** não está instalada no servidor. Rode `pip install statsmodels`.")
@@ -1042,14 +1045,16 @@ else:
                 fig_time = px.line(df_trend, x='Mês', y='Qtd Ocorrências', markers=True, line_shape='spline', color_discrete_sequence=['#FFD700'])
                 fig_time.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font_color="#FFF")
                 st.plotly_chart(fig_time, use_container_width=True)
-            else: st.info("Não há datas válidas suficientes no Airtable para desenhar o gráfico.")
-        else: st.info("Coluna de Data não encontrada para a tendência.")
+            else: 
+                st.info("Não há datas válidas suficientes no Airtable para desenhar o gráfico.")
+        else: 
+            st.info("Coluna de Data não encontrada para a tendência.")
         # =========================================================
         # MÓDULO NOVO: RELATÓRIO INTERPRETATIVO COM IA
         # =========================================================
         st.markdown("---")
         st.markdown("<h4 style='color: #06C755;'>🧠 Síntese Interpretativa Avançada (Interpretação descritiva dos resultados estatísticos assistida por modelo de linguagem (LLM – OpenAI GPT-4o-mini), com base em dados previamente processados por métodos estatísticos.)</h4>", unsafe_allow_html=True)
-        st.markdown("<p style='color: #bbb;'>Este módulo traduz a matriz matemática gerada acima em um relatório estratégico doutrinário.</p>", unsafe_allow_html=True)
+        st.markdown("<p style='color: #bbb;'>Este módulo traduz a matriz matemática gerada acima em um relatório estratégico que visa o aperfeiçoamento técnico contínuo do Negociador.</p>", unsafe_allow_html=True)
 
         if st.button("🤖 GERAR RELATÓRIO ESTATÍSTICO DESCRITIVO"):
             with st.spinner("Estruturando matrizes e consultando Cientista de Dados IA..."):
