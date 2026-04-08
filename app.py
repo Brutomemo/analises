@@ -541,11 +541,11 @@ else:
             st.markdown("---")
 
             # =========================================================
-            # ANÁLISE DE SIMILITUDE LÉXICA (RAPPORT MATEMÁTICO)
+            # ANÁLISE DE SIMILITUDE LÉXICA E GRAFO SEMÂNTICO
             # =========================================================
-            st.markdown("### 🗣️ Índice de Sintonia Léxica (Validação de Rapport)")
+            st.markdown("### 🗣️ Índice de Sintonia Léxica e Grafo de Rapport")
             st.markdown("<div class='info-card'>", unsafe_allow_html=True)
-            st.markdown("<span style='font-size: 0.85rem; color: #aaa;'><strong>O que significa:</strong> Compara matematicamente as palavras utilizadas pelo Negociador Principal e pelo Causador. Índices mais altos indicam 'espelhamento' (mirroring) efetivo e construção sólida de vínculo tático.</span><br><br>", unsafe_allow_html=True)
+            st.markdown("<span style='font-size: 0.85rem; color: #aaa;'><strong>O que significa:</strong> Compara matematicamente as palavras utilizadas pelo Negociador Principal e pelo Causador. Índices mais altos indicam 'espelhamento' (mirroring). O grafo ilustra os núcleos semânticos que conectaram as duas partes.</span><br><br>", unsafe_allow_html=True)
 
             col_causador = "TRANSCRIÇÃO DO CAUSADOR"
             col_negociador = "TRANSCRIÇÃO DO NEGOCIADOR PRINCIPAL"
@@ -554,29 +554,30 @@ else:
                 txt_caus = str(df_apa[col_causador]).strip()
                 txt_neg = str(df_apa[col_negociador]).strip()
                 
+                # VERIFICAÇÃO ATUALIZADA (O Caso do Gabriel)
                 if txt_caus.lower() in ['nan', 'none', '', 'inaudível', 'n/d'] or txt_neg.lower() in ['nan', 'none', '', 'inaudível', 'n/d']:
-                    st.warning("⚠️ Transcrições insuficientes ou ausentes nesta APA para o cálculo de similaridade.")
+                    st.warning("⚠️ **Diálogo unilateral ou ausente.** Não foi possível mensurar o espelhamento pois uma das partes não produziu volume verbal audível/registrado. Isso geralmente indica ausência de rapport verbal estruturado na fase registrada.")
                 elif len(txt_caus.split()) < 5 or len(txt_neg.split()) < 5:
-                    st.info("ℹ️ Diálogo muito curto. O motor semântico necessita de mais de 5 palavras válidas de cada parte para um cálculo confiável.")
+                    st.warning("⚠️ **Volume Verbal Insuficiente:** O diálogo registrado possui menos de 5 palavras válidas por parte, impossibilitando a análise matemática de similitude.")
                 else:
                     try:
                         from sklearn.feature_extraction.text import TfidfVectorizer
                         from sklearn.metrics.pairwise import cosine_similarity
                         import re
+                        import networkx as nx
+                        import matplotlib.pyplot as plt
 
                         def limpar_texto(t):
-                            t = re.sub(r'[^\w\s]', '', t.lower())
-                            return t
+                            return re.sub(r'[^\w\s]', '', t.lower())
 
                         txt_caus_limpo = limpar_texto(txt_caus)
                         txt_neg_limpo = limpar_texto(txt_neg)
 
-                        stopwords_pt = ['o', 'a', 'os', 'as', 'um', 'uma', 'de', 'do', 'da', 'em', 'no', 'na', 'para', 'com', 'que', 'é', 'e', 'se', 'por', 'como']
+                        stopwords_pt = ['o', 'a', 'os', 'as', 'um', 'uma', 'de', 'do', 'da', 'em', 'no', 'na', 'para', 'com', 'que', 'é', 'e', 'se', 'por', 'como', 'pra', 'ta', 'tá', 'eu', 'vc', 'você', 'me', 'meu', 'minha', 'aqui', 'vou', 'isso', 'mas', 'não', 'nao', 'sim', 'só']
                         vectorizer = TfidfVectorizer(stop_words=stopwords_pt)
                         
                         tfidf_matrix = vectorizer.fit_transform([txt_neg_limpo, txt_caus_limpo])
                         similaridade = cosine_similarity(tfidf_matrix[0:1], tfidf_matrix[1:2])[0][0]
-                        
                         sintonia_pct = similaridade * 100
 
                         col_sin1, col_sin2 = st.columns([1, 3])
@@ -593,18 +594,53 @@ else:
                             """, unsafe_allow_html=True)
                             
                             if sintonia_pct >= 25:
-                                st.success("✅ **Forte Vínculo (Rapport Tático):** O negociador absorveu o léxico do causador, demonstrando excelente sintonia e validação.")
+                                st.success("✅ **Forte Vínculo (Rapport Tático):** Alto nível de ancoragem semântica. O negociador absorveu e espelhou o léxico de dor/interesse do causador.")
                             elif sintonia_pct >= 10:
-                                st.info("ℹ️ **Vínculo Moderado:** Há pontos de ancoragem semântica, mas os discursos ainda guardam distanciamento.")
+                                st.info("ℹ️ **Vínculo Moderado:** Há pontos de ancoragem semântica, mas os discursos ainda guardam distanciamento conceitual.")
                             else:
-                                st.error("🚨 **Divergência de Discurso:** As partes utilizaram vocabulários quase completamente distintos. Indica ruptura de vínculo ou negociação puramente transacional.")
+                                st.error("🚨 **Divergência de Discurso:** Vocabulários quase completamente distintos. Indica ruptura ou negociação puramente transacional.")
+
+                        # --- GERAÇÃO DO GRAFO DE SIMILITUDE (Estilo IRaMuTeQ) ---
+                        if sintonia_pct > 0:
+                            palavras_neg = set([w for w in txt_neg_limpo.split() if w not in stopwords_pt and len(w) > 2])
+                            palavras_caus = set([w for w in txt_caus_limpo.split() if w not in stopwords_pt and len(w) > 2])
+                            
+                            palavras_comuns = palavras_neg.intersection(palavras_caus)
+                            
+                            if palavras_comuns:
+                                st.markdown("##### 🕸️ Núcleos Semânticos Compartilhados")
+                                st.write("<span style='font-size: 0.85rem; color: #aaa;'>Palavras em comum que serviram de ponte de conexão na negociação.</span>", unsafe_allow_html=True)
+                                
+                                G = nx.Graph()
+                                G.add_node("NEGOCIADOR", color="#2196F3", size=3000)
+                                G.add_node("CAUSADOR", color="#F44336", size=3000)
+                                
+                                for palavra in palavras_comuns:
+                                    G.add_node(palavra, color="#FFC107", size=1500)
+                                    G.add_edge("NEGOCIADOR", palavra, weight=2)
+                                    G.add_edge("CAUSADOR", palavra, weight=2)
+
+                                fig, ax = plt.subplots(figsize=(8, 4))
+                                fig.patch.set_facecolor('#0E1117') # Fundo escuro do Streamlit
+                                ax.set_facecolor('#0E1117')
+                                
+                                pos = nx.spring_layout(G, seed=42)
+                                node_colors = [nx.get_node_attributes(G, 'color')[node] for node in G.nodes()]
+                                node_sizes = [nx.get_node_attributes(G, 'size')[node] for node in G.nodes()]
+                                
+                                nx.draw(G, pos, ax=ax, with_labels=True, node_color=node_colors, node_size=node_sizes, 
+                                        font_size=10, font_weight="bold", font_color="white", edge_color="#555", width=2)
+                                
+                                st.pyplot(fig)
+                            else:
+                                st.info("Nenhuma palavra-chave significativa em comum encontrada para gerar o grafo.")
 
                     except ImportError:
-                        st.error("🚨 A biblioteca **scikit-learn** não está instalada no servidor. É necessária para a análise de similitude. Rode `pip install scikit-learn`.")
+                        st.error("🚨 Bibliotecas ausentes. Para exibir o grafo, instale: `pip install scikit-learn networkx matplotlib`")
                     except Exception as e:
-                        st.error(f"Erro no cálculo de NLP: {e}")
+                        st.error(f"Erro no cálculo de NLP/Grafo: {e}")
             else:
-                st.info("Colunas de transcrição não encontradas para o cálculo de Sintonia Léxica.")
+                st.info("Colunas de transcrição não encontradas.")
                 
             st.markdown("</div>", unsafe_allow_html=True)
 
