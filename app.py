@@ -97,20 +97,70 @@ def converter_escala(val):
     return escala_likert.get(v, 0)
 
 # =========================================================
-# 1. CONFIGURAÇÃO DA PÁGINA E CSS (Estilo Positiv+ & GATE)
+# 1. CONFIGURAÇÃO DA PÁGINA E CSS (UX e Design System)
 # =========================================================
 st.set_page_config(page_title="GATE - Analisador de APAs", layout="wide", initial_sidebar_state="collapsed")
 
 st.markdown("""
 <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Bricolage+Grotesque:opsz,wght@12..96,300;12..96,400;12..96,600&display=swap');
+
     /* Configurações Globais */
-    .block-container { padding-top: 1.5rem !important; padding-bottom: 2rem !important; z-index: 10;}
+    .block-container { padding-top: 1.5rem !important; padding-bottom: 2rem !important; z-index: 10; position: relative;}
     header {visibility: hidden;}
-    .stApp { background-color: #050505; color: #FFFFFF; overflow-x: hidden; }
+    .stApp { background-color: #050505; color: #FFFFFF; overflow-x: hidden; font-family: 'Inter', sans-serif;}
     
+    /* Fundo Estrelado - Luminous Design System */
+    .stars-bg {
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background-image:
+            radial-gradient(1px 1px at 20px 30px, #fff, rgba(0,0,0,0)),
+            radial-gradient(1px 1px at 40px 70px, #ffffff, rgba(0,0,0,0)),
+            radial-gradient(1px 1px at 50px 160px, #ffffff, rgba(0,0,0,0)),
+            radial-gradient(1.5px 1.5px at 90px 40px, #ffffff, rgba(0,0,0,0)),
+            radial-gradient(1px 1px at 130px 80px, #ffffff, rgba(0,0,0,0));
+        background-size: 200px 200px;
+        opacity: 0.15;
+        z-index: 0;
+        pointer-events: none;
+    }
+
+    /* Animação Efeito Raio Descendo do Céu */
+    @keyframes rayFall {
+        0% { transform: translateY(-100vh) rotate(15deg); opacity: 0; filter: blur(2px); }
+        20% { opacity: 0.6; filter: blur(1px); }
+        80% { opacity: 0.6; filter: blur(1px); }
+        100% { transform: translateY(120vh) rotate(15deg); opacity: 0; filter: blur(2px); }
+    }
+    .dynamic-ray {
+        position: fixed;
+        top: 0;
+        width: 1px;
+        height: 250px;
+        background: linear-gradient(to bottom, transparent, rgba(249, 115, 22, 0.8), transparent);
+        z-index: 0;
+        animation: rayFall linear infinite;
+        pointer-events: none;
+    }
+    .ray1 { left: 15%; animation-duration: 6s; animation-delay: 0s; }
+    .ray2 { left: 45%; animation-duration: 4.5s; animation-delay: 2s; }
+    .ray3 { left: 75%; animation-duration: 5.5s; animation-delay: 1s; }
+    .ray4 { left: 85%; animation-duration: 7s; animation-delay: 3s; }
+    .ray5 { left: 5%; animation-duration: 5s; animation-delay: 4s; }
+
+    /* Animação de Entrada Cinematográfica (Opacidade + Blur) */
+    @keyframes fadeInUpBlur {
+        0% { opacity: 0; transform: translateY(30px); filter: blur(8px); }
+        100% { opacity: 1; transform: translateY(0); filter: blur(0px); }
+    }
+    .info-card, .stMarkdown, div[data-testid="stMetric"], .stDataFrame, .stPlotlyChart {
+        animation: fadeInUpBlur 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+    }
+
     /* Fontes e Títulos */
     .main-title {
-        font-family: 'Inter', stencil-sans; font-size: 2.8rem; font-weight: 800;
+        font-family: 'Bricolage Grotesque', sans-serif; font-size: 2.8rem; font-weight: 300; letter-spacing: -0.02em;
         background: linear-gradient(180deg, #FFFFFF 0%, #BBBBBB 100%);
         -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin: 0; line-height: 1.1;
     }
@@ -145,20 +195,24 @@ st.markdown("""
         left: 100%; transition: 0.7s ease-in-out;
     }
 
-    /* Efeito Expansivo nos Botões (Magnifying/Scale) */
+    /* Efeito Design System nos Botões (Gradiente + Glow) */
     div.stButton > button { 
-        background: linear-gradient(90deg, #FFD700 0%, #fb923c 100%); 
-        color: white; border: none; padding: 0.7rem 2rem; border-radius: 10px; font-weight: bold; 
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); width: 100%; position: relative;
+        background: linear-gradient(to top, #fef08a 0%, #fb923c 50%, #f97316 100%) !important;
+        color: #2c1306 !important; /* Cor escura para leitura perfeita sobre o laranja/amarelo */
+        border: 1px inset rgba(255, 255, 255, 0.4) !important;
+        padding: 0.7rem 2rem; border-radius: 9999px !important; font-weight: 600 !important; 
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important; width: 100%; position: relative;
+        box-shadow: 0 0 40px -5px rgba(249, 115, 22, 0.6) !important;
+        animation: fadeInUpBlur 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) both;
     }
     div.stButton > button:hover { 
-        box-shadow: 0 0 25px rgba(249, 115, 22, 0.6); 
-        transform: scale(1.03) translateY(-2px); 
+        box-shadow: 0 0 60px -5px rgba(249, 115, 22, 0.8) !important; 
+        transform: scale(1.05) translateY(-2px) !important; 
     }
     
     /* Efeito Ambient Blobs (Degradês Flutuantes no Fundo) */
     .liquid-blob {
-        position: fixed; border-radius: 60%; filter: blur(80px); opacity: 0.15; z-index: -1;
+        position: fixed; border-radius: 60%; filter: blur(80px); opacity: 0.15; z-index: 0;
         animation: float 10s infinite alternate cubic-bezier(0.4, 0, 0.2, 1); pointer-events: none;
     }
     .blob1 { background-color: #FFD700; width: 500px; height: 500px; top: -100px; left: -100px; animation-duration: 15s; }
@@ -184,7 +238,23 @@ st.markdown("""
     .card-green { border-left: 4px solid #22c55e !important; }
     .card-green:hover { box-shadow: 0 15px 40px rgba(34, 197, 94, 0.25) !important; border-color: rgba(34, 197, 94, 0.6) !important; }
     .card-green::before { background: linear-gradient(90deg, transparent, rgba(34, 197, 94, 0.15), transparent) !important; }
+
+    /* Media Queries para Mobile Perfeito */
+    @media (max-width: 768px) {
+        .main-title { font-size: 2rem !important; }
+        .sub-title { font-size: 0.95rem !important; }
+        div.stButton > button { padding: 0.6rem 1.2rem !important; font-size: 0.95rem !important; }
+        .block-container { padding-left: 1rem !important; padding-right: 1rem !important; }
+        .info-card { padding: 12px; margin-top: 10px; margin-bottom: 10px; }
+    }
 </style>
+
+<div class="stars-bg"></div>
+<div class="dynamic-ray ray1"></div>
+<div class="dynamic-ray ray2"></div>
+<div class="dynamic-ray ray3"></div>
+<div class="dynamic-ray ray4"></div>
+<div class="dynamic-ray ray5"></div>
 
 <div class="liquid-blob blob1"></div>
 <div class="liquid-blob blob2"></div>
@@ -273,16 +343,11 @@ except Exception as e:
 
 # --- 2. RENDERIZAR BANNER TOPO (Existente) ---
 if img_topo_b64:
-    st.markdown(f"""<div style="position: relative; width: 100%; height: 200px; border-radius: 2px; overflow: hidden; background-image: url('data:image/png;base64,{img_topo_b64}'); background-size: cover; background-position: center 40%; margin-bottom: 1rem;"><div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(180deg, rgba(5,5,5,0.1) 0%, rgba(249, 115, 22, 0.6) 100%);"></div></div>""", unsafe_allow_html=True)
+    st.markdown(f"""<div style="position: relative; width: 100%; height: 200px; border-radius: 2px; overflow: hidden; background-image: url('data:image/png;base64,{img_topo_b64}'); background-size: cover; background-position: center 40%; margin-bottom: 1rem; animation: fadeInUpBlur 1s cubic-bezier(0.2, 0.8, 0.2, 1) both;"><div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(180deg, rgba(5,5,5,0.1) 0%, rgba(249, 115, 22, 0.6) 100%);"></div></div>""", unsafe_allow_html=True)
 
 # --- 3. CRIAR O RECIPIENTE DO CABEÇALHO COM O FUNDO FAINT ---
-# Este HTML cria um container que envolve todo o seu título e info-card,
-# aplicando a imagem 'negociacao_novo_prata.png' faint atrás dele.
-
 style_fundo_header = ""
 if img_fundo_header_b64:
-    # Este CSS aplica a imagem como fundo de um pseudo-elemento ::before,
-    # permitindo controlar a opacidade e o blur sem afetar o texto dentro.
     style_fundo_header = f"""
     <style>
         .header-container-com-fundo {{
@@ -319,17 +384,14 @@ st.markdown(style_fundo_header, unsafe_allow_html=True)
 st.markdown('<div class="header-container-com-fundo">', unsafe_allow_html=True)
 
 # --- 4. CONTEÚDO DO CABEÇALHO (Existente, dentro do novo container) ---
-# O brasão do GATE não muda, mas vamos usar o nome limpo no código
 path_brasao_gate_limpo = os.path.join(path_assets, "brasao_gate.png")
 
 col_logo, col_titulo, col_espaco = st.columns([1, 6, 1])
 
 with col_logo:
     try: 
-        # Tenta carregar usando o nome limpo
         st.image(Image.open(path_brasao_gate_limpo), use_container_width=True)
     except Exception as e: 
-        # Se falhar, tenta o nome antigo (para não quebrar tudo de uma vez)
         try:
             old_path_brasao = os.path.join(path_assets, "BRASÃO GATE.PNG")
             st.image(Image.open(old_path_brasao), use_container_width=True)
@@ -341,7 +403,6 @@ with col_titulo:
     st.markdown('<p class="sub-title">Delta Negociação - GATE / PMESP</p>', unsafe_allow_html=True)
     st.markdown('<p style="color: #999; margin-top: 5px;">Desenvolvido por Cb PM Marcos - Supervisão: Cap PM Pavão</p>', unsafe_allow_html=True)
     
-    # O info-card continua aqui, ele agora vai interagir com a imagem faint atrás dele
     st.markdown(f"""
 <div class="info-card">
     <p><strong>Sistema automatizado de análise qualitativa das Negociações em Incidentes Críticos atendidos pelo Grupo de Ações Táticas Especiais.</strong></p>
@@ -378,7 +439,7 @@ else:
         if 'ID' not in df_quali.columns: df_quali['ID'] = "APA " + df_quali.index.astype(str)
         df_quali['ID_Busca'] = df_quali.get('ID', df_quali.index).apply(limpar_id)
 
-        # Filtros Locais (Agora com 3 colunas)
+        # Filtros Locais
         col_fi1, col_fi2, col_fi3 = st.columns(3)
         with col_fi1:
             lista_neg_ind = ["Todos"] + sorted(df_quali[df_quali['Neg_Limpo'] != 'N/D']['Neg_Limpo'].unique().tolist())
@@ -416,18 +477,14 @@ else:
 
             st.markdown("---")
 
-            # --- BUSCA INTELIGENTE DE COLUNAS (Blinda contra mudanças de nome no Airtable) ---
             def buscar_percepcao(papel, metrica, momento):
-                # Tira acentos e minúsculas para caçar a coluna independentemente de como foi digitada
                 def norm(t): return unicodedata.normalize('NFKD', str(t)).encode('ASCII', 'ignore').decode('ASCII').lower()
-                
                 for col in df_apa.index:
                     col_norm = norm(col)
                     if norm(papel) in col_norm and norm(metrica) in col_norm and norm(momento) in col_norm:
                         return limpar_valor(df_apa[col])
                 return "N/D"
 
-            # VARIÁVEIS TEXTUAIS GLOBAIS DA APA (Extração Robusta dos 3 Observadores)
             # Principal
             p_agr_c_txt = buscar_percepcao('Principal', 'Agressividade', 'Chegada')
             p_rec_c_txt = buscar_percepcao('Principal', 'Receptividade', 'Chegada')
@@ -446,7 +503,7 @@ else:
             l_agr_e_txt = buscar_percepcao('Lider', 'Agressividade', 'Encerramento')
             l_rec_e_txt = buscar_percepcao('Lider', 'Receptividade', 'Encerramento')
 
-            # Valores Numéricos (MANTIDOS PARA O GRÁFICO FUNCIONAR)
+            # Numéricos
             p_agr_c_num, p_rec_c_num = converter_escala(p_agr_c_txt), converter_escala(p_rec_c_txt)
             p_agr_e_num, p_rec_e_num = converter_escala(p_agr_e_txt), converter_escala(p_rec_e_txt)
             
@@ -456,9 +513,6 @@ else:
             l_agr_c_num, l_rec_c_num = converter_escala(l_agr_c_txt), converter_escala(l_rec_c_txt)
             l_agr_e_num, l_rec_e_num = converter_escala(l_agr_e_txt), converter_escala(l_rec_e_txt)
 
-            # =========================================================
-            # GRÁFICO DE TENDÊNCIA E EVOLUÇÃO (Com Seletor de Perspectiva)
-            # =========================================================
             st.markdown("### 📈 Percepção do Negociador sobre a escala de agressividade e receptividade do causador frente ao Negociador Principal")
             p_escolhida = st.selectbox(
                 "Visualizar evolução sob a perspectiva do:", 
@@ -488,11 +542,9 @@ else:
 
             st.markdown("---")
 
-            # 2. BLOCO DE PERCEPÇÕES (COM EFEITO DE VIDRO E CORES TÁTICAS)
             st.markdown("### 🧠 Percepção dos Negociadores sobre a escala de agressividade e receptividade do causador (Textual)")
             tab_chegada, tab_encerramento = st.tabs(["➡️ Na Chegada à Ocorrência", "🛑 No Encerramento"])
             
-            # Função para desenhar o card de vidro com a cor tática escolhida
             def render_card(label, valor, cor_classe):
                 return f"<div class='info-card {cor_classe}' style='padding: 12px; margin-top: 5px; margin-bottom: 5px;'><strong style='color: #bbb;'>{label}:</strong><br><span style='font-size: 1.1rem; font-weight: bold;'>{valor}</span></div>"
 
@@ -528,7 +580,6 @@ else:
 
             st.markdown("---")
 
-            # 3. TRANSCRIÇÕES
             st.markdown("### 🗣️ Transcrições Literal")
             with st.expander("Ver transcrições completas da ocorrência", expanded=False):
                 st.markdown("**Causador do Incidente:**")
@@ -540,9 +591,6 @@ else:
 
             st.markdown("---")
 
-            # =========================================================
-            # ANÁLISE DE SIMILITUDE LÉXICA E GRAFO SEMÂNTICO
-            # =========================================================
             st.markdown("### 🗣️ Índice de Similitude e Grafo de Espelhamento Léxico")
             st.markdown("<div class='info-card'>", unsafe_allow_html=True)
             st.markdown("<span style='font-size: 0.85rem; color: #aaa;'><strong>O que significa:</strong> Compara matematicamente as palavras utilizadas pelo Negociador Principal e pelo Causador, mensurando o espelhamento. Índices mais altos indicam 'espelhamento' na estrutura da linguagem (mirroring). Em negociações bem-sucedidas, o negociador e o causador passam a apresentar núcleos semânticos em comum, criando uma 'Sincronia Lexical'. O grafo ilustra os núcleos semânticos que conectaram as duas partes.</span><br><br>", unsafe_allow_html=True)
@@ -553,7 +601,6 @@ else:
             if col_causador in df_apa and col_negociador in df_apa:
                 txt_caus = str(df_apa[col_causador]).strip()
                 txt_neg = str(df_apa[col_negociador]).strip()
-                
                 
                 if txt_caus.lower() in ['nan', 'none', '', 'inaudível', 'n/d'] or txt_neg.lower() in ['nan', 'none', '', 'inaudível', 'n/d']:
                     st.warning("⚠️ **Diálogo unilateral ou ausente.** Não foi possível mensurar o espelhamento pois uma das partes não produziu volume verbal audível/registrado. Isso geralmente indica ausência de rapport verbal estruturado na fase registrada.")
@@ -606,7 +653,6 @@ else:
                             else:
                                 st.error("🚨 **Divergência de Discurso:** Vocabulários quase completamente distintos. Indica ruptura ou negociação puramente transacional.")
 
-                        # --- GERAÇÃO DO GRAFO DE SIMILITUDE (ESTILO IRAMUTEQ LIMPO COM PLOTLY) ---
                         if sintonia_pct > 0:
                             st.markdown("##### 🕸️ Grafo de Espelhamento Léxico (Núcleos Semânticos Compartilhados)")
                             st.write("<span style='font-size: 0.85rem; color: #aaa;'>Visualização interativa dos termos que serviram de ponte para o estabelecimento do Rapport.</span>", unsafe_allow_html=True)
@@ -615,75 +661,61 @@ else:
                                 import plotly.graph_objects as go
                                 from collections import Counter
 
-                                # Isolar apenas as palavras comuns
                                 palavras_neg = [w for w in txt_neg_limpo.split() if w not in stopwords_pt and len(w) > 2]
                                 palavras_caus = [w for w in txt_caus_limpo.split() if w not in stopwords_pt and len(w) > 2]
                                 
                                 set_comuns = set(palavras_neg).intersection(set(palavras_caus))
                                 
                                 if set_comuns:
-                                    # Contar a força dessas palavras comuns somando as vezes que ambos falaram
                                     contagem_comuns = Counter({w: palavras_neg.count(w) + palavras_caus.count(w) for w in set_comuns})
-                                    
-                                    # Pegar apenas o TOP 12 para não virar uma "teia de aranha" ilegível
                                     top_comuns = dict(contagem_comuns.most_common(12))
                                     
-                                    # --- CONSTRUÇÃO DO GRAFO ESTRUTURADO ---
                                     node_x = []
                                     node_y = []
                                     node_text = []
                                     node_color = []
                                     node_size = []
 
-                                    # Nó 1: Negociador (Esquerda)
                                     node_x.append(-2)
                                     node_y.append(0)
                                     node_text.append("<b>NEGOCIADOR</b>")
-                                    node_color.append("#2196F3") # Azul Polícia
+                                    node_color.append("#2196F3") 
                                     node_size.append(40)
 
-                                    # Nó 2: Causador (Direita)
                                     node_x.append(2)
                                     node_y.append(0)
                                     node_text.append("<b>CAUSADOR</b>")
-                                    node_color.append("#F44336") # Vermelho Crise
+                                    node_color.append("#F44336") 
                                     node_size.append(40)
 
-                                    # Nós Centrais (Palavras em Comum)
                                     edge_x = []
                                     edge_y = []
                                     
-                                    y_pos = 1.5 # Ponto de partida vertical
-                                    passo_y = 3 / max(len(top_comuns), 1) # Espaçamento dinâmico
+                                    y_pos = 1.5 
+                                    passo_y = 3 / max(len(top_comuns), 1) 
                                     
                                     for palavra, peso in top_comuns.items():
-                                        # Posição da Palavra
                                         node_x.append(0)
                                         node_y.append(y_pos)
                                         node_text.append(palavra)
-                                        node_color.append("#FFC107") # Amarelo Destaque
-                                        # O tamanho do nó central varia conforme o peso da palavra (freq)
+                                        node_color.append("#FFC107") 
                                         tamanho_calc = min(max(peso * 3, 15), 35) 
                                         node_size.append(tamanho_calc)
                                         
-                                        # Linha do Negociador para a Palavra
                                         edge_x.extend([-2, 0, None])
                                         edge_y.extend([0, y_pos, None])
                                         
-                                        # Linha da Palavra para o Causador
                                         edge_x.extend([0, 2, None])
                                         edge_y.extend([y_pos, 0, None])
                                         
                                         y_pos -= passo_y
 
-                                    # Desenhando as Linhas (Arestas)
                                     edge_trace = go.Scatter(
                                         x=edge_x, y=edge_y,
                                         line=dict(width=1, color='#555'),
                                         hoverinfo='none',
                                         mode='lines')
 
-                                    # Desenhando os Nós (Círculos)
                                     node_trace = go.Scatter(
                                         x=node_x, y=node_y,
                                         mode='markers+text',
@@ -698,7 +730,6 @@ else:
                                         textfont=dict(color='white', size=12)
                                     )
 
-                                    # Montando a Figura
                                     fig_grafo = go.Figure(data=[edge_trace, node_trace],
                                                  layout=go.Layout(
                                                     showlegend=False,
@@ -710,7 +741,6 @@ else:
                                                     yaxis=dict(showgrid=False, zeroline=False, showticklabels=False)
                                                 ))
                                     
-                                    # Ajuste para manter as proporções limpas
                                     fig_grafo.update_layout(height=400)
                                     
                                     st.plotly_chart(fig_grafo, use_container_width=True)
@@ -728,7 +758,6 @@ else:
                 
             st.markdown("</div>", unsafe_allow_html=True)
 
-            # 4. TABELA DE FREQUÊNCIA (CRUZAMENTO DEFINITIVO)
             st.markdown("<h4 style='color: #FFD700;'>📉 Frequência das Técnicas Aplicadas (Nesta APA)</h4>", unsafe_allow_html=True)
             
             if not df_tec.empty:
@@ -767,7 +796,6 @@ else:
             
             st.markdown("---")
 
-            # ETAPA 2 DA ABA INDIVIDUAL
             st.markdown("### 📊 Etapa 2: Análise Semântica (Scikit-learn: Machine Learning in Python)")
             if st.button("⚙️ 2. GERAR NUVEM DE PALAVRAS E N-GRAMS"):
                 with st.spinner("Processando N-Grams e plotando gráficos..."):
@@ -801,18 +829,13 @@ else:
 
             st.markdown("---")
             
-            # =========================================================
-            # ETAPA 3: INTELIGÊNCIA ARTIFICIAL E ANÁLISE TÉCNICA
-            # =========================================================
             st.markdown("### 📄 Etapa 3: Inteligência de Apoio à Decisão e Exportação")
             
-            # ATENÇÃO: Substitui pela tua URL real do n8n (usando host.docker.internal ou o IP)
             url_n8n = "http://host.docker.internal:5680/webhook/analise-doc"
             
             if st.button("📡 3. GERAR ANALYTICS E EXPORTAR ANÁLISE (PDF)"):
                 with st.spinner("Compilando dados técnicos, consultando IA e desenhando PDF..."):
                     try:
-                        # 1. Captura direta para evitar campos "Não informados"
                         t_causador = limpar_valor(df_apa.get('TRANSCRIÇÃO DO CAUSADOR'))
                         t_principal = limpar_valor(df_apa.get('TRANSCRIÇÃO DO NEGOCIADOR PRINCIPAL'))
                         t_secundario = limpar_valor(df_apa.get('TRANSCRIÇÃO DO NEGOCIADOR SECUNDÁRIO'))
@@ -823,10 +846,8 @@ else:
                             "Neg_Secundario": t_secundario
                         }])
 
-                        # 2. Recupera tópicos da Etapa 2
                         temas_extraidos = st.session_state['stats_calculados']['topicos'] if st.session_state.get('stats_calculados') else ["Etapa 2 não executada"]
 
-                        # 3. Prepara Metadados para a IA "ler" os gráficos
                         meta_dict = df_apa.to_dict()
                         meta_dict["temas_dominantes_scikit_learn"] = " | ".join(temas_extraidos)
                         df_meta = pd.DataFrame([meta_dict])
@@ -836,16 +857,13 @@ else:
                             "metadados": df_meta
                         }
 
-                        # 4. Envio para IA python
                         resultado_ia = ia_link.analisar_ocorrencia_gate(dados_extraidos)
                         
-                        # Processamento do Parecer (Modo RAIO-X incluído)
                         if isinstance(resultado_ia, dict) and 'parecer' in resultado_ia:
                             parecer_ia = resultado_ia['parecer']
                         else:
                             parecer_ia = f"Sinal recebido, mas os dados estão incompletos ou a URL precisa de ajuste. Bruto: {resultado_ia}"
 
-                        # 5. Laudo Frio (Estatístico) - Utilizando a Média Válida da Equipe!
                         def calcular_media_equipe(*valores):
                             validos = [v for v in valores if v > 0]
                             return sum(validos) / len(validos) if validos else 0
@@ -861,7 +879,6 @@ else:
                         stats_spearman = {'valido': False, 'p_value': 0.0, 'rho': 0.0} 
                         laudo_frio = ia_link.gerar_laudo_frio(likert_inicio, likert_fim, stats_spearman)
 
-                        # Exibição na Tela (Glassmorphism)
                         st.markdown(f"""
                         <div class="info-card" style="border-left: 4px solid #FFD700;">
                             <h4 style="color: #FFD700; margin-top: 0;">Inferência Estatística (Motor Frio)</h4>
@@ -872,11 +889,6 @@ else:
                         </div>
                         """, unsafe_allow_html=True)
 
-                        # ========================================================
-                        # 6. Geração de PDF com Layout Tático (Aba Individual)
-                        # ========================================================
-                        
-                        # Tratamento do Texto da IA
                         if isinstance(parecer_ia, dict):
                             partes = [f"{k.upper()}:\n{v}" for k, v in parecer_ia.items()]
                             texto_str = "\n\n".join(partes)
@@ -886,11 +898,9 @@ else:
                         texto_str = texto_str.replace("**", "").replace("### ", "")
                         texto_final_pdf = unicodedata.normalize('NFKD', texto_str).encode('ASCII', 'ignore').decode('ASCII')
 
-                        # Criação do PDF
                         pdf = FPDF()
                         pdf.add_page()
                         
-                        # --- CABEÇALHO ---
                         pdf.set_fill_color(249, 115, 22)
                         pdf.rect(0, 0, 210, 40, 'F')
                         pdf.set_font("Arial", "B", 18)
@@ -899,7 +909,6 @@ else:
                         pdf.set_font("Arial", "I", 12)
                         pdf.cell(0, 5, f"Unidade: GATE | ID: {apa_selecionada}", ln=True, align="C")
                         
-                        # --- METADADOS ---
                         pdf.ln(20)
                         pdf.set_text_color(0, 0, 0)
                         pdf.set_font("Arial", "B", 14)
@@ -914,7 +923,6 @@ else:
                         
                         pdf.multi_cell(0, 8, txt=unicodedata.normalize('NFKD', info_str).encode('ASCII', 'ignore').decode('ASCII'), border='L')
                         
-                        # --- LEITURA ANALÍTICA ---
                         pdf.ln(10)
                         pdf.set_font("Arial", "B", 14)
                         pdf.set_fill_color(249, 115, 22)
@@ -926,7 +934,6 @@ else:
                         
                         pdf.multi_cell(0, 7, txt=texto_final_pdf)
                         
-                        # Conversão e Download
                         pdf_saida = pdf.output(dest="S")
                         if isinstance(pdf_saida, str):
                             pdf_bytes = pdf_saida.encode('latin-1', errors='replace')
@@ -940,9 +947,6 @@ else:
                             mime="application/pdf"
                         )
 
-                    # ========================================================
-                    # CHAVE DE OURO
-                    # ========================================================
                     except Exception as e:
                         st.error(f"Erro na análise da IA ou geração do PDF: {str(e)}")
 
@@ -953,7 +957,6 @@ else:
         st.markdown("### 🧠 Série Histórica - Negociações GATE")
         st.markdown("<h5 style='color: #f97;'>Filtros de Cenário</h5>", unsafe_allow_html=True)
         
-        # Filtros Globais (Com 3 colunas e chaves blindadas contra duplicação)
         col_f1, col_f2, col_f3 = st.columns(3)
         with col_f1:
             lista_neg_g = ["Todos"] + sorted(df_quali[df_quali['Neg_Limpo'] != 'N/D']['Neg_Limpo'].unique().tolist())
@@ -1003,9 +1006,6 @@ else:
                 else: st.warning("Coluna 'TÉCNICAS' não encontrada.")
             else: st.info("Nenhuma técnica encontrada para os filtros selecionados.")
             
-        # =========================================================
-        # MOTOR ESTATÍSTICO BÁSICO (SPEARMAN & QUI-QUADRADO)
-        # =========================================================
         st.markdown("---")
         st.markdown("<h4 style='color: #FFD700;'>🔬 Análise Inferencial Básica</h4>", unsafe_allow_html=True)
         
@@ -1021,19 +1021,14 @@ else:
         col_agr_c = achar_coluna(df_quali_filt, 'Principal', 'Agressividade', 'Chegada')
         col_agr_e = achar_coluna(df_quali_filt, 'Principal', 'Agressividade', 'Encerramento')
         
-        # --- LIMPEZA E CONTAGEM DE APAs REAIS (CORREÇÃO PARA ERRO DE LISTA) ---
         id_col = next((c for c in df_tec_filt.columns if 'ID' in c.upper() or 'VINCULO' in c.upper()), None)
-        
-        # Lista de termos que indicam dados vazios/fantasmas
         lixo = ['none', 'nan', 'n/d', '', 'null', '[]']
         
-        # Filtramos o banco para contar apenas onde há técnica preenchida
         if 'col_t' in locals() and col_t:
             df_tec_limpo = df_tec_filt[~df_tec_filt[col_t].astype(str).str.strip().str.lower().isin(lixo)].copy()
         else:
             df_tec_limpo = df_tec_filt.copy()
 
-        # AQUI ESTAVA O ERRO: Adicionamos .astype(str) para o nunique() não quebrar com listas do Airtable
         total_apas_reais = df_tec_limpo[id_col].astype(str).nunique() if id_col else 0
 
         df_sp = df_quali_filt.copy()
@@ -1073,27 +1068,21 @@ else:
         with c_sp2:
             st.markdown("<div class='info-card'><strong>Teste Qui-Quadrado Dinâmico</strong><br><span style='font-size: 0.85rem; color: #aaa;'>Analisa a dependência entre duas variáveis com o objetivo de identificar padrões de associação entre elas.</span>", unsafe_allow_html=True)
             
-            # --- 1. SELEÇÃO DE VARIÁVEIS PELO USUÁRIO ---
-            # Criamos um dicionário para traduzir o nome técnico para o nome que o policial entende
             opcoes_variaveis = {
                 "Tipologia": "Tip_Limpa",
                 "Negociador": "Neg_Limpo",
-                "Modalidade": "Modalidade", # Verifique se esse é o nome exato da coluna no seu DF
-                "Atitude do Causador": "Resposta_Cat" # Criada no bloco avançado
+                "Modalidade": "Modalidade", 
+                "Atitude do Causador": "Resposta_Cat" 
             }
             
-            # Deixamos 'Tipologia' como padrão para não quebrar o visual inicial
             var_analise = st.selectbox("Selecione a Variável 1:", list(opcoes_variaveis.keys()), index=0)
             col_v1 = opcoes_variaveis[var_analise]
             
-            # A Variável 2 geralmente será as 'Técnicas', mas o usuário pode querer mudar
-            col_v2 = col_t # col_t já está definido no seu código como a coluna de Técnicas
+            col_v2 = col_t 
 
-            # --- 2. TRAVA DE MATURIDADE ---
             if total_apas_reais < 10:
                 st.warning(f"⚠️ **Análise em Maturação (N={total_apas_reais}):** O cruzamento de padrões exige no mínimo 10 APAs distintas para evitar que o talento (ou erro) de um único caso seja lido como regra.")
             else:
-                # Limpeza de dados nulos nas colunas selecionadas
                 df_qui_clean = df_tec_filt.dropna(subset=[col_v1, col_v2]).copy()
                 
                 if not df_qui_clean.empty:
@@ -1103,7 +1092,6 @@ else:
                         st.write(f"Estatística Qui-Quadrado: `{res_chi['chi2']:.2f}`")
                         st.write(f"P-Valor: `{res_chi['p_value']:.4f}`")
                         
-                        # TRADUÇÃO PARA O USUÁRIO FINAL
                         if res_chi['p_value'] < 0.05:
                             st.success(f"✅ **Existe Padrão:** O uso de técnicas **depende** do(a) {var_analise}. Isso indica uma atuação padronizada/doutrinária.")
                         else:
@@ -1114,13 +1102,9 @@ else:
                     st.warning("Sem dados suficientes após filtragem.")
             st.markdown("</div>", unsafe_allow_html=True)
 
-        # =========================================================
-        # MOTOR ESTATÍSTICO AVANÇADO (VIÉS, REGRESSÃO ORDINAL E GEE)
-        # =========================================================
         st.markdown("---")
         st.markdown("<h4 style='color: #FFD700;'>📐 Modelagem Avançada: Viés e Eficácia Real das Técnicas</h4>", unsafe_allow_html=True)
         
-        # Trava rigorosa para os modelos mais complexos
         if total_apas_reais < 15:
             st.info(f"""
             💡 **Por que estas estatísticas estão ocultas? (Modo de Segurança)**
@@ -1152,7 +1136,6 @@ else:
                     df_adv_clean = df_adv_clean.dropna(subset=['TÉCNICAS'])
                     df_adv_clean['Resposta_Ord'] = pd.Categorical(df_adv_clean['Resposta_Cat'], categories=['Negativa', 'Neutra', 'Positiva'], ordered=True)
                     
-                    # -- 1. VIÉS --
                     st.markdown("<div class='info-card'>", unsafe_allow_html=True)
                     st.markdown("##### 1. Teste de Viés por Negociador (Qui-Quadrado de Resíduos)")
                     st.markdown("<span style='font-size: 0.85rem; color: #aaa;'><strong>O que significa:</strong> Verifica se os relatos de 'sucesso' estão concentrados em apenas alguns negociadores ou se são homogêneos.</span>", unsafe_allow_html=True)
@@ -1169,7 +1152,6 @@ else:
                         st.write("Dados insuficientes para comparar múltiplos negociadores.")
                     st.markdown("</div>", unsafe_allow_html=True)
                     
-                    # -- 2. ORDINAL --
                     st.markdown("<div class='info-card'>", unsafe_allow_html=True)
                     st.markdown("##### 2. Eficácia Isolada da Técnica (Regressão Ordinal)")
                     st.markdown("<span style='font-size: 0.85rem; color: #aaa;'><strong>O que significa:</strong> Isola o peso da técnica, removendo a influência do negociador e da tipologia da crise.</span>", unsafe_allow_html=True)
@@ -1196,7 +1178,6 @@ else:
                             st.warning("O modelo Ordinal não convergiu para este subconjunto.")
                     st.markdown("</div>", unsafe_allow_html=True)
                     
-                    # -- 3. GEE --
                     st.markdown("<div class='info-card'>", unsafe_allow_html=True)
                     st.markdown("##### 3. Robustez Hierárquica (Equações de Estimação Generalizadas - GEE)")
                     st.markdown("<span style='font-size: 0.85rem; color: #aaa;'><strong>O que significa:</strong> Valida se a técnica é eficaz para a Tropa inteira ou apenas resultado do talento individual.</span>", unsafe_allow_html=True)
@@ -1224,7 +1205,6 @@ else:
                 except Exception as e:
                     st.error(f"🚨 Erro geral: {str(e)}")
 
-        # --- 4. TENDÊNCIA TEMPORAL ---
         st.markdown("---")
         st.markdown("<h4 style='color: #FFD700;'>📈 Volume e Tendência Temporal</h4>", unsafe_allow_html=True)
         
@@ -1241,9 +1221,7 @@ else:
                 st.plotly_chart(fig_time, use_container_width=True)
             else: st.info("Sem datas válidas.")
         else: st.info("Coluna de Data não encontrada.")
-        # =========================================================
-        # MÓDULO NOVO: RELATÓRIO INTERPRETATIVO COM IA
-        # =========================================================
+
         st.markdown("---")
         st.markdown("<h4 style='color: #06C755;'>🧠 Síntese Interpretativa Avançada (Interpretação descritiva dos resultados estatísticos assistida por modelo de linguagem (LLM – OpenAI GPT-4o-mini), com base em dados previamente processados por métodos estatísticos.)</h4>", unsafe_allow_html=True)
         st.markdown("<p style='color: #bbb;'>Este módulo traduz a matriz matemática gerada acima em um relatório estratégico que visa o aperfeiçoamento técnico contínuo do Negociador.</p>", unsafe_allow_html=True)
@@ -1251,10 +1229,8 @@ else:
         if st.button("🤖 GERAR RELATÓRIO ESTATÍSTICO DESCRITIVO"):
             with st.spinner("Estruturando matrizes e consultando Cientista de Dados IA..."):
                 try:
-                    import ia_estatistica # Assegure-se de que as novas funções estão neste arquivo
+                    import ia_estatistica 
                     
-                    # 1. Coleta Segura das Variáveis do Motor Frio (evita NameError se a conta falhou acima)
-                    # Verifica se as variáveis de resultado foram criadas na execução do bloco anterior
                     qui_data = {'p_valor_global': p} if 'p' in locals() else None
                     
                     ord_data = None
@@ -1265,7 +1241,6 @@ else:
                     if 'df_gee' in locals() and not df_gee.empty:
                         gee_data = df_gee.to_dict('records')
 
-                    # 2. Empacota os dados 
                     payload_ia = ia_estatistica.estruturar_resultado_para_ia(
                         amostra_total=len(df_quali_filt),
                         resultados_chi=qui_data,
@@ -1273,17 +1248,13 @@ else:
                         resultados_gee=gee_data
                     )
 
-                    # 3. Executa a Invocação
-                    # NOTA: Configure a API KEY dentro do ia_link.py
                     relatorio_json = ia_estatistica.gerar_relatorio_com_ia(payload_ia)
 
-                    # 4. Tratamento de Fallback
                     if "erro" in relatorio_json:
                         st.error(relatorio_json["erro"])
                         with st.expander("Ver Payload Enviado"):
                             st.json(payload_ia)
                     else:
-                        # 5. Formatação Visual usando seu padrão Glassmorphism
                         def render_ia_card(titulo, texto, icone="📌"):
                             return f"""
                             <div class="info-card" style="border-left: 3px solid #06C755; padding: 15px; margin-bottom: 15px;">
@@ -1292,7 +1263,6 @@ else:
                             </div>
                             """
 
-                        # Layout em colunas
                         c_ia1, c_ia2 = st.columns(2)
                         with c_ia1:
                             st.markdown(render_ia_card("Objetivo Analítico", relatorio_json.get("objetivo", "N/D"), "🎯"), unsafe_allow_html=True)
@@ -1304,16 +1274,12 @@ else:
                         st.markdown(render_ia_card("Tradução Tática e Doutrinária", relatorio_json.get("interpretacao", "N/D"), "🧠"), unsafe_allow_html=True)
                         st.markdown(render_ia_card("Conclusão Estratégica (Veredito)", relatorio_json.get("conclusao", "N/D"), "🏆"), unsafe_allow_html=True)
 
-                        # Exibição opcional do JSON bruto para conferência acadêmica
                         with st.expander("🕵️ Ver Matriz Bruta de Dados (JSON Payload e Retorno)"):
                             st.markdown("**Payload enviado para a IA (O que o Python calculou):**")
                             st.json(payload_ia)
                             st.markdown("**JSON Retornado pela IA:**")
                             st.json(relatorio_json)
 
-                        # =========================================================
-                        # EXPORTAÇÃO DE PDF - SÉRIE HISTÓRICA (AGORA NO LUGAR CERTO)
-                        # =========================================================
                         st.markdown("---")
                         st.markdown("### 🖨️ Exportar Relatório")
                         
@@ -1338,7 +1304,6 @@ else:
                             
                             pdf_hist.set_font("Arial", "", 12)
                             
-                            # Puxa os dados que a IA acabou de gerar (relatorio_json)
                             partes_hist = [f"{k.upper()}:\n{v}" for k, v in relatorio_json.items() if isinstance(v, str)]
                             texto_hist_str = "\n\n".join(partes_hist).replace("**", "").replace("### ", "")
                             texto_pdf_limpo_hist = unicodedata.normalize('NFKD', texto_hist_str).encode('ASCII', 'ignore').decode('ASCII')
