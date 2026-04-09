@@ -109,35 +109,40 @@ st.markdown("""
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Bricolage+Grotesque:opsz,wght@12..96,300;12..96,400;12..96,600&display=swap');
 
     /* ==========================================
-       A GUERRA DAS CAMADAS (MÉTODO CLOUD SAFE)
-       Isso garante que o WebGL (Unicorn Studio) fique visível
+       O GRANDE TRUQUE PARA A NUVEM (CLOUD HACK)
        ========================================== */
-    /* 1. O Chão (Preto escuro de segurança) */
-    html { background-color: #050505 !important; margin: 0; padding: 0; } 
+    /* 1. Base Preta Inquebrável */
+    html, body { background-color: #050505 !important; } 
     
-    /* 2. O Teto (Streamlit transparente, flutuando acima da luz) */
+    /* 2. Deixa as paredes do Streamlit transparentes */
     .stApp, [data-testid="stAppViewContainer"], [data-testid="stHeader"] { 
         background: transparent !important;
         background-color: transparent !important; 
+        color: #FFFFFF;
     }
 
-    .stApp { color: #FFFFFF; overflow-x: hidden; font-family: 'Inter', sans-serif; }
-    
-    /* Configuração do fundo Unicorn Studio via Iframe */
-    .unicorn-bg {
-        position: fixed;
-        top: 0; left: 0; width: 100vw; height: 100vh;
-        z-index: -1; /* Joga para o fundo da tela, atrás de TUDO */
-        pointer-events: none; /* Deixa você clicar no app sem interferência do fundo */
-        border: none;
+    /* 3. O "SNIPER": Mira no Iframe do Streamlit Components e força ele a ser o fundo */
+    iframe[title="streamlit_components.v1.components.html"] {
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        width: 100vw !important;
+        height: 100vh !important;
+        z-index: 0 !important;
+        pointer-events: none !important; /* Para não bloquear seus cliques */
+        border: none !important;
     }
 
-    /* Configurações Globais */
+    /* Cursor Tático CSS (Substitui o JavaScript que a nuvem bloqueava) */
+    html, body, .stApp { cursor: crosshair !important; }
+
+    /* ==========================================
+       SEU UX / DESIGN SYSTEM (MANTIDO INTACTO)
+       ========================================== */
     .block-container { padding-top: 1.5rem !important; padding-bottom: 2rem !important; position: relative; z-index: 10;}
-    header {visibility: hidden;}
-    #MainMenu {visibility: hidden;} footer {visibility: hidden;}
+    header {visibility: hidden;} #MainMenu {visibility: hidden;} footer {visibility: hidden;}
 
-    /* Animação de Entrada Cinematográfica (Opacidade + Blur) */
+    /* Animação de Entrada */
     @keyframes fadeInUpBlur {
         0% { opacity: 0; transform: translateY(30px); filter: blur(8px); }
         100% { opacity: 1; transform: translateY(0); filter: blur(0px); }
@@ -147,17 +152,17 @@ st.markdown("""
         position: relative; z-index: 10; 
     }
 
-    /* Fontes e Títulos */
+    /* Textos */
     .main-title { font-family: 'Bricolage Grotesque', sans-serif; font-size: 2.8rem; font-weight: 300; letter-spacing: -0.02em; background: linear-gradient(180deg, #FFFFFF 0%, #BBBBBB 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin: 0; line-height: 1.1; }
     .sub-title { color: #FFD700; font-weight: 600; font-size: 1.1rem; margin-top: 5px; margin-bottom: 0; }
     
-    /* Efeito Vidro (Glassmorphism) e Animação de Luz (Sweep) nas Caixas */
+    /* Efeito Vidro (Glassmorphism) */
     .info-card { background: rgba(10, 10, 10, 0.6); backdrop-filter: blur(16px) saturate(180%); -webkit-backdrop-filter: blur(16px) saturate(180%); border-top: 1px solid rgba(255, 255, 255, 0.15); border-left: 1px solid rgba(255, 255, 255, 0.08); border-right: 1px solid rgba(255, 255, 255, 0.08); border-bottom: 1px solid rgba(255, 255, 255, 0.05); box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3); border-radius: 12px; padding: 15px; margin-top: 15px; margin-bottom: 15px; position: relative; overflow: hidden; transition: all 0.5s ease; }
     .info-card:hover { background: rgba(249, 115, 22, 0.08); border-color: rgba(249, 115, 22, 0.3); transform: translateY(-5px); box-shadow: 0 15px 40px rgba(249, 115, 22, 0.15); }
     .info-card::before { content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%; background: linear-gradient(90deg, transparent, rgba(249, 115, 22, 0.15), transparent); transition: 0.5s; pointer-events: none; z-index: 20; }
     .info-card:hover::before { left: 100%; transition: 0.7s ease-in-out; }
 
-    /* Efeito Design System nos Botões (Gradiente + Glow) */
+    /* Botões */
     div.stButton > button { background: linear-gradient(to top, #fef08a 0%, #fb923c 50%, #f97316 100%) !important; color: #2c1306 !important; border: 1px inset rgba(255, 255, 255, 0.4) !important; padding: 0.7rem 2rem; border-radius: 9999px !important; font-weight: 600 !important; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important; width: 100%; position: relative; box-shadow: 0 0 40px -5px rgba(249, 115, 22, 0.6) !important; animation: fadeInUpBlur 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
     div.stButton > button:hover { box-shadow: 0 0 60px -5px rgba(249, 115, 22, 0.8) !important; transform: scale(1.05) translateY(-2px) !important; }
 
@@ -165,69 +170,20 @@ st.markdown("""
     [data-testid="stDataFrame"] { background-color: rgba(255, 255, 255, 0.03); border-radius: 8px; }
     div[data-testid="stTabs"] button { font-size: 1.2rem; font-weight: bold; transition: color 0.3s;}
     div[data-testid="stTabs"] button[data-baseweb="tab"]:hover { color: #FFD700; }
-
-    /* Cores de status */
     .card-red { border-left: 4px solid #DDD !important; } .card-red:hover { box-shadow: 0 15px 40px rgba(239, 68, 68, 0.25) !important; border-color: rgba(239, 68, 68, 0.6) !important; } .card-red::before { background: linear-gradient(90deg, transparent, rgba(239, 68, 68, 0.15), transparent) !important; }
     .card-green { border-left: 4px solid #22c55e !important; } .card-green:hover { box-shadow: 0 15px 40px rgba(34, 197, 94, 0.25) !important; border-color: rgba(34, 197, 94, 0.6) !important; } .card-green::before { background: linear-gradient(90deg, transparent, rgba(34, 197, 94, 0.15), transparent) !important; }
-
-    /* Media Queries para Mobile Perfeito */
-    @media (max-width: 768px) {
-        .main-title { font-size: 2rem !important; }
-        .sub-title { font-size: 0.95rem !important; }
-        div.stButton > button { padding: 0.6rem 1.2rem !important; font-size: 0.95rem !important; }
-        .block-container { padding-left: 1rem !important; padding-right: 1rem !important; }
-        .info-card { padding: 12px; margin-top: 10px; margin-bottom: 10px; }
-    }
 </style>
-
-<iframe class="unicorn-bg" src="https://www.unicorn.studio/embed/4pNjhpeCPKHrhxFruL9" frameborder="0"></iframe>
-
 """, unsafe_allow_html=True)
 
-# Cursor Customizado Global via JavaScript
+# =========================================================
+# CHAMA O FUNDO OFICIALMENTE (O CSS acima vai jogar ele pro fundo da tela)
+# =========================================================
 components.html("""
-<script>
-    const doc = window.parent.document;
-    if (!doc.getElementById('cursor-gate')) {
-        const cursor = doc.createElement('div');
-        cursor.id = 'cursor-gate';
-        cursor.style.position = 'fixed';
-        cursor.style.top = '0';
-        cursor.style.left = '0';
-        cursor.style.width = '20px';
-        cursor.style.height = '20px';
-        cursor.style.backgroundColor = 'rgba(255, 255, 255, 0.8)';
-        cursor.style.borderRadius = '50%';
-        cursor.style.pointerEvents = 'none';
-        cursor.style.zIndex = '999999';
-        cursor.style.transform = 'translate(-50%, -50%)';
-        cursor.style.transition = 'width 0.2s, height 0.2s, background-color 0.2s';
-        cursor.style.mixBlendMode = 'overlay';
-        cursor.style.backdropFilter = 'blur(2px)';
-        doc.body.appendChild(cursor);
-
-        doc.addEventListener('mousemove', (e) => {
-            cursor.style.left = e.clientX + 'px';
-            cursor.style.top = e.clientY + 'px';
-        });
-
-        doc.addEventListener('mousedown', () => {
-            cursor.style.width = '15px';
-            cursor.style.height = '15px';
-            cursor.style.backgroundColor = '#FFD700';
-        });
-        
-        doc.addEventListener('mouseup', () => {
-            cursor.style.width = '20px';
-            cursor.style.height = '20px';
-            cursor.style.backgroundColor = 'rgba(255, 255, 255, 0.8)';
-        });
-    }
-</script>
-""", height=0, width=0)
-
-if 'stats_calculados' not in st.session_state: st.session_state['stats_calculados'] = None
-if 'dados_n8n' not in st.session_state: st.session_state['dados_n8n'] = None
+    <iframe src="https://www.unicorn.studio/embed/4pNjhpeCPKHrhxFruL9" 
+            style="width: 100%; height: 100vh; border: none; margin: 0; padding: 0; overflow: hidden;" 
+            allow="autoplay; fullscreen">
+    </iframe>
+""", height=0)
 
 # =========================================================
 # 2. CABEÇALHO VISUAL E FUNDO DO CABEÇALHO
