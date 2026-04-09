@@ -327,47 +327,46 @@ components.html("""
     const parentDoc = window.parent.document;
     const parentWin = window.parent;
 
-    // Verifica se o background já existe para não duplicar quando o Streamlit atualizar
-    if (!parentDoc.getElementById('unicorn-bg-container')) {
-        
-        // Cria o container do background que vai ocupar a tela toda
-        const bgContainer = parentDoc.createElement('div');
-        bgContainer.id = 'unicorn-bg-container';
-        bgContainer.style.position = 'fixed';
-        bgContainer.style.top = '0';
-        bgContainer.style.left = '0';
-        bgContainer.style.width = '100vw';
-        bgContainer.style.height = '100vh';
-        bgContainer.style.zIndex = '-10'; // Garante que fique atrás de tudo
-        bgContainer.style.pointerEvents = 'none'; // Impede que o fundo roube os cliques
-        
-        // Cria a div específica exigida pelo Unicorn Studio com o SEU PROJETO
-        const usDiv = parentDoc.createElement('div');
-        usDiv.id = 'hero-bg';
-        usDiv.setAttribute('data-us-project', '0Air3YV0ySfVbTEkT2EW'); // <-- SEU EFEITO AQUI
-        usDiv.style.width = '100%';
-        usDiv.style.height = '100%';
-        
-        // Injeta as divs no corpo (body) do Streamlit
-        bgContainer.appendChild(usDiv);
-        parentDoc.body.appendChild(bgContainer);
-
-        // Carrega o script do Unicorn Studio dinamicamente
-        const script = parentDoc.createElement('script');
-        script.src = 'https://cdn.jsdelivr.net/gh/hiunicornstudio/unicornstudio.js@v1.4.34/dist/unicornStudio.umd.js';
-        
-        script.onload = function() {
-            // Inicializa o WebGL assim que o script terminar de carregar
-            if (!parentWin.UnicornStudio || !parentWin.UnicornStudio.isInitialized) {
-                if(parentWin.UnicornStudio) {
-                    parentWin.UnicornStudio.init();
-                    parentWin.UnicornStudio.isInitialized = true;
-                }
-            }
-        };
-        
-        parentDoc.head.appendChild(script);
+    // 1. DESTRÓI O FUNDO ANTIGO SE ELE EXISTIR (Isso garante a atualização)
+    const oldBg = parentDoc.getElementById('unicorn-bg-container');
+    if (oldBg) {
+        oldBg.remove();
     }
+        
+    // 2. Cria o container do background atualizado
+    const bgContainer = parentDoc.createElement('div');
+    bgContainer.id = 'unicorn-bg-container';
+    bgContainer.style.position = 'fixed';
+    bgContainer.style.top = '0';
+    bgContainer.style.left = '0';
+    bgContainer.style.width = '100vw';
+    bgContainer.style.height = '100vh';
+    bgContainer.style.zIndex = '-10'; // Garante que fique atrás de tudo
+    bgContainer.style.pointerEvents = 'none'; // Impede que o fundo roube os cliques
+    
+    // 3. Insere o seu novo projeto
+    const usDiv = parentDoc.createElement('div');
+    usDiv.id = 'hero-bg';
+    usDiv.setAttribute('data-us-project', '0Air3YV0ySfVbTEkT2EW'); // <-- SEU NOVO EFEITO
+    usDiv.style.width = '100%';
+    usDiv.style.height = '100%';
+    
+    // Injeta na tela
+    bgContainer.appendChild(usDiv);
+    parentDoc.body.appendChild(bgContainer);
+
+    // 4. Carrega e inicializa o Unicorn Studio
+    const script = parentDoc.createElement('script');
+    script.src = 'https://cdn.jsdelivr.net/gh/hiunicornstudio/unicornstudio.js@v1.4.34/dist/unicornStudio.umd.js';
+    
+    script.onload = function() {
+        if (parentWin.UnicornStudio) {
+            parentWin.UnicornStudio.init();
+            parentWin.UnicornStudio.isInitialized = true;
+        }
+    };
+    
+    parentDoc.head.appendChild(script);
 </script>
 """, height=0, width=0)
 
