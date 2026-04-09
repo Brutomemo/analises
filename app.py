@@ -108,58 +108,21 @@ st.markdown("""
     /* Configurações Globais */
     .block-container { padding-top: 1.5rem !important; padding-bottom: 2rem !important; z-index: 10; position: relative;}
     header {visibility: hidden;}
-    /* Fundo Transparente para revelar o WebGL */
-    body { background-color: #050505 !important; }
-    .stApp, [data-testid="stAppViewContainer"], [data-testid="stHeader"] { 
+    /* =========================================================
+       DESTRÓI TODAS AS PAREDES DE FUNDO DO STREAMLIT 
+       Isso garante que o WebGL (Unicorn Studio) fique visível
+       ========================================================= */
+    html, body, #root, .stApp, [data-testid="stAppViewContainer"], [data-testid="stMain"], [data-testid="stHeader"] {
         background: transparent !important;
-        background-color: transparent !important; 
-        color: #FFFFFF; 
-        overflow-x: hidden; 
-        font-family: 'Inter', sans-serif;
+        background-color: transparent !important;
     }
     
-    /* Fundo Estrelado - Luminous Design System */
-    .stars-bg {
-        position: fixed;
-        top: 0; left: 0; right: 0; bottom: 0;
-        background-image:
-            radial-gradient(1.5px 1.5px at 20px 30px, #fff, rgba(0,0,0,0)),
-            radial-gradient(1.5px 1.5px at 40px 70px, #ffffff, rgba(0,0,0,0)),
-            radial-gradient(1.5px 1.5px at 50px 160px, #ffffff, rgba(0,0,0,0)),
-            radial-gradient(2px 2px at 90px 40px, #ffffff, rgba(0,0,0,0)),
-            radial-gradient(1.5px 1.5px at 130px 80px, #ffffff, rgba(0,0,0,0));
-        background-size: 200px 200px;
-        opacity: 0.45; /* Aumentado para maior visibilidade */
-        z-index: 1; /* Acima do fundo preto */
-        pointer-events: none;
+    /* Mantém as configurações base de texto da aplicação */
+    .stApp {
+        color: #FFFFFF;
+        font-family: 'Inter', sans-serif;
+        overflow-x: hidden;
     }
-
-    /* Animação Efeito Raio Descendo do Céu */
-    @keyframes rayFall {
-        0% { transform: translateY(-100vh) rotate(15deg); opacity: 0; filter: blur(2px); }
-        15% { opacity: 1; filter: blur(0px); } /* Opacidade máxima e foco nítido mais cedo */
-        85% { opacity: 1; filter: blur(0px); } /* Mantém brilho máximo durante a queda */
-        100% { transform: translateY(120vh) rotate(15deg); opacity: 0; filter: blur(2px); }
-    }
-    .dynamic-ray {
-        position: fixed;
-        top: 0;
-        width: 3px; /* Raio mais espesso */
-        height: 350px; /* Raio mais longo */
-        /* Núcleo brilhante (branco) com bordas laranjas para simular energia */
-        background: linear-gradient(to bottom, transparent, rgba(249, 115, 22, 0.9), rgba(255, 255, 255, 0.9), transparent);
-        /* Efeito Glow / Neon ao redor do raio */
-        box-shadow: 0 0 25px 5px rgba(249, 115, 22, 0.7); 
-        z-index: 2; /* Traz para frente do fundo, mas atrás dos cards (z-index 10) */
-        animation: rayFall linear infinite;
-        pointer-events: none;
-    }
-    .ray1 { left: 15%; animation-duration: 5s; animation-delay: 0s; }
-    .ray2 { left: 45%; animation-duration: 4.5s; animation-delay: 2s; }
-    .ray3 { left: 75%; animation-duration: 6s; animation-delay: 1s; }
-    .ray4 { left: 85%; animation-duration: 7s; animation-delay: 3s; }
-    .ray5 { left: 5%; animation-duration: 5.5s; animation-delay: 4s; }
-
     /* Animação de Entrada Cinematográfica (Opacidade + Blur) */
     @keyframes fadeInUpBlur {
         0% { opacity: 0; transform: translateY(30px); filter: blur(8px); }
