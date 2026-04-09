@@ -99,91 +99,277 @@ def converter_escala(val):
 # =========================================================
 # 1. CONFIGURAÇÃO DA PÁGINA E CSS (UX e Design System)
 # =========================================================
-import streamlit as st
-import streamlit.components.v1 as components
-
 st.set_page_config(page_title="GATE - Analisador de APAs", layout="wide", initial_sidebar_state="collapsed")
 
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Bricolage+Grotesque:opsz,wght@12..96,300;12..96,400;12..96,600&display=swap');
 
-    /* ==========================================
-       O GRANDE TRUQUE PARA A NUVEM (CLOUD HACK)
-       ========================================== */
-    /* 1. Base Preta Inquebrável */
-    html, body { background-color: #050505 !important; } 
-    
-    /* 2. Deixa as paredes do Streamlit transparentes */
+    /* Configurações Globais */
+    .block-container { padding-top: 1.5rem !important; padding-bottom: 2rem !important; z-index: 10; position: relative;}
+    header {visibility: hidden;}
+    /* Fundo Transparente para revelar o WebGL */
+    body { background-color: #050505 !important; }
     .stApp, [data-testid="stAppViewContainer"], [data-testid="stHeader"] { 
         background: transparent !important;
         background-color: transparent !important; 
-        color: #FFFFFF;
+        color: #FFFFFF; 
+        overflow-x: hidden; 
+        font-family: 'Inter', sans-serif;
+    }
+    
+    /* Fundo Estrelado - Luminous Design System */
+    .stars-bg {
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background-image:
+            radial-gradient(1.5px 1.5px at 20px 30px, #fff, rgba(0,0,0,0)),
+            radial-gradient(1.5px 1.5px at 40px 70px, #ffffff, rgba(0,0,0,0)),
+            radial-gradient(1.5px 1.5px at 50px 160px, #ffffff, rgba(0,0,0,0)),
+            radial-gradient(2px 2px at 90px 40px, #ffffff, rgba(0,0,0,0)),
+            radial-gradient(1.5px 1.5px at 130px 80px, #ffffff, rgba(0,0,0,0));
+        background-size: 200px 200px;
+        opacity: 0.45; /* Aumentado para maior visibilidade */
+        z-index: 1; /* Acima do fundo preto */
+        pointer-events: none;
     }
 
-    /* 3. O "SNIPER": Mira no Iframe do Streamlit Components e força ele a ser o fundo */
-    iframe[title="streamlit_components.v1.components.html"] {
-        position: fixed !important;
-        top: 0 !important;
-        left: 0 !important;
-        width: 100vw !important;
-        height: 100vh !important;
-        z-index: 0 !important;
-        pointer-events: none !important; /* Para não bloquear seus cliques */
-        border: none !important;
+    /* Animação Efeito Raio Descendo do Céu */
+    @keyframes rayFall {
+        0% { transform: translateY(-100vh) rotate(15deg); opacity: 0; filter: blur(2px); }
+        15% { opacity: 1; filter: blur(0px); } /* Opacidade máxima e foco nítido mais cedo */
+        85% { opacity: 1; filter: blur(0px); } /* Mantém brilho máximo durante a queda */
+        100% { transform: translateY(120vh) rotate(15deg); opacity: 0; filter: blur(2px); }
     }
+    .dynamic-ray {
+        position: fixed;
+        top: 0;
+        width: 3px; /* Raio mais espesso */
+        height: 350px; /* Raio mais longo */
+        /* Núcleo brilhante (branco) com bordas laranjas para simular energia */
+        background: linear-gradient(to bottom, transparent, rgba(249, 115, 22, 0.9), rgba(255, 255, 255, 0.9), transparent);
+        /* Efeito Glow / Neon ao redor do raio */
+        box-shadow: 0 0 25px 5px rgba(249, 115, 22, 0.7); 
+        z-index: 2; /* Traz para frente do fundo, mas atrás dos cards (z-index 10) */
+        animation: rayFall linear infinite;
+        pointer-events: none;
+    }
+    .ray1 { left: 15%; animation-duration: 5s; animation-delay: 0s; }
+    .ray2 { left: 45%; animation-duration: 4.5s; animation-delay: 2s; }
+    .ray3 { left: 75%; animation-duration: 6s; animation-delay: 1s; }
+    .ray4 { left: 85%; animation-duration: 7s; animation-delay: 3s; }
+    .ray5 { left: 5%; animation-duration: 5.5s; animation-delay: 4s; }
 
-    /* Cursor Tático CSS (Substitui o JavaScript que a nuvem bloqueava) */
-    html, body, .stApp { cursor: crosshair !important; }
-
-    /* ==========================================
-       SEU UX / DESIGN SYSTEM (MANTIDO INTACTO)
-       ========================================== */
-    .block-container { padding-top: 1.5rem !important; padding-bottom: 2rem !important; position: relative; z-index: 10;}
-    header {visibility: hidden;} #MainMenu {visibility: hidden;} footer {visibility: hidden;}
-
-    /* Animação de Entrada */
+    /* Animação de Entrada Cinematográfica (Opacidade + Blur) */
     @keyframes fadeInUpBlur {
         0% { opacity: 0; transform: translateY(30px); filter: blur(8px); }
         100% { opacity: 1; transform: translateY(0); filter: blur(0px); }
     }
     .info-card, .stMarkdown, div[data-testid="stMetric"], .stDataFrame, .stPlotlyChart {
         animation: fadeInUpBlur 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) both;
-        position: relative; z-index: 10; 
+        position: relative; 
+        z-index: 10; /* Garante que o conteúdo fique acima dos raios */
     }
 
-    /* Textos */
-    .main-title { font-family: 'Bricolage Grotesque', sans-serif; font-size: 2.8rem; font-weight: 300; letter-spacing: -0.02em; background: linear-gradient(180deg, #FFFFFF 0%, #BBBBBB 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin: 0; line-height: 1.1; }
+    /* Fontes e Títulos */
+    .main-title {
+        font-family: 'Bricolage Grotesque', sans-serif; font-size: 2.8rem; font-weight: 300; letter-spacing: -0.02em;
+        background: linear-gradient(180deg, #FFFFFF 0%, #BBBBBB 100%);
+        -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin: 0; line-height: 1.1;
+    }
     .sub-title { color: #FFD700; font-weight: 600; font-size: 1.1rem; margin-top: 5px; margin-bottom: 0; }
     
-    /* Efeito Vidro (Glassmorphism) */
-    .info-card { background: rgba(10, 10, 10, 0.6); backdrop-filter: blur(16px) saturate(180%); -webkit-backdrop-filter: blur(16px) saturate(180%); border-top: 1px solid rgba(255, 255, 255, 0.15); border-left: 1px solid rgba(255, 255, 255, 0.08); border-right: 1px solid rgba(255, 255, 255, 0.08); border-bottom: 1px solid rgba(255, 255, 255, 0.05); box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3); border-radius: 12px; padding: 15px; margin-top: 15px; margin-bottom: 15px; position: relative; overflow: hidden; transition: all 0.5s ease; }
-    .info-card:hover { background: rgba(249, 115, 22, 0.08); border-color: rgba(249, 115, 22, 0.3); transform: translateY(-5px); box-shadow: 0 15px 40px rgba(249, 115, 22, 0.15); }
-    .info-card::before { content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%; background: linear-gradient(90deg, transparent, rgba(249, 115, 22, 0.15), transparent); transition: 0.5s; pointer-events: none; z-index: 20; }
-    .info-card:hover::before { left: 100%; transition: 0.7s ease-in-out; }
+    /* Efeito Vidro (Glassmorphism) e Animação de Luz (Sweep) nas Caixas */
+    .info-card { 
+        background: rgba(10, 10, 10, 0.6); /* Levemente mais opaco para dar contraste aos raios passando por trás */
+        backdrop-filter: blur(16px) saturate(180%);
+        -webkit-backdrop-filter: blur(16px) saturate(180%);
+        border-top: 1px solid rgba(255, 255, 255, 0.15);
+        border-left: 1px solid rgba(255, 255, 255, 0.08);
+        border-right: 1px solid rgba(255, 255, 255, 0.08);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+        border-radius: 12px; padding: 15px; margin-top: 15px; margin-bottom: 15px; 
+        position: relative; overflow: hidden;
+        transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .info-card::before {
+        content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(249, 115, 22, 0.15), transparent);
+        transition: 0.5s; pointer-events: none; z-index: 20;
+    }
+    .info-card:hover {
+        background: rgba(249, 115, 22, 0.08);
+        border-color: rgba(249, 115, 22, 0.3);
+        transform: translateY(-5px);
+        box-shadow: 0 15px 40px rgba(249, 115, 22, 0.15);
+    }
+    .info-card:hover::before {
+        left: 100%; transition: 0.7s ease-in-out;
+    }
 
-    /* Botões */
-    div.stButton > button { background: linear-gradient(to top, #fef08a 0%, #fb923c 50%, #f97316 100%) !important; color: #2c1306 !important; border: 1px inset rgba(255, 255, 255, 0.4) !important; padding: 0.7rem 2rem; border-radius: 9999px !important; font-weight: 600 !important; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important; width: 100%; position: relative; box-shadow: 0 0 40px -5px rgba(249, 115, 22, 0.6) !important; animation: fadeInUpBlur 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
-    div.stButton > button:hover { box-shadow: 0 0 60px -5px rgba(249, 115, 22, 0.8) !important; transform: scale(1.05) translateY(-2px) !important; }
+    /* Efeito Design System nos Botões (Gradiente + Glow) */
+    div.stButton > button { 
+        background: linear-gradient(to top, #fef08a 0%, #fb923c 50%, #f97316 100%) !important;
+        color: #2c1306 !important; /* Cor escura para leitura perfeita sobre o laranja/amarelo */
+        border: 1px inset rgba(255, 255, 255, 0.4) !important;
+        padding: 0.7rem 2rem; border-radius: 9999px !important; font-weight: 600 !important; 
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important; width: 100%; position: relative;
+        box-shadow: 0 0 40px -5px rgba(249, 115, 22, 0.6) !important;
+        animation: fadeInUpBlur 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+    }
+    div.stButton > button:hover { 
+        box-shadow: 0 0 60px -5px rgba(249, 115, 22, 0.8) !important; 
+        transform: scale(1.05) translateY(-2px) !important; 
+    }
+    
+    /* Efeito Ambient Blobs (Degradês Flutuantes no Fundo) */
+    .liquid-blob {
+        position: fixed; border-radius: 60%; filter: blur(80px); opacity: 0.20; z-index: 1;
+        animation: float 10s infinite alternate cubic-bezier(0.4, 0, 0.2, 1); pointer-events: none;
+    }
+    .blob1 { background-color: #FFD700; width: 500px; height: 500px; top: -100px; left: -100px; animation-duration: 15s; }
+    .blob2 { background-color: #fb923c; width: 400px; height: 400px; top: 40%; right: -100px; animation-duration: 20s; animation-delay: -10s; }
+    .blob3 { background-color: #c2410c; width: 600px; height: 600px; bottom: -150px; left: 20%; animation-duration: 25s; animation-delay: -15s; }
+    
+    @keyframes float {
+        0% { transform: translate(0, 0) scale(1); }
+        100% { transform: translate(30px, 50px) scale(1.1); }
+    }
 
-    /* Tabelas e Abas */
+    /* Tabelas e Menus Base */
     [data-testid="stDataFrame"] { background-color: rgba(255, 255, 255, 0.03); border-radius: 8px; }
+    #MainMenu {visibility: hidden;} footer {visibility: hidden;}
     div[data-testid="stTabs"] button { font-size: 1.2rem; font-weight: bold; transition: color 0.3s;}
     div[data-testid="stTabs"] button[data-baseweb="tab"]:hover { color: #FFD700; }
-    .card-red { border-left: 4px solid #DDD !important; } .card-red:hover { box-shadow: 0 15px 40px rgba(239, 68, 68, 0.25) !important; border-color: rgba(239, 68, 68, 0.6) !important; } .card-red::before { background: linear-gradient(90deg, transparent, rgba(239, 68, 68, 0.15), transparent) !important; }
-    .card-green { border-left: 4px solid #22c55e !important; } .card-green:hover { box-shadow: 0 15px 40px rgba(34, 197, 94, 0.25) !important; border-color: rgba(34, 197, 94, 0.6) !important; } .card-green::before { background: linear-gradient(90deg, transparent, rgba(34, 197, 94, 0.15), transparent) !important; }
+
+    /* Cores para o Efeito de Vidro (Agressividade e Receptividade) */
+    .card-red { border-left: 4px solid #DDD !important; }
+    .card-red:hover { box-shadow: 0 15px 40px rgba(239, 68, 68, 0.25) !important; border-color: rgba(239, 68, 68, 0.6) !important; }
+    .card-red::before { background: linear-gradient(90deg, transparent, rgba(239, 68, 68, 0.15), transparent) !important; }
+
+    .card-green { border-left: 4px solid #22c55e !important; }
+    .card-green:hover { box-shadow: 0 15px 40px rgba(34, 197, 94, 0.25) !important; border-color: rgba(34, 197, 94, 0.6) !important; }
+    .card-green::before { background: linear-gradient(90deg, transparent, rgba(34, 197, 94, 0.15), transparent) !important; }
+
+    /* Media Queries para Mobile Perfeito */
+    @media (max-width: 768px) {
+        .main-title { font-size: 2rem !important; }
+        .sub-title { font-size: 0.95rem !important; }
+        div.stButton > button { padding: 0.6rem 1.2rem !important; font-size: 0.95rem !important; }
+        .block-container { padding-left: 1rem !important; padding-right: 1rem !important; }
+        .info-card { padding: 12px; margin-top: 10px; margin-bottom: 10px; }
+    }
 </style>
+
+<div class="stars-bg"></div>
+<div class="dynamic-ray ray1"></div>
+<div class="dynamic-ray ray2"></div>
+<div class="dynamic-ray ray3"></div>
+<div class="dynamic-ray ray4"></div>
+<div class="dynamic-ray ray5"></div>
+
+<div class="liquid-blob blob1"></div>
+<div class="liquid-blob blob2"></div>
+<div class="liquid-blob blob3"></div>
 """, unsafe_allow_html=True)
 
+# Cursor Customizado Global via JavaScript
+components.html("""
+<script>
+    const doc = window.parent.document;
+    if (!doc.getElementById('cursor-gate')) {
+        const cursor = doc.createElement('div');
+        cursor.id = 'cursor-gate';
+        cursor.style.position = 'fixed';
+        cursor.style.top = '0';
+        cursor.style.left = '0';
+        cursor.style.width = '20px';
+        cursor.style.height = '20px';
+        cursor.style.backgroundColor = 'rgba(255, 255, 255, 0.8)';
+        cursor.style.borderRadius = '50%';
+        cursor.style.pointerEvents = 'none';
+        cursor.style.zIndex = '999999';
+        cursor.style.transform = 'translate(-50%, -50%)';
+        cursor.style.transition = 'width 0.2s, height 0.2s, background-color 0.2s';
+        cursor.style.mixBlendMode = 'overlay';
+        cursor.style.backdropFilter = 'blur(2px)';
+        doc.body.appendChild(cursor);
+
+        doc.addEventListener('mousemove', (e) => {
+            cursor.style.left = e.clientX + 'px';
+            cursor.style.top = e.clientY + 'px';
+        });
+
+        doc.addEventListener('mousedown', () => {
+            cursor.style.width = '15px';
+            cursor.style.height = '15px';
+            cursor.style.backgroundColor = '#FFD700';
+        });
+        
+        doc.addEventListener('mouseup', () => {
+            cursor.style.width = '20px';
+            cursor.style.height = '20px';
+            cursor.style.backgroundColor = 'rgba(255, 255, 255, 0.8)';
+        });
+    }
+</script>
+""", height=0, width=0)
+
+if 'stats_calculados' not in st.session_state: st.session_state['stats_calculados'] = None
+if 'dados_n8n' not in st.session_state: st.session_state['dados_n8n'] = None
+
 # =========================================================
-# CHAMA O FUNDO OFICIALMENTE (O CSS acima vai jogar ele pro fundo da tela)
+# BACKGROUND DINÂMICO WEBGL (Unicorn Studio)
 # =========================================================
 components.html("""
-    <iframe src="https://www.unicorn.studio/embed/4pNjhpeCPKHrhxFruL9" 
-            style="width: 100%; height: 100vh; border: none; margin: 0; padding: 0; overflow: hidden;" 
-            allow="autoplay; fullscreen">
-    </iframe>
-""", height=0)
+<script>
+    const parentDoc = window.parent.document;
+    const parentWin = window.parent;
+
+    // Verifica se o background já existe para não duplicar quando o Streamlit atualizar
+    if (!parentDoc.getElementById('unicorn-bg-container')) {
+        
+        // Cria o container do background que vai ocupar a tela toda
+        const bgContainer = parentDoc.createElement('div');
+        bgContainer.id = 'unicorn-bg-container';
+        bgContainer.style.position = 'fixed';
+        bgContainer.style.top = '0';
+        bgContainer.style.left = '0';
+        bgContainer.style.width = '100vw';
+        bgContainer.style.height = '100vh';
+        bgContainer.style.zIndex = '-10'; // Garante que fique atrás de tudo
+        bgContainer.style.pointerEvents = 'none'; // Impede que o fundo roube os cliques
+        
+        // Cria a div específica exigida pelo Unicorn Studio com o SEU PROJETO
+        const usDiv = parentDoc.createElement('div');
+        usDiv.id = 'hero-bg';
+        usDiv.setAttribute('data-us-project', '0Air3YV0ySfVbTEkT2EW'); // <-- SEU EFEITO AQUI
+        usDiv.style.width = '100%';
+        usDiv.style.height = '100%';
+        
+        // Injeta as divs no corpo (body) do Streamlit
+        bgContainer.appendChild(usDiv);
+        parentDoc.body.appendChild(bgContainer);
+
+        // Carrega o script do Unicorn Studio dinamicamente
+        const script = parentDoc.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/gh/hiunicornstudio/unicornstudio.js@v1.4.34/dist/unicornStudio.umd.js';
+        
+        script.onload = function() {
+            // Inicializa o WebGL assim que o script terminar de carregar
+            if (!parentWin.UnicornStudio || !parentWin.UnicornStudio.isInitialized) {
+                if(parentWin.UnicornStudio) {
+                    parentWin.UnicornStudio.init();
+                    parentWin.UnicornStudio.isInitialized = true;
+                }
+            }
+        };
+        
+        parentDoc.head.appendChild(script);
+    }
+</script>
+""", height=0, width=0)
 
 # =========================================================
 # 2. CABEÇALHO VISUAL E FUNDO DO CABEÇALHO
