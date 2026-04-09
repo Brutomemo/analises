@@ -323,9 +323,8 @@ script_dir = os.path.dirname(os.path.abspath(__file__))
 path_assets = os.path.join(script_dir, "Assets") 
 
 # Padronizando todos os caminhos para nomes limpos e minúsculos
-path_teste_gate = os.path.join(path_assets, "teste_gate.png")
-path_brasao_gate = os.path.join(path_assets, "brasao_gate.png")
-path_negociacao_fundo = os.path.join(path_assets, "negociacao_novo_prata.png") # Nova Imagem
+path_teste_gate = os.path.join(path_assets, "teste_gate.webp")
+path_brasao_gate = os.path.join(path_assets, "brasao_gate.webp")
 
 # --- 1. PREPARAR IMAGENS (Codificar para Base64) ---
 # Inicializar como strings vazias para não quebrar se houver erro
