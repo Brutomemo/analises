@@ -329,62 +329,77 @@ if 'dados_n8n' not in st.session_state:
     st.session_state['dados_n8n'] = None
 
 # =========================================================
-# BACKGROUND DINÂMICO WEBGL (Unicorn Studio)
+# VERSÃO BLINDADA - BACKGROUND UNICORN STUDIO
 # =========================================================
 components.html("""
 <script>
-    const parentDoc = window.parent.document;
-    const parentWin = window.parent;
+    (function() {
+        const PROJECT_ID = "4plIJhpeCPKHrhxFrUrL9";
+        const doc = window.parent.document;
 
-    // Container único do background
-    let bgContainer = parentDoc.getElementById('unicorn-bg-container');
-    let usDiv = parentDoc.getElementById('hero-bg');
+        function initUnicorn() {
+            // 1. Evita duplicatas
+            if (doc.getElementById('unicorn-bg-container')) return;
 
-    if (!bgContainer) {
-        bgContainer = parentDoc.createElement('div');
-        bgContainer.id = 'unicorn-bg-container';
-        bgContainer.style.position = 'fixed';
-        bgContainer.style.top = '0';
-        bgContainer.style.left = '0';
-        bgContainer.style.width = '100vw';
-        bgContainer.style.height = '100vh';
-        bgContainer.style.zIndex = '0';
-        bgContainer.style.pointerEvents = 'none';
-        bgContainer.style.overflow = 'hidden';
-        parentDoc.body.prepend(bgContainer);
-    }
+            console.log("🛠️ Iniciando injeção do Unicorn Studio...");
 
-    if (!usDiv) {
-        usDiv = parentDoc.createElement('div');
-        usDiv.id = 'hero-bg';
-        usDiv.setAttribute('data-us-project', '0Air3YV0ySfVbTEkT2EW');
-        usDiv.style.width = '100%';
-        usDiv.style.height = '100%';
-        bgContainer.appendChild(usDiv);
-    }
+            // 2. Cria o container de fundo
+            const container = doc.createElement('div');
+            container.id = 'unicorn-bg-container';
+            container.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100vw;
+                height: 100vh;
+                z-index: -10;
+                pointer-events: none;
+                background: #050505;
+            `;
 
-    // Carrega o script só uma vez
-    if (!parentDoc.getElementById('unicorn-studio-sdk')) {
-        const script = parentDoc.createElement('script');
-        script.id = 'unicorn-studio-sdk';
-        script.src = 'https://cdn.jsdelivr.net/gh/hiunicornstudio/unicornstudio.js@v1.4.34/dist/unicornStudio.umd.js';
+            const scene = doc.createElement('div');
+            scene.id = 'unicorn-scene';
+            scene.setAttribute('data-us-project', PROJECT_ID);
+            scene.style.width = '100%';
+            scene.style.height = '100%';
 
-        script.onload = function() {
-            if (parentWin.UnicornStudio && !parentWin.UnicornStudio.isInitialized) {
-                parentWin.UnicornStudio.init();
-                parentWin.UnicornStudio.isInitialized = true;
-            }
-        };
+            container.appendChild(scene);
+            doc.body.appendChild(container);
 
-        parentDoc.head.appendChild(script);
-    } else {
-        if (parentWin.UnicornStudio && !parentWin.UnicornStudio.isInitialized) {
-            parentWin.UnicornStudio.init();
-            parentWin.UnicornStudio.isInitialized = true;
+            // 3. Carrega o Script do CDN
+            const script = doc.createElement('script');
+            script.src = "https://cdn.jsdelivr.net/gh/hiunicornstudio/unicornstudio.js@v1.4.34/dist/unicornStudio.umd.js";
+            
+            script.onload = () => {
+                console.log("📦 SDK do Unicorn Studio carregado.");
+                
+                // Tenta inicializar até que o objeto esteja disponível no Window
+                let attempts = 0;
+                const checkInit = setInterval(() => {
+                    attempts++;
+                    if (window.parent.UnicornStudio) {
+                        window.parent.UnicornStudio.init();
+                        console.log("🚀 Unicorn Studio Inicializado com sucesso!");
+                        clearInterval(checkInit);
+                    } else if (attempts > 20) {
+                        console.error("❌ Falha ao encontrar UnicornStudio após 10 segundos.");
+                        clearInterval(checkInit);
+                    }
+                }, 500);
+            };
+
+            doc.head.appendChild(script);
         }
-    }
+
+        // Executa a função
+        if (doc.readyState === 'complete') {
+            initUnicorn();
+        } else {
+            window.parent.addEventListener('load', initUnicorn);
+        }
+    })();
 </script>
-""", height=0, width=0)
+""", height=0)
 
 # =========================================================
 # 2. CABEÇALHO VISUAL E FUNDO DO CABEÇALHO
