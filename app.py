@@ -312,6 +312,58 @@ if 'stats_calculados' not in st.session_state: st.session_state['stats_calculado
 if 'dados_n8n' not in st.session_state: st.session_state['dados_n8n'] = None
 
 # =========================================================
+# BACKGROUND DINÂMICO WEBGL (Unicorn Studio)
+# =========================================================
+components.html("""
+<script>
+    const parentDoc = window.parent.document;
+    const parentWin = window.parent;
+
+    // Verifica se o background já existe para não duplicar quando o Streamlit atualizar
+    if (!parentDoc.getElementById('unicorn-bg-container')) {
+        
+        // Cria o container do background que vai ocupar a tela toda
+        const bgContainer = parentDoc.createElement('div');
+        bgContainer.id = 'unicorn-bg-container';
+        bgContainer.style.position = 'fixed';
+        bgContainer.style.top = '0';
+        bgContainer.style.left = '0';
+        bgContainer.style.width = '100vw';
+        bgContainer.style.height = '100vh';
+        bgContainer.style.zIndex = '-10'; // Garante que fique atrás de tudo
+        bgContainer.style.pointerEvents = 'none'; // Impede que o fundo roube os cliques
+        
+        // Cria a div específica exigida pelo Unicorn Studio com o SEU PROJETO
+        const usDiv = parentDoc.createElement('div');
+        usDiv.id = 'hero-bg';
+        usDiv.setAttribute('data-us-project', '0Air3YV0ySfVbTEkT2EW'); // <-- SEU EFEITO AQUI
+        usDiv.style.width = '100%';
+        usDiv.style.height = '100%';
+        
+        // Injeta as divs no corpo (body) do Streamlit
+        bgContainer.appendChild(usDiv);
+        parentDoc.body.appendChild(bgContainer);
+
+        // Carrega o script do Unicorn Studio dinamicamente
+        const script = parentDoc.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/gh/hiunicornstudio/unicornstudio.js@v1.4.34/dist/unicornStudio.umd.js';
+        
+        script.onload = function() {
+            // Inicializa o WebGL assim que o script terminar de carregar
+            if (!parentWin.UnicornStudio || !parentWin.UnicornStudio.isInitialized) {
+                if(parentWin.UnicornStudio) {
+                    parentWin.UnicornStudio.init();
+                    parentWin.UnicornStudio.isInitialized = true;
+                }
+            }
+        };
+        
+        parentDoc.head.appendChild(script);
+    }
+</script>
+""", height=0, width=0)
+
+# =========================================================
 # 2. CABEÇALHO VISUAL E FUNDO DO CABEÇALHO
 # =========================================================
 import os
@@ -406,9 +458,16 @@ else:
         if not lista_apas:
             st.warning("Nenhuma ocorrência encontrada com estes filtros.")
         else:
+            # 1. Aqui termina o bloco de cima (Filtros e Seletor)
             apa_selecionada = st.selectbox("Selecione a ID da APA para análise:", lista_apas, index=len(lista_apas)-1)
             df_apa = df_quali[df_quali['ID_Busca'] == apa_selecionada].iloc[0]
             
+            # ========================================================
+            # 💡 HACK DE ESPAÇAMENTO PARA REVELAR A LUZ DO FUNDO
+            # ========================================================
+            st.markdown("<div style='height: 180px;'></div>", unsafe_allow_html=True)
+            
+            # 2. Aqui começa o bloco de baixo (Metadados)
             c1, c2, c3, c4 = st.columns(4)
             with c1: st.markdown(f"<div class='info-card'><strong>Data:</strong><br>{limpar_valor(df_apa.get('Data da ocorrência'))}</div>", unsafe_allow_html=True)
             with c2: st.markdown(f"<div class='info-card'><strong>Modalidade:</strong><br>{limpar_valor(df_apa.get('Modalidade do incidente'))}</div>", unsafe_allow_html=True)
