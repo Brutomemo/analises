@@ -724,24 +724,6 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # =========================================================
-# CABEÇALHO DE EXEMPLO
-# =========================================================
-st.markdown('<h1 class="main-title">Delta Negociação</h1>', unsafe_allow_html=True)
-st.markdown('<p class="sub-title">Efeito recriado sem Unicorn Studio</p>', unsafe_allow_html=True)
-
-st.markdown("""
-<div class="info-card">
-    <p><strong>Este efeito foi recriado com CSS puro.</strong></p>
-    <p style="font-size: 0.95rem; color: #999;">
-        Você pode ajustar posição, brilho, tamanho do núcleo e intensidade da fumaça alterando as classes
-        <code>.energy-core</code>, <code>.energy-horizon</code>, <code>.smoke-col-1/2/3</code> e <code>.ground-arc</code>.
-    </p>
-</div>
-""", unsafe_allow_html=True)
-
-st.button("Testar interface")
-
-# =========================================================
 # 2. CABEÇALHO VISUAL E FUNDO DO CABEÇALHO
 # =========================================================
 import os
