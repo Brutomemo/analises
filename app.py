@@ -99,6 +99,9 @@ def converter_escala(val):
 # =========================================================
 # 1. CONFIGURAÇÃO DA PÁGINA E CSS (UX e Design System)
 # =========================================================
+import streamlit as st
+import streamlit.components.v1 as components
+
 st.set_page_config(page_title="GATE - Analisador de APAs", layout="wide", initial_sidebar_state="collapsed")
 
 st.markdown("""
@@ -106,35 +109,33 @@ st.markdown("""
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Bricolage+Grotesque:opsz,wght@12..96,300;12..96,400;12..96,600&display=swap');
 
     /* ==========================================
-       CORREÇÃO DA TELA BRANCA E FUNDO TRANSPARENTE
+       A GUERRA DAS CAMADAS (SANDUÍCHE PERFEITO)
        ========================================== */
-    html { background-color: #050505 !important; } /* Fundo preto base inquebrável */
-    body, #root, .stApp, [data-testid="stAppViewContainer"], [data-testid="stMain"], [data-testid="stHeader"] { 
+    /* 1. O Chão (Preto escuro) */
+    html, body { background-color: #050505 !important; margin: 0; padding: 0; } 
+    
+    /* 2. O Teto (Streamlit transparente, flutuando acima da luz) */
+    #root { position: relative; z-index: 10 !important; }
+    #root, .stApp, [data-testid="stAppViewContainer"], [data-testid="stMain"], [data-testid="stHeader"] { 
         background: transparent !important;
         background-color: transparent !important; 
     }
 
-    .stApp {
-        color: #FFFFFF; 
-        overflow-x: hidden; 
-        font-family: 'Inter', sans-serif;
-    }
+    .stApp { color: #FFFFFF; overflow-x: hidden; font-family: 'Inter', sans-serif; }
     
     /* Configurações Globais */
-    .block-container { padding-top: 1.5rem !important; padding-bottom: 2rem !important; z-index: 10; position: relative;}
+    .block-container { padding-top: 1.5rem !important; padding-bottom: 2rem !important; position: relative;}
     header {visibility: hidden;}
     #MainMenu {visibility: hidden;} 
     footer {visibility: hidden;}
 
-    /* Animação de Entrada Cinematográfica (Opacidade + Blur) */
+    /* Animação de Entrada Cinematográfica */
     @keyframes fadeInUpBlur {
         0% { opacity: 0; transform: translateY(30px); filter: blur(8px); }
         100% { opacity: 1; transform: translateY(0); filter: blur(0px); }
     }
     .info-card, .stMarkdown, div[data-testid="stMetric"], .stDataFrame, .stPlotlyChart {
         animation: fadeInUpBlur 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) both;
-        position: relative; 
-        z-index: 10; 
     }
 
     /* Fontes e Títulos */
@@ -145,7 +146,7 @@ st.markdown("""
     }
     .sub-title { color: #FFD700; font-weight: 600; font-size: 1.1rem; margin-top: 5px; margin-bottom: 0; }
     
-    /* Efeito Vidro (Glassmorphism) e Animação de Luz (Sweep) nas Caixas */
+    /* Efeito Vidro (Glassmorphism) */
     .info-card { 
         background: rgba(10, 10, 10, 0.6); 
         backdrop-filter: blur(16px) saturate(180%);
@@ -156,13 +157,7 @@ st.markdown("""
         border-bottom: 1px solid rgba(255, 255, 255, 0.05);
         box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
         border-radius: 12px; padding: 15px; margin-top: 15px; margin-bottom: 15px; 
-        position: relative; overflow: hidden;
-        transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-    .info-card::before {
-        content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%;
-        background: linear-gradient(90deg, transparent, rgba(249, 115, 22, 0.15), transparent);
-        transition: 0.5s; pointer-events: none; z-index: 20;
+        position: relative; overflow: hidden; transition: all 0.5s ease;
     }
     .info-card:hover {
         background: rgba(249, 115, 22, 0.08);
@@ -170,144 +165,94 @@ st.markdown("""
         transform: translateY(-5px);
         box-shadow: 0 15px 40px rgba(249, 115, 22, 0.15);
     }
-    .info-card:hover::before {
-        left: 100%; transition: 0.7s ease-in-out;
-    }
 
-    /* Efeito Design System nos Botões */
+    /* Botões */
     div.stButton > button { 
         background: linear-gradient(to top, #fef08a 0%, #fb923c 50%, #f97316 100%) !important;
         color: #2c1306 !important; 
         border: 1px inset rgba(255, 255, 255, 0.4) !important;
-        padding: 0.7rem 2rem; border-radius: 9999px !important; font-weight: 600 !important; 
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important; width: 100%; position: relative;
+        padding: 0.7rem 2rem; border-radius: 9999px !important; font-weight: 600 !important; width: 100%;
         box-shadow: 0 0 40px -5px rgba(249, 115, 22, 0.6) !important;
-        animation: fadeInUpBlur 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) both;
-    }
-    div.stButton > button:hover { 
-        box-shadow: 0 0 60px -5px rgba(249, 115, 22, 0.8) !important; 
-        transform: scale(1.05) translateY(-2px) !important; 
     }
 
     /* Tabelas e Abas */
     [data-testid="stDataFrame"] { background-color: rgba(255, 255, 255, 0.03); border-radius: 8px; }
     div[data-testid="stTabs"] button { font-size: 1.2rem; font-weight: bold; transition: color 0.3s;}
     div[data-testid="stTabs"] button[data-baseweb="tab"]:hover { color: #FFD700; }
-
-    /* Cores de status */
-    .card-red { border-left: 4px solid #DDD !important; }
-    .card-red:hover { box-shadow: 0 15px 40px rgba(239, 68, 68, 0.25) !important; border-color: rgba(239, 68, 68, 0.6) !important; }
-    .card-red::before { background: linear-gradient(90deg, transparent, rgba(239, 68, 68, 0.15), transparent) !important; }
-
-    .card-green { border-left: 4px solid #22c55e !important; }
-    .card-green:hover { box-shadow: 0 15px 40px rgba(34, 197, 94, 0.25) !important; border-color: rgba(34, 197, 94, 0.6) !important; }
-    .card-green::before { background: linear-gradient(90deg, transparent, rgba(34, 197, 94, 0.15), transparent) !important; }
-
-    /* Media Queries para Mobile Perfeito */
-    @media (max-width: 768px) {
-        .main-title { font-size: 2rem !important; }
-        .sub-title { font-size: 0.95rem !important; }
-        div.stButton > button { padding: 0.6rem 1.2rem !important; font-size: 0.95rem !important; }
-        .block-container { padding-left: 1rem !important; padding-right: 1rem !important; }
-        .info-card { padding: 12px; margin-top: 10px; margin-bottom: 10px; }
-    }
 </style>
 """, unsafe_allow_html=True)
 
-# Cursor Customizado Global via JavaScript
-components.html("""
-<script>
-    const doc = window.parent.document;
-    if (!doc.getElementById('cursor-gate')) {
-        const cursor = doc.createElement('div');
-        cursor.id = 'cursor-gate';
-        cursor.style.position = 'fixed';
-        cursor.style.top = '0';
-        cursor.style.left = '0';
-        cursor.style.width = '20px';
-        cursor.style.height = '20px';
-        cursor.style.backgroundColor = 'rgba(255, 255, 255, 0.8)';
-        cursor.style.borderRadius = '50%';
-        cursor.style.pointerEvents = 'none';
-        cursor.style.zIndex = '999999';
-        cursor.style.transform = 'translate(-50%, -50%)';
-        cursor.style.transition = 'width 0.2s, height 0.2s, background-color 0.2s';
-        cursor.style.mixBlendMode = 'overlay';
-        cursor.style.backdropFilter = 'blur(2px)';
-        doc.body.appendChild(cursor);
-
-        doc.addEventListener('mousemove', (e) => {
-            cursor.style.left = e.clientX + 'px';
-            cursor.style.top = e.clientY + 'px';
-        });
-
-        doc.addEventListener('mousedown', () => {
-            cursor.style.width = '15px';
-            cursor.style.height = '15px';
-            cursor.style.backgroundColor = '#FFD700';
-        });
-        
-        doc.addEventListener('mouseup', () => {
-            cursor.style.width = '20px';
-            cursor.style.height = '20px';
-            cursor.style.backgroundColor = 'rgba(255, 255, 255, 0.8)';
-        });
-    }
-</script>
-""", height=0, width=0)
-
-if 'stats_calculados' not in st.session_state: st.session_state['stats_calculados'] = None
-if 'dados_n8n' not in st.session_state: st.session_state['dados_n8n'] = None
 # =========================================================
-# BACKGROUND DINÂMICO WEBGL (Unicorn Studio)
+# BACKGROUND DINÂMICO WEBGL + CURSOR
 # =========================================================
 components.html("""
 <script>
     const parentDoc = window.parent.document;
     const parentWin = window.parent;
 
-    // 1. DESTRÓI O FUNDO ANTIGO SE ELE EXISTIR (Isso garante a atualização)
-    const oldBg = parentDoc.getElementById('unicorn-bg-container');
-    if (oldBg) {
-        oldBg.remove();
+    // --- 1. CONFIGURA O CURSOR ---
+    if (!parentDoc.getElementById('cursor-gate')) {
+        const cursor = parentDoc.createElement('div');
+        cursor.id = 'cursor-gate';
+        cursor.style.position = 'fixed';
+        cursor.style.top = '0'; cursor.style.left = '0';
+        cursor.style.width = '20px'; cursor.style.height = '20px';
+        cursor.style.backgroundColor = 'rgba(255, 255, 255, 0.8)';
+        cursor.style.borderRadius = '50%';
+        cursor.style.pointerEvents = 'none';
+        cursor.style.zIndex = '999999'; // Cursor smepre acima de TUDO
+        cursor.style.transform = 'translate(-50%, -50%)';
+        cursor.style.transition = 'width 0.2s, height 0.2s, background-color 0.2s';
+        cursor.style.mixBlendMode = 'overlay';
+        parentDoc.body.appendChild(cursor);
+
+        parentDoc.addEventListener('mousemove', (e) => {
+            cursor.style.left = e.clientX + 'px'; cursor.style.top = e.clientY + 'px';
+        });
+        parentDoc.addEventListener('mousedown', () => {
+            cursor.style.width = '15px'; cursor.style.height = '15px'; cursor.style.backgroundColor = '#FFD700';
+        });
+        parentDoc.addEventListener('mouseup', () => {
+            cursor.style.width = '20px'; cursor.style.height = '20px'; cursor.style.backgroundColor = 'rgba(255, 255, 255, 0.8)';
+        });
     }
+
+    // --- 2. CONFIGURA O UNICORN STUDIO ---
+    const oldBg = parentDoc.getElementById('unicorn-bg-container');
+    if (oldBg) { oldBg.remove(); }
         
-    // 2. Cria o container do background atualizado
     const bgContainer = parentDoc.createElement('div');
     bgContainer.id = 'unicorn-bg-container';
     bgContainer.style.position = 'fixed';
-    bgContainer.style.top = '0';
-    bgContainer.style.left = '0';
-    bgContainer.style.width = '100vw';
-    bgContainer.style.height = '100vh';
-    bgContainer.style.zIndex = '-10'; // Garante que fique atrás de tudo
-    bgContainer.style.pointerEvents = 'none'; // Impede que o fundo roube os cliques
+    bgContainer.style.top = '0'; bgContainer.style.left = '0';
+    bgContainer.style.width = '100vw'; bgContainer.style.height = '100vh';
     
-    // 3. Insere o seu novo projeto
+    // O SEGREDO ESTÁ AQUI: z-index = 1 (Fica na frente do fundo preto, mas atrás do app que é 10)
+    bgContainer.style.zIndex = '1'; 
+    bgContainer.style.pointerEvents = 'none'; 
+    
     const usDiv = parentDoc.createElement('div');
     usDiv.id = 'hero-bg';
-    usDiv.setAttribute('data-us-project', '0Air3YV0ySfVbTEkT2EW'); // <-- SEU NOVO EFEITO
-    usDiv.style.width = '100%';
-    usDiv.style.height = '100%';
+    usDiv.setAttribute('data-us-project', '0Air3YV0ySfVbTEkT2EW'); 
+    usDiv.style.width = '100%'; usDiv.style.height = '100%';
     
-    // Injeta na tela
     bgContainer.appendChild(usDiv);
     parentDoc.body.appendChild(bgContainer);
 
-    // 4. Carrega e inicializa o Unicorn Studio
     const script = parentDoc.createElement('script');
     script.src = 'https://cdn.jsdelivr.net/gh/hiunicornstudio/unicornstudio.js@v1.4.34/dist/unicornStudio.umd.js';
-    
     script.onload = function() {
         if (parentWin.UnicornStudio) {
             parentWin.UnicornStudio.init();
             parentWin.UnicornStudio.isInitialized = true;
         }
     };
-    
     parentDoc.head.appendChild(script);
 </script>
 """, height=0, width=0)
+
+if 'stats_calculados' not in st.session_state: st.session_state['stats_calculados'] = None
+if 'dados_n8n' not in st.session_state: st.session_state['dados_n8n'] = None
 
 # =========================================================
 # 2. CABEÇALHO VISUAL E FUNDO DO CABEÇALHO
