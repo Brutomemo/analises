@@ -344,7 +344,7 @@ components.html("""
         // Cria a div específica exigida pelo Unicorn Studio com o SEU PROJETO
         const usDiv = parentDoc.createElement('div');
         usDiv.id = 'hero-bg';
-        usDiv.setAttribute('data-us-project', '0Air3YV0ySfVbTEkT2EW'); // <-- SEU EFEITO AQUI
+        usDiv.setAttribute('data-us-project', '4plIJhpeCPKHrhxFrUrL9'); // <-- ID ATUALIZADO AQUI
         usDiv.style.width = '100%';
         usDiv.style.height = '100%';
         
