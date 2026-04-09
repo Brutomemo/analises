@@ -136,173 +136,54 @@ st.markdown("""
     /* Cursor Tático CSS (Substitui o JavaScript que a nuvem bloqueava) */
     html, body, .stApp { cursor: crosshair !important; }
 
-    import streamlit as st
-import streamlit.components.v1 as components
+    /* ==========================================
+       SEU UX / DESIGN SYSTEM (MANTIDO INTACTO)
+       ========================================== */
+    .block-container { padding-top: 1.5rem !important; padding-bottom: 2rem !important; position: relative; z-index: 10;}
+    header {visibility: hidden;} #MainMenu {visibility: hidden;} footer {visibility: hidden;}
 
-# =========================================================
-# CONFIG PAGE
-# =========================================================
-st.set_page_config(layout="wide")
-
-# =========================================================
-# CSS / DESIGN SYSTEM
-# =========================================================
-css = """
-<style>
-
-/* ==========================================
-   FUNDO GLOBAL STREAMLIT
-   ========================================== */
-html, body, [data-testid="stAppViewContainer"], [data-testid="stHeader"] {
-    background: transparent !important;
-}
-
-[data-testid="stAppViewContainer"] > .main {
-    background: transparent !important;
-}
-
-section.main > div {
-    background: transparent !important;
-}
-
-/* ==========================================
-   LAYER DO CONTEÚDO
-   ========================================== */
-.block-container {
-    padding-top: 1.5rem !important;
-    padding-bottom: 2rem !important;
-    position: relative;
-    z-index: 10;
-}
-
-/* remove elementos padrão */
-header {visibility: hidden;}
-#MainMenu {visibility: hidden;}
-footer {visibility: hidden;}
-
-/* ==========================================
-   ANIMAÇÃO
-   ========================================== */
-@keyframes fadeInUpBlur {
-    0% {
-        opacity: 0;
-        transform: translateY(30px);
-        filter: blur(8px);
+    /* Animação de Entrada */
+    @keyframes fadeInUpBlur {
+        0% { opacity: 0; transform: translateY(30px); filter: blur(8px); }
+        100% { opacity: 1; transform: translateY(0); filter: blur(0px); }
     }
-    100% {
-        opacity: 1;
-        transform: translateY(0);
-        filter: blur(0px);
+    .info-card, .stMarkdown, div[data-testid="stMetric"], .stDataFrame, .stPlotlyChart {
+        animation: fadeInUpBlur 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+        position: relative; z-index: 10; 
     }
-}
 
-.info-card,
-.stMarkdown,
-div[data-testid="stMetric"],
-.stDataFrame,
-.stPlotlyChart {
-    animation: fadeInUpBlur 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) both;
-    position: relative;
-    z-index: 10;
-}
+    /* Textos */
+    .main-title { font-family: 'Bricolage Grotesque', sans-serif; font-size: 2.8rem; font-weight: 300; letter-spacing: -0.02em; background: linear-gradient(180deg, #FFFFFF 0%, #BBBBBB 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin: 0; line-height: 1.1; }
+    .sub-title { color: #FFD700; font-weight: 600; font-size: 1.1rem; margin-top: 5px; margin-bottom: 0; }
+    
+    /* Efeito Vidro (Glassmorphism) */
+    .info-card { background: rgba(10, 10, 10, 0.6); backdrop-filter: blur(16px) saturate(180%); -webkit-backdrop-filter: blur(16px) saturate(180%); border-top: 1px solid rgba(255, 255, 255, 0.15); border-left: 1px solid rgba(255, 255, 255, 0.08); border-right: 1px solid rgba(255, 255, 255, 0.08); border-bottom: 1px solid rgba(255, 255, 255, 0.05); box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3); border-radius: 12px; padding: 15px; margin-top: 15px; margin-bottom: 15px; position: relative; overflow: hidden; transition: all 0.5s ease; }
+    .info-card:hover { background: rgba(249, 115, 22, 0.08); border-color: rgba(249, 115, 22, 0.3); transform: translateY(-5px); box-shadow: 0 15px 40px rgba(249, 115, 22, 0.15); }
+    .info-card::before { content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%; background: linear-gradient(90deg, transparent, rgba(249, 115, 22, 0.15), transparent); transition: 0.5s; pointer-events: none; z-index: 20; }
+    .info-card:hover::before { left: 100%; transition: 0.7s ease-in-out; }
 
-/* ==========================================
-   TEXTOS
-   ========================================== */
-.main-title {
-    font-family: 'Bricolage Grotesque', sans-serif;
-    font-size: 2.8rem;
-    font-weight: 300;
-    letter-spacing: -0.02em;
-    background: linear-gradient(180deg, #FFFFFF 0%, #BBBBBB 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    margin: 0;
-    line-height: 1.1;
-}
+    /* Botões */
+    div.stButton > button { background: linear-gradient(to top, #fef08a 0%, #fb923c 50%, #f97316 100%) !important; color: #2c1306 !important; border: 1px inset rgba(255, 255, 255, 0.4) !important; padding: 0.7rem 2rem; border-radius: 9999px !important; font-weight: 600 !important; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important; width: 100%; position: relative; box-shadow: 0 0 40px -5px rgba(249, 115, 22, 0.6) !important; animation: fadeInUpBlur 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+    div.stButton > button:hover { box-shadow: 0 0 60px -5px rgba(249, 115, 22, 0.8) !important; transform: scale(1.05) translateY(-2px) !important; }
 
-.sub-title {
-    color: #FFD700;
-    font-weight: 600;
-    font-size: 1.1rem;
-}
-
-/* ==========================================
-   CARDS (GLASS)
-   ========================================== */
-.info-card {
-    background: rgba(10, 10, 10, 0.6);
-    backdrop-filter: blur(16px) saturate(180%);
-    border: 1px solid rgba(255,255,255,0.08);
-    box-shadow: 0 8px 32px rgba(0,0,0,0.3);
-    border-radius: 12px;
-    padding: 15px;
-    margin-top: 15px;
-    transition: all 0.4s ease;
-}
-
-.info-card:hover {
-    background: rgba(249, 115, 22, 0.08);
-    border-color: rgba(249, 115, 22, 0.3);
-    transform: translateY(-5px);
-    box-shadow: 0 15px 40px rgba(249, 115, 22, 0.15);
-}
-
-/* ==========================================
-   BOTÕES
-   ========================================== */
-div.stButton > button {
-    background: linear-gradient(to top, #fef08a, #fb923c, #f97316) !important;
-    color: #2c1306 !important;
-    border-radius: 9999px !important;
-    padding: 0.7rem 2rem;
-    font-weight: 600;
-    box-shadow: 0 0 40px rgba(249,115,22,0.6);
-}
-
-div.stButton > button:hover {
-    transform: scale(1.05);
-    box-shadow: 0 0 60px rgba(249,115,22,0.8);
-}
-
-/* ==========================================
-   IFRAME FUNDO
-   ========================================== */
-iframe.unicorn-bg {
-    position: fixed !important;
-    inset: 0 !important;
-    width: 100vw !important;
-    height: 100vh !important;
-    border: none !important;
-    z-index: 0 !important;
-    pointer-events: none !important;
-}
-
+    /* Tabelas e Abas */
+    [data-testid="stDataFrame"] { background-color: rgba(255, 255, 255, 0.03); border-radius: 8px; }
+    div[data-testid="stTabs"] button { font-size: 1.2rem; font-weight: bold; transition: color 0.3s;}
+    div[data-testid="stTabs"] button[data-baseweb="tab"]:hover { color: #FFD700; }
+    .card-red { border-left: 4px solid #DDD !important; } .card-red:hover { box-shadow: 0 15px 40px rgba(239, 68, 68, 0.25) !important; border-color: rgba(239, 68, 68, 0.6) !important; } .card-red::before { background: linear-gradient(90deg, transparent, rgba(239, 68, 68, 0.15), transparent) !important; }
+    .card-green { border-left: 4px solid #22c55e !important; } .card-green:hover { box-shadow: 0 15px 40px rgba(34, 197, 94, 0.25) !important; border-color: rgba(34, 197, 94, 0.6) !important; } .card-green::before { background: linear-gradient(90deg, transparent, rgba(34, 197, 94, 0.15), transparent) !important; }
 </style>
-"""
-
-st.markdown(css, unsafe_allow_html=True)
+""", unsafe_allow_html=True)
 
 # =========================================================
-# FUNDO UNICORN
+# CHAMA O FUNDO OFICIALMENTE (O CSS acima vai jogar ele pro fundo da tela)
 # =========================================================
 components.html("""
-<iframe
-    class="unicorn-bg"
-    src="https://www.unicorn.studio/embed/4pNJhpeCPKHrhxFrUrL9"
-    allow="autoplay; fullscreen">
-</iframe>
-""", height=800)
-
-# =========================================================
-# CONTEÚDO EXEMPLO
-# =========================================================
-st.markdown('<h1 class="main-title">Delta Negociação</h1>', unsafe_allow_html=True)
-st.markdown('<p class="sub-title">Sistema avançado de análise</p>', unsafe_allow_html=True)
-
-st.markdown('<div class="info-card">Conteúdo do card</div>', unsafe_allow_html=True)
-
-st.button("Executar análise")
+    <iframe src="https://www.unicorn.studio/embed/4pNjhpeCPKHrhxFruL9" 
+            style="width: 100%; height: 100vh; border: none; margin: 0; padding: 0; overflow: hidden;" 
+            allow="autoplay; fullscreen">
+    </iframe>
+""", height=0)
 
 # =========================================================
 # 2. CABEÇALHO VISUAL E FUNDO DO CABEÇALHO
