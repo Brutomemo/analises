@@ -99,6 +99,9 @@ def converter_escala(val):
 # =========================================================
 # 1. CONFIGURAÇÃO DA PÁGINA E CSS (UX e Design System)
 # =========================================================
+import streamlit as st
+import streamlit.components.v1 as components
+
 st.set_page_config(page_title="GATE - Analisador de APAs", layout="wide", initial_sidebar_state="collapsed")
 
 st.markdown("""
@@ -108,6 +111,7 @@ st.markdown("""
     /* Configurações Globais */
     .block-container { padding-top: 1.5rem !important; padding-bottom: 2rem !important; z-index: 10; position: relative;}
     header {visibility: hidden;}
+    
     /* Fundo Transparente para revelar o WebGL */
     body { background-color: #050505 !important; }
     .stApp, [data-testid="stAppViewContainer"], [data-testid="stHeader"] { 
@@ -117,48 +121,15 @@ st.markdown("""
         overflow-x: hidden; 
         font-family: 'Inter', sans-serif;
     }
-    
-    /* Fundo Estrelado - Luminous Design System */
-    .stars-bg {
-        position: fixed;
-        top: 0; left: 0; right: 0; bottom: 0;
-        background-image:
-            radial-gradient(1.5px 1.5px at 20px 30px, #fff, rgba(0,0,0,0)),
-            radial-gradient(1.5px 1.5px at 40px 70px, #ffffff, rgba(0,0,0,0)),
-            radial-gradient(1.5px 1.5px at 50px 160px, #ffffff, rgba(0,0,0,0)),
-            radial-gradient(2px 2px at 90px 40px, #ffffff, rgba(0,0,0,0)),
-            radial-gradient(1.5px 1.5px at 130px 80px, #ffffff, rgba(0,0,0,0));
-        background-size: 200px 200px;
-        opacity: 0.45; /* Aumentado para maior visibilidade */
-        z-index: 1; /* Acima do fundo preto */
-        pointer-events: none;
-    }
 
-    /* Animação Efeito Raio Descendo do Céu */
-    @keyframes rayFall {
-        0% { transform: translateY(-100vh) rotate(15deg); opacity: 0; filter: blur(2px); }
-        15% { opacity: 1; filter: blur(0px); } /* Opacidade máxima e foco nítido mais cedo */
-        85% { opacity: 1; filter: blur(0px); } /* Mantém brilho máximo durante a queda */
-        100% { transform: translateY(120vh) rotate(15deg); opacity: 0; filter: blur(2px); }
-    }
-    .dynamic-ray {
+    /* Configuração do fundo Unicorn Studio via Iframe */
+    .unicorn-bg {
         position: fixed;
-        top: 0;
-        width: 3px; /* Raio mais espesso */
-        height: 350px; /* Raio mais longo */
-        /* Núcleo brilhante (branco) com bordas laranjas para simular energia */
-        background: linear-gradient(to bottom, transparent, rgba(249, 115, 22, 0.9), rgba(255, 255, 255, 0.9), transparent);
-        /* Efeito Glow / Neon ao redor do raio */
-        box-shadow: 0 0 25px 5px rgba(249, 115, 22, 0.7); 
-        z-index: 2; /* Traz para frente do fundo, mas atrás dos cards (z-index 10) */
-        animation: rayFall linear infinite;
+        top: 0; left: 0; width: 100vw; height: 100vh;
+        z-index: 0; /* Acima do body preto, mas abaixo do seu app (z-index 10) */
         pointer-events: none;
+        border: none;
     }
-    .ray1 { left: 15%; animation-duration: 5s; animation-delay: 0s; }
-    .ray2 { left: 45%; animation-duration: 4.5s; animation-delay: 2s; }
-    .ray3 { left: 75%; animation-duration: 6s; animation-delay: 1s; }
-    .ray4 { left: 85%; animation-duration: 7s; animation-delay: 3s; }
-    .ray5 { left: 5%; animation-duration: 5.5s; animation-delay: 4s; }
 
     /* Animação de Entrada Cinematográfica (Opacidade + Blur) */
     @keyframes fadeInUpBlur {
@@ -168,7 +139,7 @@ st.markdown("""
     .info-card, .stMarkdown, div[data-testid="stMetric"], .stDataFrame, .stPlotlyChart {
         animation: fadeInUpBlur 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) both;
         position: relative; 
-        z-index: 10; /* Garante que o conteúdo fique acima dos raios */
+        z-index: 10; 
     }
 
     /* Fontes e Títulos */
@@ -181,7 +152,7 @@ st.markdown("""
     
     /* Efeito Vidro (Glassmorphism) e Animação de Luz (Sweep) nas Caixas */
     .info-card { 
-        background: rgba(10, 10, 10, 0.6); /* Levemente mais opaco para dar contraste aos raios passando por trás */
+        background: rgba(10, 10, 10, 0.6); 
         backdrop-filter: blur(16px) saturate(180%);
         -webkit-backdrop-filter: blur(16px) saturate(180%);
         border-top: 1px solid rgba(255, 255, 255, 0.15);
@@ -211,7 +182,7 @@ st.markdown("""
     /* Efeito Design System nos Botões (Gradiente + Glow) */
     div.stButton > button { 
         background: linear-gradient(to top, #fef08a 0%, #fb923c 50%, #f97316 100%) !important;
-        color: #2c1306 !important; /* Cor escura para leitura perfeita sobre o laranja/amarelo */
+        color: #2c1306 !important; 
         border: 1px inset rgba(255, 255, 255, 0.4) !important;
         padding: 0.7rem 2rem; border-radius: 9999px !important; font-weight: 600 !important; 
         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important; width: 100%; position: relative;
@@ -222,20 +193,6 @@ st.markdown("""
         box-shadow: 0 0 60px -5px rgba(249, 115, 22, 0.8) !important; 
         transform: scale(1.05) translateY(-2px) !important; 
     }
-    
-    /* Efeito Ambient Blobs (Degradês Flutuantes no Fundo) */
-    .liquid-blob {
-        position: fixed; border-radius: 60%; filter: blur(80px); opacity: 0.20; z-index: 1;
-        animation: float 10s infinite alternate cubic-bezier(0.4, 0, 0.2, 1); pointer-events: none;
-    }
-    .blob1 { background-color: #FFD700; width: 500px; height: 500px; top: -100px; left: -100px; animation-duration: 15s; }
-    .blob2 { background-color: #fb923c; width: 400px; height: 400px; top: 40%; right: -100px; animation-duration: 20s; animation-delay: -10s; }
-    .blob3 { background-color: #c2410c; width: 600px; height: 600px; bottom: -150px; left: 20%; animation-duration: 25s; animation-delay: -15s; }
-    
-    @keyframes float {
-        0% { transform: translate(0, 0) scale(1); }
-        100% { transform: translate(30px, 50px) scale(1.1); }
-    }
 
     /* Tabelas e Menus Base */
     [data-testid="stDataFrame"] { background-color: rgba(255, 255, 255, 0.03); border-radius: 8px; }
@@ -243,7 +200,7 @@ st.markdown("""
     div[data-testid="stTabs"] button { font-size: 1.2rem; font-weight: bold; transition: color 0.3s;}
     div[data-testid="stTabs"] button[data-baseweb="tab"]:hover { color: #FFD700; }
 
-    /* Cores para o Efeito de Vidro (Agressividade e Receptividade) */
+    /* Cores para o Efeito de Vidro */
     .card-red { border-left: 4px solid #DDD !important; }
     .card-red:hover { box-shadow: 0 15px 40px rgba(239, 68, 68, 0.25) !important; border-color: rgba(239, 68, 68, 0.6) !important; }
     .card-red::before { background: linear-gradient(90deg, transparent, rgba(239, 68, 68, 0.15), transparent) !important; }
@@ -262,16 +219,7 @@ st.markdown("""
     }
 </style>
 
-<div class="stars-bg"></div>
-<div class="dynamic-ray ray1"></div>
-<div class="dynamic-ray ray2"></div>
-<div class="dynamic-ray ray3"></div>
-<div class="dynamic-ray ray4"></div>
-<div class="dynamic-ray ray5"></div>
-
-<div class="liquid-blob blob1"></div>
-<div class="liquid-blob blob2"></div>
-<div class="liquid-blob blob3"></div>
+<iframe class="unicorn-bg" src="https://www.unicorn.studio/embed/0Air3YV0ySfVbTEkT2EW"></iframe>
 """, unsafe_allow_html=True)
 
 # Cursor Customizado Global via JavaScript
