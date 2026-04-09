@@ -108,7 +108,15 @@ st.markdown("""
     /* Configurações Globais */
     .block-container { padding-top: 1.5rem !important; padding-bottom: 2rem !important; z-index: 10; position: relative;}
     header {visibility: hidden;}
-    .stApp, [data-testid="stAppViewContainer"] { background-color: #050505; color: #FFFFFF; overflow-x: hidden; font-family: 'Inter', sans-serif;}
+    /* Fundo Transparente para revelar o WebGL */
+    body { background-color: #050505 !important; }
+    .stApp, [data-testid="stAppViewContainer"], [data-testid="stHeader"] { 
+        background: transparent !important;
+        background-color: transparent !important; 
+        color: #FFFFFF; 
+        overflow-x: hidden; 
+        font-family: 'Inter', sans-serif;
+    }
     
     /* Fundo Estrelado - Luminous Design System */
     .stars-bg {
