@@ -326,82 +326,420 @@ if 'stats_calculados' not in st.session_state:
 if 'dados_n8n' not in st.session_state:
     st.session_state['dados_n8n'] = None
 
+import streamlit as st
+import streamlit.components.v1 as components
+
 # =========================================================
-# VERSÃO CORRIGIDA - BACKGROUND UNICORN STUDIO
+# CONFIGURAÇÃO DA PÁGINA
 # =========================================================
-components.html("""
-<script>
-(function() {
-    const PROJECT_ID = "4pNJhpeCPKHrhxFrUrL9";
-    const doc = window.parent.document;
-    const win = window.parent;
+st.set_page_config(
+    page_title="GATE - Analisador de APAs",
+    layout="wide",
+    initial_sidebar_state="collapsed"
+)
 
-    function ensureContainer() {
-        let container = doc.getElementById('unicorn-bg-container');
-        if (!container) {
-            container = doc.createElement('div');
-            container.id = 'unicorn-bg-container';
-            container.style.position = 'fixed';
-            container.style.top = '0';
-            container.style.left = '0';
-            container.style.width = '100vw';
-            container.style.height = '100vh';
-            container.style.zIndex = '0';
-            container.style.pointerEvents = 'none';
-            container.style.overflow = 'hidden';
-            container.style.background = 'transparent';
-            doc.body.prepend(container);
+# =========================================================
+# CSS GLOBAL + EFEITO DE FUNDO RECRIADO
+# =========================================================
+st.markdown("""
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Bricolage+Grotesque:opsz,wght@12..96,300;12..96,400;12..96,600&display=swap');
+
+    html, body {
+        background: #050505 !important;
+    }
+
+    .stApp, [data-testid="stAppViewContainer"], [data-testid="stHeader"],
+    [data-testid="stAppViewContainer"] > .main,
+    section.main,
+    section.main > div {
+        background: transparent !important;
+        background-color: transparent !important;
+        color: #FFFFFF;
+        overflow-x: hidden;
+        font-family: 'Inter', sans-serif;
+    }
+
+    header { visibility: hidden; }
+    #MainMenu { visibility: hidden; }
+    footer { visibility: hidden; }
+
+    .block-container {
+        padding-top: 1.5rem !important;
+        padding-bottom: 2rem !important;
+        z-index: 10;
+        position: relative;
+    }
+
+    /* =====================================================
+       ESTRELAS
+       ===================================================== */
+    .stars-bg {
+        position: fixed;
+        inset: 0;
+        background-image:
+            radial-gradient(1.5px 1.5px at 20px 30px, rgba(255,255,255,0.9), rgba(0,0,0,0)),
+            radial-gradient(1.5px 1.5px at 40px 70px, rgba(255,255,255,0.8), rgba(0,0,0,0)),
+            radial-gradient(1.5px 1.5px at 50px 160px, rgba(255,255,255,0.7), rgba(0,0,0,0)),
+            radial-gradient(2px 2px at 90px 40px, rgba(255,255,255,0.9), rgba(0,0,0,0)),
+            radial-gradient(1.5px 1.5px at 130px 80px, rgba(255,255,255,0.7), rgba(0,0,0,0));
+        background-size: 200px 200px;
+        opacity: 0.16;
+        z-index: 1;
+        pointer-events: none;
+    }
+
+    /* =====================================================
+       FUNDO ENERGÉTICO CENTRAL
+       ===================================================== */
+    .energy-scene {
+        position: fixed;
+        inset: 0;
+        z-index: 0;
+        pointer-events: none;
+        overflow: hidden;
+        background:
+            radial-gradient(circle at 50% 70%, rgba(255,140,0,0.08) 0%, rgba(0,0,0,0) 40%),
+            linear-gradient(180deg, #04070d 0%, #050505 100%);
+    }
+
+    /* brilho horizontal principal */
+    .energy-horizon {
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 150px;
+        height: 8px;
+        background:
+            linear-gradient(90deg,
+                rgba(255,140,0,0) 0%,
+                rgba(255,120,0,0.85) 20%,
+                rgba(255,180,60,1) 50%,
+                rgba(255,120,0,0.85) 80%,
+                rgba(255,140,0,0) 100%);
+        box-shadow:
+            0 0 12px rgba(255,120,0,0.8),
+            0 0 40px rgba(255,120,0,0.35),
+            0 0 80px rgba(255,120,0,0.2);
+        opacity: 0.95;
+    }
+
+    /* núcleo central */
+    .energy-core {
+        position: absolute;
+        left: 50%;
+        bottom: 115px;
+        transform: translateX(-50%);
+        width: 220px;
+        height: 220px;
+        border-radius: 50%;
+        background:
+            radial-gradient(circle,
+                rgba(255,255,255,1) 0%,
+                rgba(255,245,180,1) 18%,
+                rgba(255,210,40,0.95) 38%,
+                rgba(255,140,0,0.85) 62%,
+                rgba(255,120,0,0.15) 85%,
+                rgba(255,120,0,0) 100%);
+        filter: blur(8px);
+        box-shadow:
+            0 0 40px rgba(255,180,0,0.9),
+            0 0 100px rgba(255,120,0,0.45),
+            0 0 180px rgba(255,120,0,0.25);
+        animation: pulseCore 5s ease-in-out infinite;
+    }
+
+    /* bloom maior */
+    .energy-bloom {
+        position: absolute;
+        left: 50%;
+        bottom: 70px;
+        transform: translateX(-50%);
+        width: 700px;
+        height: 350px;
+        background:
+            radial-gradient(ellipse at center,
+                rgba(255,140,0,0.42) 0%,
+                rgba(255,120,0,0.22) 35%,
+                rgba(255,120,0,0.08) 60%,
+                rgba(255,120,0,0) 100%);
+        filter: blur(28px);
+        animation: bloomMove 8s ease-in-out infinite alternate;
+    }
+
+    /* fumaça/coluna 1 */
+    .smoke-col-1,
+    .smoke-col-2,
+    .smoke-col-3 {
+        position: absolute;
+        left: 50%;
+        bottom: 150px;
+        transform-origin: bottom center;
+        border-radius: 50%;
+        filter: blur(28px);
+        opacity: 0.7;
+        mix-blend-mode: screen;
+    }
+
+    .smoke-col-1 {
+        width: 280px;
+        height: 520px;
+        margin-left: -140px;
+        background:
+            radial-gradient(ellipse at 50% 80%,
+                rgba(255,180,60,0.42) 0%,
+                rgba(255,120,0,0.24) 40%,
+                rgba(255,120,0,0.05) 70%,
+                rgba(255,120,0,0) 100%);
+        animation: smokeRise1 7s ease-in-out infinite alternate;
+    }
+
+    .smoke-col-2 {
+        width: 180px;
+        height: 420px;
+        margin-left: -10px;
+        background:
+            radial-gradient(ellipse at 50% 85%,
+                rgba(255,210,120,0.36) 0%,
+                rgba(255,140,0,0.20) 45%,
+                rgba(255,140,0,0.03) 75%,
+                rgba(255,140,0,0) 100%);
+        animation: smokeRise2 6s ease-in-out infinite alternate;
+    }
+
+    .smoke-col-3 {
+        width: 220px;
+        height: 460px;
+        margin-left: -220px;
+        background:
+            radial-gradient(ellipse at 50% 80%,
+                rgba(255,120,0,0.30) 0%,
+                rgba(255,90,0,0.16) 45%,
+                rgba(255,90,0,0.03) 72%,
+                rgba(255,90,0,0) 100%);
+        animation: smokeRise3 9s ease-in-out infinite alternate;
+    }
+
+    /* reflexo próximo ao solo */
+    .ground-glow {
+        position: absolute;
+        left: 50%;
+        bottom: 120px;
+        transform: translateX(-50%);
+        width: 980px;
+        height: 90px;
+        background:
+            radial-gradient(ellipse at center,
+                rgba(255,120,0,0.52) 0%,
+                rgba(255,120,0,0.20) 40%,
+                rgba(255,120,0,0.05) 70%,
+                rgba(255,120,0,0) 100%);
+        filter: blur(12px);
+    }
+
+    /* base curva escura */
+    .ground-arc {
+        position: absolute;
+        left: 50%;
+        bottom: -180px;
+        transform: translateX(-50%);
+        width: 140%;
+        height: 320px;
+        border-radius: 50%;
+        background:
+            radial-gradient(ellipse at center,
+                rgba(25,18,18,0.2) 0%,
+                rgba(8,8,8,0.95) 55%,
+                rgba(3,3,3,1) 100%);
+        box-shadow: inset 0 40px 70px rgba(255,120,0,0.08);
+    }
+
+    /* =====================================================
+       ANIMAÇÕES
+       ===================================================== */
+    @keyframes pulseCore {
+        0%, 100% {
+            transform: translateX(-50%) scale(1);
+            opacity: 0.95;
         }
-        return container;
-    }
-
-    function ensureScene(container) {
-        let scene = doc.getElementById('unicorn-scene');
-        if (!scene) {
-            scene = doc.createElement('div');
-            scene.id = 'unicorn-scene';
-            scene.setAttribute('data-us-project', PROJECT_ID);
-            scene.style.width = '100%';
-            scene.style.height = '100%';
-            container.appendChild(scene);
-        } else {
-            scene.setAttribute('data-us-project', PROJECT_ID);
-        }
-        return scene;
-    }
-
-    function initScene() {
-        const container = ensureContainer();
-        ensureScene(container);
-
-        if (win.UnicornStudio) {
-            try {
-                if (!win.UnicornStudio.isInitialized) {
-                    win.UnicornStudio.init();
-                    win.UnicornStudio.isInitialized = true;
-                } else {
-                    win.UnicornStudio.init();
-                }
-            } catch (e) {
-                console.error("Erro ao inicializar UnicornStudio:", e);
-            }
+        50% {
+            transform: translateX(-50%) scale(1.08);
+            opacity: 1;
         }
     }
 
-    if (!doc.getElementById('unicorn-sdk')) {
-        const script = doc.createElement('script');
-        script.id = 'unicorn-sdk';
-        script.src = 'https://cdn.jsdelivr.net/gh/hiunicornstudio/unicornstudio.js@v1.4.34/dist/unicornStudio.umd.js';
-        script.onload = () => {
-            setTimeout(initScene, 300);
-        };
-        doc.head.appendChild(script);
-    } else {
-        setTimeout(initScene, 300);
+    @keyframes bloomMove {
+        0% {
+            transform: translateX(-50%) scale(1);
+            opacity: 0.9;
+        }
+        100% {
+            transform: translateX(-50%) scale(1.08);
+            opacity: 1;
+        }
     }
-})();
-</script>
-""", height=0, width=0)
+
+    @keyframes smokeRise1 {
+        0% {
+            transform: translateX(0) translateY(0) scaleX(1) scaleY(1);
+            opacity: 0.55;
+        }
+        100% {
+            transform: translateX(35px) translateY(-30px) scaleX(1.18) scaleY(1.08);
+            opacity: 0.82;
+        }
+    }
+
+    @keyframes smokeRise2 {
+        0% {
+            transform: translateX(0) translateY(0) scale(1) skewX(0deg);
+            opacity: 0.48;
+        }
+        100% {
+            transform: translateX(45px) translateY(-45px) scale(1.14) skewX(4deg);
+            opacity: 0.72;
+        }
+    }
+
+    @keyframes smokeRise3 {
+        0% {
+            transform: translateX(0) translateY(0) scale(1);
+            opacity: 0.35;
+        }
+        100% {
+            transform: translateX(-20px) translateY(-38px) scale(1.1);
+            opacity: 0.62;
+        }
+    }
+
+    /* =====================================================
+       SUA ESTÉTICA
+       ===================================================== */
+    @keyframes fadeInUpBlur {
+        0% { opacity: 0; transform: translateY(30px); filter: blur(8px); }
+        100% { opacity: 1; transform: translateY(0); filter: blur(0px); }
+    }
+
+    .info-card, .stMarkdown, div[data-testid="stMetric"], .stDataFrame, .stPlotlyChart {
+        animation: fadeInUpBlur 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+        position: relative;
+        z-index: 10;
+    }
+
+    .main-title {
+        font-family: 'Bricolage Grotesque', sans-serif;
+        font-size: 2.8rem;
+        font-weight: 300;
+        letter-spacing: -0.02em;
+        background: linear-gradient(180deg, #FFFFFF 0%, #BBBBBB 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        margin: 0;
+        line-height: 1.1;
+    }
+
+    .sub-title {
+        color: #FFD700;
+        font-weight: 600;
+        font-size: 1.1rem;
+        margin-top: 5px;
+        margin-bottom: 0;
+    }
+
+    .info-card { 
+        background: rgba(10, 10, 10, 0.6);
+        backdrop-filter: blur(16px) saturate(180%);
+        -webkit-backdrop-filter: blur(16px) saturate(180%);
+        border-top: 1px solid rgba(255, 255, 255, 0.15);
+        border-left: 1px solid rgba(255, 255, 255, 0.08);
+        border-right: 1px solid rgba(255, 255, 255, 0.08);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+        border-radius: 12px;
+        padding: 15px;
+        margin-top: 15px;
+        margin-bottom: 15px;
+        position: relative;
+        overflow: hidden;
+        transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .info-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(249, 115, 22, 0.15), transparent);
+        transition: 0.5s;
+        pointer-events: none;
+        z-index: 20;
+    }
+
+    .info-card:hover {
+        background: rgba(249, 115, 22, 0.08);
+        border-color: rgba(249, 115, 22, 0.3);
+        transform: translateY(-5px);
+        box-shadow: 0 15px 40px rgba(249, 115, 22, 0.15);
+    }
+
+    .info-card:hover::before {
+        left: 100%;
+        transition: 0.7s ease-in-out;
+    }
+
+    div.stButton > button { 
+        background: linear-gradient(to top, #fef08a 0%, #fb923c 50%, #f97316 100%) !important;
+        color: #2c1306 !important;
+        border: 1px inset rgba(255, 255, 255, 0.4) !important;
+        padding: 0.7rem 2rem;
+        border-radius: 9999px !important;
+        font-weight: 600 !important;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+        width: 100%;
+        position: relative;
+        box-shadow: 0 0 40px -5px rgba(249, 115, 22, 0.6) !important;
+        animation: fadeInUpBlur 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+    }
+
+    div.stButton > button:hover { 
+        box-shadow: 0 0 60px -5px rgba(249, 115, 22, 0.8) !important;
+        transform: scale(1.05) translateY(-2px) !important;
+    }
+</style>
+
+<div class="stars-bg"></div>
+
+<div class="energy-scene">
+    <div class="energy-bloom"></div>
+    <div class="smoke-col-1"></div>
+    <div class="smoke-col-2"></div>
+    <div class="smoke-col-3"></div>
+    <div class="ground-glow"></div>
+    <div class="energy-core"></div>
+    <div class="energy-horizon"></div>
+    <div class="ground-arc"></div>
+</div>
+""", unsafe_allow_html=True)
+
+# =========================================================
+# CABEÇALHO DE EXEMPLO
+# =========================================================
+st.markdown('<h1 class="main-title">Delta Negociação</h1>', unsafe_allow_html=True)
+st.markdown('<p class="sub-title">Efeito recriado sem Unicorn Studio</p>', unsafe_allow_html=True)
+
+st.markdown("""
+<div class="info-card">
+    <p><strong>Este efeito foi recriado com CSS puro.</strong></p>
+    <p style="font-size: 0.95rem; color: #999;">
+        Você pode ajustar posição, brilho, tamanho do núcleo e intensidade da fumaça alterando as classes
+        <code>.energy-core</code>, <code>.energy-horizon</code>, <code>.smoke-col-1/2/3</code> e <code>.ground-arc</code>.
+    </p>
+</div>
+""", unsafe_allow_html=True)
+
+st.button("Testar interface")
 
 # =========================================================
 # 2. CABEÇALHO VISUAL E FUNDO DO CABEÇALHO
