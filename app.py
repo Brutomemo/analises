@@ -10,8 +10,9 @@ try:
     import statsmodels.api as sm
     import patsy
 except ImportError:
+    # Se falhar, tenta instalar silenciosamente no Python ativo
     subprocess.check_call([sys.executable, "-m", "pip", "install", "statsmodels", "patsy", "scipy"])
-    st.rerun()
+    st.rerun() 
 
 # =========================================================
 # 1. SEUS IMPORTS ORIGINAIS (MANTIDOS E COMPLETOS)
@@ -31,31 +32,29 @@ import unicodedata
 # =========================================================
 import airtable_link
 import analise
-import ia_link
-import ia_estatistica
+import ia_link        # Cérebro da Aba 1 (Transcrições)
+import ia_estatistica # Cérebro da Aba 2 (Série Histórica)
+
+# LINHA DE DEBUG (Remova após resolver o erro):
+# st.sidebar.write(f"DEBUG: ia_link vindo de: {ia_link.__file__}")
 
 # =========================================================
 # 2. FUNÇÕES AUXILIARES (TRATAMENTO DE DADOS DO AIRTABLE)
 # =========================================================
 def limpar_valor(val):
-    if isinstance(val, list):
-        return val[0] if len(val) > 0 else "N/D"
+    if isinstance(val, list): return val[0] if len(val) > 0 else "N/D"
     return str(val) if pd.notna(val) else "N/D"
 
 def limpar_id(v):
-    if isinstance(v, list) and len(v) > 0:
-        v = v[0]
+    if isinstance(v, list) and len(v) > 0: v = v[0]
     v_str = str(v).strip()
-    if v_str.endswith('.0'):
-        v_str = v_str[:-2]
+    if v_str.endswith('.0'): v_str = v_str[:-2]
     return v_str
 
 def formatar_tempo_airtable(val):
     try:
-        if isinstance(val, list):
-            val = val[0]
-        if pd.isna(val) or val == "N/D" or val == "":
-            return "N/D"
+        if isinstance(val, list): val = val[0]
+        if pd.isna(val) or val == "N/D" or val == "": return "N/D"
         s = int(float(val))
         h = s // 3600
         m = (s % 3600) // 60
@@ -67,30 +66,33 @@ def somar_tempos_segundos(serie):
     total_s = 0
     for val in serie:
         try:
-            if isinstance(val, list):
-                val = val[0]
+            if isinstance(val, list): val = val[0]
             if pd.notna(val) and val != "N/D" and val != "":
                 total_s += int(float(val))
-        except:
-            pass
+        except: pass
     h = total_s // 3600
     m = (total_s % 3600) // 60
     return f"{h:02d}h {m:02d}m"
 
 # --- MOTOR GRÁFICO (MAPA EMOCIONAL COMPLETO & BLINDADO) ---
 escala_likert = {
+    # 1. Opções de Sistema / Inaudíveis
     "❓ inaudível / não observado": 0, "inaudível": 0, "não observado": 0, "n/d": 0, "nao observado": 0,
+
+    # 2. Novos Termos da sua Base (Blinda contra erros de digitação)
     "não agressivo": 1, "nao agressivo": 1, "não agresssivo": 1, "nao agresssivo": 1, "muito baixa": 1, "muito baixo": 1,
     "baixo": 2, "baixa": 2, "pouco receptivo": 2,
     "neutro": 3, "moderada": 3, "moderado": 3,
     "receptivo": 4, "alta": 4, "alto": 4,
     "muito receptivo": 5, "muito alta": 5, "muito alto": 5,
+
+    # 3. Mapeamento das Fórmulas com Emojis 
     "🔴 reação negativa": 1, "⚪ reação neutra": 3, "🟢 reação positiva": 5
 }
 
 def converter_escala(val):
-    if not val:
-        return 0
+    if not val: return 0
+    # Limpa emojis e espaços para garantir o "match"
     v = str(val).lower().strip()
     return escala_likert.get(v, 0)
 
@@ -106,7 +108,6 @@ st.markdown("""
     /* Configurações Globais */
     .block-container { padding-top: 1.5rem !important; padding-bottom: 2rem !important; z-index: 10; position: relative;}
     header {visibility: hidden;}
-
     /* Fundo Transparente para revelar o WebGL */
     body { background-color: #050505 !important; }
     .stApp, [data-testid="stAppViewContainer"], [data-testid="stHeader"] { 
@@ -115,13 +116,6 @@ st.markdown("""
         color: #FFFFFF; 
         overflow-x: hidden; 
         font-family: 'Inter', sans-serif;
-    }
-
-    [data-testid="stAppViewContainer"] > .main,
-    section.main,
-    section.main > div {
-        background: transparent !important;
-        background-color: transparent !important;
     }
     
     /* Fundo Estrelado - Luminous Design System */
@@ -135,26 +129,28 @@ st.markdown("""
             radial-gradient(2px 2px at 90px 40px, #ffffff, rgba(0,0,0,0)),
             radial-gradient(1.5px 1.5px at 130px 80px, #ffffff, rgba(0,0,0,0));
         background-size: 200px 200px;
-        opacity: 0.45;
-        z-index: 1;
+        opacity: 0.45; /* Aumentado para maior visibilidade */
+        z-index: 1; /* Acima do fundo preto */
         pointer-events: none;
     }
 
     /* Animação Efeito Raio Descendo do Céu */
     @keyframes rayFall {
         0% { transform: translateY(-100vh) rotate(15deg); opacity: 0; filter: blur(2px); }
-        15% { opacity: 1; filter: blur(0px); }
-        85% { opacity: 1; filter: blur(0px); }
+        15% { opacity: 1; filter: blur(0px); } /* Opacidade máxima e foco nítido mais cedo */
+        85% { opacity: 1; filter: blur(0px); } /* Mantém brilho máximo durante a queda */
         100% { transform: translateY(120vh) rotate(15deg); opacity: 0; filter: blur(2px); }
     }
     .dynamic-ray {
         position: fixed;
         top: 0;
-        width: 3px;
-        height: 350px;
+        width: 3px; /* Raio mais espesso */
+        height: 350px; /* Raio mais longo */
+        /* Núcleo brilhante (branco) com bordas laranjas para simular energia */
         background: linear-gradient(to bottom, transparent, rgba(249, 115, 22, 0.9), rgba(255, 255, 255, 0.9), transparent);
+        /* Efeito Glow / Neon ao redor do raio */
         box-shadow: 0 0 25px 5px rgba(249, 115, 22, 0.7); 
-        z-index: 2;
+        z-index: 2; /* Traz para frente do fundo, mas atrás dos cards (z-index 10) */
         animation: rayFall linear infinite;
         pointer-events: none;
     }
@@ -172,7 +168,7 @@ st.markdown("""
     .info-card, .stMarkdown, div[data-testid="stMetric"], .stDataFrame, .stPlotlyChart {
         animation: fadeInUpBlur 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) both;
         position: relative; 
-        z-index: 10;
+        z-index: 10; /* Garante que o conteúdo fique acima dos raios */
     }
 
     /* Fontes e Títulos */
@@ -185,7 +181,7 @@ st.markdown("""
     
     /* Efeito Vidro (Glassmorphism) e Animação de Luz (Sweep) nas Caixas */
     .info-card { 
-        background: rgba(10, 10, 10, 0.6);
+        background: rgba(10, 10, 10, 0.6); /* Levemente mais opaco para dar contraste aos raios passando por trás */
         backdrop-filter: blur(16px) saturate(180%);
         -webkit-backdrop-filter: blur(16px) saturate(180%);
         border-top: 1px solid rgba(255, 255, 255, 0.15);
@@ -215,7 +211,7 @@ st.markdown("""
     /* Efeito Design System nos Botões (Gradiente + Glow) */
     div.stButton > button { 
         background: linear-gradient(to top, #fef08a 0%, #fb923c 50%, #f97316 100%) !important;
-        color: #2c1306 !important;
+        color: #2c1306 !important; /* Cor escura para leitura perfeita sobre o laranja/amarelo */
         border: 1px inset rgba(255, 255, 255, 0.4) !important;
         padding: 0.7rem 2rem; border-radius: 9999px !important; font-weight: 600 !important; 
         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important; width: 100%; position: relative;
@@ -243,8 +239,7 @@ st.markdown("""
 
     /* Tabelas e Menus Base */
     [data-testid="stDataFrame"] { background-color: rgba(255, 255, 255, 0.03); border-radius: 8px; }
-    #MainMenu {visibility: hidden;} 
-    footer {visibility: hidden;}
+    #MainMenu {visibility: hidden;} footer {visibility: hidden;}
     div[data-testid="stTabs"] button { font-size: 1.2rem; font-weight: bold; transition: color 0.3s;}
     div[data-testid="stTabs"] button[data-baseweb="tab"]:hover { color: #FFD700; }
 
@@ -321,407 +316,60 @@ components.html("""
 </script>
 """, height=0, width=0)
 
-if 'stats_calculados' not in st.session_state:
-    st.session_state['stats_calculados'] = None
-if 'dados_n8n' not in st.session_state:
-    st.session_state['dados_n8n'] = None
-
-import streamlit as st
-import streamlit.components.v1 as components
+if 'stats_calculados' not in st.session_state: st.session_state['stats_calculados'] = None
+if 'dados_n8n' not in st.session_state: st.session_state['dados_n8n'] = None
 
 # =========================================================
-# CONFIGURAÇÃO DA PÁGINA
+# BACKGROUND DINÂMICO WEBGL (Unicorn Studio)
 # =========================================================
-st.set_page_config(
-    page_title="GATE - Analisador de APAs",
-    layout="wide",
-    initial_sidebar_state="collapsed"
-)
+components.html("""
+<script>
+    const parentDoc = window.parent.document;
+    const parentWin = window.parent;
 
-# =========================================================
-# CSS GLOBAL + EFEITO DE FUNDO RECRIADO
-# =========================================================
-st.markdown("""
-<style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Bricolage+Grotesque:opsz,wght@12..96,300;12..96,400;12..96,600&display=swap');
+    // Verifica se o background já existe para não duplicar quando o Streamlit atualizar
+    if (!parentDoc.getElementById('unicorn-bg-container')) {
+        
+        // Cria o container do background que vai ocupar a tela toda
+        const bgContainer = parentDoc.createElement('div');
+        bgContainer.id = 'unicorn-bg-container';
+        bgContainer.style.position = 'fixed';
+        bgContainer.style.top = '0';
+        bgContainer.style.left = '0';
+        bgContainer.style.width = '100vw';
+        bgContainer.style.height = '100vh';
+        bgContainer.style.zIndex = '-10'; // Garante que fique atrás de tudo
+        bgContainer.style.pointerEvents = 'none'; // Impede que o fundo roube os cliques
+        
+        // Cria a div específica exigida pelo Unicorn Studio com o SEU PROJETO
+        const usDiv = parentDoc.createElement('div');
+        usDiv.id = 'hero-bg';
+        usDiv.setAttribute('data-us-project', '0Air3YV0ySfVbTEkT2EW'); // <-- SEU EFEITO AQUI
+        usDiv.style.width = '100%';
+        usDiv.style.height = '100%';
+        
+        // Injeta as divs no corpo (body) do Streamlit
+        bgContainer.appendChild(usDiv);
+        parentDoc.body.appendChild(bgContainer);
 
-    html, body {
-        background: #050505 !important;
+        // Carrega o script do Unicorn Studio dinamicamente
+        const script = parentDoc.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/gh/hiunicornstudio/unicornstudio.js@v1.4.34/dist/unicornStudio.umd.js';
+        
+        script.onload = function() {
+            // Inicializa o WebGL assim que o script terminar de carregar
+            if (!parentWin.UnicornStudio || !parentWin.UnicornStudio.isInitialized) {
+                if(parentWin.UnicornStudio) {
+                    parentWin.UnicornStudio.init();
+                    parentWin.UnicornStudio.isInitialized = true;
+                }
+            }
+        };
+        
+        parentDoc.head.appendChild(script);
     }
-
-    .stApp, [data-testid="stAppViewContainer"], [data-testid="stHeader"],
-    [data-testid="stAppViewContainer"] > .main,
-    section.main,
-    section.main > div {
-        background: transparent !important;
-        background-color: transparent !important;
-        color: #FFFFFF;
-        overflow-x: hidden;
-        font-family: 'Inter', sans-serif;
-    }
-
-    header { visibility: hidden; }
-    #MainMenu { visibility: hidden; }
-    footer { visibility: hidden; }
-
-    .block-container {
-        padding-top: 1.5rem !important;
-        padding-bottom: 2rem !important;
-        z-index: 10;
-        position: relative;
-    }
-
-    /* =====================================================
-       ESTRELAS
-       ===================================================== */
-    .stars-bg {
-        position: fixed;
-        inset: 0;
-        background-image:
-            radial-gradient(1.5px 1.5px at 20px 30px, rgba(255,255,255,0.9), rgba(0,0,0,0)),
-            radial-gradient(1.5px 1.5px at 40px 70px, rgba(255,255,255,0.8), rgba(0,0,0,0)),
-            radial-gradient(1.5px 1.5px at 50px 160px, rgba(255,255,255,0.7), rgba(0,0,0,0)),
-            radial-gradient(2px 2px at 90px 40px, rgba(255,255,255,0.9), rgba(0,0,0,0)),
-            radial-gradient(1.5px 1.5px at 130px 80px, rgba(255,255,255,0.7), rgba(0,0,0,0));
-        background-size: 200px 200px;
-        opacity: 0.16;
-        z-index: 1;
-        pointer-events: none;
-    }
-
-    /* =====================================================
-       FUNDO ENERGÉTICO CENTRAL
-       ===================================================== */
-    .energy-scene {
-        position: fixed;
-        inset: 0;
-        z-index: 0;
-        pointer-events: none;
-        overflow: hidden;
-        background:
-            radial-gradient(circle at 50% 70%, rgba(255,140,0,0.08) 0%, rgba(0,0,0,0) 40%),
-            linear-gradient(180deg, #04070d 0%, #050505 100%);
-    }
-
-    /* brilho horizontal principal */
-    .energy-horizon {
-        position: absolute;
-        left: 0;
-        right: 0;
-        bottom: 150px;
-        height: 8px;
-        background:
-            linear-gradient(90deg,
-                rgba(255,140,0,0) 0%,
-                rgba(255,120,0,0.85) 20%,
-                rgba(255,180,60,1) 50%,
-                rgba(255,120,0,0.85) 80%,
-                rgba(255,140,0,0) 100%);
-        box-shadow:
-            0 0 12px rgba(255,120,0,0.8),
-            0 0 40px rgba(255,120,0,0.35),
-            0 0 80px rgba(255,120,0,0.2);
-        opacity: 0.95;
-    }
-
-    /* núcleo central */
-    .energy-core {
-        position: absolute;
-        left: 50%;
-        bottom: 115px;
-        transform: translateX(-50%);
-        width: 220px;
-        height: 220px;
-        border-radius: 50%;
-        background:
-            radial-gradient(circle,
-                rgba(255,255,255,1) 0%,
-                rgba(255,245,180,1) 18%,
-                rgba(255,210,40,0.95) 38%,
-                rgba(255,140,0,0.85) 62%,
-                rgba(255,120,0,0.15) 85%,
-                rgba(255,120,0,0) 100%);
-        filter: blur(8px);
-        box-shadow:
-            0 0 40px rgba(255,180,0,0.9),
-            0 0 100px rgba(255,120,0,0.45),
-            0 0 180px rgba(255,120,0,0.25);
-        animation: pulseCore 5s ease-in-out infinite;
-    }
-
-    /* bloom maior */
-    .energy-bloom {
-        position: absolute;
-        left: 50%;
-        bottom: 70px;
-        transform: translateX(-50%);
-        width: 700px;
-        height: 350px;
-        background:
-            radial-gradient(ellipse at center,
-                rgba(255,140,0,0.42) 0%,
-                rgba(255,120,0,0.22) 35%,
-                rgba(255,120,0,0.08) 60%,
-                rgba(255,120,0,0) 100%);
-        filter: blur(28px);
-        animation: bloomMove 8s ease-in-out infinite alternate;
-    }
-
-    /* fumaça/coluna 1 */
-    .smoke-col-1,
-    .smoke-col-2,
-    .smoke-col-3 {
-        position: absolute;
-        left: 50%;
-        bottom: 150px;
-        transform-origin: bottom center;
-        border-radius: 50%;
-        filter: blur(28px);
-        opacity: 0.7;
-        mix-blend-mode: screen;
-    }
-
-    .smoke-col-1 {
-        width: 280px;
-        height: 520px;
-        margin-left: -140px;
-        background:
-            radial-gradient(ellipse at 50% 80%,
-                rgba(255,180,60,0.42) 0%,
-                rgba(255,120,0,0.24) 40%,
-                rgba(255,120,0,0.05) 70%,
-                rgba(255,120,0,0) 100%);
-        animation: smokeRise1 7s ease-in-out infinite alternate;
-    }
-
-    .smoke-col-2 {
-        width: 180px;
-        height: 420px;
-        margin-left: -10px;
-        background:
-            radial-gradient(ellipse at 50% 85%,
-                rgba(255,210,120,0.36) 0%,
-                rgba(255,140,0,0.20) 45%,
-                rgba(255,140,0,0.03) 75%,
-                rgba(255,140,0,0) 100%);
-        animation: smokeRise2 6s ease-in-out infinite alternate;
-    }
-
-    .smoke-col-3 {
-        width: 220px;
-        height: 460px;
-        margin-left: -220px;
-        background:
-            radial-gradient(ellipse at 50% 80%,
-                rgba(255,120,0,0.30) 0%,
-                rgba(255,90,0,0.16) 45%,
-                rgba(255,90,0,0.03) 72%,
-                rgba(255,90,0,0) 100%);
-        animation: smokeRise3 9s ease-in-out infinite alternate;
-    }
-
-    /* reflexo próximo ao solo */
-    .ground-glow {
-        position: absolute;
-        left: 50%;
-        bottom: 120px;
-        transform: translateX(-50%);
-        width: 980px;
-        height: 90px;
-        background:
-            radial-gradient(ellipse at center,
-                rgba(255,120,0,0.52) 0%,
-                rgba(255,120,0,0.20) 40%,
-                rgba(255,120,0,0.05) 70%,
-                rgba(255,120,0,0) 100%);
-        filter: blur(12px);
-    }
-
-    /* base curva escura */
-    .ground-arc {
-        position: absolute;
-        left: 50%;
-        bottom: -180px;
-        transform: translateX(-50%);
-        width: 140%;
-        height: 320px;
-        border-radius: 50%;
-        background:
-            radial-gradient(ellipse at center,
-                rgba(25,18,18,0.2) 0%,
-                rgba(8,8,8,0.95) 55%,
-                rgba(3,3,3,1) 100%);
-        box-shadow: inset 0 40px 70px rgba(255,120,0,0.08);
-    }
-
-    /* =====================================================
-       ANIMAÇÕES
-       ===================================================== */
-    @keyframes pulseCore {
-        0%, 100% {
-            transform: translateX(-50%) scale(1);
-            opacity: 0.95;
-        }
-        50% {
-            transform: translateX(-50%) scale(1.08);
-            opacity: 1;
-        }
-    }
-
-    @keyframes bloomMove {
-        0% {
-            transform: translateX(-50%) scale(1);
-            opacity: 0.9;
-        }
-        100% {
-            transform: translateX(-50%) scale(1.08);
-            opacity: 1;
-        }
-    }
-
-    @keyframes smokeRise1 {
-        0% {
-            transform: translateX(0) translateY(0) scaleX(1) scaleY(1);
-            opacity: 0.55;
-        }
-        100% {
-            transform: translateX(35px) translateY(-30px) scaleX(1.18) scaleY(1.08);
-            opacity: 0.82;
-        }
-    }
-
-    @keyframes smokeRise2 {
-        0% {
-            transform: translateX(0) translateY(0) scale(1) skewX(0deg);
-            opacity: 0.48;
-        }
-        100% {
-            transform: translateX(45px) translateY(-45px) scale(1.14) skewX(4deg);
-            opacity: 0.72;
-        }
-    }
-
-    @keyframes smokeRise3 {
-        0% {
-            transform: translateX(0) translateY(0) scale(1);
-            opacity: 0.35;
-        }
-        100% {
-            transform: translateX(-20px) translateY(-38px) scale(1.1);
-            opacity: 0.62;
-        }
-    }
-
-    /* =====================================================
-       SUA ESTÉTICA
-       ===================================================== */
-    @keyframes fadeInUpBlur {
-        0% { opacity: 0; transform: translateY(30px); filter: blur(8px); }
-        100% { opacity: 1; transform: translateY(0); filter: blur(0px); }
-    }
-
-    .info-card, .stMarkdown, div[data-testid="stMetric"], .stDataFrame, .stPlotlyChart {
-        animation: fadeInUpBlur 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) both;
-        position: relative;
-        z-index: 10;
-    }
-
-    .main-title {
-        font-family: 'Bricolage Grotesque', sans-serif;
-        font-size: 2.8rem;
-        font-weight: 300;
-        letter-spacing: -0.02em;
-        background: linear-gradient(180deg, #FFFFFF 0%, #BBBBBB 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        margin: 0;
-        line-height: 1.1;
-    }
-
-    .sub-title {
-        color: #FFD700;
-        font-weight: 600;
-        font-size: 1.1rem;
-        margin-top: 5px;
-        margin-bottom: 0;
-    }
-
-    .info-card { 
-        background: rgba(10, 10, 10, 0.6);
-        backdrop-filter: blur(16px) saturate(180%);
-        -webkit-backdrop-filter: blur(16px) saturate(180%);
-        border-top: 1px solid rgba(255, 255, 255, 0.15);
-        border-left: 1px solid rgba(255, 255, 255, 0.08);
-        border-right: 1px solid rgba(255, 255, 255, 0.08);
-        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
-        border-radius: 12px;
-        padding: 15px;
-        margin-top: 15px;
-        margin-bottom: 15px;
-        position: relative;
-        overflow: hidden;
-        transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-
-    .info-card::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: -100%;
-        width: 100%;
-        height: 100%;
-        background: linear-gradient(90deg, transparent, rgba(249, 115, 22, 0.15), transparent);
-        transition: 0.5s;
-        pointer-events: none;
-        z-index: 20;
-    }
-
-    .info-card:hover {
-        background: rgba(249, 115, 22, 0.08);
-        border-color: rgba(249, 115, 22, 0.3);
-        transform: translateY(-5px);
-        box-shadow: 0 15px 40px rgba(249, 115, 22, 0.15);
-    }
-
-    .info-card:hover::before {
-        left: 100%;
-        transition: 0.7s ease-in-out;
-    }
-
-    div.stButton > button { 
-        background: linear-gradient(to top, #fef08a 0%, #fb923c 50%, #f97316 100%) !important;
-        color: #2c1306 !important;
-        border: 1px inset rgba(255, 255, 255, 0.4) !important;
-        padding: 0.7rem 2rem;
-        border-radius: 9999px !important;
-        font-weight: 600 !important;
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
-        width: 100%;
-        position: relative;
-        box-shadow: 0 0 40px -5px rgba(249, 115, 22, 0.6) !important;
-        animation: fadeInUpBlur 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) both;
-    }
-
-    div.stButton > button:hover { 
-        box-shadow: 0 0 60px -5px rgba(249, 115, 22, 0.8) !important;
-        transform: scale(1.05) translateY(-2px) !important;
-    }
-</style>
-
-<div class="stars-bg"></div>
-
-<div class="energy-scene">
-    <div class="energy-bloom"></div>
-    <div class="smoke-col-1"></div>
-    <div class="smoke-col-2"></div>
-    <div class="smoke-col-3"></div>
-    <div class="ground-glow"></div>
-    <div class="energy-core"></div>
-    <div class="energy-horizon"></div>
-    <div class="ground-arc"></div>
-</div>
-""", unsafe_allow_html=True)
+</script>
+""", height=0, width=0)
 
 # =========================================================
 # 2. CABEÇALHO VISUAL E FUNDO DO CABEÇALHO
@@ -733,41 +381,38 @@ from PIL import Image
 script_dir = os.path.dirname(os.path.abspath(__file__))
 path_assets = os.path.join(script_dir, "Assets") 
 
+# Padronizando os caminhos limpos (Apenas banner e logo em webp)
 path_teste_gate = os.path.join(path_assets, "teste_gate.webp")
 path_brasao_gate = os.path.join(path_assets, "brasao_gate.webp")
 
 # --- 1. PREPARAR IMAGENS (Codificar para Base64) ---
 img_topo_b64 = ""
 
+# Topo (Banner principal)
 try:
     with open(path_teste_gate, "rb") as img_file: 
         img_topo_b64 = base64.b64encode(img_file.read()).decode()
-except:
-    pass
+except: pass 
 
 # --- 2. RENDERIZAR BANNER TOPO (Com animação e degradê) ---
 if img_topo_b64:
-    st.markdown(f"""
-    <div style="position: relative; width: 100%; height: 200px; border-radius: 2px; overflow: hidden; background-image: url('data:image/webp;base64,{img_topo_b64}'); background-size: cover; background-position: center 40%; margin-bottom: 1rem; animation: fadeInUpBlur 1s cubic-bezier(0.2, 0.8, 0.2, 1) both;">
-        <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(180deg, rgba(5,5,5,0.1) 0%, rgba(249, 115, 22, 0.6) 100%);"></div>
-    </div>
-    """, unsafe_allow_html=True)
+    st.markdown(f"""<div style="position: relative; width: 100%; height: 200px; border-radius: 2px; overflow: hidden; background-image: url('data:image/webp;base64,{img_topo_b64}'); background-size: cover; background-position: center 40%; margin-bottom: 1rem; animation: fadeInUpBlur 1s cubic-bezier(0.2, 0.8, 0.2, 1) both;"><div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(180deg, rgba(5,5,5,0.1) 0%, rgba(249, 115, 22, 0.6) 100%);"></div></div>""", unsafe_allow_html=True)
 
 # --- 3. CONTEÚDO DO CABEÇALHO (Logo e Textos) ---
 col_logo, col_titulo, col_espaco = st.columns([1, 6, 1])
 
 with col_logo:
-    try:
+    try: 
         st.image(Image.open(path_brasao_gate), use_container_width=True)
-    except Exception as e:
+    except Exception as e: 
         st.error(f"Erro ao carregar logo: Verifique se o arquivo existe em {path_brasao_gate}")
 
 with col_titulo:
     st.markdown('<h1 class="main-title">Sistema de Análise Qualitativa das Negociações - Estudo das Técnicas aplicadas</h1>', unsafe_allow_html=True)
     st.markdown('<p class="sub-title">Delta Negociação - GATE / PMESP</p>', unsafe_allow_html=True)
     st.markdown('<p style="color: #999; margin-top: 5px;">Desenvolvido por Cb PM Marcos - Supervisão: Cap PM Pavão</p>', unsafe_allow_html=True)
-
-    st.markdown("""
+    
+    st.markdown(f"""
 <div class="info-card">
     <p><strong>Sistema automatizado de análise qualitativa das Negociações em Incidentes Críticos atendidos pelo Grupo de Ações Táticas Especiais.</strong></p>
     <p style="font-size: 0.9rem; color: #999;">Os dados são geridos de forma automatizada em nuvem via <strong>Airtable</strong>. Cálculos matemáticos realizados localmente utilizando  
