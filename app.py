@@ -319,18 +319,15 @@ import base64
 from PIL import Image
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
-
 path_assets = os.path.join(script_dir, "Assets") 
 
-# Padronizando todos os caminhos para nomes limpos e minúsculos
+# Padronizando os caminhos limpos (Apenas banner e logo em webp)
 path_teste_gate = os.path.join(path_assets, "teste_gate.webp")
 path_brasao_gate = os.path.join(path_assets, "brasao_gate.webp")
-path_negociacao_fundo = os.path.join(path_assets, "negociacao_novo_prata.png") # Nova Imagem
 
 # --- 1. PREPARAR IMAGENS (Codificar para Base64) ---
-# Inicializar como strings vazias para não quebrar se houver erro
+# Inicializar como string vazia para não quebrar se houver erro
 img_topo_b64 = ""
-img_fundo_header_b64 = ""
 
 # Topo (Banner principal)
 try:
@@ -338,18 +335,32 @@ try:
         img_topo_b64 = base64.b64encode(img_file.read()).decode()
 except: pass # Se der erro, img_topo_b64 continua vazio
 
-# Fundo do Header (Nova imagem faint na direita)
-try:
-    with open(path_negociacao_fundo, "rb") as img_file: 
-        img_fundo_header_b64 = base64.b64encode(img_file.read()).decode()
-except Exception as e:
-    # Usar um erro visível durante o teste para confirmar se ele acha o arquivo
-    st.error(f"Erro ao carregar imagem de fundo (faint): Verifique se o arquivo existe em {path_negociacao_fundo}")
-
-# --- 2. RENDERIZAR BANNER TOPO (Existente) ---
+# --- 2. RENDERIZAR BANNER TOPO (Com animação e degradê) ---
 if img_topo_b64:
-    st.markdown(f"""<div style="position: relative; width: 100%; height: 200px; border-radius: 2px; overflow: hidden; background-image: url('data:image/png;base64,{img_topo_b64}'); background-size: cover; background-position: center 40%; margin-bottom: 1rem; animation: fadeInUpBlur 1s cubic-bezier(0.2, 0.8, 0.2, 1) both;"><div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(180deg, rgba(5,5,5,0.1) 0%, rgba(249, 115, 22, 0.6) 100%);"></div></div>""", unsafe_allow_html=True)
+    st.markdown(f"""<div style="position: relative; width: 100%; height: 200px; border-radius: 2px; overflow: hidden; background-image: url('data:image/webp;base64,{img_topo_b64}'); background-size: cover; background-position: center 40%; margin-bottom: 1rem; animation: fadeInUpBlur 1s cubic-bezier(0.2, 0.8, 0.2, 1) both;"><div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(180deg, rgba(5,5,5,0.1) 0%, rgba(249, 115, 22, 0.6) 100%);"></div></div>""", unsafe_allow_html=True)
 
+# --- 3. CONTEÚDO DO CABEÇALHO (Logo e Textos) ---
+col_logo, col_titulo, col_espaco = st.columns([1, 6, 1])
+
+with col_logo:
+    try: 
+        st.image(Image.open(path_brasao_gate), use_container_width=True)
+    except Exception as e: 
+        st.error(f"Erro ao carregar logo: Verifique se o arquivo existe em {path_brasao_gate}")
+
+with col_titulo:
+    st.markdown('<h1 class="main-title">Sistema de Análise Qualitativa das Negociações - Estudo das Técnicas aplicadas</h1>', unsafe_allow_html=True)
+    st.markdown('<p class="sub-title">Delta Negociação - GATE / PMESP</p>', unsafe_allow_html=True)
+    st.markdown('<p style="color: #999; margin-top: 5px;">Desenvolvido por Cb PM Marcos - Supervisão: Cap PM Pavão</p>', unsafe_allow_html=True)
+    
+    st.markdown(f"""
+<div class="info-card">
+    <p><strong>Sistema automatizado de análise qualitativa das Negociações em Incidentes Críticos atendidos pelo Grupo de Ações Táticas Especiais.</strong></p>
+    <p style="font-size: 0.9rem; color: #999;">Os dados são geridos de forma automatizada em nuvem via <strong>Airtable</strong>. Cálculos matemáticos realizados localmente utilizando  
+    <strong>SciPy</strong> (Correlação de Spearman com Quartis) e <strong>Scikit-Learn</strong> (Modelagem N-Gramas). Modelo integra Inteligência Artificial atuando exclusivamente como estruturadora de metadados qualitativos da perspectiva tripla.</p>
+</div>
+""", unsafe_allow_html=True)
+    
 # --- 3. CRIAR O RECIPIENTE DO CABEÇALHO COM O FUNDO FAINT ---
 style_fundo_header = ""
 if img_fundo_header_b64:
@@ -368,7 +379,7 @@ if img_fundo_header_b64:
             right: 0; /* Começa na direita */
             width: 70%; /* Ocupa 70% da largura, da direita para o centro */
             height: 100%;
-            background-image: url('data:image/png;base64,{img_fundo_header_b64}');
+            background-image: url('data:image/webp;base64,{img_fundo_header_b64}');
             background-size: contain; /* Ajusta sem cortar a imagem tática */
             background-position: right center; /* Gruda na direita, centraliza verticalmente */
             background-repeat: no-repeat;
@@ -389,7 +400,7 @@ st.markdown(style_fundo_header, unsafe_allow_html=True)
 st.markdown('<div class="header-container-com-fundo">', unsafe_allow_html=True)
 
 # --- 4. CONTEÚDO DO CABEÇALHO (Existente, dentro do novo container) ---
-path_brasao_gate_limpo = os.path.join(path_assets, "brasao_gate.png")
+path_brasao_gate_limpo = os.path.join(path_assets, "brasao_gate.webp")
 
 col_logo, col_titulo, col_espaco = st.columns([1, 6, 1])
 
@@ -398,7 +409,7 @@ with col_logo:
         st.image(Image.open(path_brasao_gate_limpo), use_container_width=True)
     except Exception as e: 
         try:
-            old_path_brasao = os.path.join(path_assets, "BRASÃO GATE.PNG")
+            old_path_brasao = os.path.join(path_assets, "brasao_gate.webp")
             st.image(Image.open(old_path_brasao), use_container_width=True)
         except:
             st.error(f"Erro ao carregar logo: Verifique se o arquivo existe em {path_brasao_gate_limpo}")
