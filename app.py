@@ -319,15 +319,19 @@ import base64
 from PIL import Image
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
+
 path_assets = os.path.join(script_dir, "Assets") 
 
-# Padronizando os caminhos limpos (Apenas banner e logo em webp)
+# Padronizando todos os caminhos para nomes limpos e minúsculos
 path_teste_gate = os.path.join(path_assets, "teste_gate.webp")
 path_brasao_gate = os.path.join(path_assets, "brasao_gate.webp")
+# Imagem de fundo comentada para não pesar a página
+# path_negociacao_fundo = os.path.join(path_assets, "negociacao_novo_prata.png") 
 
 # --- 1. PREPARAR IMAGENS (Codificar para Base64) ---
-# Inicializar como string vazia para não quebrar se houver erro
+# Inicializar como strings vazias OBRIGATÓRIAS para não quebrar a linha 366
 img_topo_b64 = ""
+img_fundo_header_b64 = "" 
 
 # Topo (Banner principal)
 try:
@@ -335,11 +339,52 @@ try:
         img_topo_b64 = base64.b64encode(img_file.read()).decode()
 except: pass # Se der erro, img_topo_b64 continua vazio
 
-# --- 2. RENDERIZAR BANNER TOPO (Com animação e degradê) ---
+# O carregamento da imagem de fundo foi desativado para otimizar velocidade
+# A variável img_fundo_header_b64 permanecerá vazia com segurança
+
+# --- 2. RENDERIZAR BANNER TOPO (Existente) ---
 if img_topo_b64:
     st.markdown(f"""<div style="position: relative; width: 100%; height: 200px; border-radius: 2px; overflow: hidden; background-image: url('data:image/webp;base64,{img_topo_b64}'); background-size: cover; background-position: center 40%; margin-bottom: 1rem; animation: fadeInUpBlur 1s cubic-bezier(0.2, 0.8, 0.2, 1) both;"><div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(180deg, rgba(5,5,5,0.1) 0%, rgba(249, 115, 22, 0.6) 100%);"></div></div>""", unsafe_allow_html=True)
 
-# --- 3. CONTEÚDO DO CABEÇALHO (Logo e Textos) ---
+# --- 3. CRIAR O RECIPIENTE DO CABEÇALHO COM O FUNDO FAINT ---
+style_fundo_header = ""
+if img_fundo_header_b64:
+    style_fundo_header = f"""
+    <style>
+        .header-container-com-fundo {{
+            position: relative;
+            padding: 20px 0;
+            overflow: hidden; /* Garante que o blur não vaze */
+        }}
+        
+        .header-container-com-fundo::before {{
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0; /* Começa na direita */
+            width: 70%; /* Ocupa 70% da largura, da direita para o centro */
+            height: 100%;
+            background-image: url('data:image/webp;base64,{img_fundo_header_b64}');
+            background-size: contain; /* Ajusta sem cortar a imagem tática */
+            background-position: right center; /* Gruda na direita, centraliza verticalmente */
+            background-repeat: no-repeat;
+            
+            /* Ajustes de faint (A opacidade é a chave aqui) */
+            opacity: 0.15; /* MUITO baixa opacidade, para ser apenas uma silhueta faint */
+            
+            /* Ajuste de Blur (levemente desfocada) */
+            filter: blur(10px); 
+            
+            z-index: -1; /* Garante que fica ATRAZ de todos os outros elementos */
+        }}
+    </style>
+    """
+
+# Injetar o CSS e abrir o container HTML
+st.markdown(style_fundo_header, unsafe_allow_html=True)
+st.markdown('<div class="header-container-com-fundo">', unsafe_allow_html=True)
+
+# --- 4. CONTEÚDO DO CABEÇALHO (Existente, dentro do novo container) ---
 col_logo, col_titulo, col_espaco = st.columns([1, 6, 1])
 
 with col_logo:
@@ -360,7 +405,10 @@ with col_titulo:
     <strong>SciPy</strong> (Correlação de Spearman com Quartis) e <strong>Scikit-Learn</strong> (Modelagem N-Gramas). Modelo integra Inteligência Artificial atuando exclusivamente como estruturadora de metadados qualitativos da perspectiva tripla.</p>
 </div>
 """, unsafe_allow_html=True)
-    
+
+# Fechar o container do cabeçalho
+st.markdown('</div>', unsafe_allow_html=True)
+
 # --- 3. CRIAR O RECIPIENTE DO CABEÇALHO COM O FUNDO FAINT ---
 style_fundo_header = ""
 if img_fundo_header_b64:
