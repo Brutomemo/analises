@@ -188,7 +188,6 @@ st.markdown("""
 components.html("""
 <script>
     const parentDoc = window.parent.document;
-    const parentWin = window.parent;
 
     // --- 1. CONFIGURA O CURSOR ---
     if (!parentDoc.getElementById('cursor-gate')) {
@@ -200,7 +199,7 @@ components.html("""
         cursor.style.backgroundColor = 'rgba(255, 255, 255, 0.8)';
         cursor.style.borderRadius = '50%';
         cursor.style.pointerEvents = 'none';
-        cursor.style.zIndex = '999999'; // Cursor smepre acima de TUDO
+        cursor.style.zIndex = '999999'; // Cursor sempre acima de TUDO
         cursor.style.transform = 'translate(-50%, -50%)';
         cursor.style.transition = 'width 0.2s, height 0.2s, background-color 0.2s';
         cursor.style.mixBlendMode = 'overlay';
@@ -217,37 +216,30 @@ components.html("""
         });
     }
 
-    // --- 2. CONFIGURA O UNICORN STUDIO ---
+    // --- 2. INJEÇÃO DO UNICORN STUDIO VIA IFRAME DIRETO ---
     const oldBg = parentDoc.getElementById('unicorn-bg-container');
     if (oldBg) { oldBg.remove(); }
         
     const bgContainer = parentDoc.createElement('div');
     bgContainer.id = 'unicorn-bg-container';
     bgContainer.style.position = 'fixed';
-    bgContainer.style.top = '0'; bgContainer.style.left = '0';
-    bgContainer.style.width = '100vw'; bgContainer.style.height = '100vh';
+    bgContainer.style.top = '0'; 
+    bgContainer.style.left = '0';
+    bgContainer.style.width = '100vw'; 
+    bgContainer.style.height = '100vh';
     
-    // O SEGREDO ESTÁ AQUI: z-index = 1 (Fica na frente do fundo preto, mas atrás do app que é 10)
-    bgContainer.style.zIndex = '1'; 
+    // Z-index 0 coloca ele perfeitamente no recheio: na frente do fundo preto, e atrás do app (10)
+    bgContainer.style.zIndex = '0'; 
     bgContainer.style.pointerEvents = 'none'; 
     
-    const usDiv = parentDoc.createElement('div');
-    usDiv.id = 'hero-bg';
-    usDiv.setAttribute('data-us-project', '0Air3YV0ySfVbTEkT2EW'); 
-    usDiv.style.width = '100%'; usDiv.style.height = '100%';
+    const iframe = parentDoc.createElement('iframe');
+    iframe.src = 'https://www.unicorn.studio/embed/0Air3YV0ySfVbTEkT2EW';
+    iframe.style.width = '100%';
+    iframe.style.height = '100%';
+    iframe.style.border = 'none';
     
-    bgContainer.appendChild(usDiv);
+    bgContainer.appendChild(iframe);
     parentDoc.body.appendChild(bgContainer);
-
-    const script = parentDoc.createElement('script');
-    script.src = 'https://cdn.jsdelivr.net/gh/hiunicornstudio/unicornstudio.js@v1.4.34/dist/unicornStudio.umd.js';
-    script.onload = function() {
-        if (parentWin.UnicornStudio) {
-            parentWin.UnicornStudio.init();
-            parentWin.UnicornStudio.isInitialized = true;
-        }
-    };
-    parentDoc.head.appendChild(script);
 </script>
 """, height=0, width=0)
 
