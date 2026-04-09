@@ -108,6 +108,7 @@ st.markdown("""
     /* Configurações Globais */
     .block-container { padding-top: 1.5rem !important; padding-bottom: 2rem !important; z-index: 10; position: relative;}
     header {visibility: hidden;}
+
     /* Fundo Transparente para revelar o WebGL */
     body { background-color: #050505 !important; }
     .stApp, [data-testid="stAppViewContainer"], [data-testid="stHeader"] { 
@@ -116,6 +117,13 @@ st.markdown("""
         color: #FFFFFF; 
         overflow-x: hidden; 
         font-family: 'Inter', sans-serif;
+    }
+
+    [data-testid="stAppViewContainer"] > .main,
+    section.main,
+    section.main > div {
+        background: transparent !important;
+        background-color: transparent !important;
     }
     
     /* Fundo Estrelado - Luminous Design System */
@@ -129,28 +137,26 @@ st.markdown("""
             radial-gradient(2px 2px at 90px 40px, #ffffff, rgba(0,0,0,0)),
             radial-gradient(1.5px 1.5px at 130px 80px, #ffffff, rgba(0,0,0,0));
         background-size: 200px 200px;
-        opacity: 0.45; /* Aumentado para maior visibilidade */
-        z-index: 1; /* Acima do fundo preto */
+        opacity: 0.45;
+        z-index: 1;
         pointer-events: none;
     }
 
     /* Animação Efeito Raio Descendo do Céu */
     @keyframes rayFall {
         0% { transform: translateY(-100vh) rotate(15deg); opacity: 0; filter: blur(2px); }
-        15% { opacity: 1; filter: blur(0px); } /* Opacidade máxima e foco nítido mais cedo */
-        85% { opacity: 1; filter: blur(0px); } /* Mantém brilho máximo durante a queda */
+        15% { opacity: 1; filter: blur(0px); }
+        85% { opacity: 1; filter: blur(0px); }
         100% { transform: translateY(120vh) rotate(15deg); opacity: 0; filter: blur(2px); }
     }
     .dynamic-ray {
         position: fixed;
         top: 0;
-        width: 3px; /* Raio mais espesso */
-        height: 350px; /* Raio mais longo */
-        /* Núcleo brilhante (branco) com bordas laranjas para simular energia */
+        width: 3px;
+        height: 350px;
         background: linear-gradient(to bottom, transparent, rgba(249, 115, 22, 0.9), rgba(255, 255, 255, 0.9), transparent);
-        /* Efeito Glow / Neon ao redor do raio */
         box-shadow: 0 0 25px 5px rgba(249, 115, 22, 0.7); 
-        z-index: 2; /* Traz para frente do fundo, mas atrás dos cards (z-index 10) */
+        z-index: 2;
         animation: rayFall linear infinite;
         pointer-events: none;
     }
@@ -168,7 +174,7 @@ st.markdown("""
     .info-card, .stMarkdown, div[data-testid="stMetric"], .stDataFrame, .stPlotlyChart {
         animation: fadeInUpBlur 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) both;
         position: relative; 
-        z-index: 10; /* Garante que o conteúdo fique acima dos raios */
+        z-index: 10;
     }
 
     /* Fontes e Títulos */
@@ -181,7 +187,7 @@ st.markdown("""
     
     /* Efeito Vidro (Glassmorphism) e Animação de Luz (Sweep) nas Caixas */
     .info-card { 
-        background: rgba(10, 10, 10, 0.6); /* Levemente mais opaco para dar contraste aos raios passando por trás */
+        background: rgba(10, 10, 10, 0.6);
         backdrop-filter: blur(16px) saturate(180%);
         -webkit-backdrop-filter: blur(16px) saturate(180%);
         border-top: 1px solid rgba(255, 255, 255, 0.15);
@@ -211,7 +217,7 @@ st.markdown("""
     /* Efeito Design System nos Botões (Gradiente + Glow) */
     div.stButton > button { 
         background: linear-gradient(to top, #fef08a 0%, #fb923c 50%, #f97316 100%) !important;
-        color: #2c1306 !important; /* Cor escura para leitura perfeita sobre o laranja/amarelo */
+        color: #2c1306 !important;
         border: 1px inset rgba(255, 255, 255, 0.4) !important;
         padding: 0.7rem 2rem; border-radius: 9999px !important; font-weight: 600 !important; 
         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important; width: 100%; position: relative;
@@ -239,7 +245,8 @@ st.markdown("""
 
     /* Tabelas e Menus Base */
     [data-testid="stDataFrame"] { background-color: rgba(255, 255, 255, 0.03); border-radius: 8px; }
-    #MainMenu {visibility: hidden;} footer {visibility: hidden;}
+    #MainMenu {visibility: hidden;} 
+    footer {visibility: hidden;}
     div[data-testid="stTabs"] button { font-size: 1.2rem; font-weight: bold; transition: color 0.3s;}
     div[data-testid="stTabs"] button[data-baseweb="tab"]:hover { color: #FFD700; }
 
@@ -316,8 +323,10 @@ components.html("""
 </script>
 """, height=0, width=0)
 
-if 'stats_calculados' not in st.session_state: st.session_state['stats_calculados'] = None
-if 'dados_n8n' not in st.session_state: st.session_state['dados_n8n'] = None
+if 'stats_calculados' not in st.session_state:
+    st.session_state['stats_calculados'] = None
+if 'dados_n8n' not in st.session_state:
+    st.session_state['dados_n8n'] = None
 
 # =========================================================
 # BACKGROUND DINÂMICO WEBGL (Unicorn Studio)
@@ -327,46 +336,52 @@ components.html("""
     const parentDoc = window.parent.document;
     const parentWin = window.parent;
 
-    // Verifica se o background já existe para não duplicar quando o Streamlit atualizar
-    if (!parentDoc.getElementById('unicorn-bg-container')) {
-        
-        // Cria o container do background que vai ocupar a tela toda
-        const bgContainer = parentDoc.createElement('div');
+    // Container único do background
+    let bgContainer = parentDoc.getElementById('unicorn-bg-container');
+    let usDiv = parentDoc.getElementById('hero-bg');
+
+    if (!bgContainer) {
+        bgContainer = parentDoc.createElement('div');
         bgContainer.id = 'unicorn-bg-container';
         bgContainer.style.position = 'fixed';
         bgContainer.style.top = '0';
         bgContainer.style.left = '0';
         bgContainer.style.width = '100vw';
         bgContainer.style.height = '100vh';
-        bgContainer.style.zIndex = '-10'; // Garante que fique atrás de tudo
-        bgContainer.style.pointerEvents = 'none'; // Impede que o fundo roube os cliques
-        
-        // Cria a div específica exigida pelo Unicorn Studio com o SEU PROJETO
-        const usDiv = parentDoc.createElement('div');
+        bgContainer.style.zIndex = '0';
+        bgContainer.style.pointerEvents = 'none';
+        bgContainer.style.overflow = 'hidden';
+        parentDoc.body.prepend(bgContainer);
+    }
+
+    if (!usDiv) {
+        usDiv = parentDoc.createElement('div');
         usDiv.id = 'hero-bg';
-        usDiv.setAttribute('data-us-project', '4plIJhpeCPKHrhxFrUrL9'); // <-- ID ATUALIZADO AQUI
+        usDiv.setAttribute('data-us-project', '0Air3YV0ySfVbTEkT2EW');
         usDiv.style.width = '100%';
         usDiv.style.height = '100%';
-        
-        // Injeta as divs no corpo (body) do Streamlit
         bgContainer.appendChild(usDiv);
-        parentDoc.body.appendChild(bgContainer);
+    }
 
-        // Carrega o script do Unicorn Studio dinamicamente
+    // Carrega o script só uma vez
+    if (!parentDoc.getElementById('unicorn-studio-sdk')) {
         const script = parentDoc.createElement('script');
+        script.id = 'unicorn-studio-sdk';
         script.src = 'https://cdn.jsdelivr.net/gh/hiunicornstudio/unicornstudio.js@v1.4.34/dist/unicornStudio.umd.js';
-        
+
         script.onload = function() {
-            // Inicializa o WebGL assim que o script terminar de carregar
-            if (!parentWin.UnicornStudio || !parentWin.UnicornStudio.isInitialized) {
-                if(parentWin.UnicornStudio) {
-                    parentWin.UnicornStudio.init();
-                    parentWin.UnicornStudio.isInitialized = true;
-                }
+            if (parentWin.UnicornStudio && !parentWin.UnicornStudio.isInitialized) {
+                parentWin.UnicornStudio.init();
+                parentWin.UnicornStudio.isInitialized = true;
             }
         };
-        
+
         parentDoc.head.appendChild(script);
+    } else {
+        if (parentWin.UnicornStudio && !parentWin.UnicornStudio.isInitialized) {
+            parentWin.UnicornStudio.init();
+            parentWin.UnicornStudio.isInitialized = true;
+        }
     }
 </script>
 """, height=0, width=0)
