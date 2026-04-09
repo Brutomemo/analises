@@ -10,9 +10,8 @@ try:
     import statsmodels.api as sm
     import patsy
 except ImportError:
-    # Se falhar, tenta instalar silenciosamente no Python ativo
     subprocess.check_call([sys.executable, "-m", "pip", "install", "statsmodels", "patsy", "scipy"])
-    st.rerun() 
+    st.rerun()
 
 # =========================================================
 # 1. SEUS IMPORTS ORIGINAIS (MANTIDOS E COMPLETOS)
@@ -32,29 +31,31 @@ import unicodedata
 # =========================================================
 import airtable_link
 import analise
-import ia_link        # Cérebro da Aba 1 (Transcrições)
-import ia_estatistica # Cérebro da Aba 2 (Série Histórica)
-
-# LINHA DE DEBUG (Remova após resolver o erro):
-# st.sidebar.write(f"DEBUG: ia_link vindo de: {ia_link.__file__}")
+import ia_link
+import ia_estatistica
 
 # =========================================================
 # 2. FUNÇÕES AUXILIARES (TRATAMENTO DE DADOS DO AIRTABLE)
 # =========================================================
 def limpar_valor(val):
-    if isinstance(val, list): return val[0] if len(val) > 0 else "N/D"
+    if isinstance(val, list):
+        return val[0] if len(val) > 0 else "N/D"
     return str(val) if pd.notna(val) else "N/D"
 
 def limpar_id(v):
-    if isinstance(v, list) and len(v) > 0: v = v[0]
+    if isinstance(v, list) and len(v) > 0:
+        v = v[0]
     v_str = str(v).strip()
-    if v_str.endswith('.0'): v_str = v_str[:-2]
+    if v_str.endswith('.0'):
+        v_str = v_str[:-2]
     return v_str
 
 def formatar_tempo_airtable(val):
     try:
-        if isinstance(val, list): val = val[0]
-        if pd.isna(val) or val == "N/D" or val == "": return "N/D"
+        if isinstance(val, list):
+            val = val[0]
+        if pd.isna(val) or val == "N/D" or val == "":
+            return "N/D"
         s = int(float(val))
         h = s // 3600
         m = (s % 3600) // 60
@@ -66,33 +67,30 @@ def somar_tempos_segundos(serie):
     total_s = 0
     for val in serie:
         try:
-            if isinstance(val, list): val = val[0]
+            if isinstance(val, list):
+                val = val[0]
             if pd.notna(val) and val != "N/D" and val != "":
                 total_s += int(float(val))
-        except: pass
+        except:
+            pass
     h = total_s // 3600
     m = (total_s % 3600) // 60
     return f"{h:02d}h {m:02d}m"
 
 # --- MOTOR GRÁFICO (MAPA EMOCIONAL COMPLETO & BLINDADO) ---
 escala_likert = {
-    # 1. Opções de Sistema / Inaudíveis
     "❓ inaudível / não observado": 0, "inaudível": 0, "não observado": 0, "n/d": 0, "nao observado": 0,
-
-    # 2. Novos Termos da sua Base (Blinda contra erros de digitação)
     "não agressivo": 1, "nao agressivo": 1, "não agresssivo": 1, "nao agresssivo": 1, "muito baixa": 1, "muito baixo": 1,
     "baixo": 2, "baixa": 2, "pouco receptivo": 2,
     "neutro": 3, "moderada": 3, "moderado": 3,
     "receptivo": 4, "alta": 4, "alto": 4,
     "muito receptivo": 5, "muito alta": 5, "muito alto": 5,
-
-    # 3. Mapeamento das Fórmulas com Emojis 
     "🔴 reação negativa": 1, "⚪ reação neutra": 3, "🟢 reação positiva": 5
 }
 
 def converter_escala(val):
-    if not val: return 0
-    # Limpa emojis e espaços para garantir o "match"
+    if not val:
+        return 0
     v = str(val).lower().strip()
     return escala_likert.get(v, 0)
 
@@ -329,77 +327,81 @@ if 'dados_n8n' not in st.session_state:
     st.session_state['dados_n8n'] = None
 
 # =========================================================
-# VERSÃO BLINDADA - BACKGROUND UNICORN STUDIO
+# VERSÃO CORRIGIDA - BACKGROUND UNICORN STUDIO
 # =========================================================
 components.html("""
 <script>
-    (function() {
-        const PROJECT_ID = "4plIJhpeCPKHrhxFrUrL9";
-        const doc = window.parent.document;
+(function() {
+    const PROJECT_ID = "4pNJhpeCPKHrhxFrUrL9";
+    const doc = window.parent.document;
+    const win = window.parent;
 
-        function initUnicorn() {
-            // 1. Evita duplicatas
-            if (doc.getElementById('unicorn-bg-container')) return;
-
-            console.log("🛠️ Iniciando injeção do Unicorn Studio...");
-
-            // 2. Cria o container de fundo
-            const container = doc.createElement('div');
+    function ensureContainer() {
+        let container = doc.getElementById('unicorn-bg-container');
+        if (!container) {
+            container = doc.createElement('div');
             container.id = 'unicorn-bg-container';
-            container.style.cssText = `
-                position: fixed;
-                top: 0;
-                left: 0;
-                width: 100vw;
-                height: 100vh;
-                z-index: -10;
-                pointer-events: none;
-                background: #050505;
-            `;
+            container.style.position = 'fixed';
+            container.style.top = '0';
+            container.style.left = '0';
+            container.style.width = '100vw';
+            container.style.height = '100vh';
+            container.style.zIndex = '0';
+            container.style.pointerEvents = 'none';
+            container.style.overflow = 'hidden';
+            container.style.background = 'transparent';
+            doc.body.prepend(container);
+        }
+        return container;
+    }
 
-            const scene = doc.createElement('div');
+    function ensureScene(container) {
+        let scene = doc.getElementById('unicorn-scene');
+        if (!scene) {
+            scene = doc.createElement('div');
             scene.id = 'unicorn-scene';
             scene.setAttribute('data-us-project', PROJECT_ID);
             scene.style.width = '100%';
             scene.style.height = '100%';
-
             container.appendChild(scene);
-            doc.body.appendChild(container);
-
-            // 3. Carrega o Script do CDN
-            const script = doc.createElement('script');
-            script.src = "https://cdn.jsdelivr.net/gh/hiunicornstudio/unicornstudio.js@v1.4.34/dist/unicornStudio.umd.js";
-            
-            script.onload = () => {
-                console.log("📦 SDK do Unicorn Studio carregado.");
-                
-                // Tenta inicializar até que o objeto esteja disponível no Window
-                let attempts = 0;
-                const checkInit = setInterval(() => {
-                    attempts++;
-                    if (window.parent.UnicornStudio) {
-                        window.parent.UnicornStudio.init();
-                        console.log("🚀 Unicorn Studio Inicializado com sucesso!");
-                        clearInterval(checkInit);
-                    } else if (attempts > 20) {
-                        console.error("❌ Falha ao encontrar UnicornStudio após 10 segundos.");
-                        clearInterval(checkInit);
-                    }
-                }, 500);
-            };
-
-            doc.head.appendChild(script);
-        }
-
-        // Executa a função
-        if (doc.readyState === 'complete') {
-            initUnicorn();
         } else {
-            window.parent.addEventListener('load', initUnicorn);
+            scene.setAttribute('data-us-project', PROJECT_ID);
         }
-    })();
+        return scene;
+    }
+
+    function initScene() {
+        const container = ensureContainer();
+        ensureScene(container);
+
+        if (win.UnicornStudio) {
+            try {
+                if (!win.UnicornStudio.isInitialized) {
+                    win.UnicornStudio.init();
+                    win.UnicornStudio.isInitialized = true;
+                } else {
+                    win.UnicornStudio.init();
+                }
+            } catch (e) {
+                console.error("Erro ao inicializar UnicornStudio:", e);
+            }
+        }
+    }
+
+    if (!doc.getElementById('unicorn-sdk')) {
+        const script = doc.createElement('script');
+        script.id = 'unicorn-sdk';
+        script.src = 'https://cdn.jsdelivr.net/gh/hiunicornstudio/unicornstudio.js@v1.4.34/dist/unicornStudio.umd.js';
+        script.onload = () => {
+            setTimeout(initScene, 300);
+        };
+        doc.head.appendChild(script);
+    } else {
+        setTimeout(initScene, 300);
+    }
+})();
 </script>
-""", height=0)
+""", height=0, width=0)
 
 # =========================================================
 # 2. CABEÇALHO VISUAL E FUNDO DO CABEÇALHO
@@ -411,38 +413,41 @@ from PIL import Image
 script_dir = os.path.dirname(os.path.abspath(__file__))
 path_assets = os.path.join(script_dir, "Assets") 
 
-# Padronizando os caminhos limpos (Apenas banner e logo em webp)
 path_teste_gate = os.path.join(path_assets, "teste_gate.webp")
 path_brasao_gate = os.path.join(path_assets, "brasao_gate.webp")
 
 # --- 1. PREPARAR IMAGENS (Codificar para Base64) ---
 img_topo_b64 = ""
 
-# Topo (Banner principal)
 try:
     with open(path_teste_gate, "rb") as img_file: 
         img_topo_b64 = base64.b64encode(img_file.read()).decode()
-except: pass 
+except:
+    pass
 
 # --- 2. RENDERIZAR BANNER TOPO (Com animação e degradê) ---
 if img_topo_b64:
-    st.markdown(f"""<div style="position: relative; width: 100%; height: 200px; border-radius: 2px; overflow: hidden; background-image: url('data:image/webp;base64,{img_topo_b64}'); background-size: cover; background-position: center 40%; margin-bottom: 1rem; animation: fadeInUpBlur 1s cubic-bezier(0.2, 0.8, 0.2, 1) both;"><div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(180deg, rgba(5,5,5,0.1) 0%, rgba(249, 115, 22, 0.6) 100%);"></div></div>""", unsafe_allow_html=True)
+    st.markdown(f"""
+    <div style="position: relative; width: 100%; height: 200px; border-radius: 2px; overflow: hidden; background-image: url('data:image/webp;base64,{img_topo_b64}'); background-size: cover; background-position: center 40%; margin-bottom: 1rem; animation: fadeInUpBlur 1s cubic-bezier(0.2, 0.8, 0.2, 1) both;">
+        <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(180deg, rgba(5,5,5,0.1) 0%, rgba(249, 115, 22, 0.6) 100%);"></div>
+    </div>
+    """, unsafe_allow_html=True)
 
 # --- 3. CONTEÚDO DO CABEÇALHO (Logo e Textos) ---
 col_logo, col_titulo, col_espaco = st.columns([1, 6, 1])
 
 with col_logo:
-    try: 
+    try:
         st.image(Image.open(path_brasao_gate), use_container_width=True)
-    except Exception as e: 
+    except Exception as e:
         st.error(f"Erro ao carregar logo: Verifique se o arquivo existe em {path_brasao_gate}")
 
 with col_titulo:
     st.markdown('<h1 class="main-title">Sistema de Análise Qualitativa das Negociações - Estudo das Técnicas aplicadas</h1>', unsafe_allow_html=True)
     st.markdown('<p class="sub-title">Delta Negociação - GATE / PMESP</p>', unsafe_allow_html=True)
     st.markdown('<p style="color: #999; margin-top: 5px;">Desenvolvido por Cb PM Marcos - Supervisão: Cap PM Pavão</p>', unsafe_allow_html=True)
-    
-    st.markdown(f"""
+
+    st.markdown("""
 <div class="info-card">
     <p><strong>Sistema automatizado de análise qualitativa das Negociações em Incidentes Críticos atendidos pelo Grupo de Ações Táticas Especiais.</strong></p>
     <p style="font-size: 0.9rem; color: #999;">Os dados são geridos de forma automatizada em nuvem via <strong>Airtable</strong>. Cálculos matemáticos realizados localmente utilizando  
