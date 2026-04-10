@@ -357,8 +357,6 @@ with col_logo:
 
 with col_titulo:
     st.markdown('<h1 class="main-title" style="text-align: center;">Sistema de Análise Qualitativa das Negociações - Estudo das Técnicas aplicadas</h1>', unsafe_allow_html=True)
-    st.markdown('<p class="sub-title">Delta Negociação - GATE / PMESP</p>', unsafe_allow_html=True)
-    st.markdown('<p style="color: #999; margin-top: 5px;">Desenvolvido por Cb PM Marcos - Supervisão: Cap PM Pavão</p>', unsafe_allow_html=True)
     
 
 #EFEITO UNICORN
