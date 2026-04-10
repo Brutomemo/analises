@@ -166,7 +166,7 @@ st.markdown("""
     border-radius: 12px;
     padding: 10px;
 
-    margin-top: 30px;
+    margin-top: 20px;
     margin-bottom: 10px;
 
     position: relative;
@@ -446,7 +446,7 @@ window.addEventListener("load", () => {
 </html>
 """
 
-components.html(header, height=320)  # antes 220 / 260
+components.html(header, height=340) 
     
 # =========================================================
 # 3. CONEXÃO E NAVEGAÇÃO PRINCIPAL (ABAS)
