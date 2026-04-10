@@ -133,6 +133,17 @@ st.markdown("""
         z-index: 1; /* Acima do fundo preto */
         pointer-events: none;
     }
+    /* Caixa de Título Especial */
+    .header-box {
+        margin: 0 auto !important;
+        padding: 20px 30px !important;
+        width: 100%; /* Ocupa a largura total da coluna definida */
+        text-align: center;
+    }
+
+    /* Reset de margens para os títulos dentro da caixa gloss */
+    .header-box .main-title { margin-bottom: 5px !important; }
+    .header-box .sub-title { margin-top: 0 !important; }
     
     /* Animação de Entrada Cinematográfica (Opacidade + Blur) */
     @keyframes fadeInUpBlur {
@@ -356,8 +367,12 @@ with col_logo:
         pass
 
 with col_titulo:
-    st.markdown('<h1 class="main-title" style="text-align: center;">Sistema de Análise Qualitativa das Negociações</h1>', unsafe_allow_html=True)
-    st.markdown('<p class="sub-title" style="text-align: center;">Estudo das Técnicas Aplicadas</p>', unsafe_allow_html=True)
+    st.markdown("""
+        <div class="info-card header-box">
+            <h1 class="main-title" style="text-align: center;">Sistema de Análise Qualitativa das Negociações</h1>
+            <p class="sub-title" style="text-align: center;">Estudo das Técnicas Aplicadas</p>
+        </div>
+    """, unsafe_allow_html=True)
 
 #EFEITO UNICORN
 # EFEITO UNICORN COM O CARD EMBUTIDO (Solução Definitiva)
