@@ -378,7 +378,7 @@ header = """
     .header {
         position: relative;
         width: 100%;
-        height: 480px; /* Aumentei um pouco para caber o card e o efeito confortavelmente */
+        height: 520px; /* Aumentei um pouco para caber o card e o efeito confortavelmente */
         border-radius: 20px;
         overflow: hidden;
         background: #0f172a;
@@ -463,7 +463,7 @@ window.addEventListener("load", () => {
 </html>
 """
 
-components.html(header, height=480) 
+components.html(header, height=520) 
 
 st.markdown('<p class="sub-title">Delta Negociação - GATE / PMESP</p>', unsafe_allow_html=True)
 st.markdown('<p style="color: #999; margin-top: 5px;">Desenvolvido por Cb PM Marcos - Supervisão: Cap PM Pavão</p>', unsafe_allow_html=True)
