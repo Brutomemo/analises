@@ -366,7 +366,7 @@ body {
 .header {
     position: relative;
     width: 100%;
-    height: 220px;
+    height: 260px;
     border-radius: 20px;
     overflow: hidden;
     background: #0f172a;
@@ -376,7 +376,7 @@ body {
 .unicorn {
     position: absolute;
     inset: 0;
-    z-index: 1;
+    transform: translateY(-30px); /* sobe o efeito */
 }
 
 /* OVERLAY ESCURO */
@@ -423,6 +423,8 @@ body {
 
   <div class="overlay"></div>
 
+  <div class="cover-bottom"></div>
+
   <div class="content">
     <div>
       <div class="title"></div>
@@ -445,7 +447,7 @@ window.addEventListener("load", () => {
 </html>
 """
 
-components.html(header, height=220)
+components.html(header, height=260)  
     
 # =========================================================
 # 3. CONEXÃO E NAVEGAÇÃO PRINCIPAL (ABAS)
