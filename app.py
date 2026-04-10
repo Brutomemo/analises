@@ -425,284 +425,113 @@ with col_titulo:
 .section-divider-effect {
     position: relative;
     width: 100%;
-    height: 170px;
-    margin-top: 8px;
-    margin-bottom: 10px;
+    height: 260px;  /* MAIS ALTURA = VIDA */
+    margin-top: 10px;
+    margin-bottom: 0px;
     overflow: hidden;
     border-radius: 14px;
     pointer-events: none;
-    z-index: 3;
-    background:
-        radial-gradient(circle at 50% 100%, rgba(255,140,0,0.10) 0%, rgba(0,0,0,0) 42%),
-        linear-gradient(180deg, rgba(5,5,5,0) 0%, rgba(5,5,5,0.55) 18%, rgba(5,5,5,0.92) 100%);
+    z-index: 5;
 }
 
-.section-divider-effect .energy-bloom {
+/* NÚCLEO FORTE (SOL) */
+.energy-core {
     position: absolute;
     left: 50%;
-    bottom: 10px;
+    bottom: 20px;
     transform: translateX(-50%);
-    width: 72%;
-    height: 120px;
-    background:
-        radial-gradient(ellipse at center,
-            rgba(255,140,0,0.42) 0%,
-            rgba(255,120,0,0.20) 38%,
-            rgba(255,120,0,0.06) 65%,
-            rgba(255,120,0,0) 100%);
-    filter: blur(24px);
-    animation: dividerBloom 6s ease-in-out infinite alternate;
-}
-
-.section-divider-effect .energy-core {
-    position: absolute;
-    left: 50%;
-    bottom: -16px;
-    transform: translateX(-50%);
-    width: 180px;
-    height: 180px;
+    width: 220px;
+    height: 220px;
     border-radius: 50%;
     background:
         radial-gradient(circle,
-            rgba(255,255,255,1) 0%,
-            rgba(255,244,170,1) 16%,
-            rgba(255,200,40,0.96) 34%,
-            rgba(255,130,0,0.82) 58%,
-            rgba(255,120,0,0.12) 82%,
-            rgba(255,120,0,0) 100%);
-    filter: blur(8px);
-    box-shadow:
-        0 0 30px rgba(255,180,0,0.9),
-        0 0 90px rgba(255,120,0,0.42),
-        0 0 160px rgba(255,120,0,0.18);
-    animation: dividerPulse 4.6s ease-in-out infinite;
+            #ffffff 0%,
+            #fff3b0 10%,
+            #ffb300 25%,
+            #ff6a00 45%,
+            rgba(255,120,0,0.2) 70%,
+            transparent 100%);
+    filter: blur(6px);
+    animation: pulseCore 3s ease-in-out infinite;
 }
 
-.section-divider-effect .energy-horizon {
+/* LINHA HORIZONTE (FEIXE) */
+.energy-horizon {
     position: absolute;
     left: 50%;
-    bottom: 34px;
+    bottom: 80px;
     transform: translateX(-50%);
-    width: 96%;
+    width: 100%;
     height: 6px;
-    background:
-        linear-gradient(90deg,
-            rgba(255,120,0,0) 0%,
-            rgba(255,120,0,0.68) 18%,
-            rgba(255,180,60,1) 50%,
-            rgba(255,120,0,0.68) 82%,
-            rgba(255,120,0,0) 100%);
+    background: linear-gradient(
+        90deg,
+        transparent,
+        #ff8c00,
+        #ffffff,
+        #ff8c00,
+        transparent
+    );
     box-shadow:
-        0 0 10px rgba(255,120,0,0.75),
-        0 0 28px rgba(255,120,0,0.30),
-        0 0 70px rgba(255,120,0,0.16);
-    opacity: 0.95;
+        0 0 20px #ff8c00,
+        0 0 60px rgba(255,120,0,0.7),
+        0 0 120px rgba(255,120,0,0.4);
 }
 
-.section-divider-effect .smoke-1,
-.section-divider-effect .smoke-2,
-.section-divider-effect .smoke-3 {
+/* PARTÍCULAS SUBINDO (ESSA É A VIDA DO EFEITO) */
+.particles {
     position: absolute;
+    bottom: 70px;
     left: 50%;
-    bottom: 34px;
-    transform-origin: bottom center;
-    border-radius: 50%;
-    filter: blur(24px);
-    mix-blend-mode: screen;
-    opacity: 0.72;
+    width: 300px;
+    height: 200px;
+    transform: translateX(-50%);
 }
 
-.section-divider-effect .smoke-1 {
-    width: 220px;
-    height: 150px;
-    margin-left: -110px;
-    background:
-        radial-gradient(ellipse at 50% 85%,
-            rgba(255,180,70,0.38) 0%,
-            rgba(255,120,0,0.18) 42%,
-            rgba(255,120,0,0.03) 74%,
-            rgba(255,120,0,0) 100%);
-    animation: dividerSmoke1 7s ease-in-out infinite alternate;
-}
-
-.section-divider-effect .smoke-2 {
-    width: 140px;
-    height: 125px;
-    margin-left: 14px;
-    background:
-        radial-gradient(ellipse at 50% 85%,
-            rgba(255,220,150,0.24) 0%,
-            rgba(255,145,0,0.12) 45%,
-            rgba(255,145,0,0.02) 76%,
-            rgba(255,145,0,0) 100%);
-    animation: dividerSmoke2 5.8s ease-in-out infinite alternate;
-}
-
-.section-divider-effect .smoke-3 {
-    width: 160px;
-    height: 110px;
-    margin-left: -150px;
-    background:
-        radial-gradient(ellipse at 50% 85%,
-            rgba(255,120,0,0.18) 0%,
-            rgba(255,90,0,0.09) 44%,
-            rgba(255,90,0,0.01) 76%,
-            rgba(255,90,0,0) 100%);
-    animation: dividerSmoke3 8.5s ease-in-out infinite alternate;
-}
-
-.section-divider-effect .diag-ray {
+.particle {
     position: absolute;
     width: 4px;
-    height: 150px;
-    border-radius: 999px;
-    background: linear-gradient(
-        to bottom,
-        rgba(255,140,0,0),
-        rgba(255,140,0,0.72),
-        rgba(255,245,220,0.95),
-        rgba(255,140,0,0)
-    );
-    box-shadow: 0 0 16px rgba(255,120,0,0.42);
-    filter: blur(0.4px);
-    animation: dividerRay 4s ease-in-out infinite alternate;
+    height: 20px;
+    background: linear-gradient(to top, #ff8c00, transparent);
+    opacity: 0.7;
+    animation: rise 3s linear infinite;
 }
 
-.section-divider-effect .r1 {
-    left: 18%;
-    top: 0;
-    transform: rotate(17deg);
-    opacity: 0.34;
+/* várias partículas */
+.particle:nth-child(1) { left: 20%; animation-delay: 0s; }
+.particle:nth-child(2) { left: 30%; animation-delay: 1s; }
+.particle:nth-child(3) { left: 40%; animation-delay: 0.5s; }
+.particle:nth-child(4) { left: 50%; animation-delay: 1.5s; }
+.particle:nth-child(5) { left: 60%; animation-delay: 0.2s; }
+.particle:nth-child(6) { left: 70%; animation-delay: 1.2s; }
+
+@keyframes rise {
+    0% { transform: translateY(0); opacity: 0; }
+    20% { opacity: 1; }
+    100% { transform: translateY(-120px); opacity: 0; }
 }
 
-.section-divider-effect .r2 {
-    right: 16%;
-    top: -8px;
-    transform: rotate(18deg);
-    opacity: 0.30;
-    animation-duration: 5.4s;
-}
-
-.section-divider-effect .r3 {
-    left: 48%;
-    bottom: -18px;
-    transform: rotate(12deg);
-    opacity: 0.24;
-    height: 170px;
-    animation-duration: 5.8s;
-}
-
-@keyframes dividerPulse {
-    0%, 100% {
-        transform: translateX(-50%) scale(1);
-        opacity: 0.95;
-    }
-    50% {
-        transform: translateX(-50%) scale(1.06);
-        opacity: 1;
-    }
-}
-
-@keyframes dividerBloom {
-    0% {
-        transform: translateX(-50%) scale(1);
-        opacity: 0.86;
-    }
-    100% {
-        transform: translateX(-50%) scale(1.07);
-        opacity: 1;
-    }
-}
-
-@keyframes dividerSmoke1 {
-    0% { transform: translateX(0) translateY(0) scale(1); opacity: 0.50; }
-    100% { transform: translateX(18px) translateY(-16px) scale(1.14); opacity: 0.76; }
-}
-
-@keyframes dividerSmoke2 {
-    0% { transform: translateX(0) translateY(0) scale(1); opacity: 0.38; }
-    100% { transform: translateX(22px) translateY(-18px) scale(1.10); opacity: 0.60; }
-}
-
-@keyframes dividerSmoke3 {
-    0% { transform: translateX(0) translateY(0) scale(1); opacity: 0.24; }
-    100% { transform: translateX(-10px) translateY(-14px) scale(1.08); opacity: 0.42; }
-}
-
-@keyframes dividerRay {
-    0% { transform: translateY(-12px) rotate(16deg); }
-    100% { transform: translateY(12px) rotate(19deg); }
-}
-
-@media (max-width: 768px) {
-    .section-divider-effect {
-        height: 105px;
-        margin-top: 4px;
-        margin-bottom: 6px;
-        border-radius: 10px;
-    }
-
-    .section-divider-effect .energy-core {
-        width: 115px;
-        height: 115px;
-        bottom: -10px;
-    }
-
-    .section-divider-effect .energy-horizon {
-        bottom: 20px;
-        height: 4px;
-        width: 100%;
-    }
-
-    .section-divider-effect .energy-bloom {
-        width: 92%;
-        height: 72px;
-        bottom: 0;
-    }
-
-    .section-divider-effect .smoke-1,
-    .section-divider-effect .smoke-2,
-    .section-divider-effect .smoke-3 {
-        filter: blur(16px);
-    }
-
-    .section-divider-effect .smoke-1 {
-        width: 130px;
-        height: 78px;
-        margin-left: -65px;
-    }
-
-    .section-divider-effect .smoke-2 {
-        width: 85px;
-        height: 60px;
-        margin-left: 6px;
-    }
-
-    .section-divider-effect .smoke-3 {
-        width: 90px;
-        height: 58px;
-        margin-left: -82px;
-    }
-
-    .section-divider-effect .diag-ray {
-        height: 92px;
-        width: 3px;
-    }
+@keyframes pulseCore {
+    0%,100% { transform: translateX(-50%) scale(1); }
+    50% { transform: translateX(-50%) scale(1.1); }
 }
 </style>
 
 <div class="section-divider-effect">
-    <div class="energy-bloom"></div>
-    <div class="smoke-1"></div>
-    <div class="smoke-2"></div>
-    <div class="smoke-3"></div>
     <div class="energy-core"></div>
     <div class="energy-horizon"></div>
-    <div class="diag-ray r1"></div>
-    <div class="diag-ray r2"></div>
-    <div class="diag-ray r3"></div>
+
+    <div class="particles">
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+    </div>
 </div>
 """, unsafe_allow_html=True)
+    
+
 
 # =========================================================
 # 3. CONEXÃO E NAVEGAÇÃO PRINCIPAL (ABAS)
