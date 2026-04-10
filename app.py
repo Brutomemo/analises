@@ -163,7 +163,7 @@ st.markdown("""
         border-right: 1px solid rgba(255, 255, 255, 0.08);
         border-bottom: 1px solid rgba(255, 255, 255, 0.05);
         box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
-        border-radius: 12px; padding: 15px; margin-top: 15px; margin-bottom: 15px; 
+        border-radius: 12px; padding: 10px; margin-top: 10px; margin-bottom: 10px; 
         position: relative; overflow: hidden;
         transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
     }
