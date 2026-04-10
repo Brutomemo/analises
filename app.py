@@ -10,7 +10,6 @@ try:
     import statsmodels.api as sm
     import patsy
 except ImportError:
-    # Se falhar, tenta instalar silenciosamente no Python ativo
     subprocess.check_call([sys.executable, "-m", "pip", "install", "statsmodels", "patsy", "scipy"])
     st.rerun() 
 
@@ -32,11 +31,8 @@ import unicodedata
 # =========================================================
 import airtable_link
 import analise
-import ia_link        # Cérebro da Aba 1 (Transcrições)
-import ia_estatistica # Cérebro da Aba 2 (Série Histórica)
-
-# LINHA DE DEBUG (Remova após resolver o erro):
-# st.sidebar.write(f"DEBUG: ia_link vindo de: {ia_link.__file__}")
+import ia_link
+import ia_estatistica
 
 # =========================================================
 # 2. FUNÇÕES AUXILIARES (TRATAMENTO DE DADOS DO AIRTABLE)
@@ -74,25 +70,18 @@ def somar_tempos_segundos(serie):
     m = (total_s % 3600) // 60
     return f"{h:02d}h {m:02d}m"
 
-# --- MOTOR GRÁFICO (MAPA EMOCIONAL COMPLETO & BLINDADO) ---
 escala_likert = {
-    # 1. Opções de Sistema / Inaudíveis
     "❓ inaudível / não observado": 0, "inaudível": 0, "não observado": 0, "n/d": 0, "nao observado": 0,
-
-    # 2. Novos Termos da sua Base (Blinda contra erros de digitação)
     "não agressivo": 1, "nao agressivo": 1, "não agresssivo": 1, "nao agresssivo": 1, "muito baixa": 1, "muito baixo": 1,
     "baixo": 2, "baixa": 2, "pouco receptivo": 2,
     "neutro": 3, "moderada": 3, "moderado": 3,
     "receptivo": 4, "alta": 4, "alto": 4,
     "muito receptivo": 5, "muito alta": 5, "muito alto": 5,
-
-    # 3. Mapeamento das Fórmulas com Emojis 
     "🔴 reação negativa": 1, "⚪ reação neutra": 3, "🟢 reação positiva": 5
 }
 
 def converter_escala(val):
     if not val: return 0
-    # Limpa emojis e espaços para garantir o "match"
     v = str(val).lower().strip()
     return escala_likert.get(v, 0)
 
@@ -105,10 +94,8 @@ st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Bricolage+Grotesque:opsz,wght@12..96,300;12..96,400;12..96,600&display=swap');
 
-    /* Configurações Globais */
     .block-container { padding-top: 1.5rem !important; padding-bottom: 2rem !important; z-index: 10; position: relative;}
     header {visibility: hidden;}
-    /* Fundo Transparente para revelar o WebGL */
     body { background-color: #050505 !important; }
     .stApp, [data-testid="stAppViewContainer"], [data-testid="stHeader"] { 
         background: transparent !important;
@@ -118,34 +105,26 @@ st.markdown("""
         font-family: 'Inter', sans-serif;
     }
     
-    /* Fundo Estrelado - Luminous Design System */
     .stars-bg {
-        position: fixed;
-        top: 0; left: 0; right: 0; bottom: 0;
+        position: fixed; top: 0; left: 0; right: 0; bottom: 0;
         background-image:
             radial-gradient(1.5px 1.5px at 20px 30px, #fff, rgba(0,0,0,0)),
             radial-gradient(1.5px 1.5px at 40px 70px, #ffffff, rgba(0,0,0,0)),
             radial-gradient(1.5px 1.5px at 50px 160px, #ffffff, rgba(0,0,0,0)),
             radial-gradient(2px 2px at 90px 40px, #ffffff, rgba(0,0,0,0)),
             radial-gradient(1.5px 1.5px at 130px 80px, #ffffff, rgba(0,0,0,0));
-        background-size: 200px 200px;
-        opacity: 0.45; /* Aumentado para maior visibilidade */
-        z-index: 1; /* Acima do fundo preto */
-        pointer-events: none;
+        background-size: 200px 200px; opacity: 0.45; z-index: 1; pointer-events: none;
     }
     
-    /* Animação de Entrada Cinematográfica (Opacidade + Blur) */
     @keyframes fadeInUpBlur {
         0% { opacity: 0; transform: translateY(30px); filter: blur(8px); }
         100% { opacity: 1; transform: translateY(0); filter: blur(0px); }
     }
     .info-card, .stMarkdown, div[data-testid="stMetric"], .stDataFrame, .stPlotlyChart {
         animation: fadeInUpBlur 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) both;
-        position: relative; 
-        z-index: 10; /* Garante que o conteúdo fique acima dos raios */
+        position: relative; z-index: 10;
     }
 
-    /* Fontes e Títulos */
     .main-title {
         font-family: 'Bricolage Grotesque', sans-serif; font-size: 2.8rem; font-weight: 300; letter-spacing: -0.02em;
         background: linear-gradient(180deg, #FFFFFF 0%, #BBBBBB 100%);
@@ -153,10 +132,8 @@ st.markdown("""
     }
     .sub-title { color: #FFD700; font-weight: 600; font-size: 1.1rem; margin-top: 5px; margin-bottom: 0; }
     
-    /* Efeito Vidro (Glassmorphism) e Animação de Luz (Sweep) nas Caixas */
     .info-card { 
-        background: rgba(10, 10, 10, 0.6); /* Levemente mais opaco para dar contraste aos raios passando por trás */
-        backdrop-filter: blur(16px) saturate(180%);
+        background: rgba(10, 10, 10, 0.6); backdrop-filter: blur(16px) saturate(180%);
         -webkit-backdrop-filter: blur(16px) saturate(180%);
         border-top: 1px solid rgba(255, 255, 255, 0.15);
         border-left: 1px solid rgba(255, 255, 255, 0.08);
@@ -173,20 +150,14 @@ st.markdown("""
         transition: 0.5s; pointer-events: none; z-index: 20;
     }
     .info-card:hover {
-        background: rgba(249, 115, 22, 0.08);
-        border-color: rgba(249, 115, 22, 0.3);
-        transform: translateY(-5px);
-        box-shadow: 0 15px 40px rgba(249, 115, 22, 0.15);
+        background: rgba(249, 115, 22, 0.08); border-color: rgba(249, 115, 22, 0.3);
+        transform: translateY(-5px); box-shadow: 0 15px 40px rgba(249, 115, 22, 0.15);
     }
-    .info-card:hover::before {
-        left: 100%; transition: 0.7s ease-in-out;
-    }
+    .info-card:hover::before { left: 100%; transition: 0.7s ease-in-out; }
 
-    /* Efeito Design System nos Botões (Gradiente + Glow) */
     div.stButton > button { 
         background: linear-gradient(to top, #fef08a 0%, #fb923c 50%, #f97316 100%) !important;
-        color: #2c1306 !important; /* Cor escura para leitura perfeita sobre o laranja/amarelo */
-        border: 1px inset rgba(255, 255, 255, 0.4) !important;
+        color: #2c1306 !important; border: 1px inset rgba(255, 255, 255, 0.4) !important;
         padding: 0.7rem 2rem; border-radius: 9999px !important; font-weight: 600 !important; 
         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important; width: 100%; position: relative;
         box-shadow: 0 0 40px -5px rgba(249, 115, 22, 0.6) !important;
@@ -197,7 +168,6 @@ st.markdown("""
         transform: scale(1.05) translateY(-2px) !important; 
     }
     
-    /* Efeito Ambient Blobs (Degradês Flutuantes no Fundo) */
     .liquid-blob {
         position: fixed; border-radius: 60%; filter: blur(80px); opacity: 0.20; z-index: 1;
         animation: float 10s infinite alternate cubic-bezier(0.4, 0, 0.2, 1); pointer-events: none;
@@ -206,18 +176,13 @@ st.markdown("""
     .blob2 { background-color: #fb923c; width: 400px; height: 400px; top: 40%; right: -100px; animation-duration: 20s; animation-delay: -10s; }
     .blob3 { background-color: #c2410c; width: 600px; height: 600px; bottom: -150px; left: 20%; animation-duration: 25s; animation-delay: -15s; }
     
-    @keyframes float {
-        0% { transform: translate(0, 0) scale(1); }
-        100% { transform: translate(30px, 50px) scale(1.1); }
-    }
+    @keyframes float { 0% { transform: translate(0, 0) scale(1); } 100% { transform: translate(30px, 50px) scale(1.1); } }
 
-    /* Tabelas e Menus Base */
     [data-testid="stDataFrame"] { background-color: rgba(255, 255, 255, 0.03); border-radius: 8px; }
     #MainMenu {visibility: hidden;} footer {visibility: hidden;}
     div[data-testid="stTabs"] button { font-size: 1.2rem; font-weight: bold; transition: color 0.3s;}
     div[data-testid="stTabs"] button[data-baseweb="tab"]:hover { color: #FFD700; }
 
-    /* Cores para o Efeito de Vidro (Agressividade e Receptividade) */
     .card-red { border-left: 4px solid #DDD !important; }
     .card-red:hover { box-shadow: 0 15px 40px rgba(239, 68, 68, 0.25) !important; border-color: rgba(239, 68, 68, 0.6) !important; }
     .card-red::before { background: linear-gradient(90deg, transparent, rgba(239, 68, 68, 0.15), transparent) !important; }
@@ -226,13 +191,20 @@ st.markdown("""
     .card-green:hover { box-shadow: 0 15px 40px rgba(34, 197, 94, 0.25) !important; border-color: rgba(34, 197, 94, 0.6) !important; }
     .card-green::before { background: linear-gradient(90deg, transparent, rgba(34, 197, 94, 0.15), transparent) !important; }
 
-    /* Media Queries para Mobile Perfeito */
+    /* --- AJUSTE SOLICITADO: BRASÃO MENOR --- */
+    [data-testid="stImage"] img {
+        max-width: 120px !important;
+        height: auto;
+    }
+
     @media (max-width: 768px) {
         .main-title { font-size: 2rem !important; }
         .sub-title { font-size: 0.95rem !important; }
         div.stButton > button { padding: 0.6rem 1.2rem !important; font-size: 0.95rem !important; }
         .block-container { padding-left: 1rem !important; padding-right: 1rem !important; }
         .info-card { padding: 12px; margin-top: 10px; margin-bottom: 10px; }
+        /* Brasão ainda menor no mobile */
+        [data-testid="stImage"] img { max-width: 80px !important; margin: 0 auto; display: block; }
     }
 </style>
 
@@ -241,43 +213,18 @@ st.markdown("""
 <div class="liquid-blob blob3"></div>
 """, unsafe_allow_html=True)
 
-# Cursor Customizado Global via JavaScript
+# Cursor Customizado
 components.html("""
 <script>
     const doc = window.parent.document;
     if (!doc.getElementById('cursor-gate')) {
         const cursor = doc.createElement('div');
         cursor.id = 'cursor-gate';
-        cursor.style.position = 'fixed';
-        cursor.style.top = '0';
-        cursor.style.left = '0';
-        cursor.style.width = '20px';
-        cursor.style.height = '20px';
-        cursor.style.backgroundColor = 'rgba(255, 255, 255, 0.8)';
-        cursor.style.borderRadius = '50%';
-        cursor.style.pointerEvents = 'none';
-        cursor.style.zIndex = '999999';
-        cursor.style.transform = 'translate(-50%, -50%)';
-        cursor.style.transition = 'width 0.2s, height 0.2s, background-color 0.2s';
-        cursor.style.mixBlendMode = 'overlay';
-        cursor.style.backdropFilter = 'blur(2px)';
+        cursor.style.cssText = "position:fixed; top:0; left:0; width:20px; height:20px; background:rgba(255, 255, 255, 0.8); border-radius:50%; pointer-events:none; z-index:999999; transform:translate(-50%, -50%); transition: width 0.2s; mix-blend-mode:overlay; backdrop-filter:blur(2px);";
         doc.body.appendChild(cursor);
-
         doc.addEventListener('mousemove', (e) => {
             cursor.style.left = e.clientX + 'px';
             cursor.style.top = e.clientY + 'px';
-        });
-
-        doc.addEventListener('mousedown', () => {
-            cursor.style.width = '15px';
-            cursor.style.height = '15px';
-            cursor.style.backgroundColor = '#FFD700';
-        });
-        
-        doc.addEventListener('mouseup', () => {
-            cursor.style.width = '20px';
-            cursor.style.height = '20px';
-            cursor.style.backgroundColor = 'rgba(255, 255, 255, 0.8)';
         });
     }
 </script>
@@ -286,93 +233,52 @@ components.html("""
 if 'stats_calculados' not in st.session_state: st.session_state['stats_calculados'] = None
 if 'dados_n8n' not in st.session_state: st.session_state['dados_n8n'] = None
 
-# =========================================================
-# BACKGROUND DINÂMICO WEBGL (Unicorn Studio)
-# =========================================================
+# WebGL Background
 components.html("""
 <script>
     const parentDoc = window.parent.document;
-    const parentWin = window.parent;
-
-    // Verifica se o background já existe para não duplicar quando o Streamlit atualizar
     if (!parentDoc.getElementById('unicorn-bg-container')) {
-        
-        // Cria o container do background que vai ocupar a tela toda
         const bgContainer = parentDoc.createElement('div');
         bgContainer.id = 'unicorn-bg-container';
-        bgContainer.style.position = 'fixed';
-        bgContainer.style.top = '0';
-        bgContainer.style.left = '0';
-        bgContainer.style.width = '100vw';
-        bgContainer.style.height = '100vh';
-        bgContainer.style.zIndex = '-10'; // Garante que fique atrás de tudo
-        bgContainer.style.pointerEvents = 'none'; // Impede que o fundo roube os cliques
-        
-        // Cria a div específica exigida pelo Unicorn Studio com o SEU PROJETO
+        bgContainer.style.cssText = "position:fixed; top:0; left:0; width:100vw; height:100vh; z-index:-10; pointer-events:none;";
         const usDiv = parentDoc.createElement('div');
-        usDiv.id = 'hero-bg';
-        usDiv.setAttribute('data-us-project', '0Air3YV0ySfVbTEkT2EW'); // <-- SEU EFEITO AQUI
-        usDiv.style.width = '100%';
-        usDiv.style.height = '100%';
-        
-        // Injeta as divs no corpo (body) do Streamlit
+        usDiv.setAttribute('data-us-project', '0Air3YV0ySfVbTEkT2EW');
+        usDiv.style.cssText = "width:100%; height:100%;";
         bgContainer.appendChild(usDiv);
         parentDoc.body.appendChild(bgContainer);
-
-        // Carrega o script do Unicorn Studio dinamicamente
         const script = parentDoc.createElement('script');
         script.src = 'https://cdn.jsdelivr.net/gh/hiunicornstudio/unicornstudio.js@v1.4.34/dist/unicornStudio.umd.js';
-        
-        script.onload = function() {
-            // Inicializa o WebGL assim que o script terminar de carregar
-            if (!parentWin.UnicornStudio || !parentWin.UnicornStudio.isInitialized) {
-                if(parentWin.UnicornStudio) {
-                    parentWin.UnicornStudio.init();
-                    parentWin.UnicornStudio.isInitialized = true;
-                }
-            }
-        };
-        
+        script.onload = () => { if(window.parent.UnicornStudio) window.parent.UnicornStudio.init(); };
         parentDoc.head.appendChild(script);
     }
 </script>
 """, height=0, width=0)
 
-# =========================================================
-# 2. CABEÇALHO VISUAL E FUNDO DO CABEÇALHO
-# =========================================================
-import os
-import base64
-from PIL import Image
-
+# Imagens
 script_dir = os.path.dirname(os.path.abspath(__file__))
 path_assets = os.path.join(script_dir, "Assets") 
-
-# Padronizando os caminhos limpos (Apenas banner e logo em webp)
 path_teste_gate = os.path.join(path_assets, "teste_gate.webp")
 path_brasao_gate = os.path.join(path_assets, "brasao_gate.webp")
 
-# --- 1. PREPARAR IMAGENS (Codificar para Base64) ---
 img_topo_b64 = ""
-
-# Topo (Banner principal)
 try:
     with open(path_teste_gate, "rb") as img_file: 
         img_topo_b64 = base64.b64encode(img_file.read()).decode()
 except: pass 
 
-# --- 2. RENDERIZAR BANNER TOPO (Com animação e degradê) ---
+# --- AJUSTE SOLICITADO: REMOVER BORDA E ARREDONDAMENTO DA IMAGEM ---
 if img_topo_b64:
-    st.markdown(f"""<div style="position: relative; width: 100%; height: 200px; border-radius: 2px; overflow: hidden; background-image: url('data:image/webp;base64,{img_topo_b64}'); background-size: cover; background-position: center 40%; margin-bottom: 1rem; animation: fadeInUpBlur 1s cubic-bezier(0.2, 0.8, 0.2, 1) both;"><div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(180deg, rgba(5,5,5,0.1) 0%, rgba(249, 115, 22, 0.6) 100%);"></div></div>""", unsafe_allow_html=True)
+    st.markdown(f"""
+        <div style="position: relative; width: 100%; height: 200px; border-radius: 0px; border: none; overflow: hidden; background-image: url('data:image/webp;base64,{img_topo_b64}'); background-size: cover; background-position: center 40%; margin-bottom: 1rem; animation: fadeInUpBlur 1s cubic-bezier(0.2, 0.8, 0.2, 1) both;">
+            <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(180deg, rgba(5,5,5,0.1) 0%, rgba(249, 115, 22, 0.6) 100%);"></div>
+        </div>
+    """, unsafe_allow_html=True)
 
-# --- 3. CONTEÚDO DO CABEÇALHO (Logo e Textos) ---
 col_logo, col_titulo, col_espaco = st.columns([1, 6, 1])
 
 with col_logo:
-    try: 
-        st.image(Image.open(path_brasao_gate), use_container_width=True)
-    except Exception as e: 
-        st.error(f"Erro ao carregar logo: Verifique se o arquivo existe em {path_brasao_gate}")
+    try: st.image(Image.open(path_brasao_gate), use_container_width=True)
+    except: st.error(f"Erro ao carregar logo.")
 
 with col_titulo:
     st.markdown('<h1 class="main-title">Sistema de Análise Qualitativa das Negociações - Estudo das Técnicas aplicadas</h1>', unsafe_allow_html=True)
@@ -382,10 +288,9 @@ with col_titulo:
     st.markdown(f"""
 <div class="info-card">
     <p><strong>Sistema automatizado de análise qualitativa das Negociações em Incidentes Críticos atendidos pelo Grupo de Ações Táticas Especiais.</strong></p>
-    <p style="font-size: 0.9rem; color: #999;">Os dados são geridos de forma automatizada em nuvem via <strong>Airtable</strong>. Cálculos matemáticos realizados localmente utilizando  
-    <strong>SciPy</strong> (Correlação de Spearman com Quartis) e <strong>Scikit-Learn</strong> (Modelagem N-Gramas). Modelo integra Inteligência Artificial atuando exclusivamente como estruturadora de metadados qualitativos da perspectiva tripla.</p>
+    <p style="font-size: 0.9rem; color: #999;">Os dados são geridos de forma automatizada em nuvem via <strong>Airtable</strong>. Cálculos matemáticos realizados localmente utilizando <strong>SciPy</strong> e <strong>Scikit-Learn</strong>.</p>
 </div>
-""", unsafe_allow_html=True)    
+""", unsafe_allow_html=True)
 
     
 # =========================================================
