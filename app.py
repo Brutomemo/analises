@@ -373,9 +373,18 @@ col_logo, col_titulo, col_espaco = st.columns([1, 6, 1])
 
 with col_logo:
     try: 
-        st.image(Image.open(path_brasao_gate), use_container_width=True)
+        # Carrega o brasão em base64 em vez de usar st.image
+        with open(path_brasao_gate, "rb") as f:
+            brasao_b64 = base64.b64encode(f.read()).decode()
+        
+        # HTML puro: trava o tamanho em 90px (ajuste esse número se quiser maior/menor)
+        st.markdown(f"""
+            <div style="display: flex; justify-content: center; width: 100%;">
+                <img src="data:image/webp;base64,{brasao_b64}" style="max-width: 90px; height: auto; border: none;">
+            </div>
+        """, unsafe_allow_html=True)
     except Exception as e: 
-        st.error(f"Erro ao carregar logo: Verifique se o arquivo existe em {path_brasao_gate}")
+        pass
 
 with col_titulo:
     st.markdown('<h1 class="main-title">Sistema de Análise Qualitativa das Negociações - Estudo das Técnicas aplicadas</h1>', unsafe_allow_html=True)
