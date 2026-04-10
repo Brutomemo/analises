@@ -567,6 +567,12 @@ window.addEventListener("load", () => {
         UnicornStudio.init();
     }
 });
+// 🔥 reforço leve (não quebra o original)
+setTimeout(() => {
+    if (window.UnicornStudio) {
+        UnicornStudio.init();
+    }
+}, 800);
 </script>
 
 </body>
