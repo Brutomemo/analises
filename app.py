@@ -366,7 +366,7 @@ body {
 .header {
     position: relative;
     width: 100%;
-    height: 220px;
+    height: 320px;
     border-radius: 20px;
     overflow: hidden;
     background: #0f172a;
@@ -438,7 +438,7 @@ window.addEventListener("load", () => {
 </html>
 """
 
-components.html(header, height=260)
+components.html(header, height=320)  # antes 220 / 260
     
 # =========================================================
 # 3. CONEXÃO E NAVEGAÇÃO PRINCIPAL (ABAS)
