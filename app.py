@@ -10,9 +10,13 @@ try:
     import statsmodels.api as sm
     import patsy
 except ImportError:
+    # Se falhar, tenta instalar silenciosamente no Python ativo
     subprocess.check_call([sys.executable, "-m", "pip", "install", "statsmodels", "patsy", "scipy"])
     st.rerun() 
 
+# =========================================================
+# 1. SEUS IMPORTS ORIGINAIS (MANTIDOS E COMPLETOS)
+# =========================================================
 from PIL import Image
 import base64
 import pandas as pd
@@ -23,74 +27,21 @@ import tempfile
 from fpdf import FPDF
 import unicodedata
 
+# =========================================================
+# 1.1. IMPORTAÇÃO DOS MÓDULOS DE IA E DADOS
+# =========================================================
 import airtable_link
 import analise
-import ia_link        
-import ia_estatistica 
+import ia_link        # Cérebro da Aba 1 (Transcrições)
+import ia_estatistica # Cérebro da Aba 2 (Série Histórica)
 
 # =========================================================
-# 1. FUNÇÕES AUXILIARES (Definidas globalmente para não dar erro)
-# =========================================================
-def limpar_valor(val):
-    if isinstance(val, list): return val[0] if len(val) > 0 else "N/D"
-    return str(val) if pd.notna(val) else "N/D"
-
-def limpar_id(v):
-    if isinstance(v, list) and len(v) > 0: v = v[0]
-    v_str = str(v).strip()
-    if v_str.endswith('.0'): v_str = v_str[:-2]
-    return v_str
-
-def formatar_tempo_airtable(val):
-    try:
-        if isinstance(val, list): val = val[0]
-        if pd.isna(val) or val == "N/D" or val == "": return "N/D"
-        s = int(float(val))
-        h = s // 3600
-        m = (s % 3600) // 60
-        return f"{h:02d}h {m:02d}m"
-    except:
-        return str(val)
-
-def somar_tempos_segundos(serie):
-    total_s = 0
-    for val in serie:
-        try:
-            if isinstance(val, list): val = val[0]
-            if pd.notna(val) and val != "N/D" and val != "":
-                total_s += int(float(val))
-        except: pass
-    h = total_s // 3600
-    m = (total_s % 3600) // 60
-    return f"{h:02d}h {m:02d}m"
-
-escala_likert = {
-    "❓ inaudível / não observado": 0, "inaudível": 0, "não observado": 0, "n/d": 0, "nao observado": 0,
-    "não agressivo": 1, "nao agressivo": 1, "não agresssivo": 1, "nao agresssivo": 1, "muito baixa": 1, "muito baixo": 1,
-    "baixo": 2, "baixa": 2, "pouco receptivo": 2,
-    "neutro": 3, "moderada": 3, "moderado": 3,
-    "receptivo": 4, "alta": 4, "alto": 4,
-    "muito receptivo": 5, "muito alta": 5, "muito alto": 5,
-    "🔴 reação negativa": 1, "⚪ reação neutra": 3, "🟢 reação positiva": 5
-}
-
-def converter_escala(val):
-    if not val: return 0
-    v = str(val).lower().strip()
-    return escala_likert.get(v, 0)
-
-# =========================================================
-# 2. CONFIGURAÇÃO DA PÁGINA E CSS (UX e Design System)
-# =========================================================
-# AQUI FICA O SEU CÓDIGO DE DESIGN (st.set_page_config, st.markdown com <style>)
-# Tudo encostado na margem esquerda, para que a tela de senha também fique bonita!
-
-
-# =========================================================
-# 3. SISTEMA DE SEGURANÇA
+# 2. SISTEMA DE SEGURANÇA (FUNÇÃO)
 # =========================================================
 def check_password():
+    """Retorna True se o usuário inseriu a senha correta."""
     def password_entered():
+        """Verifica se a senha coincide com o segredo guardado."""
         if st.session_state["password"] == st.secrets["access_password"]:
             st.session_state["password_correct"] = True
             del st.session_state["password"]  
@@ -98,7 +49,7 @@ def check_password():
             st.session_state["password_correct"] = False
 
     if "password_correct" not in st.session_state:
-        st.markdown("## 🔒 Controle de Acesso Tático - GATE")
+        st.markdown("## 🔒 Controle de Acesso")
         st.text_input("Insira a Senha de Acesso:", type="password", on_change=password_entered, key="password")
         return False
     elif not st.session_state["password_correct"]:
@@ -110,12 +61,15 @@ def check_password():
         return True
 
 # =========================================================
-# 4. EXECUÇÃO DO PAINEL PROTEGIDO
+# 3. CAMADA DE PROTEÇÃO (O "ENVELOPE")
 # =========================================================
 if check_password():
+    # --- TUDO A PARTIR DAQUI ESTÁ PROTEGIDO PELA SENHA ---
+    # Observe que todo o código abaixo tem um recuo (4 espaços)
+    
     st.sidebar.success("Autenticação validada.")
     st.title("Série Histórica - Negociações GATE")
-        
+
     # =========================================================
     # 4. FUNÇÕES AUXILIARES (TRATAMENTO DE DADOS DO AIRTABLE)
     # =========================================================
