@@ -399,9 +399,6 @@ header = """
         z-index: 2;
     }
 
-    with col_titulo:
-    st.markdown('<h1 class="main-title" style="text-align: center;">Sistema de Análise Qualitativa das Negociações - Estudo das Técnicas aplicadas</h1>', unsafe_allow_html=True)
-    
     /* CONTAINER DO SEU CARD DE VIDRO */
     .card-container {
         position: absolute;
