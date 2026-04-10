@@ -356,8 +356,8 @@ with col_logo:
         pass
 
 with col_titulo:
-    st.markdown('<h1 class="main-title" style="text-align: center;">Sistema de Análise Qualitativa das Negociações - Estudo das Técnicas aplicadas</h1>', unsafe_allow_html=True)
-    
+    st.markdown('<h1 class="main-title" style="text-align: center;">Sistema de Análise Qualitativa das Negociações</h1>', unsafe_allow_html=True)
+    st.markdown('<p class="sub-title">Estudo das Técnicas Aplicadas</p>', unsafe_allow_html=True)
 
 #EFEITO UNICORN
 # EFEITO UNICORN COM O CARD EMBUTIDO (Solução Definitiva)
