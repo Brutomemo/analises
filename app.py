@@ -369,46 +369,47 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # Cursor Customizado Global via JavaScript
-components.html("""
-<script>
-    const doc = window.parent.document;
-    if (!doc.getElementById('cursor-gate')) {
-        const cursor = doc.createElement('div');
-        cursor.id = 'cursor-gate';
-        cursor.style.position = 'fixed';
-        cursor.style.top = '0';
-        cursor.style.left = '0';
-        cursor.style.width = '20px';
-        cursor.style.height = '20px';
-        cursor.style.backgroundColor = 'rgba(255, 255, 255, 0.8)';
-        cursor.style.borderRadius = '50%';
-        cursor.style.pointerEvents = 'none';
-        cursor.style.zIndex = '999999';
-        cursor.style.transform = 'translate(-50%, -50%)';
-        cursor.style.transition = 'width 0.2s, height 0.2s, background-color 0.2s';
-        cursor.style.mixBlendMode = 'overlay';
-        cursor.style.backdropFilter = 'blur(2px)';
-        doc.body.appendChild(cursor);
-
-        doc.addEventListener('mousemove', (e) => {
-            cursor.style.left = e.clientX + 'px';
-            cursor.style.top = e.clientY + 'px';
-        });
-
-        doc.addEventListener('mousedown', () => {
-            cursor.style.width = '15px';
-            cursor.style.height = '15px';
-            cursor.style.backgroundColor = '#FFD700';
-        });
-        
-        doc.addEventListener('mouseup', () => {
-            cursor.style.width = '20px';
-            cursor.style.height = '20px';
-            cursor.style.backgroundColor = 'rgba(255, 255, 255, 0.8)';
-        });
-    }
-</script>
-""", height=0, width=0)
+# Cursor Customizado Global via JavaScript
+# components.html("""
+# <script>
+#     const doc = window.parent.document;
+#     if (!doc.getElementById('cursor-gate')) {
+#         const cursor = doc.createElement('div');
+#         cursor.id = 'cursor-gate';
+#         cursor.style.position = 'fixed';
+#         cursor.style.top = '0';
+#         cursor.style.left = '0';
+#         cursor.style.width = '20px';
+#         cursor.style.height = '20px';
+#         cursor.style.backgroundColor = 'rgba(255, 255, 255, 0.8)';
+#         cursor.style.borderRadius = '50%';
+#         cursor.style.pointerEvents = 'none';
+#         cursor.style.zIndex = '999999';
+#         cursor.style.transform = 'translate(-50%, -50%)';
+#         cursor.style.transition = 'width 0.2s, height 0.2s, background-color 0.2s';
+#         cursor.style.mixBlendMode = 'overlay';
+#         cursor.style.backdropFilter = 'blur(2px)';
+#         doc.body.appendChild(cursor);
+#
+#         doc.addEventListener('mousemove', (e) => {
+#             cursor.style.left = e.clientX + 'px';
+#             cursor.style.top = e.clientY + 'px';
+#         });
+#
+#         doc.addEventListener('mousedown', () => {
+#             cursor.style.width = '15px';
+#             cursor.style.height = '15px';
+#             cursor.style.backgroundColor = '#FFD700';
+#         });
+#         
+#         doc.addEventListener('mouseup', () => {
+#             cursor.style.width = '20px';
+#             cursor.style.height = '20px';
+#             cursor.style.backgroundColor = 'rgba(255, 255, 255, 0.8)';
+#         });
+#     }
+# </script>
+# """, height=0, width=0)
 
 if 'stats_calculados' not in st.session_state: st.session_state['stats_calculados'] = None
 #if 'dados_n8n' not in st.session_state: st.session_state['dados_n8n'] = None
