@@ -106,139 +106,91 @@ st.markdown("""
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Bricolage+Grotesque:opsz,wght@12..96,300;12..96,400;12..96,600&display=swap');
 
     /* Configurações Globais */
-    .block-container { padding-top: 1.5rem !important; padding-bottom: 2rem !important; z-index: 10; position: relative;}
+    .block-container { padding-top: 1rem !important; padding-bottom: 2rem !important; z-index: 10; position: relative;}
     header {visibility: hidden;}
-    /* Fundo Transparente para revelar o WebGL */
+    
     body { background-color: #050505 !important; }
     .stApp, [data-testid="stAppViewContainer"], [data-testid="stHeader"] { 
         background: transparent !important;
-        background-color: transparent !important; 
         color: #FFFFFF; 
         overflow-x: hidden; 
         font-family: 'Inter', sans-serif;
     }
-    
-    /* Fundo Estrelado - Luminous Design System */
-    .stars-bg {
-        position: fixed;
-        top: 0; left: 0; right: 0; bottom: 0;
-        background-image:
-            radial-gradient(1.5px 1.5px at 20px 30px, #fff, rgba(0,0,0,0)),
-            radial-gradient(1.5px 1.5px at 40px 70px, #ffffff, rgba(0,0,0,0)),
-            radial-gradient(1.5px 1.5px at 50px 160px, #ffffff, rgba(0,0,0,0)),
-            radial-gradient(2px 2px at 90px 40px, #ffffff, rgba(0,0,0,0)),
-            radial-gradient(1.5px 1.5px at 130px 80px, #ffffff, rgba(0,0,0,0));
-        background-size: 200px 200px;
-        opacity: 0.45; /* Aumentado para maior visibilidade */
-        z-index: 1; /* Acima do fundo preto */
-        pointer-events: none;
-    }
-    
-    /* Animação de Entrada Cinematográfica (Opacidade + Blur) */
-    @keyframes fadeInUpBlur {
-        0% { opacity: 0; transform: translateY(30px); filter: blur(8px); }
-        100% { opacity: 1; transform: translateY(0); filter: blur(0px); }
-    }
-    .info-card, .stMarkdown, div[data-testid="stMetric"], .stDataFrame, .stPlotlyChart {
-        animation: fadeInUpBlur 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+
+    /* Banner de Topo com Borda Refinada */
+    .banner-header {
         position: relative; 
-        z-index: 10; /* Garante que o conteúdo fique acima dos raios */
+        width: 100%; 
+        height: 200px; 
+        border-radius: 8px; /* Borda mais suave */
+        border: 1px solid rgba(255, 255, 255, 0.1); /* Delimitação sutil */
+        overflow: hidden; 
+        background-size: cover; 
+        background-position: center 40%; 
+        margin-bottom: 1rem; 
+        animation: fadeInUpBlur 1s cubic-bezier(0.2, 0.8, 0.2, 1) both;
     }
 
-    /* Fontes e Títulos */
+    /* Fundo Estrelado */
+    .stars-bg {
+        position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+        background-image: radial-gradient(1.5px 1.5px at 20px 30px, #fff, rgba(0,0,0,0)),
+                          radial-gradient(1.5px 1.5px at 130px 80px, #ffffff, rgba(0,0,0,0));
+        background-size: 200px 200px; opacity: 0.45; z-index: 1; pointer-events: none;
+    }
+
+    /* Ajuste de Títulos */
     .main-title {
         font-family: 'Bricolage Grotesque', sans-serif; font-size: 2.8rem; font-weight: 300; letter-spacing: -0.02em;
         background: linear-gradient(180deg, #FFFFFF 0%, #BBBBBB 100%);
         -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin: 0; line-height: 1.1;
     }
-    .sub-title { color: #FFD700; font-weight: 600; font-size: 1.1rem; margin-top: 5px; margin-bottom: 0; }
+    .sub-title { color: #FFD700; font-weight: 600; font-size: 1.1rem; margin-top: 5px; }
     
-    /* Efeito Vidro (Glassmorphism) e Animação de Luz (Sweep) nas Caixas */
     .info-card { 
-        background: rgba(10, 10, 10, 0.6); /* Levemente mais opaco para dar contraste aos raios passando por trás */
-        backdrop-filter: blur(16px) saturate(180%);
-        -webkit-backdrop-filter: blur(16px) saturate(180%);
-        border-top: 1px solid rgba(255, 255, 255, 0.15);
-        border-left: 1px solid rgba(255, 255, 255, 0.08);
-        border-right: 1px solid rgba(255, 255, 255, 0.08);
-        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
-        border-radius: 12px; padding: 15px; margin-top: 15px; margin-bottom: 15px; 
-        position: relative; overflow: hidden;
-        transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-    .info-card::before {
-        content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%;
-        background: linear-gradient(90deg, transparent, rgba(249, 115, 22, 0.15), transparent);
-        transition: 0.5s; pointer-events: none; z-index: 20;
-    }
-    .info-card:hover {
-        background: rgba(249, 115, 22, 0.08);
-        border-color: rgba(249, 115, 22, 0.3);
-        transform: translateY(-5px);
-        box-shadow: 0 15px 40px rgba(249, 115, 22, 0.15);
-    }
-    .info-card:hover::before {
-        left: 100%; transition: 0.7s ease-in-out;
+        background: rgba(10, 10, 10, 0.6); backdrop-filter: blur(16px); border-radius: 12px; 
+        padding: 15px; border: 1px solid rgba(255, 255, 255, 0.1); position: relative;
     }
 
-    /* Efeito Design System nos Botões (Gradiente + Glow) */
+    /* Media Queries - CORREÇÃO MOBILE */
+    @media (max-width: 768px) {
+        .block-container { padding-top: 0.5rem !important; } /* Sobe o conteúdo no celular */
+        .main-title { font-size: 1.8rem !important; text-align: center; }
+        .sub-title { font-size: 0.95rem !important; text-align: center; }
+        
+        /* Brasão Gate: Impede que ele fique gigante e centraliza */
+        [data-testid="stImage"] img {
+            max-width: 120px !important; /* Tamanho controlado no celular */
+            margin: 0 auto;
+            display: block;
+        }
+        
+        /* Banner reduz altura no mobile para não empurrar tudo pra baixo */
+        .banner-header { height: 130px !important; margin-bottom: 0.5rem !important; }
+        
+        /* Tira o vácuo entre colunas no mobile */
+        [data-testid="column"] { margin-bottom: -1rem !important; }
+    }
+
+    @keyframes fadeInUpBlur {
+        0% { opacity: 0; transform: translateY(30px); filter: blur(8px); }
+        100% { opacity: 1; transform: translateY(0); filter: blur(0px); }
+    }
+
     div.stButton > button { 
         background: linear-gradient(to top, #fef08a 0%, #fb923c 50%, #f97316 100%) !important;
-        color: #2c1306 !important; /* Cor escura para leitura perfeita sobre o laranja/amarelo */
-        border: 1px inset rgba(255, 255, 255, 0.4) !important;
-        padding: 0.7rem 2rem; border-radius: 9999px !important; font-weight: 600 !important; 
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important; width: 100%; position: relative;
+        border-radius: 9999px !important; font-weight: 600 !important; width: 100%;
         box-shadow: 0 0 40px -5px rgba(249, 115, 22, 0.6) !important;
-        animation: fadeInUpBlur 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) both;
-    }
-    div.stButton > button:hover { 
-        box-shadow: 0 0 60px -5px rgba(249, 115, 22, 0.8) !important; 
-        transform: scale(1.05) translateY(-2px) !important; 
-    }
-    
-    /* Efeito Ambient Blobs (Degradês Flutuantes no Fundo) */
-    .liquid-blob {
-        position: fixed; border-radius: 60%; filter: blur(80px); opacity: 0.20; z-index: 1;
-        animation: float 10s infinite alternate cubic-bezier(0.4, 0, 0.2, 1); pointer-events: none;
-    }
-    .blob1 { background-color: #FFD700; width: 500px; height: 500px; top: -100px; left: -100px; animation-duration: 15s; }
-    .blob2 { background-color: #fb923c; width: 400px; height: 400px; top: 40%; right: -100px; animation-duration: 20s; animation-delay: -10s; }
-    .blob3 { background-color: #c2410c; width: 600px; height: 600px; bottom: -150px; left: 20%; animation-duration: 25s; animation-delay: -15s; }
-    
-    @keyframes float {
-        0% { transform: translate(0, 0) scale(1); }
-        100% { transform: translate(30px, 50px) scale(1.1); }
     }
 
-    /* Tabelas e Menus Base */
-    [data-testid="stDataFrame"] { background-color: rgba(255, 255, 255, 0.03); border-radius: 8px; }
-    #MainMenu {visibility: hidden;} footer {visibility: hidden;}
-    div[data-testid="stTabs"] button { font-size: 1.2rem; font-weight: bold; transition: color 0.3s;}
-    div[data-testid="stTabs"] button[data-baseweb="tab"]:hover { color: #FFD700; }
-
-    /* Cores para o Efeito de Vidro (Agressividade e Receptividade) */
-    .card-red { border-left: 4px solid #DDD !important; }
-    .card-red:hover { box-shadow: 0 15px 40px rgba(239, 68, 68, 0.25) !important; border-color: rgba(239, 68, 68, 0.6) !important; }
-    .card-red::before { background: linear-gradient(90deg, transparent, rgba(239, 68, 68, 0.15), transparent) !important; }
-
-    .card-green { border-left: 4px solid #22c55e !important; }
-    .card-green:hover { box-shadow: 0 15px 40px rgba(34, 197, 94, 0.25) !important; border-color: rgba(34, 197, 94, 0.6) !important; }
-    .card-green::before { background: linear-gradient(90deg, transparent, rgba(34, 197, 94, 0.15), transparent) !important; }
-
-    /* Media Queries para Mobile Perfeito */
-    @media (max-width: 768px) {
-        .main-title { font-size: 2rem !important; }
-        .sub-title { font-size: 0.95rem !important; }
-        div.stButton > button { padding: 0.6rem 1.2rem !important; font-size: 0.95rem !important; }
-        .block-container { padding-left: 1rem !important; padding-right: 1rem !important; }
-        .info-card { padding: 12px; margin-top: 10px; margin-bottom: 10px; }
-    }
+    .liquid-blob { position: fixed; border-radius: 60%; filter: blur(80px); opacity: 0.20; z-index: 1; pointer-events: none; }
+    .blob1 { background-color: #FFD700; width: 500px; height: 500px; top: -100px; left: -100px; }
+    .blob2 { background-color: #fb923c; width: 400px; height: 400px; top: 40%; right: -100px; }
 </style>
 
+<div class="stars-bg"></div>
 <div class="liquid-blob blob1"></div>
 <div class="liquid-blob blob2"></div>
-<div class="liquid-blob blob3"></div>
 """, unsafe_allow_html=True)
 
 # Cursor Customizado Global via JavaScript
