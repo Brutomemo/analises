@@ -444,7 +444,7 @@ header = """
       <div class="info-card">
           <p style="text-align: center;": 1.1rem; font-weight: 600;">Sistema automatizado de análise qualitativa das Negociações em Incidentes Críticos atendidos pelo Grupo de Ações Táticas Especiais.</p>
           <p style="font-size: 0.9rem; color: #bbb;">
-    Os dados são geridos de forma automatizada em nuvem via <strong>Airtable</strong>, integrando um motor estatístico multifatorial. O sistema realiza análises inferenciais robustas, utilizando <strong>Equações de Estimativas Generalizadas (GEE)</strong> para controle de efeitos agrupados por avaliador e <strong>Correlação de Spearman com Quartis</strong> para métricas não-paramétricas. A arquitetura de inteligência linguística aplica <strong>análise de similitude (Similaridade de Cosseno via TF-IDF)</strong> e <strong>modelagem de N-Gramas</strong> para identificar a convergência tática entre os atores. Testes de associação categórica (<strong>$Qui-quadrado$</strong>) e <strong>análise de frequências</strong> validam a existência de vieses perceptivos. A <strong>Inteligência Artificial</strong> atua como camada interpretativa final, estruturando metadados qualitativos sob a <strong>Perspectiva Tripla</strong> (Negociador, Secundário e Líder).
+    Os dados são geridos de forma automatizada em nuvem via <strong>Airtable</strong>, integrando um motor estatístico multifatorial. O sistema realiza análises inferenciais robustas, utilizando <strong>Equações de Estimativas Generalizadas (GEE)</strong> para controle de efeitos agrupados por avaliador e <strong>Correlação de Spearman com Quartis</strong> para métricas não-paramétricas. A arquitetura de inteligência linguística aplica <strong>análise de similitude (Similaridade de Cosseno via TF-IDF)</strong> e <strong>modelagem de N-Gramas</strong> para identificar a convergência tática entre os atores. Testes de associação categórica (<strong>Qui-quadrado</strong>) e <strong>análise de frequências</strong> validam a existência de vieses perceptivos. A <strong>Inteligência Artificial</strong> atua como camada interpretativa final, estruturando metadados qualitativos sob a <strong>Perspectiva Tripla</strong> (Negociador, Secundário e Líder).
 </p>
   </div>
 
@@ -1123,7 +1123,7 @@ else:
             st.markdown("</div>", unsafe_allow_html=True)
 
         with c_sp2:
-            st.markdown("<div class='info-card'><strong>Teste Qui-Quadrado Dinâmico</strong><br><span style='font-size: 0.85rem; color: #aaa;'>Analisa a dependência entre duas variáveis com o objetivo de identificar padrões de associação entre elas.</span>", unsafe_allow_html=True)
+            st.markdown("<div class='info-card'><strong>Teste Qui-Quadrado Dinâmico</strong><br><span style='font-size: 0.85rem; color: #aaa;'>Analisa a dependência entre duas variáveis com o objetivo de identificar padrões de associação entre elas. Aqui, avaliamos a pontuação definida para a atitude do causador, frente a técnica aplicada vs a variável escolhida para observação.</span>", unsafe_allow_html=True)
             
             opcoes_variaveis = {
                 "Tipologia": "Tip_Limpa",
