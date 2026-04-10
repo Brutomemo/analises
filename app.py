@@ -286,57 +286,112 @@ components.html("""
 if 'stats_calculados' not in st.session_state: st.session_state['stats_calculados'] = None
 if 'dados_n8n' not in st.session_state: st.session_state['dados_n8n'] = None
 
-# =========================================================
-# BACKGROUND DINÂMICO WEBGL (Unicorn Studio)
-# =========================================================
-components.html("""
-<script>
-    const parentDoc = window.parent.document;
-    const parentWin = window.parent;
 
-    // Verifica se o background já existe para não duplicar quando o Streamlit atualizar
-    if (!parentDoc.getElementById('unicorn-bg-container')) {
-        
-        // Cria o container do background que vai ocupar a tela toda
-        const bgContainer = parentDoc.createElement('div');
-        bgContainer.id = 'unicorn-bg-container';
-        bgContainer.style.position = 'fixed';
-        bgContainer.style.top = '0';
-        bgContainer.style.left = '0';
-        bgContainer.style.width = '100vw';
-        bgContainer.style.height = '100vh';
-        bgContainer.style.zIndex = '-10'; // Garante que fique atrás de tudo
-        bgContainer.style.pointerEvents = 'none'; // Impede que o fundo roube os cliques
-        
-        // Cria a div específica exigida pelo Unicorn Studio com o SEU PROJETO
-        const usDiv = parentDoc.createElement('div');
-        usDiv.id = 'hero-bg';
-        usDiv.setAttribute('data-us-project', '0Air3YV0ySfVbTEkT2EW'); // <-- SEU EFEITO AQUI
-        usDiv.style.width = '100%';
-        usDiv.style.height = '100%';
-        
-        // Injeta as divs no corpo (body) do Streamlit
-        bgContainer.appendChild(usDiv);
-        parentDoc.body.appendChild(bgContainer);
+import streamlit as st
+import streamlit.components.v1 as components
 
-        // Carrega o script do Unicorn Studio dinamicamente
-        const script = parentDoc.createElement('script');
-        script.src = 'https://cdn.jsdelivr.net/gh/hiunicornstudio/unicornstudio.js@v1.4.34/dist/unicornStudio.umd.js';
-        
-        script.onload = function() {
-            // Inicializa o WebGL assim que o script terminar de carregar
-            if (!parentWin.UnicornStudio || !parentWin.UnicornStudio.isInitialized) {
-                if(parentWin.UnicornStudio) {
-                    parentWin.UnicornStudio.init();
-                    parentWin.UnicornStudio.isInitialized = true;
-                }
-            }
-        };
-        
-        parentDoc.head.appendChild(script);
+st.set_page_config(layout="wide")
+
+unicorn_header = """
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      background: transparent;
     }
-</script>
-""", height=0, width=0)
+
+    .header-wrap {
+      position: relative;
+      width: 100%;
+      height: 220px;
+      border-radius: 18px;
+      overflow: hidden;
+      background: linear-gradient(135deg, #0b1020, #111827);
+    }
+
+    .unicorn-bg {
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+    }
+
+    .header-content {
+      position: relative;
+      z-index: 2;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      padding: 0 32px;
+      color: white;
+      font-family: Arial, sans-serif;
+    }
+
+    .title {
+      font-size: 34px;
+      font-weight: 700;
+      margin: 0;
+    }
+
+    .subtitle {
+      font-size: 16px;
+      opacity: 0.85;
+      margin-top: 8px;
+    }
+  </style>
+</head>
+<body>
+  <div class="header-wrap">
+    <div
+      class="unicorn-bg"
+      data-us-project="SEU_PROJECT_ID_AQUI"
+      data-us-scale="1"
+      data-us-dpi="1.5"
+      data-us-lazyload="false"
+      data-us-production="true">
+    </div>
+
+    <div class="header-content">
+      <div>
+        <div class="title">Meu Dashboard</div>
+        <div class="subtitle">Análises e indicadores em tempo real</div>
+      </div>
+    </div>
+  </div>
+
+  <script type="text/javascript">
+    !function(){
+      var u = window.UnicornStudio;
+      if(u && u.init){
+        if(document.readyState === "loading"){
+          document.addEventListener("DOMContentLoaded", function(){ u.init(); });
+        } else {
+          u.init();
+        }
+      } else {
+        window.UnicornStudio = { isInitialized: false };
+        var i = document.createElement("script");
+        i.src = "https://cdn.jsdelivr.net/gh/hiunicornstudio/unicornstudio.js@v2.1.6/dist/unicornStudio.umd.js";
+        i.onload = function(){
+          if(document.readyState === "loading"){
+            document.addEventListener("DOMContentLoaded", function(){ UnicornStudio.init(); });
+          } else {
+            UnicornStudio.init();
+          }
+        };
+        (document.head || document.body).appendChild(i);
+      }
+    }();
+  </script>
+</body>
+</html>
+"""
+
+components.html(unicorn_header, height=220)
 
 # =========================================================
 # 2. CABEÇALHO VISUAL E FUNDO DO CABEÇALHO
