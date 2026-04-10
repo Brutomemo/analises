@@ -35,67 +35,101 @@ import analise
 import ia_link        # Cérebro da Aba 1 (Transcrições)
 import ia_estatistica # Cérebro da Aba 2 (Série Histórica)
 
-# LINHA DE DEBUG (Remova após resolver o erro):
-# st.sidebar.write(f"DEBUG: ia_link vindo de: {ia_link.__file__}")
+# =========================================================
+# 2. SISTEMA DE SEGURANÇA (FUNÇÃO)
+# =========================================================
+def check_password():
+    """Retorna True se o usuário inseriu a senha correta."""
+    def password_entered():
+        """Verifica se a senha coincide com o segredo guardado."""
+        if st.session_state["password"] == st.secrets["access_password"]:
+            st.session_state["password_correct"] = True
+            del st.session_state["password"]  
+        else:
+            st.session_state["password_correct"] = False
+
+    if "password_correct" not in st.session_state:
+        st.markdown("## 🔒 Controle de Acesso Tático - GATE")
+        st.text_input("Insira a Senha de Acesso:", type="password", on_change=password_entered, key="password")
+        return False
+    elif not st.session_state["password_correct"]:
+        st.markdown("## 🔒 Controle de Acesso Tático - GATE")
+        st.text_input("Senha incorreta. Tente novamente:", type="password", on_change=password_entered, key="password")
+        st.error("😕 Acesso negado. Credenciais inválidas.")
+        return False
+    else:
+        return True
 
 # =========================================================
-# 2. FUNÇÕES AUXILIARES (TRATAMENTO DE DADOS DO AIRTABLE)
+# 3. CAMADA DE PROTEÇÃO (O "ENVELOPE")
 # =========================================================
-def limpar_valor(val):
-    if isinstance(val, list): return val[0] if len(val) > 0 else "N/D"
-    return str(val) if pd.notna(val) else "N/D"
+if check_password():
+    # --- TUDO A PARTIR DAQUI ESTÁ PROTEGIDO PELA SENHA ---
+    # Observe que todo o código abaixo tem um recuo (4 espaços)
+    
+    st.sidebar.success("Autenticação validada.")
+    st.title("Série Histórica - Negociações GATE")
 
-def limpar_id(v):
-    if isinstance(v, list) and len(v) > 0: v = v[0]
-    v_str = str(v).strip()
-    if v_str.endswith('.0'): v_str = v_str[:-2]
-    return v_str
+    # =========================================================
+    # 4. FUNÇÕES AUXILIARES (TRATAMENTO DE DADOS DO AIRTABLE)
+    # =========================================================
+    def limpar_valor(val):
+        if isinstance(val, list): return val[0] if len(val) > 0 else "N/D"
+        return str(val) if pd.notna(val) else "N/D"
 
-def formatar_tempo_airtable(val):
-    try:
-        if isinstance(val, list): val = val[0]
-        if pd.isna(val) or val == "N/D" or val == "": return "N/D"
-        s = int(float(val))
-        h = s // 3600
-        m = (s % 3600) // 60
-        return f"{h:02d}h {m:02d}m"
-    except:
-        return str(val)
+    def limpar_id(v):
+        if isinstance(v, list) and len(v) > 0: v = v[0]
+        v_str = str(v).strip()
+        if v_str.endswith('.0'): v_str = v_str[:-2]
+        return v_str
 
-def somar_tempos_segundos(serie):
-    total_s = 0
-    for val in serie:
+    def formatar_tempo_airtable(val):
         try:
             if isinstance(val, list): val = val[0]
-            if pd.notna(val) and val != "N/D" and val != "":
-                total_s += int(float(val))
-        except: pass
-    h = total_s // 3600
-    m = (total_s % 3600) // 60
-    return f"{h:02d}h {m:02d}m"
+            if pd.isna(val) or val == "N/D" or val == "": return "N/D"
+            s = int(float(val))
+            h = s // 3600
+            m = (s % 3600) // 60
+            return f"{h:02d}h {m:02d}m"
+        except:
+            return str(val)
 
-# --- MOTOR GRÁFICO (MAPA EMOCIONAL COMPLETO & BLINDADO) ---
-escala_likert = {
-    # 1. Opções de Sistema / Inaudíveis
-    "❓ inaudível / não observado": 0, "inaudível": 0, "não observado": 0, "n/d": 0, "nao observado": 0,
+    def somar_tempos_segundos(serie):
+        total_s = 0
+        for val in serie:
+            try:
+                if isinstance(val, list): val = val[0]
+                if pd.notna(val) and val != "N/D" and val != "":
+                    total_s += int(float(val))
+            except: pass
+        h = total_s // 3600
+        m = (total_s % 3600) // 60
+        return f"{h:02d}h {m:02d}m"
 
-    # 2. Novos Termos da sua Base (Blinda contra erros de digitação)
-    "não agressivo": 1, "nao agressivo": 1, "não agresssivo": 1, "nao agresssivo": 1, "muito baixa": 1, "muito baixo": 1,
-    "baixo": 2, "baixa": 2, "pouco receptivo": 2,
-    "neutro": 3, "moderada": 3, "moderado": 3,
-    "receptivo": 4, "alta": 4, "alto": 4,
-    "muito receptivo": 5, "muito alta": 5, "muito alto": 5,
+    # --- MOTOR GRÁFICO (MAPA EMOCIONAL COMPLETO & BLINDADO) ---
+    escala_likert = {
+        # 1. Opções de Sistema / Inaudíveis
+        "❓ inaudível / não observado": 0, "inaudível": 0, "não observado": 0, "n/d": 0, "nao observado": 0,
 
-    # 3. Mapeamento das Fórmulas com Emojis 
-    "🔴 reação negativa": 1, "⚪ reação neutra": 3, "🟢 reação positiva": 5
-}
+        # 2. Novos Termos da sua Base (Blinda contra erros de digitação)
+        "não agressivo": 1, "nao agressivo": 1, "não agresssivo": 1, "nao agresssivo": 1, "muito baixa": 1, "muito baixo": 1,
+        "baixo": 2, "baixa": 2, "pouco receptivo": 2,
+        "neutro": 3, "moderada": 3, "moderado": 3,
+        "receptivo": 4, "alta": 4, "alto": 4,
+        "muito receptivo": 5, "muito alta": 5, "muito alto": 5,
 
-def converter_escala(val):
-    if not val: return 0
-    # Limpa emojis e espaços para garantir o "match"
-    v = str(val).lower().strip()
-    return escala_likert.get(v, 0)
+        # 3. Mapeamento das Fórmulas com Emojis 
+        "🔴 reação negativa": 1, "⚪ reação neutra": 3, "🟢 reação positiva": 5
+    }
 
+    def converter_escala(val):
+        if not val: return 0
+        # Limpa emojis e espaços para garantir o "match"
+        v = str(val).lower().strip()
+        return escala_likert.get(v, 0)
+        
+    
+    
 # =========================================================
 # 1. CONFIGURAÇÃO DA PÁGINA E CSS (UX e Design System)
 # =========================================================
