@@ -106,7 +106,7 @@ st.markdown("""
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Bricolage+Grotesque:opsz,wght@12..96,300;12..96,400;12..96,600&display=swap');
 
     /* Configurações Globais */
-    .block-container { padding-top: 0rem !important; padding-bottom: 1rem !important; z-index: 10; position: relative;}
+    .block-container { padding-top: 0rem !important; padding-bottom: 1rem !important; z-index: 8; position: relative;}
     header {visibility: hidden;}
     /* Fundo Transparente para revelar o WebGL */
     body { background-color: #050505 !important; }
@@ -147,7 +147,7 @@ st.markdown("""
 
     /* Fontes e Títulos */
     .main-title {
-        font-family: 'Bricolage Grotesque', sans-serif; font-size: 2.8rem; font-weight: 300; letter-spacing: -0.02em;
+        font-family: 'Bricolage Grotesque', sans-serif; font-size: 2.2rem; font-weight: 300; letter-spacing: -0.02em;
         background: linear-gradient(180deg, #FFFFFF 0%, #BBBBBB 100%);
         -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin: 0; line-height: 1.1;
     }
