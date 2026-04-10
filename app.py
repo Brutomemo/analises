@@ -363,7 +363,7 @@ body {
 
   <div class="content">
     <div>
-      <div class="title">Delta Negociação</div>
+      <div class="title"></div>
       <div class="subtitle"></div>
     </div>
   </div>
