@@ -284,9 +284,106 @@ components.html("""
 """, height=0, width=0)
 
 if 'stats_calculados' not in st.session_state: st.session_state['stats_calculados'] = None
-if 'dados_n8n' not in st.session_state: st.session_state['dados_n8n'] = None
+#if 'dados_n8n' not in st.session_state: st.session_state['dados_n8n'] = None
 
+import streamlit as st
+import streamlit.components.v1 as components
 
+st.set_page_config(layout="wide")
+
+header = """
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+body {
+    margin: 0;
+    overflow: hidden;
+}
+
+.header {
+    position: relative;
+    width: 100%;
+    height: 220px;
+    border-radius: 20px;
+    overflow: hidden;
+    background: #0f172a;
+}
+
+/* UNICORN FUNDO */
+.unicorn {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+}
+
+/* OVERLAY ESCURO */
+.overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.35);
+    z-index: 2;
+}
+
+/* TEXTO */
+.content {
+    position: relative;
+    z-index: 3;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    padding: 30px;
+    color: #f5f0d0;
+    font-family: Arial;
+}
+
+.title {
+    font-size: 32px;
+    font-weight: bold;
+}
+
+.subtitle {
+    font-size: 14px;
+    margin-top: 5px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="header">
+
+  <div class="unicorn"
+       data-us-project="4pNJhpeCPKHrhxFrUrL9"
+       data-us-scale="1"
+       data-us-dpi="1.5">
+  </div>
+
+  <div class="overlay"></div>
+
+  <div class="content">
+    <div>
+      <div class="title">Delta Negociação</div>
+      <div class="subtitle"></div>
+    </div>
+  </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/gh/hiunicornstudio/unicornstudio.js@v2.1.6/dist/unicornStudio.umd.js"></script>
+<script>
+window.addEventListener("load", () => {
+    if (window.UnicornStudio) {
+        UnicornStudio.init();
+    }
+});
+</script>
+
+</body>
+</html>
+"""
+
+components.html(header, height=220)
 
 
 # =========================================================
@@ -771,7 +868,7 @@ else:
             
             st.markdown("### 📄 Etapa 3: Inteligência de Apoio à Decisão e Exportação")
             
-            url_n8n = "http://host.docker.internal:5680/webhook/analise-doc"
+            #url_n8n = "http://host.docker.internal:5680/webhook/analise-doc"
             
             if st.button("📡 3. GERAR ANALYTICS E EXPORTAR ANÁLISE (PDF)"):
                 with st.spinner("Compilando dados técnicos, consultando IA e desenhando PDF..."):
