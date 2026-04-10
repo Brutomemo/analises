@@ -286,6 +286,68 @@ components.html("""
 if 'stats_calculados' not in st.session_state: st.session_state['stats_calculados'] = None
 #if 'dados_n8n' not in st.session_state: st.session_state['dados_n8n'] = None
 
+# =========================================================
+# 2. CABEÇALHO VISUAL E FUNDO DO CABEÇALHO
+# =========================================================
+import os
+import base64
+from PIL import Image
+
+script_dir = os.path.dirname(os.path.abspath(__file__))
+path_assets = os.path.join(script_dir, "Assets") 
+
+# Padronizando os caminhos limpos (Apenas banner e logo em webp)
+#path_teste_gate = os.path.join(path_assets, "teste_gate.webp")
+path_brasao_gate = os.path.join(path_assets, "brasao_gate.webp")
+
+# --- 1. PREPARAR IMAGENS (Codificar para Base64) ---
+img_topo_b64 = ""
+
+# Topo (Banner principal)
+try:
+    with open(path_teste_gate, "rb") as img_file: 
+        img_topo_b64 = base64.b64encode(img_file.read()).decode()
+except: pass 
+
+# --- 2. RENDERIZAR BANNER TOPO (Com animação e degradê) ---
+if img_topo_b64:
+    st.markdown(f"""
+        <div style="position: relative; width: 100%; height: 200px; border-radius: 0px !important; border: none !important; margin: 0px !important; overflow: hidden; background-image: url('data:image/webp;base64,{img_topo_b64}'); background-size: cover; background-position: center 40%; animation: fadeInUpBlur 1s cubic-bezier(0.2, 0.8, 0.2, 1) both;">
+            <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(180deg, rgba(5,5,5,0.1) 0%, rgba(249, 115, 22, 0.6) 100%);"></div>
+        </div>
+    """, unsafe_allow_html=True)
+# --- 3. CONTEÚDO DO CABEÇALHO (Logo e Textos) ---
+col_logo, col_titulo, col_espaco = st.columns([1, 6, 1])
+
+with col_logo:
+    try: 
+        # Carrega o brasão em base64 em vez de usar st.image
+        with open(path_brasao_gate, "rb") as f:
+            brasao_b64 = base64.b64encode(f.read()).decode()
+        
+        # HTML puro: trava o tamanho em 90px (ajuste esse número se quiser maior/menor)
+        st.markdown(f"""
+            <div style="display: flex; justify-content: center; width: 100%;">
+                <img src="data:image/webp;base64,{brasao_b64}" style="max-width: 90px; height: auto; border: none;">
+            </div>
+        """, unsafe_allow_html=True)
+    except Exception as e: 
+        pass
+
+with col_titulo:
+    st.markdown('<h1 class="main-title">Sistema de Análise Qualitativa das Negociações - Estudo das Técnicas aplicadas</h1>', unsafe_allow_html=True)
+    st.markdown('<p class="sub-title">Delta Negociação - GATE / PMESP</p>', unsafe_allow_html=True)
+    st.markdown('<p style="color: #999; margin-top: 5px;">Desenvolvido por Cb PM Marcos - Supervisão: Cap PM Pavão</p>', unsafe_allow_html=True)
+    
+    st.markdown(f"""
+<div class="info-card">
+    <p><strong>Sistema automatizado de análise qualitativa das Negociações em Incidentes Críticos atendidos pelo Grupo de Ações Táticas Especiais.</strong></p>
+    <p style="font-size: 0.9rem; color: #999;">Os dados são geridos de forma automatizada em nuvem via <strong>Airtable</strong>. Cálculos matemáticos realizados localmente utilizando  
+    <strong>SciPy</strong> (Correlação de Spearman com Quartis) e <strong>Scikit-Learn</strong> (Modelagem N-Gramas). Modelo integra Inteligência Artificial atuando exclusivamente como estruturadora de metadados qualitativos da perspectiva tripla.</p>
+</div>
+""", unsafe_allow_html=True)    
+
+#EFEITO UNICORN
 import streamlit as st
 import streamlit.components.v1 as components
 
@@ -384,69 +446,6 @@ window.addEventListener("load", () => {
 """
 
 components.html(header, height=220)
-
-
-# =========================================================
-# 2. CABEÇALHO VISUAL E FUNDO DO CABEÇALHO
-# =========================================================
-import os
-import base64
-from PIL import Image
-
-script_dir = os.path.dirname(os.path.abspath(__file__))
-path_assets = os.path.join(script_dir, "Assets") 
-
-# Padronizando os caminhos limpos (Apenas banner e logo em webp)
-#path_teste_gate = os.path.join(path_assets, "teste_gate.webp")
-path_brasao_gate = os.path.join(path_assets, "brasao_gate.webp")
-
-# --- 1. PREPARAR IMAGENS (Codificar para Base64) ---
-img_topo_b64 = ""
-
-# Topo (Banner principal)
-try:
-    with open(path_teste_gate, "rb") as img_file: 
-        img_topo_b64 = base64.b64encode(img_file.read()).decode()
-except: pass 
-
-# --- 2. RENDERIZAR BANNER TOPO (Com animação e degradê) ---
-if img_topo_b64:
-    st.markdown(f"""
-        <div style="position: relative; width: 100%; height: 200px; border-radius: 0px !important; border: none !important; margin: 0px !important; overflow: hidden; background-image: url('data:image/webp;base64,{img_topo_b64}'); background-size: cover; background-position: center 40%; animation: fadeInUpBlur 1s cubic-bezier(0.2, 0.8, 0.2, 1) both;">
-            <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(180deg, rgba(5,5,5,0.1) 0%, rgba(249, 115, 22, 0.6) 100%);"></div>
-        </div>
-    """, unsafe_allow_html=True)
-# --- 3. CONTEÚDO DO CABEÇALHO (Logo e Textos) ---
-col_logo, col_titulo, col_espaco = st.columns([1, 6, 1])
-
-with col_logo:
-    try: 
-        # Carrega o brasão em base64 em vez de usar st.image
-        with open(path_brasao_gate, "rb") as f:
-            brasao_b64 = base64.b64encode(f.read()).decode()
-        
-        # HTML puro: trava o tamanho em 90px (ajuste esse número se quiser maior/menor)
-        st.markdown(f"""
-            <div style="display: flex; justify-content: center; width: 100%;">
-                <img src="data:image/webp;base64,{brasao_b64}" style="max-width: 90px; height: auto; border: none;">
-            </div>
-        """, unsafe_allow_html=True)
-    except Exception as e: 
-        pass
-
-with col_titulo:
-    st.markdown('<h1 class="main-title">Sistema de Análise Qualitativa das Negociações - Estudo das Técnicas aplicadas</h1>', unsafe_allow_html=True)
-    st.markdown('<p class="sub-title">Delta Negociação - GATE / PMESP</p>', unsafe_allow_html=True)
-    st.markdown('<p style="color: #999; margin-top: 5px;">Desenvolvido por Cb PM Marcos - Supervisão: Cap PM Pavão</p>', unsafe_allow_html=True)
-    
-    st.markdown(f"""
-<div class="info-card">
-    <p><strong>Sistema automatizado de análise qualitativa das Negociações em Incidentes Críticos atendidos pelo Grupo de Ações Táticas Especiais.</strong></p>
-    <p style="font-size: 0.9rem; color: #999;">Os dados são geridos de forma automatizada em nuvem via <strong>Airtable</strong>. Cálculos matemáticos realizados localmente utilizando  
-    <strong>SciPy</strong> (Correlação de Spearman com Quartis) e <strong>Scikit-Learn</strong> (Modelagem N-Gramas). Modelo integra Inteligência Artificial atuando exclusivamente como estruturadora de metadados qualitativos da perspectiva tripla.</p>
-</div>
-""", unsafe_allow_html=True)    
-
     
 # =========================================================
 # 3. CONEXÃO E NAVEGAÇÃO PRINCIPAL (ABAS)
