@@ -369,73 +369,78 @@ with col_titulo:
 """, unsafe_allow_html=True)    
 
 #EFEITO UNICORN
+# EFEITO UNICORN COM O CARD EMBUTIDO (Solução Definitiva)
 import streamlit as st
 import streamlit.components.v1 as components
-
-st.set_page_config(layout="wide")
 
 header = """
 <!DOCTYPE html>
 <html>
 <head>
 <style>
-body {
-    margin: 0;
-    overflow: hidden;
-}
+    body {
+        margin: 0;
+        overflow: hidden;
+        font-family: 'Inter', sans-serif;
+    }
 
-.header {
-    position: relative;
-    width: 100%;
-    height: 320px;
-    border-radius: 20px;
-    overflow: hidden;
-    background: #0f172a;
-}
+    .header {
+        position: relative;
+        width: 100%;
+        height: 380px; /* Aumentei um pouco para caber o card e o efeito confortavelmente */
+        border-radius: 20px;
+        overflow: hidden;
+        background: #0f172a;
+    }
 
-/* UNICORN FUNDO */
-.unicorn {
-    position: absolute;
-    inset: 0;
-    z-index: 1;
-}
+    /* UNICORN FUNDO */
+    .unicorn {
+        position: absolute;
+        inset: 0;
+        z-index: 1;
+    }
 
-/* OVERLAY ESCURO */
-.overlay {
-    position: absolute;
-    inset: 0;
-    background: rgba(0,0,0,0.35);
-    z-index: 2;
-}
+    /* OVERLAY ESCURO */
+    .overlay {
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(180deg, rgba(5,5,5,0.1) 0%, rgba(249, 115, 22, 0.4) 100%); /* Mantive o seu gradiente original */
+        z-index: 2;
+    }
 
-/* TEXTO */
-.content {
-    position: relative;
-    z-index: 3;
-    height: 100%;
-    display: flex;
-    align-items: center;
-    padding: 30px;
-    color: #f5f0d0;
-    font-family: Arial;
-}
+    /* CONTAINER DO SEU CARD DE VIDRO */
+    .card-container {
+        position: absolute;
+        bottom: 20px; /* Isso empurra o card para baixo, cobrindo a marca d'água */
+        left: 20px;
+        right: 20px;
+        z-index: 100; /* Garante que fica muito acima do unicórnio */
+    }
 
-.title {
-    font-size: 32px;
-    font-weight: bold;
-}
-
-.subtitle {
-    font-size: 14px;
-    margin-top: 5px;
-}
+    /* ESTILO EXATO DO SEU INFO-CARD */
+    .info-card { 
+        background: rgba(10, 10, 10, 0.72);
+        backdrop-filter: blur(16px) saturate(180%);
+        -webkit-backdrop-filter: blur(16px) saturate(180%);
+        border-top: 1px solid rgba(255, 255, 255, 0.15);
+        border-left: 1px solid rgba(255, 255, 255, 0.08);
+        border-right: 1px solid rgba(255, 255, 255, 0.08);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+        border-radius: 12px;
+        padding: 15px 20px;
+        color: white;
+    }
+    
+    .info-card p {
+        margin: 5px 0;
+    }
 </style>
 </head>
 
 <body>
 
 <div class="header">
-
   <div class="unicorn"
        data-us-project="VI7kHmUyXr4GuFA6OWE8"
        data-us-scale="1"
@@ -443,6 +448,13 @@ body {
   </div>
 
   <div class="overlay"></div>
+
+  <div class="card-container">
+      <div class="info-card">
+          <p style="font-size: 1.1rem; font-weight: 600;">Sistema automatizado de análise qualitativa das Negociações em Incidentes Críticos atendidos pelo Grupo de Ações Táticas Especiais.</p>
+          <p style="font-size: 0.9rem; color: #bbb;">Os dados são geridos de forma automatizada em nuvem via <strong>Airtable</strong>. Cálculos matemáticos realizados localmente utilizando <strong>SciPy</strong> (Correlação de Spearman com Quartis) e <strong>Scikit-Learn</strong> (Modelagem N-Gramas). Modelo integra Inteligência Artificial atuando exclusivamente como estruturadora de metadados qualitativos da perspectiva tripla.</p>
+      </div>
+  </div>
 
 </div>
 
@@ -459,7 +471,7 @@ window.addEventListener("load", () => {
 </html>
 """
 
-components.html(header, height=340) 
+components.html(header, height=400) 
     
 # =========================================================
 # 3. CONEXÃO E NAVEGAÇÃO PRINCIPAL (ABAS)
