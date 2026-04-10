@@ -423,8 +423,6 @@ body {
 
   <div class="overlay"></div>
 
-  <div class="cover-bottom"></div>
-
   <div class="content">
     <div>
       <div class="title"></div>
