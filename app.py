@@ -166,7 +166,7 @@ st.markdown("""
     border-radius: 12px;
     padding: 10px;
 
-    margin-top: -90px;
+    margin-top: 60px;
     margin-bottom: 10px;
 
     position: relative;
