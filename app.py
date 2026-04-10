@@ -133,7 +133,7 @@ if not check_password():
 # --- TUDO A PARTIR DAQUI ESTÁ PROTEGIDO PELA SENHA ---
 
 st.sidebar.success("Autenticação validada.")
-st.title("Série Histórica - Negociações GATE")
+#st.title("Série Histórica - Negociações GATE")
 
 # =========================================================
 # 4. FUNÇÕES AUXILIARES (TRATAMENTO DE DADOS DO AIRTABLE)
