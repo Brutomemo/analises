@@ -363,8 +363,11 @@ except: pass
 
 # --- 2. RENDERIZAR BANNER TOPO (Com animação e degradê) ---
 if img_topo_b64:
-    st.markdown(f"""<div style="position: relative; width: 100%; height: 200px; border-radius: 0px; overflow: hidden; background-image: url('data:image/webp;base64,{img_topo_b64}'); background-size: cover; background-position: center 40%; margin-bottom: 0rem; animation: fadeInUpBlur 1s cubic-bezier(0.2, 0.8, 0.2, 1) both;"><div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(180deg, rgba(5,5,5,0.1) 0%, rgba(249, 115, 22, 0.6) 100%);"></div></div>""", unsafe_allow_html=True)
-
+    st.markdown(f"""
+        <div style="position: relative; width: 100%; height: 200px; border-radius: 0px !important; border: none !important; margin: 0px !important; overflow: hidden; background-image: url('data:image/webp;base64,{img_topo_b64}'); background-size: cover; background-position: center 40%; animation: fadeInUpBlur 1s cubic-bezier(0.2, 0.8, 0.2, 1) both;">
+            <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(180deg, rgba(5,5,5,0.1) 0%, rgba(249, 115, 22, 0.6) 100%);"></div>
+        </div>
+    """, unsafe_allow_html=True)
 # --- 3. CONTEÚDO DO CABEÇALHO (Logo e Textos) ---
 col_logo, col_titulo, col_espaco = st.columns([1, 6, 1])
 
