@@ -443,8 +443,9 @@ header = """
   <div class="card-container">
       <div class="info-card">
           <p style="text-align: center;": 1.1rem; font-weight: 600;">Sistema automatizado de análise qualitativa das Negociações em Incidentes Críticos atendidos pelo Grupo de Ações Táticas Especiais.</p>
-          <p style="font-size: 0.9rem; color: #bbb;">Os dados são geridos de forma automatizada em nuvem via <strong>Airtable</strong>. Cálculos matemáticos realizados localmente utilizando <strong>SciPy</strong> (Correlação de Spearman com Quartis) e <strong>Scikit-Learn</strong> (Modelagem N-Gramas). Modelo integra Inteligência Artificial atuando exclusivamente como estruturadora de metadados qualitativos da perspectiva tripla.</p>
-      </div>
+          <p style="font-size: 0.9rem; color: #bbb;">
+    Os dados são geridos em nuvem via <strong>Airtable</strong>. O sistema executa análises inferenciais via <strong>GEE</strong> (Equações de Estimativas Generalizadas) e <strong>$\chi^2$</strong> (Qui-Quadrado), com correlação de <strong>Spearman</strong> e análise de frequências. A inteligência linguística utiliza <strong>Similitude de Cosseno (TF-IDF)</strong> e <strong>N-Gramas</strong> via <strong>Scikit-Learn</strong>. A IA atua na estruturação de metadados qualitativos da <strong>perspectiva tripla</strong>.
+    </p>
   </div>
 
 </div>
