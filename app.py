@@ -247,6 +247,14 @@ st.markdown("""
         .block-container { padding-left: 1rem !important; padding-right: 1rem !important; }
         .info-card { padding: 12px; margin-top: 10px; margin-bottom: 10px; }
     }
+    /* Puxa o container do efeito Unicorn para cima, para trás do info-card */
+    div[data-testid="stHtml"] {
+        position: relative;
+        /* MUDANÇA 3: Puxa o iframe inteiro para cima. 
+           Ajuste esse valor (-150px, -200px, etc) até a marca d'água ficar exatamente debaixo do card */
+        margin-top: -150px !important; 
+        z-index: 1 !important;
+    }
 </style>
 
 <div class="liquid-blob blob1"></div>
