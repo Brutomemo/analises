@@ -366,7 +366,7 @@ body {
 .header {
     position: relative;
     width: 100%;
-    height: 230px;
+    height: 220px;
     border-radius: 20px;
     overflow: hidden;
     background: #0f172a;
@@ -376,7 +376,7 @@ body {
 .unicorn {
     position: absolute;
     inset: 0;
-    transform: translateY(-30px); /* sobe o efeito */
+    z-index: 1;
 }
 
 /* OVERLAY ESCURO */
@@ -423,13 +423,6 @@ body {
 
   <div class="overlay"></div>
 
-  <div class="content">
-    <div>
-      <div class="title"></div>
-      <div class="subtitle"></div>
-    </div>
-  </div>
-
 </div>
 
 <script src="https://cdn.jsdelivr.net/gh/hiunicornstudio/unicornstudio.js@v2.1.6/dist/unicornStudio.umd.js"></script>
@@ -445,7 +438,7 @@ window.addEventListener("load", () => {
 </html>
 """
 
-components.html(header, height=240)  
+components.html(header, height=220)
     
 # =========================================================
 # 3. CONEXÃO E NAVEGAÇÃO PRINCIPAL (ABAS)
