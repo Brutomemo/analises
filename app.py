@@ -366,7 +366,7 @@ body {
 .header {
     position: relative;
     width: 100%;
-    height: 260px;
+    height: 230px;
     border-radius: 20px;
     overflow: hidden;
     background: #0f172a;
