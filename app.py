@@ -106,7 +106,7 @@ st.markdown("""
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Bricolage+Grotesque:opsz,wght@12..96,300;12..96,400;12..96,600&display=swap');
 
     /* Configurações Globais */
-    .block-container { padding-top: 1.5rem !important; padding-bottom: 2rem !important; z-index: 10; position: relative;}
+    .block-container { padding-top: 0rem !important; padding-bottom: 1rem !important; z-index: 10; position: relative;}
     header {visibility: hidden;}
     /* Fundo Transparente para revelar o WebGL */
     body { background-color: #050505 !important; }
