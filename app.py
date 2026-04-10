@@ -562,7 +562,11 @@ header = """
 
 <script src="https://cdn.jsdelivr.net/gh/hiunicornstudio/unicornstudio.js@v2.1.6/dist/unicornStudio.umd.js"></script>
 <script>
-window.addEventListener("load", () => {
+setTimeout(() => {
+    if (window.UnicornStudio) {
+        UnicornStudio.init();
+    }
+}, 500);
     if (window.UnicornStudio) {
         UnicornStudio.init();
     }
