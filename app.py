@@ -445,7 +445,7 @@ window.addEventListener("load", () => {
 </html>
 """
 
-components.html(header, height=260)  
+components.html(header, height=240)  
     
 # =========================================================
 # 3. CONEXÃO E NAVEGAÇÃO PRINCIPAL (ABAS)
