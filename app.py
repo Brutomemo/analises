@@ -339,7 +339,7 @@ components.html("""
 """, height=0, width=0)
 
 # =========================================================
-# 2. CABEÇALHO VISUAL E FUNDO DO CABEÇALHO (VIA INJEÇÃO HTML/JS)
+# 2. CABEÇALHO VISUAL E FUNDO DO CABEÇALHO
 # =========================================================
 import os
 import base64
@@ -348,141 +348,56 @@ from PIL import Image
 script_dir = os.path.dirname(os.path.abspath(__file__))
 path_assets = os.path.join(script_dir, "Assets") 
 
+# Padronizando os caminhos limpos (Apenas banner e logo em webp)
 path_teste_gate = os.path.join(path_assets, "teste_gate.webp")
 path_brasao_gate = os.path.join(path_assets, "brasao_gate.webp")
 
+# --- 1. PREPARAR IMAGENS (Codificar para Base64) ---
 img_topo_b64 = ""
-brasao_b64 = ""
 
+# Topo (Banner principal)
 try:
     with open(path_teste_gate, "rb") as img_file: 
         img_topo_b64 = base64.b64encode(img_file.read()).decode()
-    with open(path_brasao_gate, "rb") as img_file:
-        brasao_b64 = base64.b64encode(img_file.read()).decode()
-except: 
-    pass 
+except: pass 
 
-# INJEÇÃO DIRETA: Ignora o Streamlit e desenha o cabeçalho no topo da tela
-components.html(f"""
-<script>
-    const parentDoc = window.parent.document;
+# --- 2. RENDERIZAR BANNER TOPO (Com animação e degradê) ---
+if img_topo_b64:
+    st.markdown(f"""
+        <div style="position: relative; width: 100%; height: 200px; border-radius: 0px !important; border: none !important; margin: 0px !important; overflow: hidden; background-image: url('data:image/webp;base64,{img_topo_b64}'); background-size: cover; background-position: center 40%; animation: fadeInUpBlur 1s cubic-bezier(0.2, 0.8, 0.2, 1) both;">
+            <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(180deg, rgba(5,5,5,0.1) 0%, rgba(249, 115, 22, 0.6) 100%);"></div>
+        </div>
+    """, unsafe_allow_html=True)
+# --- 3. CONTEÚDO DO CABEÇALHO (Logo e Textos) ---
+col_logo, col_titulo, col_espaco = st.columns([1, 6, 1])
+
+with col_logo:
+    try: 
+        # Carrega o brasão em base64 em vez de usar st.image
+        with open(path_brasao_gate, "rb") as f:
+            brasao_b64 = base64.b64encode(f.read()).decode()
+        
+        # HTML puro: trava o tamanho em 90px (ajuste esse número se quiser maior/menor)
+        st.markdown(f"""
+            <div style="display: flex; justify-content: center; width: 100%;">
+                <img src="data:image/webp;base64,{brasao_b64}" style="max-width: 90px; height: auto; border: none;">
+            </div>
+        """, unsafe_allow_html=True)
+    except Exception as e: 
+        pass
+
+with col_titulo:
+    st.markdown('<h1 class="main-title">Sistema de Análise Qualitativa das Negociações - Estudo das Técnicas aplicadas</h1>', unsafe_allow_html=True)
+    st.markdown('<p class="sub-title">Delta Negociação - GATE / PMESP</p>', unsafe_allow_html=True)
+    st.markdown('<p style="color: #999; margin-top: 5px;">Desenvolvido por Cb PM Marcos - Supervisão: Cap PM Pavão</p>', unsafe_allow_html=True)
     
-    // Verifica se já criamos o cabeçalho para não duplicar
-    if (!parentDoc.getElementById('gate-custom-header')) {{
-        const headerContainer = parentDoc.createElement('div');
-        headerContainer.id = 'gate-custom-header';
-        
-        // Estilo principal: FORÇA margens zeradas, bordas zeradas e raio zerado
-        headerContainer.style.cssText = `
-            width: 100%;
-            display: flex;
-            flex-direction: column;
-            margin-bottom: 20px;
-        `;
-
-        // 1. O BANNER (Imagem de Topo) - Blindado contra bordas
-        const bannerHtml = `
-            <div style="
-                position: relative; 
-                width: 100%; 
-                height: 200px; 
-                border-radius: 0 !important; 
-                border: none !important; 
-                margin: 0 !important; 
-                padding: 0 !important;
-                background-image: url('data:image/webp;base64,{img_topo_b64}'); 
-                background-size: cover; 
-                background-position: center 40%;
-            ">
-                <div style="
-                    position: absolute; top: 0; left: 0; right: 0; bottom: 0; 
-                    background: linear-gradient(180deg, rgba(5,5,5,0.1) 0%, rgba(249, 115, 22, 0.6) 100%);
-                "></div>
-            </div>
-        `;
-
-        // 2. A FAIXA DE TÍTULO E BRASÃO
-        // O CSS aqui dentro (media queries) é injetado direto no cabeçalho
-        const titleHtml = `
-            <style>
-                #gate-title-bar {{
-                    display: flex;
-                    align-items: center;
-                    padding: 10px 20px;
-                    gap: 20px;
-                }}
-                #gate-logo-img {{
-                    width: 120px;
-                    height: auto;
-                    border: none;
-                    border-radius: 0;
-                }}
-                .gate-text-container h1 {{
-                    font-family: 'Bricolage Grotesque', sans-serif;
-                    font-size: 2.8rem;
-                    font-weight: 300;
-                    margin: 0;
-                    background: linear-gradient(180deg, #FFFFFF 0%, #BBBBBB 100%);
-                    -webkit-background-clip: text;
-                    -webkit-text-fill-color: transparent;
-                    line-height: 1.1;
-                }}
-                .gate-text-container h2 {{
-                    color: #FFD700;
-                    font-size: 1.1rem;
-                    margin: 5px 0 0 0;
-                    font-family: 'Inter', sans-serif;
-                }}
-                .gate-text-container p {{
-                    color: #999;
-                    font-size: 0.85rem;
-                    margin: 5px 0 0 0;
-                    font-family: 'Inter', sans-serif;
-                }}
-                
-                /* RESPONSIVO MOBILE */
-                @media (max-width: 768px) {{
-                    #gate-title-bar {{
-                        flex-direction: column;
-                        text-align: center;
-                        gap: 10px;
-                    }}
-                    #gate-logo-img {{
-                        width: 80px; /* BRASÃO PEQUENO NO MOBILE */
-                    }}
-                    .gate-text-container h1 {{ font-size: 1.8rem; }}
-                }}
-            </style>
-            
-            <div id="gate-title-bar">
-                <img id="gate-logo-img" src="data:image/webp;base64,{brasao_b64}" alt="Brasão GATE">
-                <div class="gate-text-container">
-                    <h1>Sistema de Análise Qualitativa das Negociações - Estudo das Técnicas aplicadas</h1>
-                    <h2>Delta Negociação - GATE / PMESP</h2>
-                    <p>Desenvolvido por Cb PM Marcos - Supervisão: Cap PM Pavão</p>
-                </div>
-            </div>
-        `;
-
-        headerContainer.innerHTML = bannerHtml + titleHtml;
-        
-        // Injeta o cabeçalho EXATAMENTE ANTES do primeiro elemento do Streamlit
-        const stApp = parentDoc.querySelector('[data-testid="stAppViewContainer"] > .main > div > div');
-        if (stApp) {{
-            stApp.insertBefore(headerContainer, stApp.firstChild);
-        }}
-    }}
-</script>
-""", height=0)
-
-# O CARD DE INFORMAÇÃO PODE CONTINUAR NO STREAMLIT NORMALMENTE
-st.markdown(f"""
+    st.markdown(f"""
 <div class="info-card">
     <p><strong>Sistema automatizado de análise qualitativa das Negociações em Incidentes Críticos atendidos pelo Grupo de Ações Táticas Especiais.</strong></p>
     <p style="font-size: 0.9rem; color: #999;">Os dados são geridos de forma automatizada em nuvem via <strong>Airtable</strong>. Cálculos matemáticos realizados localmente utilizando  
     <strong>SciPy</strong> (Correlação de Spearman com Quartis) e <strong>Scikit-Learn</strong> (Modelagem N-Gramas). Modelo integra Inteligência Artificial atuando exclusivamente como estruturadora de metadados qualitativos da perspectiva tripla.</p>
 </div>
-""", unsafe_allow_html=True)
+""", unsafe_allow_html=True)    
 
     
 # =========================================================
