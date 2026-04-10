@@ -158,21 +158,14 @@ st.markdown("""
     background: rgba(10, 10, 10, 0.72);
     backdrop-filter: blur(16px) saturate(180%);
     -webkit-backdrop-filter: blur(16px) saturate(180%);
-    border-top: 1px solid rgba(255, 255, 255, 0.15);
-    border-left: 1px solid rgba(255, 255, 255, 0.08);
-    border-right: 1px solid rgba(255, 255, 255, 0.08);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
     border-radius: 12px;
     padding: 10px;
 
-    margin-top: 60px;
-    margin-bottom: 10px;
-
+    /* 🔥 ISSO AQUI É O SEGREDO */
     position: relative;
-    z-index: 30;
-    overflow: hidden;
-    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    transform: translateY(-80px);
+
+    z-index: 50;
     }
     .info-card::before {
         content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%;
