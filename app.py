@@ -135,22 +135,46 @@ st.markdown("""
     }
     
     /* Animação de Entrada Cinematográfica (Opacidade + Blur) */
-    @keyframes fadeInUpBlur {
-        0% { opacity: 0; transform: translateY(30px); filter: blur(8px); }
-        100% { opacity: 1; transform: translateY(0); filter: blur(0px); }
-    }
-    .info-card, .stMarkdown, div[data-testid="stMetric"], .stDataFrame, .stPlotlyChart {
-        animation: fadeInUpBlur 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) both;
-        position: relative; 
-        z-index: 10; /* Garante que o conteúdo fique acima dos raios */
-    }
+@keyframes fadeInUpBlur {
+    0% { opacity: 0; transform: translateY(30px); filter: blur(8px); }
+    100% { opacity: 1; transform: translateY(0); filter: blur(0px); }
+}
 
-    /* Fontes e Títulos */
-    .main-title {
-        font-family: 'Bricolage Grotesque', sans-serif; font-size: 2.2rem; font-weight: 300; letter-spacing: -0.02em;
-        background: linear-gradient(180deg, #FFFFFF 0%, #BBBBBB 100%);
-        -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin: 0; line-height: 1.1;
-    }
+.info-card, .stMarkdown, div[data-testid="stMetric"], .stDataFrame, .stPlotlyChart {
+    animation: fadeInUpBlur 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+    position: relative;
+    z-index: 10;
+}
+
+/* 🔥 PUXA A ÁREA DO TÍTULO/CARD PARA CIMA */
+section.main > div > div > div > div:nth-child(2) {
+    margin-top: -120px;
+    position: relative;
+    z-index: 12;
+}
+
+/* Card com aspecto premium */
+.info-card {
+    background: rgba(10, 10, 10, 0.72);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 16px;
+    padding: 20px;
+}
+
+/* Fontes e Títulos */
+.main-title {
+    font-family: 'Bricolage Grotesque', sans-serif;
+    font-size: 2.2rem;
+    font-weight: 300;
+    letter-spacing: -0.02em;
+    background: linear-gradient(180deg, #FFFFFF 0%, #BBBBBB 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin: 0;
+    line-height: 1.1;
+}
     .sub-title { color: #FFD700; font-weight: 600; font-size: 1.1rem; margin-top: 5px; margin-bottom: 0; }
     
     /* Efeito Vidro (Glassmorphism) e Animação de Luz (Sweep) nas Caixas */
