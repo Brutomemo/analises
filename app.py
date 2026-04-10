@@ -444,8 +444,8 @@ header = """
       <div class="info-card">
           <p style="text-align: center;": 1.1rem; font-weight: 600;">Sistema automatizado de análise qualitativa das Negociações em Incidentes Críticos atendidos pelo Grupo de Ações Táticas Especiais.</p>
           <p style="font-size: 0.9rem; color: #bbb;">
-    Os dados são geridos em nuvem via <strong>Airtable</strong>. O sistema executa análises inferenciais via <strong>GEE</strong> (Equações de Estimativas Generalizadas) e <strong>$\chi^2$</strong> (Qui-Quadrado), com correlação de <strong>Spearman</strong> e análise de frequências. A inteligência linguística utiliza <strong>Similitude de Cosseno (TF-IDF)</strong> e <strong>N-Gramas</strong> via <strong>Scikit-Learn</strong>. A IA atua na estruturação de metadados qualitativos da <strong>perspectiva tripla</strong>.
-    </p>
+    Os dados são geridos de forma automatizada em nuvem via <strong>Airtable</strong>, integrando um motor estatístico multifatorial. O sistema realiza análises inferenciais robustas, utilizando <strong>Equações de Estimativas Generalizadas (GEE)</strong> para controle de efeitos agrupados por avaliador e <strong>Correlação de Spearman com Quartis</strong> para métricas não-paramétricas. A arquitetura de inteligência linguística aplica <strong>análise de similitude (Similaridade de Cosseno via TF-IDF)</strong> e <strong>modelagem de N-Gramas</strong> para identificar a convergência tática entre os atores. Testes de associação categórica (<strong>$\chi^{2}$</strong>) e <strong>análise de frequências</strong> validam a existência de vieses perceptivos. A <strong>Inteligência Artificial</strong> atua como camada interpretativa final, estruturando metadados qualitativos sob a <strong>Perspectiva Tripla</strong> (Negociador, Secundário e Líder).
+</p>
   </div>
 
 </div>
