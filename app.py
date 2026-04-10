@@ -1123,7 +1123,7 @@ else:
             st.markdown("</div>", unsafe_allow_html=True)
 
         with c_sp2:
-            st.markdown("<div class='info-card'><strong>Teste Qui-Quadrado Dinâmico</strong><br><span style='font-size: 0.85rem; color: #aaa;'>Analisa a dependência entre duas variáveis com o objetivo de identificar padrões de associação entre elas. Aqui, avaliamos a pontuação definida para a atitude do causador, frente a técnica aplicada vs a variável escolhida para observação.</span>", unsafe_allow_html=True)
+            st.markdown("<div class='info-card'><strong>Teste Qui-Quadrado Dinâmico</strong><br><span style='font-size: 0.85rem; color: #aaa;'>Analisa a dependência entre duas variáveis com o objetivo de identificar padrões de associação entre elas. Aqui, avaliamos a técnica vs a variável escolhida para observação.</span>", unsafe_allow_html=True)
             
             opcoes_variaveis = {
                 "Tipologia": "Tip_Limpa",
