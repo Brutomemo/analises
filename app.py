@@ -418,8 +418,7 @@ with col_titulo:
     <p style="font-size: 0.9rem; color: #999;">Os dados são geridos de forma automatizada em nuvem via <strong>Airtable</strong>. Cálculos matemáticos realizados localmente utilizando  
     <strong>SciPy</strong> (Correlação de Spearman com Quartis) e <strong>Scikit-Learn</strong> (Modelagem N-Gramas). Modelo integra Inteligência Artificial atuando exclusivamente como estruturadora de metadados qualitativos da perspectiva tripla.</p>
 </div>
-""", unsafe_allow_html=True)
-    
+""", unsafe_allow_html=True)    
 
     
 # =========================================================
@@ -473,11 +472,7 @@ else:
             apa_selecionada = st.selectbox("Selecione a ID da APA para análise:", lista_apas, index=len(lista_apas)-1)
             df_apa = df_quali[df_quali['ID_Busca'] == apa_selecionada].iloc[0]
             
-            # ========================================================
-            # 💡 HACK DE ESPAÇAMENTO PARA REVELAR A LUZ DO FUNDO
-            # ========================================================
-            st.markdown("<div style='height: 180px;'></div>", unsafe_allow_html=True)
-            
+                 
             # 2. Aqui começa o bloco de baixo (Metadados)
             c1, c2, c3, c4 = st.columns(4)
             with c1: st.markdown(f"<div class='info-card'><strong>Data:</strong><br>{limpar_valor(df_apa.get('Data da ocorrência'))}</div>", unsafe_allow_html=True)
