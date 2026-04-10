@@ -357,7 +357,7 @@ with col_logo:
 
 with col_titulo:
     st.markdown('<h1 class="main-title" style="text-align: center;">Sistema de Análise Qualitativa das Negociações</h1>', unsafe_allow_html=True)
-    st.markdown('<h3p class="sub-title" style="text-align: center;">Estudo das Técnicas Aplicadas</p>', unsafe_allow_html=True)
+    st.markdown('<p class="sub-title" style="text-align: center;">Estudo das Técnicas Aplicadas</p>', unsafe_allow_html=True)
 
 #EFEITO UNICORN
 # EFEITO UNICORN COM O CARD EMBUTIDO (Solução Definitiva)
@@ -442,8 +442,8 @@ header = """
 
   <div class="card-container">
       <div class="info-card">
-          <p style="font-size: 1.1rem; font-weight: 600;">Sistema automatizado de análise qualitativa das Negociações em Incidentes Críticos atendidos pelo Grupo de Ações Táticas Especiais.</p>
-          <p style="font-size: 0.9rem; color: #bbb;">Os dados são geridos de forma automatizada em nuvem via <strong>Airtable</strong>. Cálculos matemáticos realizados localmente utilizando <strong>SciPy</strong> (Correlação de Spearman com Quartis) e <strong>Scikit-Learn</strong> (Modelagem N-Gramas). Modelo integra Inteligência Artificial atuando exclusivamente como estruturadora de metadados qualitativos da perspectiva tripla.</p>
+          <p style="text-align: center;": 1.1rem; font-weight: 600;">Sistema automatizado de análise qualitativa das Negociações em Incidentes Críticos atendidos pelo Grupo de Ações Táticas Especiais.</p>
+          <p style="text-align: center;": 0.9rem; color: #bbb;">Os dados são geridos de forma automatizada em nuvem via <strong>Airtable</strong>. Cálculos matemáticos realizados localmente utilizando <strong>SciPy</strong> (Correlação de Spearman com Quartis) e <strong>Scikit-Learn</strong> (Modelagem N-Gramas). Modelo integra Inteligência Artificial atuando exclusivamente como estruturadora de metadados qualitativos da perspectiva tripla.</p>
       </div>
   </div>
 
