@@ -1,5 +1,22 @@
 import json
 import requests
+import streamlit as st
+
+
+OPENAI_ENDPOINT = "https://api.openai.com/v1/chat/completions"
+
+CHAVES_OBRIGATORIAS = [
+    "objetivo",
+    "metodo",
+    "premissas",
+    "resultados_principais",
+    "interpretacao",
+    "categorias_destaque",
+    "tamanho_efeito",
+    "limitacoes",
+    "conclusao",
+]
+
 
 def estruturar_resultado_para_ia(amostra_total, resultados_chi, resultados_ordinal, resultados_gee):
     """
@@ -7,9 +24,20 @@ def estruturar_resultado_para_ia(amostra_total, resultados_chi, resultados_ordin
     """
     payload = {
         "metadados_analise": {
-            "objetivo": "Investigar a associação entre técnicas de negociação e a mudança de atitude do causador frente à intervenção, avaliando simultaneamente a existência de viés na percepção dos negociadores, com controle estatístico para variáveis de contexto (cenário) e efeitos agrupados por avaliador.",
-            "pergunta_principal": "Os padrões observados estão associados às técnicas empregadas ou podem estar influenciados por percepção do negociador e características do contexto operacional?",
-            "hipotese_analitica": "Parte da variação observada pode estar associada às técnicas aplicadas, mas também pode refletir fatores de contexto e possíveis vieses de percepção.",
+            "objetivo": (
+                "Investigar a associação entre técnicas de negociação e a mudança de atitude do causador "
+                "frente à intervenção, avaliando simultaneamente a existência de viés na percepção dos "
+                "negociadores, com controle estatístico para variáveis de contexto (cenário) e efeitos "
+                "agrupados por avaliador."
+            ),
+            "pergunta_principal": (
+                "Os padrões observados estão associados às técnicas empregadas ou podem estar influenciados "
+                "por percepção do negociador e características do contexto operacional?"
+            ),
+            "hipotese_analitica": (
+                "Parte da variação observada pode estar associada às técnicas aplicadas, mas também pode "
+                "refletir fatores de contexto e possíveis vieses de percepção."
+            ),
             "metodos_aplicados": [
                 "Qui-Quadrado (Viés de percepção)",
                 "Regressão Logística Ordinal",
@@ -35,12 +63,50 @@ def estruturar_resultado_para_ia(amostra_total, resultados_chi, resultados_ordin
     }
     return payload
 
+
+def _preencher_chaves_faltantes(resposta_ia):
+    """
+    Garante padronização da resposta final da IA sem alterar a funcionalidade central.
+    Todos os campos obrigatórios devem existir e conter texto.
+    """
+    fallback = {
+        "objetivo": "Resumo técnico não pôde ser estruturado integralmente a partir da resposta da IA.",
+        "metodo": "Descrição metodológica não informada de forma adequada pela IA.",
+        "premissas": "Premissas e limitações não foram informadas adequadamente pela IA.",
+        "resultados_principais": "Os resultados principais não puderam ser consolidados de forma padronizada.",
+        "interpretacao": "Não foi possível consolidar interpretação técnica padronizada a partir da resposta da IA.",
+        "categorias_destaque": "Não há evidência estatística suficiente para destacar categorias de forma robusta.",
+        "tamanho_efeito": "Não foram informadas medidas de efeito interpretáveis ou relevantes.",
+        "limitacoes": "As limitações analíticas não foram descritas de forma adequada pela IA.",
+        "conclusao": "Conclusão técnica não pôde ser consolidada adequadamente a partir da resposta da IA."
+    }
+
+    if not isinstance(resposta_ia, dict):
+        return {k: fallback[k] for k in CHAVES_OBRIGATORIAS}
+
+    resposta_padronizada = {}
+    for chave in CHAVES_OBRIGATORIAS:
+        valor = resposta_ia.get(chave, fallback[chave])
+        if valor is None:
+            valor = fallback[chave]
+        if not isinstance(valor, str):
+            valor = str(valor)
+        resposta_padronizada[chave] = valor.strip() if valor.strip() else fallback[chave]
+
+    return resposta_padronizada
+
+
 def montar_prompt_estatistico(payload_json):
     """
     Monta o prompt de sistema rígido para a IA atuar como Estatístico Sênior.
     """
-    system_prompt = """Você é um Analista Estatístico Sênior e Especialista em Estatística Aplicada à Segurança Pública.
+    system_prompt = """
+Você é um Analista Estatístico Sênior e Especialista em Estatística Aplicada à Segurança Pública.
 Sua tarefa é interpretar resultados estatísticos de técnicas de negociação policial.
+
+PRINCÍPIO MÁXIMO:
+Esta tarefa opera em CONTEXTO FECHADO. Trabalhe EXCLUSIVAMENTE com os dados presentes no payload.
+Não utilize conhecimento externo, doutrina operacional externa, exemplos genéricos, intuição estatística não sustentada pelo payload, nem complete lacunas com inferências livres.
 
 REGRAS RÍGIDAS:
 1. NUNCA infira causalidade. Não use expressões como:
@@ -53,26 +119,28 @@ REGRAS RÍGIDAS:
    - 'há indícios de associação'
    - 'não há evidência suficiente de associação'
 
-2. Trabalhe EXCLUSIVAMENTE com os dados fornecidos no payload. Não invente técnicas, categorias, métricas, coeficientes ou contextos.
+2. Trabalhe EXCLUSIVAMENTE com os dados fornecidos no payload. Não invente técnicas, categorias, métricas, coeficientes, cenários, magnitudes ou contextos.
 
 3. Diferencie claramente:
    - viés de percepção (relatado principalmente no Qui-Quadrado e análises descritivas);
-   - eficácia controlada (relatada em modelos ajustados, como Regressão Ordinal e GEE).
+   - associação ajustada / eficácia controlada (relatada apenas em modelos ajustados, como Regressão Ordinal e GEE).
 
 4. Explicite limitações quando houver:
    - amostra pequena;
+   - amostra crítica;
    - ausência de significância estatística;
    - impossibilidade de avaliar viés do negociador;
    - separação perfeita;
    - falha de convergência;
-   - ausência de coeficientes interpretáveis.
+   - ausência de coeficientes interpretáveis;
+   - ausência de medidas de efeito interpretáveis.
 
 5. Ausência de significância estatística NÃO deve ser tratada como prova de ausência de efeito. Use formulações como:
    - 'não foram identificadas evidências estatisticamente significativas'
    - 'os dados não sustentam conclusão robusta'
    - 'a análise é inconclusiva sob as condições observadas'
 
-6. Mesmo quando houver significância estatística, NÃO trate isso como validação definitiva de eficácia operacional ou doutrinária.
+6. Mesmo quando houver significância estatística, NÃO trate isso como validação definitiva de eficácia operacional, doutrinária ou institucional.
 
 7. Regra de vocabulário: ao redigir o campo 'objetivo', NUNCA utilize a palavra 'desfecho'. No contexto de gerenciamento de crises, prefira obrigatoriamente:
    - 'mudança de atitude do causador'
@@ -82,16 +150,34 @@ REGRAS RÍGIDAS:
    - Se houver evidência estatisticamente relevante, descreva objetivamente quais técnicas, categorias ou coeficientes se destacaram.
    - Se não houver evidência suficiente, declare isso explicitamente.
 
-9. O campo 'tamanho_efeito' deve interpretar apenas medidas realmente presentes no payload, como Odds Ratios, coeficientes ou outras medidas de efeito.
+9. O campo 'tamanho_efeito' deve interpretar apenas medidas realmente presentes no payload, como Odds Ratios, coeficientes GEE ou outras medidas de efeito.
    - Se não houver medidas interpretáveis ou relevantes, informe isso explicitamente.
 
-10. VOCÊ DEVE RESPONDER ÚNICA E EXCLUSIVAMENTE COM UM OBJETO JSON VÁLIDO.
-   - Nenhuma palavra fora do JSON
-   - Não use markdown
-   - Não use crases
-   - Não escreva comentários
-   - Preencha todas as chaves
-   - Todos os valores devem ser texto
+10. SIGNIFICÂNCIA ESTATÍSTICA NÃO É SINÔNIMO DE RELEVÂNCIA OPERACIONAL.
+    - Não transforme p < 0.05 em recomendação prática automática.
+    - Não transforme coeficiente interpretável em superioridade operacional automática.
+
+11. Se o payload indicar dados insuficientes, amostra crítica, falha de convergência, separação perfeita ou ausência de coeficientes interpretáveis, a conclusão deve ser explicitamente prudente e pode ser classificada como inconclusiva sob as condições observadas.
+
+12. Não repita o mesmo conteúdo em campos diferentes. Cada campo deve cumprir sua função:
+   - 'metodo' = quais métodos foram aplicados e para quê;
+   - 'premissas' = condições e fragilidades analíticas;
+   - 'resultados_principais' = achados diretamente sustentados;
+   - 'interpretacao' = leitura prática prudente;
+   - 'limitacoes' = restrições técnicas;
+   - 'conclusao' = síntese final compatível com o nível de evidência.
+
+13. Todos os valores do JSON devem ser TEXTO, mas tecnicamente objetivos, sem floreio e sem generalizações.
+
+PADRONIZAÇÃO OBRIGATÓRIA DE ESTRUTURA:
+- Responda SEMPRE com as mesmas chaves.
+- Não omita chaves.
+- Não renomeie chaves.
+- Não crie chaves extras.
+- Não use markdown.
+- Não use crases.
+- Não escreva comentários.
+- Nenhuma palavra fora do JSON.
 
 O JSON deve seguir EXATAMENTE esta estrutura de chaves:
 {
@@ -104,55 +190,59 @@ O JSON deve seguir EXATAMENTE esta estrutura de chaves:
   "tamanho_efeito": "Explicação dos Odds Ratios, coeficientes GEE ou outras medidas de efeito encontradas, ou declaração de ausência de medidas interpretáveis/relevantes",
   "limitacoes": "Avisos sobre viés do negociador, amostra reduzida, ausência de significância, separação perfeita ou outras restrições técnicas",
   "conclusao": "Conclusão técnica final, prudente e compatível com o nível de evidência"
-}"""
-    
-    user_prompt = f"Aqui estão os resultados matemáticos processados pelo Python. Interprete apenas o que estiver explicitamente presente no payload a seguir:\n{json.dumps(payload_json, ensure_ascii=False, indent=2)}"
-    
+}
+
+VALIDAÇÃO INTERNA ANTES DE RESPONDER:
+- Verifique se todas as chaves estão presentes.
+- Verifique se todos os valores são texto.
+- Verifique se nenhuma afirmação excede o que está explicitamente presente no payload.
+- Se houver dúvida entre interpretar um achado como robusto ou tratá-lo como inconclusivo, prefira a formulação mais prudente.
+""".strip()
+
+    user_prompt = (
+        "Aqui estão os resultados matemáticos processados pelo Python. "
+        "Interprete apenas o que estiver explicitamente presente no payload a seguir:\n"
+        f"{json.dumps(payload_json, ensure_ascii=False, indent=2)}"
+    )
+
     return system_prompt, user_prompt
 
-import streamlit as st # Garanta que este import esteja no topo do arquivo
 
 def gerar_relatorio_com_ia(payload):
     """
     Chama a API da OpenAI de forma autônoma e segura.
     """
     system, user = montar_prompt_estatistico(payload)
-    
-    # === ACESSO SEGURO AO COFRE ===
+
     if "OPENAI_API_KEY" in st.secrets:
         api_key = st.secrets["OPENAI_API_KEY"]
     else:
         return {"erro": "Configuração de chave ausente no Streamlit Cloud."}
-    
-    endpoint = "https://api.openai.com/v1/chat/completions"
-        
+
     headers = {
         "Content-Type": "application/json",
         "Authorization": f"Bearer {api_key}"
     }
-    
+
     data = {
-        "model": "gpt-4o-mini", # Você pode mudar para "gpt-4o" ou "gpt-3.5-turbo" se preferir
+        "model": "gpt-4o-mini",
         "messages": [
             {"role": "system", "content": system},
             {"role": "user", "content": user}
         ],
-        "temperature": 0.2, 
-        "response_format": { "type": "json_object" } # Trava a IA para responder apenas em JSON
+        "temperature": 0.0,
+        "response_format": {"type": "json_object"}
     }
-    
+
     try:
-        import requests
-        
-        # Dispara a requisição direta para a OpenAI
-        response = requests.post(endpoint, headers=headers, json=data, timeout=60)
-        
-        # Se a chave estiver errada ou sem saldo, ele captura o erro aqui
-        response.raise_for_status() 
-        
-        raw_json = response.json()['choices'][0]['message']['content']
-        return json.loads(raw_json)
-        
+        response = requests.post(OPENAI_ENDPOINT, headers=headers, json=data, timeout=60)
+        response.raise_for_status()
+
+        raw_json = response.json()["choices"][0]["message"]["content"]
+        resposta_ia = json.loads(raw_json)
+
+        return _preencher_chaves_faltantes(resposta_ia)
+
     except json.JSONDecodeError:
         return {"erro": "A IA não retornou um formato JSON válido."}
     except requests.exceptions.HTTPError as err:
