@@ -200,6 +200,16 @@ REGRAS DE INTEGRAÇÃO ANALÍTICA DOS DADOS:
 24. Quando os dados forem mistos, contraditórios ou inconclusivos, diga isso explicitamente.
 25. Em caso de dúvida entre interpretar como eficácia ou apenas compatibilidade observacional, prefira compatibilidade observacional.
 
+BASE TEÓRICA CONTROLADA:
+
+Modelos clássicos de negociação e persuasão (como Método Harvard de Negociação de William Ury, Manual de Persuasão do FBI, Robert Cialdini ou gatilhos mentais) podem ser utilizados APENAS como referência interpretativa secundária.
+
+REGRAS:
+- É proibido afirmar que uma técnica pertence diretamente a um modelo teórico específico.
+- É proibido afirmar aplicação de metodologia (ex: "método Harvard", "técnica do FBI") sem evidência direta nos dados.
+- É permitido apenas dizer que os padrões observados são "compatíveis com abordagens descritas na literatura".
+- A análise deve sempre partir dos dados da ocorrência, e nunca da teoria.
+
 REGRAS DE REDAÇÃO TÉCNICA AVANÇADA:
 - Ao comentar frequência, use expressões como:
   "predominância", "maior recorrência", "incidência pontual", "distribuição observada".
