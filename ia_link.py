@@ -25,7 +25,7 @@ def analisar_ocorrencia_gate(dados_extraidos):
     except:
         nome_negociador = "da equipe"
     
-    # Prompt com f-string e Few-Shot
+    # Adicionado o 'f' antes das aspas para habilitar variáveis injetáveis
     system_prompt = f"""Você é um Especialista Sênior em Negociação Policial e Comportamento Humano do GATE (Grupo de Ações Táticas Especiais).
 Sua missão é realizar a Análise Pós-Ação (APA) de um ÚNICO incidente crítico. Foque exclusivamente nos diálogos literais e metadados desta ocorrência específica.
 
@@ -34,7 +34,8 @@ Sua missão é realizar a Análise Pós-Ação (APA) de um ÚNICO incidente crí
 2. RIGOR TERMINOLÓGICO: A palavra "desfecho" está SUMARIAMENTE PROIBIDA no diagnóstico. Refira-se apenas à "mudança de atitude do causador", "ponto de inflexão" ou "resposta comportamental imediata".
 3. FOCO MICROANALÍTICO: Analise APENAS as interações desta ocorrência. Não faça generalizações doutrinárias amplas.
 4. HIERARQUIA E DOUTRINA: O "Negociador Principal" NÃO é o líder/comandante da equipe; ele é o integrante designado para a verbalização direta. É terminantemente PROIBIDO usar frases como "A equipe liderada pelo Negociador Principal...".
-5. OUTPUT OBRIGATÓRIO: Retorne um arquivo JSON estruturado. A chave "parecer" conterá a análise redigida em Markdown.
+5. FIDELIDADE À ANÁLISE DE FREQUÊNCIAS (ANTI-ALUCINAÇÃO): O sistema já fornece as técnicas identificadas matematicamente na ocorrência. Ao elaborar a "Avaliação Técnica", limite-se a interpretar EXCLUSIVAMENTE as técnicas que constam nos dados fornecidos (Metadados/Frequências). Não invente ou presuma o uso de técnicas que não estejam explicitamente listadas nos dados de entrada.
+6. OUTPUT OBRIGATÓRIO: Retorne um arquivo JSON estruturado. A chave "parecer" conterá a análise redigida em Markdown.
 
 --- ESTRUTURA MANDATÓRIA DA CHAVE 'PARECER' (FORMATO MARKDOWN) ---
 A sua análise na chave 'parecer' deve OBRIGATORIAMENTE conter os seguintes títulos e seguir esta padronização inicial:
@@ -43,19 +44,19 @@ A sua análise na chave 'parecer' deve OBRIGATORIAMENTE conter os seguintes tít
 [Descreva o estado de crise e as respostas verbais específicas observadas neste áudio/texto]
 
 ### Avaliação Técnica da Doutrina Aplicada
-[OBRIGATÓRIO: Inicie o primeiro parágrafo desta seção EXATAMENTE com a frase: "A verbalização com o causador, conduzida pelo Negociador Principal {nome_negociador}, caracterizou-se por...". Em seguida, aponte quais técnicas de negociação (ex: contenção verbal, escuta ativa) foram identificadas nas falas deste policial.]
+[OBRIGATÓRIO: Inicie o primeiro parágrafo desta seção EXATAMENTE com a frase: "A verbalização com o causador, conduzida pelo Negociador Principal {nome_negociador}, caracterizou-se por...". Em seguida, interprete como as técnicas apontadas nos metadados/frequências foram aplicadas na prática, baseando-se nos diálogos.]
 
-### Pontos Fortes e Oportunidades de Otimização Tática
+### Pontos Fortes e Oportunidades de Aperfeiçoamento técnico operacional
 [Aponte ganhos ou falhas operacionais concretas percebidas nas interações desta ocorrência. Não cite recomendações genéricas de manual]
 
 --- EXEMPLO DE COMPORTAMENTO ESPERADO (FEW-SHOT) ---
 
 INPUT:
-"Metadados: Negociador Principal: Sd PM Oliveira. Causador recusa se render. Policial tenta acalmar."
+"Metadados: Negociador Principal: Sd PM Oliveira. Técnicas Detectadas: Escuta Ativa, Perguntas Abertas. Transcrição: Causador recusa se render. Policial faz perguntas."
 
 OUTPUT JSON:
 {{
-  "parecer": "### Diagnóstico Emocional e Lexical do Causador\\nO indivíduo demonstrou alta reatividade inicial e recusa à contenção verbal, não havendo mudança de atitude imediata em resposta à aproximação primária.\\n\\n### Avaliação Técnica da Doutrina Aplicada\\nA verbalização com o causador, conduzida pelo Negociador Principal {nome_negociador}, caracterizou-se pela tentativa de aproximação progressiva e contenção verbal inicial, sem evidências de aplicação de escuta ativa estruturada nesta amostra.\\n\\n### Pontos Fortes e Oportunidades de Otimização Tática\\nForça: Manutenção da calma e tom de voz equilibrado durante a verbalização.\\nOtimização: O contato careceu do uso de reflexão de sentimento para tentar reduzir a reatividade."
+  "parecer": "### Diagnóstico Emocional e Lexical do Causador\\nO indivíduo demonstrou alta reatividade inicial e recusa à contenção verbal.\\n\\n### Avaliação Técnica da Doutrina Aplicada\\nA verbalização com o causador, conduzida pelo Negociador Principal {nome_negociador}, caracterizou-se pela tentativa de aproximação progressiva. Conforme os dados técnicos, observou-se a aplicação de **Escuta Ativa** e **Perguntas Abertas**, utilizadas para coleta de dados durante o momento de pico de estresse da amostra.\\n\\n### Pontos Fortes e Oportunidades de Otimização Tática\\nForça: Manutenção da calma e tom de voz equilibrado durante a verbalização.\\nOtimização: O contato careceu do aprofundamento em reflexão de sentimento para tentar reduzir a reatividade constatada."
 }}
 """
     
@@ -105,7 +106,7 @@ OUTPUT JSON:
 
 def gerar_laudo_frio(likert_inicio, likert_fim, stats_spearman):
     """
-    Escreve o parecer tático puramente baseado nos números matemáticos.
+    Escreve o parecer puramente baseado nos números matemáticos.
     Se a agressividade não caiu, ele vai dizer de forma direta, sem eufemismos.
     """
     laudo = []
