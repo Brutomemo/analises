@@ -1034,6 +1034,9 @@ else:
                         freq_tecnicas_dict = {...}
 
                         # chama IA com restrição
+                        estatisticas_ocorrencia = {}
+                        tecnicas_da_apa = []
+
                         resultado_ia = ia_link.analisar_ocorrencia_gate(
                             dados_extraidos,
                             estatisticas_ocorrencia=estatisticas_ocorrencia,
