@@ -1029,16 +1029,77 @@ else:
                             "transcricao": df_transcricoes,
                             "metadados": df_meta
                         }
-                        # cria listas com base na tabela
-                        tecnicas_da_apa = [...]
-                        freq_tecnicas_dict = {...}
 
-                        # chama IA com restrição
-                        estatisticas_ocorrencia = {}
+                        # =========================================================
+                        # MONTA AS TÉCNICAS DA APA E A FREQUÊNCIA PARA ENVIAR À IA
+                        # =========================================================
                         tecnicas_da_apa = []
+                        freq_tecnicas_dict = {}
+                        estatisticas_ocorrencia = {}
 
-                        st.write("DEBUG tecnicas_da_apa:", tecnicas_da_apa)
-                        st.write("DEBUG estatisticas_ocorrencia:", estatisticas_ocorrencia)
+                        try:
+                            if not df_tec.empty:
+                                col_vinculo = next((c for c in df_tec.columns if 'VINCULO' in c.upper() or 'VÍNCULO' in c.upper()), None)
+
+                                if col_vinculo:
+                                    id_visivel = str(apa_selecionada).strip()
+
+                                    df_tec_tmp = df_tec.copy()
+                                    df_tec_tmp['Vinculo_Str'] = (
+                                        df_tec_tmp[col_vinculo]
+                                        .astype(str)
+                                        .str.replace(r"[\[\]'\"]", "", regex=True)
+                                        .str.strip()
+                                    )
+
+                                    df_tec_filtrado_pdf = df_tec_tmp[df_tec_tmp['Vinculo_Str'] == id_visivel].copy()
+
+                                    if df_tec_filtrado_pdf.empty and 'Airtable_Record_ID' in df_apa:
+                                        id_interno = str(df_apa['Airtable_Record_ID']).strip()
+                                        df_tec_filtrado_pdf = df_tec_tmp[
+                                            df_tec_tmp[col_vinculo].astype(str).str.contains(id_interno, na=False, regex=False)
+                                        ].copy()
+
+                                    if not df_tec_filtrado_pdf.empty:
+                                        col_tecnica = next(
+                                            (col for col in ['TÉCNICAS', 'TECNICAS', 'TÉCNICA', 'TECNICA'] if col in df_tec_filtrado_pdf.columns),
+                                            None
+                                        )
+
+                                        if col_tecnica:
+                                            freq_abs = df_tec_filtrado_pdf[col_tecnica].value_counts()
+                                            freq_rel = (df_tec_filtrado_pdf[col_tecnica].value_counts(normalize=True) * 100).round(1)
+
+                                            df_freq_pdf = pd.DataFrame({
+                                                'Técnica Empregada': freq_abs.index,
+                                                'Frequência Absoluta': freq_abs.values,
+                                                'Frequência Relativa (%)': freq_rel.values
+                                            })
+
+                                            tecnicas_da_apa = df_freq_pdf['Técnica Empregada'].dropna().astype(str).tolist()
+
+                                            frequencia_tecnicas_ocorrencia = []
+                                            for _, row in df_freq_pdf.iterrows():
+                                                frequencia_tecnicas_ocorrencia.append({
+                                                    "tecnica": str(row["Técnica Empregada"]),
+                                                    "frequencia_absoluta": int(row["Frequência Absoluta"]),
+                                                    "frequencia_relativa": float(row["Frequência Relativa (%)"])
+                                                })
+
+                                            freq_tecnicas_dict = dict(
+                                                zip(
+                                                    df_freq_pdf['Técnica Empregada'].astype(str),
+                                                    df_freq_pdf['Frequência Absoluta'].astype(int)
+                                                )
+                                            )
+
+                                            estatisticas_ocorrencia = {
+                                                "frequencia_tecnicas_ocorrencia": frequencia_tecnicas_ocorrencia,
+                                                "frequencia_absoluta_por_tecnica": freq_tecnicas_dict
+                                            }
+
+                        except Exception as e:
+                            st.warning(f"Falha ao montar frequências para a IA: {e}")
 
                         resultado_ia = ia_link.analisar_ocorrencia_gate(
                             dados_extraidos,
