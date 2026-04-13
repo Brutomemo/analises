@@ -55,14 +55,75 @@ def _serializar_dados_ocorrencia(dados_extraidos):
         return dados_extraidos
 
 
+def _normalizar_lista_tecnicas(tecnicas):
+    if tecnicas is None:
+        return []
+
+    tecnicas_limpa = []
+    for t in tecnicas:
+        t_str = str(t).strip()
+        if t_str:
+            tecnicas_limpa.append(t_str)
+
+    # remove duplicatas preservando ordem
+    return list(dict.fromkeys(tecnicas_limpa))
+
+
+def _extrair_tecnicas_de_metadados(dados_serializados):
+    """
+    Fallback para não obrigar mudança no app.py.
+    Tenta localizar técnicas/frequências já embutidas nos metadados, se existirem.
+    """
+    tecnicas = []
+
+    try:
+        metadados = dados_serializados.get("metadados", [])
+
+        if isinstance(metadados, dict):
+            metadados = [metadados]
+
+        if isinstance(metadados, list) and metadados:
+            for item in metadados:
+                if not isinstance(item, dict):
+                    continue
+
+                # 1) lista direta de técnicas
+                for chave in [
+                    "tecnicas_ocorrencia",
+                    "tecnicas_da_apa",
+                    "tecnicas_registradas_na_ocorrencia",
+                ]:
+                    valor = item.get(chave)
+                    if isinstance(valor, list):
+                        tecnicas.extend(valor)
+
+                # 2) dict de frequências
+                for chave in [
+                    "frequencia_tecnicas_ocorrencia",
+                    "frequencias_tecnicas",
+                ]:
+                    valor = item.get(chave)
+                    if isinstance(valor, dict):
+                        tecnicas.extend(list(valor.keys()))
+
+    except Exception:
+        pass
+
+    return _normalizar_lista_tecnicas(tecnicas)
+
+
 def analisar_ocorrencia_gate(
     dados_extraidos,
     estatisticas_ocorrencia=None,
     tecnicas_ocorrencia=None
 ):
     """
-    Analisa a ocorrência limitando-se EXCLUSIVAMENTE às técnicas já registradas
+    Analisa a ocorrência limitando-se, preferencialmente, às técnicas já registradas
     na tabela de frequências da APA atual.
+
+    Compatibilidade preservada:
+    - funciona com chamada antiga: analisar_ocorrencia_gate(dados_extraidos)
+    - funciona com chamada nova: analisar_ocorrencia_gate(dados_extraidos, estatisticas_ocorrencia, tecnicas_ocorrencia)
     """
 
     try:
@@ -77,59 +138,46 @@ def analisar_ocorrencia_gate(
         if estatisticas_ocorrencia is None:
             estatisticas_ocorrencia = {}
 
+        # Se o app não mandar tecnicas_ocorrencia, tenta recuperar dos metadados
         if tecnicas_ocorrencia is None:
-            tecnicas_ocorrencia = []
+            tecnicas_ocorrencia = _extrair_tecnicas_de_metadados(dados_serializados)
 
-        # normaliza e remove duplicatas preservando ordem
-        tecnicas_ocorrencia = [
-            str(t).strip() for t in tecnicas_ocorrencia
-            if str(t).strip()
-        ]
-        tecnicas_ocorrencia = list(dict.fromkeys(tecnicas_ocorrencia))
+        tecnicas_ocorrencia = _normalizar_lista_tecnicas(tecnicas_ocorrencia)
 
-        if not tecnicas_ocorrencia:
-            return {
-                "parecer": (
-                    "### Diagnóstico Emocional e Lexical do Causador\n"
-                    "Não foi possível elaborar análise técnica confiável, pois a ocorrência não apresentou técnicas registradas na tabela de frequências.\n\n"
-                    "### Avaliação Técnica da Doutrina Aplicada\n"
-                    f"A verbalização com o causador, conduzida pelo Negociador Principal {nome_negociador}, caracterizou-se por material insuficiente para correlação técnica, "
-                    "uma vez que a lista de técnicas efetivamente registradas nesta ocorrência não foi fornecida ao motor analítico.\n\n"
-                    "### Pontos Fortes e Oportunidades de Otimização Tática\n"
-                    "Sem a lista de técnicas efetivamente registradas nesta APA, a análise ficaria sujeita a inferência indevida. Por rigor metodológico, o parecer foi interrompido nesse ponto."
-                )
-            }
+        # Tenta preencher estatísticas com base nas técnicas, sem depender do app.py
+        if "frequencia_tecnicas_ocorrencia" not in estatisticas_ocorrencia:
+            estatisticas_ocorrencia["frequencia_tecnicas_ocorrencia"] = {}
 
         developer_prompt = f"""
 Você é um Especialista Sênior em Negociação Policial e Comportamento Humano do GATE.
 
 Sua missão é realizar a Análise Pós-Ação (APA) de UMA única ocorrência crítica.
 
-REGRA MAIS IMPORTANTE DESTA TAREFA:
-Você está TERMINANTEMENTE PROIBIDO de mencionar, discutir, negar, comparar, supor ou citar qualquer técnica que não esteja presente na lista de técnicas efetivamente registradas nesta ocorrência.
-
-LISTA EXCLUSIVA DE TÉCNICAS REGISTRADAS NESTA OCORRÊNCIA:
-{_safe_json_dumps(tecnicas_ocorrencia)}
+REGRA CENTRAL:
+Se houver uma lista de técnicas registradas na ocorrência, você está TERMINANTEMENTE PROIBIDO de mencionar, discutir, negar, comparar, supor ou citar qualquer técnica que não esteja presente nessa lista.
 
 REGRAS OBRIGATÓRIAS:
 1. Analise EXCLUSIVAMENTE os dados desta ocorrência.
-2. Mencione SOMENTE técnicas contidas na lista acima.
-3. Não cite técnicas ausentes, nem mesmo para dizer que não apareceram.
-4. Não use sinônimos técnicos fora dos nomes já registrados.
-5. Não invente técnica, não complete lacunas e não faça preenchimento doutrinário.
-6. Seu trabalho é:
+2. Se a lista de técnicas registradas estiver disponível, mencione SOMENTE técnicas contidas nela.
+3. Se a lista de técnicas registradas NÃO estiver disponível, deixe isso explícito e NÃO invente técnicas ausentes.
+4. Não cite técnicas ausentes, nem mesmo para dizer que não apareceram, quando houver lista fechada.
+5. Não use sinônimos técnicos fora dos nomes já registrados.
+6. Não invente técnica, não complete lacunas e não faça preenchimento doutrinário.
+7. Seu trabalho é:
    - ler a transcrição literal;
-   - interpretar as técnicas já registradas na ocorrência;
+   - interpretar as técnicas já registradas na ocorrência, se houver;
    - buscar relação provável entre essas técnicas e a progressão observada;
    - relacionar isso, quando possível, com:
      a) percepção dos negociadores,
      b) análise de similitude lexical,
      c) variação observada na agressividade/receptividade.
-7. Se a transcrição não permitir vincular claramente uma técnica registrada a uma fala específica, você pode dizer que a vinculação textual ficou limitada, MAS sem mencionar nenhuma técnica fora da lista registrada.
-8. Não use a palavra "desfecho".
-9. Não trate o Negociador Principal como comandante/líder da equipe.
-10. Não faça generalizações amplas de manual.
-11. Quando falar das técnicas, fale apenas das técnicas realmente registradas nesta APA.
+8. Se a transcrição não permitir vincular claramente uma técnica registrada a uma fala específica, você pode dizer que a vinculação textual ficou limitada.
+9. Não use a palavra "desfecho".
+10. Não trate o Negociador Principal como comandante/líder da equipe.
+11. Não faça generalizações amplas de manual.
+
+LISTA DE TÉCNICAS REGISTRADAS NESTA OCORRÊNCIA:
+{_safe_json_dumps(tecnicas_ocorrencia)}
 
 FORMATO OBRIGATÓRIO:
 Retorne APENAS JSON VÁLIDO, com uma única chave:
@@ -144,13 +192,12 @@ A chave "parecer" deve conter markdown com EXATAMENTE estes títulos:
 A seção "Avaliação Técnica da Doutrina Aplicada" DEVE começar EXATAMENTE com:
 "A verbalização com o causador, conduzida pelo Negociador Principal {nome_negociador}, caracterizou-se por..."
 
-REGRAS DE ESTILO ANALÍTICO:
+REGRAS DE ESTILO:
 - Não seja genérico.
 - Não seja pobre.
 - Não invente.
-- Não mencione técnicas ausentes.
-- Use as técnicas registradas como âncora central da análise.
-- Relacione as técnicas apenas com os dados realmente disponíveis.
+- Se houver lista fechada, use essa lista como fronteira rígida da análise.
+- Se não houver lista fechada disponível, deixe clara essa limitação metodológica.
 """
 
         user_payload = {
@@ -204,3 +251,68 @@ REGRAS DE ESTILO ANALÍTICO:
 
     except Exception as e:
         return {"parecer": f"Falha na execução da IA: {str(e)}"}
+
+
+def gerar_laudo_frio(likert_inicio, likert_fim, stats_spearman):
+    """
+    Mantido com o nome original para preservar compatibilidade com o app.py.
+    """
+    laudo = []
+
+    likert_inicio = likert_inicio or {}
+    likert_fim = likert_fim or {}
+    stats_spearman = stats_spearman or {}
+
+    delta_r = likert_fim.get("receptividade_media", 0) - likert_inicio.get("receptividade_media", 0)
+    delta_a = likert_fim.get("agressividade_media", 0) - likert_inicio.get("agressividade_media", 0)
+
+    if delta_r > 0:
+        laudo.append(f"A receptividade média do causador apresentou aumento durante a ocorrência (Delta = +{delta_r:.1f}).")
+    elif delta_r < 0:
+        laudo.append(f"A receptividade média do causador sofreu redução durante a ocorrência (Delta = {delta_r:.1f}).")
+    else:
+        laudo.append("A receptividade média do causador permaneceu inalterada/estagnada ao longo da ocorrência.")
+
+    if delta_a < 0:
+        laudo.append(f"Observou-se mitigação na agressividade média (Delta = {delta_a:.1f}).")
+    elif delta_a > 0:
+        laudo.append(f"Houve escalada na agressividade média (Delta = +{delta_a:.1f}).")
+    else:
+        laudo.append("A agressividade média não apresentou variação direcional.")
+
+    if not stats_spearman.get("valido"):
+        laudo.append("Não foi possível estabelecer correlação estatística devido à insuficiência de pontos de dados nos quartis (N < 3).")
+    else:
+        p_val = stats_spearman.get("p_value")
+        rho = stats_spearman.get("rho")
+
+        if p_val is None or rho is None:
+            laudo.append("Os parâmetros estatísticos de Spearman vieram incompletos para interpretação.")
+        else:
+            if p_val < 0.05:
+                forca = "forte" if abs(rho) > 0.6 else "moderada"
+                direcao = "positiva" if rho > 0 else "negativa"
+                laudo.append(
+                    f"A análise de Spearman confirma validade estatística (p < 0.05). "
+                    f"Existe uma correlação {forca} e {direcao} (Rho = {rho:.2f}) entre o tempo de negociação e a percepção de agressividade. "
+                    "Conclui-se que as intervenções tiveram impacto direto e quantificável no cenário."
+                )
+            else:
+                laudo.append(
+                    f"A análise de Spearman NÃO identificou significância estatística (p = {p_val:.3f}, o que é > 0.05). "
+                    f"O coeficiente Rho de {rho:.2f} sugere que a variação emocional não possui aderência matemática forte ao tempo gasto, "
+                    "indicando forte interferência de outras variáveis não isoladas no momento."
+                )
+
+    nota_metodologica = """
+---
+**📖 Nota Metodológica: O que é o Laudo Frio e o Delta (Δ)?**
+A *Estatística Fria* avalia exclusivamente a trajetória numérica dos dados coletados, sem interpretações subjetivas.
+O valor de **Delta (Δ)** representa a variação entre o estado final e o inicial:
+* **Δ Positivo (+):** Indica que o comportamento (Agressividade ou Receptividade) aumentou.
+* **Δ Negativo (-):** Indica que o comportamento diminuiu.
+* **Δ Zero (0):** Indica estagnação ou ausência de mudança mensurável.
+"""
+    laudo.append(nota_metodologica)
+
+    return "\n\n".join(laudo)
