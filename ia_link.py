@@ -16,12 +16,17 @@ def analisar_ocorrencia_gate(dados_extraidos):
 
     endpoint = "https://api.openai.com/v1/chat/completions"
     
-    # ... o restante do seu código continua IGUAL ...
+    # ---------------------------------------------------------
+    # NOVO: Extração dinâmica do nome para inibir viés de LLM
+    # ---------------------------------------------------------
+    try:
+        nome_negociador = dados_extraidos["metadados"].get("Negociador Principal", "da equipe").iloc[0]
+        nome_negociador = str(nome_negociador).strip()
+    except:
+        nome_negociador = "da equipe"
     
-    system_prompt = # ---------------------------------------------------------
-# SYSTEM PROMPT (Exclusivo para APA - Análise Individual)
-# ---------------------------------------------------------
-system_prompt = """Você é um Especialista Sênior em Negociação Policial e Comportamento Humano do GATE (Grupo de Ações Táticas Especiais).
+    # Adicionado o 'f' antes das aspas para habilitar variáveis injetáveis
+    system_prompt = f"""Você é um Especialista Sênior em Negociação Policial e Comportamento Humano do GATE (Grupo de Ações Táticas Especiais).
 Sua missão é realizar a Análise Pós-Ação (APA) de um ÚNICO incidente crítico. Foque exclusivamente nos diálogos literais e metadados desta ocorrência específica.
 
 --- DIRETRIZES FUNDAMENTAIS (STRICT INSTRUCTIONS) ---
@@ -38,7 +43,7 @@ A sua análise na chave 'parecer' deve OBRIGATORIAMENTE conter os seguintes tít
 [Descreva o estado de crise e as respostas verbais específicas observadas neste áudio/texto]
 
 ### Avaliação Técnica da Doutrina Aplicada
-[OBRIGATÓRIO: Inicie o primeiro parágrafo desta seção EXATAMENTE com a frase: "A verbalização com o causador, conduzida pelo Negociador Principal [Nome do Policial], caracterizou-se por...". Em seguida, aponte quais técnicas de negociação (ex: contenção verbal, escuta ativa) foram identificadas nas falas deste policial.]
+[OBRIGATÓRIO: Inicie o primeiro parágrafo desta seção EXATAMENTE com a frase: "A verbalização com o causador, conduzida pelo Negociador Principal {nome_negociador}, caracterizou-se por...". Em seguida, aponte quais técnicas de negociação (ex: contenção verbal, escuta ativa) foram identificadas nas falas deste policial.]
 
 ### Pontos Fortes e Oportunidades de Otimização Tática
 [Aponte ganhos ou falhas operacionais concretas percebidas nas interações desta ocorrência. Não cite recomendações genéricas de manual]
@@ -46,12 +51,12 @@ A sua análise na chave 'parecer' deve OBRIGATORIAMENTE conter os seguintes tít
 --- EXEMPLO DE COMPORTAMENTO ESPERADO (FEW-SHOT) ---
 
 INPUT:
-"Metadados: Negociador Principal: Sgt PM Cabral. Causador recusa se render. Policial tenta acalmar."
+"Metadados: Negociador Principal: Sd PM Oliveira. Causador recusa se render. Policial tenta acalmar."
 
 OUTPUT JSON:
-{
-  "parecer": "### Diagnóstico Emocional e Lexical do Causador\nO indivíduo demonstrou alta reatividade inicial e recusa à contenção verbal, não havendo mudança de atitude imediata em resposta à aproximação primária.\n\n### Avaliação Técnica da Doutrina Aplicada\nA verbalização com o causador, conduzida pelo Negociador Principal Sgt PM Cabral, caracterizou-se pela tentativa de aproximação progressiva e contenção verbal inicial, sem evidências de aplicação de escuta ativa estruturada nesta amostra.\n\n### Pontos Fortes e Oportunidades de Otimização Tática\nForça: Manutenção da calma e tom de voz equilibrado durante a verbalização.\nOtimização: O contato careceu do uso de reflexão de sentimento para tentar reduzir a reatividade."
-}
+{{
+  "parecer": "### Diagnóstico Emocional e Lexical do Causador\\nO indivíduo demonstrou alta reatividade inicial e recusa à contenção verbal, não havendo mudança de atitude imediata em resposta à aproximação primária.\\n\\n### Avaliação Técnica da Doutrina Aplicada\\nA verbalização com o causador, conduzida pelo Negociador Principal {nome_negociador}, caracterizou-se pela tentativa de aproximação progressiva e contenção verbal inicial, sem evidências de aplicação de escuta ativa estruturada nesta amostra.\\n\\n### Pontos Fortes e Oportunidades de Otimização Tática\\nForça: Manutenção da calma e tom de voz equilibrado durante a verbalização.\\nOtimização: O contato careceu do uso de reflexão de sentimento para tentar reduzir a reatividade."
+}}
 """
     
     # Prepara os dados para enviar à IA
@@ -77,7 +82,7 @@ OUTPUT JSON:
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_prompt}
         ],
-        "temperature": 0.3, # Baixa temperatura para foco analítico
+        "temperature": 0.2, # Reduzido para focar na objetividade técnica
         "response_format": { "type": "json_object" } # Força o retorno estrito em JSON
     }
     
@@ -98,9 +103,9 @@ OUTPUT JSON:
 # 2. MOTOR DE INFERÊNCIA ESTATÍSTICA (SEM VIÉS DA IA)
 # =========================================================
 
-def gerar_laudo_frio(likert_inicio, likert_fim, stats_spearman):
+def gerar_análise_de_progressão(likert_inicio, likert_fim, stats_spearman):
     """
-    Escreve o parecer tático puramente baseado nos números matemáticos.
+    Escreve o parecer puramente baseado nos números matemáticos.
     Se a agressividade não caiu, ele vai dizer de forma direta, sem eufemismos.
     """
     laudo = []
@@ -147,5 +152,19 @@ def gerar_laudo_frio(likert_inicio, likert_fim, stats_spearman):
                 f"O coeficiente Rho de {rho:.2f} sugere que a variação emocional não possui aderência matemática forte ao tempo gasto, "
                 "indicando forte interferência de outras variáveis não isoladas no momento."
             )
+            
+    # ---------------------------------------------------------
+    # NOTA METODOLÓGICA (Explicação Técnica do Delta)
+    # ---------------------------------------------------------
+    nota_metodologica = """
+---
+**📖 Nota Metodológica: O que é o Laudo Frio e o Delta (Δ)?**
+A *Estatística Fria* avalia exclusivamente a trajetória numérica dos dados coletados, sem interpretações subjetivas. 
+O valor de **Delta (Δ)** representa a variação entre o estado final e o inicial:
+* **Δ Positivo (+):** Indica que o comportamento (Agressividade ou Receptividade) **Aumentou**.
+* **Δ Negativo (-):** Indica que o comportamento **Diminuiu** (desejável para Agressividade).
+* **Δ Zero (0):** Indica estagnação ou ausência de mudança mensurável.
+"""
+    laudo.append(nota_metodologica)
             
     return "\n\n".join(laudo)
