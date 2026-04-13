@@ -1037,6 +1037,9 @@ else:
                         estatisticas_ocorrencia = {}
                         tecnicas_da_apa = []
 
+                        st.write("DEBUG tecnicas_da_apa:", tecnicas_da_apa)
+                        st.write("DEBUG estatisticas_ocorrencia:", estatisticas_ocorrencia)
+
                         resultado_ia = ia_link.analisar_ocorrencia_gate(
                             dados_extraidos,
                             estatisticas_ocorrencia=estatisticas_ocorrencia,
