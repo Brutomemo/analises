@@ -79,7 +79,7 @@ def _serializar_dados_ocorrencia(dados_extraidos: Dict[str, Any]) -> Dict[str, A
     except Exception:
         return dados_extraidos
 
-def analisar_ocorrencia_gate_refinado(
+def analisar_ocorrencia_gate(
     dados_extraidos: Dict[str, Any],
     estatisticas_ocorrencia: Dict[str, Any] | None = None
 ) -> Dict[str, Any]:
