@@ -17,7 +17,7 @@ def analisar_ocorrencia_gate(dados_extraidos):
     endpoint = "https://api.openai.com/v1/chat/completions"
     
     # ---------------------------------------------------------
-    # NOVO: Extração dinâmica do nome para inibir viés de LLM
+    # Extração dinâmica do nome para inibir viés de LLM
     # ---------------------------------------------------------
     try:
         nome_negociador = dados_extraidos["metadados"].get("Negociador Principal", "da equipe").iloc[0]
@@ -25,7 +25,7 @@ def analisar_ocorrencia_gate(dados_extraidos):
     except:
         nome_negociador = "da equipe"
     
-    # Adicionado o 'f' antes das aspas para habilitar variáveis injetáveis
+    # Prompt com f-string e Few-Shot
     system_prompt = f"""Você é um Especialista Sênior em Negociação Policial e Comportamento Humano do GATE (Grupo de Ações Táticas Especiais).
 Sua missão é realizar a Análise Pós-Ação (APA) de um ÚNICO incidente crítico. Foque exclusivamente nos diálogos literais e metadados desta ocorrência específica.
 
@@ -103,9 +103,9 @@ OUTPUT JSON:
 # 2. MOTOR DE INFERÊNCIA ESTATÍSTICA (SEM VIÉS DA IA)
 # =========================================================
 
-def gerar_análise_de_progressão(likert_inicio, likert_fim, stats_spearman):
+def gerar_laudo_frio(likert_inicio, likert_fim, stats_spearman):
     """
-    Escreve o parecer puramente baseado nos números matemáticos.
+    Escreve o parecer tático puramente baseado nos números matemáticos.
     Se a agressividade não caiu, ele vai dizer de forma direta, sem eufemismos.
     """
     laudo = []
