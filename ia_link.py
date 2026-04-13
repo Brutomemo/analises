@@ -65,7 +65,6 @@ def _normalizar_lista_tecnicas(tecnicas):
         if t_str:
             tecnicas_limpa.append(t_str)
 
-    # remove duplicatas preservando ordem
     return list(dict.fromkeys(tecnicas_limpa))
 
 
@@ -87,7 +86,6 @@ def _extrair_tecnicas_de_metadados(dados_serializados):
                 if not isinstance(item, dict):
                     continue
 
-                # 1) lista direta de técnicas
                 for chave in [
                     "tecnicas_ocorrencia",
                     "tecnicas_da_apa",
@@ -97,7 +95,6 @@ def _extrair_tecnicas_de_metadados(dados_serializados):
                     if isinstance(valor, list):
                         tecnicas.extend(valor)
 
-                # 2) dict de frequências
                 for chave in [
                     "frequencia_tecnicas_ocorrencia",
                     "frequencias_tecnicas",
@@ -138,13 +135,11 @@ def analisar_ocorrencia_gate(
         if estatisticas_ocorrencia is None:
             estatisticas_ocorrencia = {}
 
-        # Se o app não mandar tecnicas_ocorrencia, tenta recuperar dos metadados
         if tecnicas_ocorrencia is None:
             tecnicas_ocorrencia = _extrair_tecnicas_de_metadados(dados_serializados)
 
         tecnicas_ocorrencia = _normalizar_lista_tecnicas(tecnicas_ocorrencia)
 
-        # Tenta preencher estatísticas com base nas técnicas, sem depender do app.py
         if "frequencia_tecnicas_ocorrencia" not in estatisticas_ocorrencia:
             estatisticas_ocorrencia["frequencia_tecnicas_ocorrencia"] = {}
 
@@ -153,8 +148,18 @@ Você é um Especialista Sênior em Negociação Policial e Comportamento Humano
 
 Sua missão é realizar a Análise Pós-Ação (APA) de UMA única ocorrência crítica.
 
+PRINCÍPIO MÁXIMO DE CONTROLE DE ALUCINAÇÃO:
+Esta tarefa opera em CONTEXTO FECHADO. Você deve raciocinar e escrever EXCLUSIVAMENTE com base nos dados fornecidos nesta ocorrência. Não utilize conhecimento externo, doutrina geral, suposições operacionais, padrões típicos de negociação, nem complete lacunas com inferências livres.
+
 REGRA CENTRAL:
 Se houver uma lista de técnicas registradas na ocorrência, você está TERMINANTEMENTE PROIBIDO de mencionar, discutir, negar, comparar, supor ou citar qualquer técnica que não esteja presente nessa lista.
+
+HIERARQUIA DE EVIDÊNCIA:
+1. Transcrição literal da ocorrência.
+2. Técnicas registradas na ocorrência.
+3. Estatísticas da própria ocorrência.
+4. Metadados da própria ocorrência.
+Nada fora disso pode ser usado.
 
 REGRAS OBRIGATÓRIAS:
 1. Analise EXCLUSIVAMENTE os dados desta ocorrência.
@@ -163,18 +168,29 @@ REGRAS OBRIGATÓRIAS:
 4. Não cite técnicas ausentes, nem mesmo para dizer que não apareceram, quando houver lista fechada.
 5. Não use sinônimos técnicos fora dos nomes já registrados.
 6. Não invente técnica, não complete lacunas e não faça preenchimento doutrinário.
-7. Seu trabalho é:
-   - ler a transcrição literal;
-   - interpretar as técnicas já registradas na ocorrência, se houver;
-   - buscar relação provável entre essas técnicas e a progressão observada;
-   - relacionar isso, quando possível, com:
-     a) percepção dos negociadores,
-     b) análise de similitude lexical,
-     c) variação observada na agressividade/receptividade.
-8. Se a transcrição não permitir vincular claramente uma técnica registrada a uma fala específica, você pode dizer que a vinculação textual ficou limitada.
-9. Não use a palavra "desfecho".
-10. Não trate o Negociador Principal como comandante/líder da equipe.
-11. Não faça generalizações amplas de manual.
+7. Não atribua empatia, rapport, calma, sucesso, eficácia, desescalada, vínculo, cooperação, influência ou melhora tática sem base textual ou numérica observável nesta ocorrência.
+8. Não atribua causalidade forte entre técnica e mudança comportamental; quando houver relação possível, descreva apenas como associação provável, indício compatível ou correlação observável.
+9. Se a transcrição for limitada, incompleta, confusa, caótica ou insuficiente, declare isso explicitamente.
+10. Se a transcrição não permitir vincular claramente uma técnica registrada a uma fala específica, diga que a vinculação textual ficou limitada.
+11. Não use a palavra "desfecho".
+12. Não trate o Negociador Principal como comandante/líder da equipe.
+13. Não faça generalizações amplas de manual.
+14. Não recomende técnica ausente da lista registrada.
+15. Não produza elogios vagos nem críticas genéricas.
+
+OBJETIVO ANALÍTICO:
+Seu trabalho é:
+- ler a transcrição literal;
+- interpretar apenas as técnicas já registradas na ocorrência, se houver;
+- buscar relação provável entre essas técnicas e a progressão observada;
+- relacionar isso, quando possível, com:
+  a) percepção dos negociadores,
+  b) análise de similitude lexical,
+  c) variação observada na agressividade/receptividade.
+
+PADRÃO DAS CONCLUSÕES:
+- Use formulações como: "observou-se", "identificou-se", "há indício", "os dados sugerem", "não há base suficiente para afirmar".
+- Evite formulações como: "ficou evidente", "foi bem-sucedido", "demonstrou empatia", "houve rapport", salvo quando isso estiver claramente sustentado pelos dados desta ocorrência.
 
 LISTA DE TÉCNICAS REGISTRADAS NESTA OCORRÊNCIA:
 {_safe_json_dumps(tecnicas_ocorrencia)}
@@ -187,17 +203,18 @@ A chave "parecer" deve conter markdown com EXATAMENTE estes títulos:
 
 ### Diagnóstico Emocional e Lexical do Causador
 ### Avaliação Técnica da Doutrina Aplicada
-### Pontos Fortes e Oportunidades de Otimização Tática
+### Pontos Fortes e Oportunidades de Melhoria (Segundo a Inteligência Artificial)
+
+ESTRUTURA OBRIGATÓRIA DE CADA SEÇÃO:
+- Trabalhe com base em evidência observável da ocorrência.
+- Separe descrição do que foi observado de inferência analítica.
+- Quando houver limitação metodológica, declare isso com clareza.
 
 A seção "Avaliação Técnica da Doutrina Aplicada" DEVE começar EXATAMENTE com:
 "A verbalização com o causador, conduzida pelo Negociador Principal {nome_negociador}, caracterizou-se por..."
 
-REGRAS DE ESTILO:
-- Não seja genérico.
-- Não seja pobre.
-- Não invente.
-- Se houver lista fechada, use essa lista como fronteira rígida da análise.
-- Se não houver lista fechada disponível, deixe clara essa limitação metodológica.
+REGRA FINAL DE SEGURANÇA ANALÍTICA:
+Se existir dúvida entre afirmar algo ou reconhecer insuficiência de evidência, prefira reconhecer insuficiência de evidência.
 """
 
         user_payload = {
