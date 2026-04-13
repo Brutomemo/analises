@@ -1029,9 +1029,17 @@ else:
                             "transcricao": df_transcricoes,
                             "metadados": df_meta
                         }
+                        # cria listas com base na tabela
+                        tecnicas_da_apa = [...]
+                        freq_tecnicas_dict = {...}
 
-                        resultado_ia = ia_link.analisar_ocorrencia_gate(dados_extraidos)
-                        
+                        # chama IA com restrição
+                        resultado_ia = ia_link.analisar_ocorrencia_gate(
+                            dados_extraidos,
+                            estatisticas_ocorrencia=estatisticas_ocorrencia,
+                            tecnicas_ocorrencia=tecnicas_da_apa
+                        )
+                                              
                         if isinstance(resultado_ia, dict) and 'parecer' in resultado_ia:
                             parecer_ia = resultado_ia['parecer']
                         else:
