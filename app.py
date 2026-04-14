@@ -686,7 +686,7 @@ else:
             l_agr_c_num, l_rec_c_num = converter_escala(l_agr_c_txt), converter_escala(l_rec_c_txt)
             l_agr_e_num, l_rec_e_num = converter_escala(l_agr_e_txt), converter_escala(l_rec_e_txt)
 
-            st.markdown("### 📈 Percepção subjetiva dos negociadores, ao chegar e encerrar a ocorrência, no que se refere ao nível de agressividade e receptividade do causador (Linha de tendência)")
+            st.markdown("### 📈 Percepção dos negociadores sobre a receptividade e agressividade do causador no início e encerramento da ocorrência (Linha de tendência)")
             p_escolhida = st.selectbox(
                 "Visualizar evolução sob a perspectiva do:", 
                 ["Negociador Principal", "Negociador Secundário", "Negociador Líder"],
@@ -715,7 +715,7 @@ else:
 
             st.markdown("---")
 
-            st.markdown("### 🧠 Percepção subjetiva dos negociadores, ao chegar e encerrar a ocorrência, no que se refere ao nível de agressividade e receptividade do causador (Textual)")
+            st.markdown("### 🧠 Percepção dos negociadores sobre a receptividade e agressividade do causador no início e encerramento da ocorrência (Textual)")
             tab_chegada, tab_encerramento = st.tabs(["➡️ Na Chegada à Ocorrência", "🛑 No Encerramento"])
             
             def render_card(label, valor, cor_classe):
