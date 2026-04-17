@@ -1077,7 +1077,7 @@ else:
                     🔴 <strong>CRÍTICO:</strong> Linguagem de ameaça ou autoaniquilação dominante, sem sinais protetivos suficientes. Risco imediato à vida.<br><br>
                     🟠 <strong>TRANSIÇÃO INSTÁVEL:</strong> Há tanto risco quanto sinais de rendição ao mesmo tempo. O incidente está em ponto de virada — janela de resolução existe, mas o risco residual é alto. <em>Momento mais delicado da negociação.</em><br><br>
                     🟡 <strong>MODERADO COM VIÉS DE ESCALADA:</strong> Sinais de deterioração do diálogo, mas sem configuração crítica consolidada. Atenção redobrada.<br><br>
-                    🔵 <strong>DESACELERAÇÃO TÁTICA:</strong> A direção do diálogo aponta para cooperação e rendição. O risco não desapareceu, mas perdeu centralidade. Negociação em curso positivo.<br><br>
+                    🔵 <strong>DESACELERAÇÃO DA AGRESSIVIDADE:</strong> A direção do diálogo aponta para cooperação e rendição. O risco não desapareceu, mas perdeu centralidade. Negociação em curso positivo.<br><br>
                     🟢 <strong>CONTROLADO / COOPERATIVO:</strong> Predominam sinais de escuta, vínculo e desescalada. Quadro de maior estabilização verbal.<br><br>
                     ⚪ <strong>AMBIVALENTE / INDETERMINADO:</strong> Sinais mistos ou densidade semântica insuficiente. Recomenda-se leitura integrada com o contexto operacional.<br><br>
                     ⬜ <strong>BAIXA PRESSÃO:</strong> Pouca carga semântica relevante detectada. Pode indicar diálogo racional, registro incompleto ou ausência de crise verbal.
