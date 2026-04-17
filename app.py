@@ -1249,17 +1249,32 @@ else:
             
             contagem = serie.value_counts().reset_index()
             contagem.columns = [coluna, 'Frequência']
-            contagem = contagem.sort_values('Frequência', ascending=True) # Ascendente para a maior barra ficar no topo
+            contagem = contagem.sort_values('Frequência', ascending=True) 
             
-            fig = px.bar(contagem, x='Frequência', y=coluna, orientation='h', title=titulo, text='Frequência')
-            fig.update_traces(marker_color='#f97316', textposition='outside')
+            # 1. Aplicado o degradê 'Oranges' baseado no valor da Frequência
+            fig = px.bar(
+                contagem, 
+                x='Frequência', 
+                y=coluna, 
+                orientation='h', 
+                title=titulo, 
+                text='Frequência',
+                color='Frequência',                 # Ativa a coloração condicional
+                color_continuous_scale='Oranges'    # Mesma escala do Treemap
+            )
+            
+            # 2. Definido width=0.4 para deixar as barras mais finas (elegantes)
+            fig.update_traces(textposition='outside', width=0.4)
+            
+            # 3. coloraxis_showscale=False remove a legenda lateral de cores para manter o visual limpo
             fig.update_layout(
                 paper_bgcolor="rgba(0,0,0,0)", 
                 plot_bgcolor="rgba(0,0,0,0)", 
                 font_color="#FFF", 
                 margin=dict(t=40, b=10, l=10, r=10), 
                 xaxis=dict(showgrid=False, visible=False), 
-                yaxis=dict(title="")
+                yaxis=dict(title=""),
+                coloraxis_showscale=False 
             )
             return fig
 
@@ -1285,7 +1300,7 @@ else:
 
         st.markdown("---")
         st.markdown("#### Ranking de Técnicas Aplicadas")
-        
+
         if not df_tec.empty:
             df_tec['Neg_Limpo'] = df_tec['Negociador Principal do incidente crítico'].apply(limpar_valor) if 'Negociador Principal do incidente crítico' in df_tec.columns else 'N/D'
             df_tec['Tip_Limpa'] = df_tec['Tipologia do incidente crítico'].apply(limpar_valor) if 'Tipologia do incidente crítico' in df_tec.columns else 'N/D'
