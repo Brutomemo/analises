@@ -4,17 +4,6 @@ import sys
 import os
 
 # =========================================================
-# 0. PROTEÇÃO E INSTALAÇÃO AUTOMÁTICA
-# =========================================================
-try:
-    import statsmodels.api as sm
-    import patsy
-except ImportError:
-    # Se falhar, tenta instalar silenciosamente no Python ativo
-    subprocess.check_call([sys.executable, "-m", "pip", "install", "statsmodels", "patsy", "scipy"])
-    st.rerun() 
-
-# =========================================================
 # 1. CONFIGURAÇÃO DA PÁGINA (DEVE SER O PRIMEIRO COMANDO STREAMLIT)
 # =========================================================
 # Movido para o topo para evitar o erro de inicialização da senha
@@ -650,14 +639,19 @@ else:
 
             st.markdown("---")
 
+            # Otimização: Normaliza e mapeia as colunas do Airtable apenas uma vez por APA
+            colunas_norm = {col: unicodedata.normalize('NFKD', str(col)).encode('ASCII', 'ignore').decode('ASCII').lower() for col in df_apa.index}
+            
             def buscar_percepcao(papel, metrica, momento):
-                def norm(t): return unicodedata.normalize('NFKD', str(t)).encode('ASCII', 'ignore').decode('ASCII').lower()
-                for col in df_apa.index:
-                    col_norm = norm(col)
-                    if norm(papel) in col_norm and norm(metrica) in col_norm and norm(momento) in col_norm:
-                        return limpar_valor(df_apa[col])
+                p_n = unicodedata.normalize('NFKD', str(papel)).encode('ASCII', 'ignore').decode('ASCII').lower()
+                m_n = unicodedata.normalize('NFKD', str(metrica)).encode('ASCII', 'ignore').decode('ASCII').lower()
+                mo_n = unicodedata.normalize('NFKD', str(momento)).encode('ASCII', 'ignore').decode('ASCII').lower()
+                
+                for col_orig, col_n in colunas_norm.items():
+                    if p_n in col_n and m_n in col_n and mo_n in col_n:
+                        return limpar_valor(df_apa[col_orig])
                 return "N/D"
-
+            
             # Principal
             p_agr_c_txt = buscar_percepcao('Principal', 'Agressividade', 'Chegada')
             p_rec_c_txt = buscar_percepcao('Principal', 'Receptividade', 'Chegada')
