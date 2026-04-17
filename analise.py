@@ -110,7 +110,7 @@ DICIONARIO_TATICO = {
 
 PESO_RISCO_CATEGORIA = {
     'Ideação Suicida / Desesperança (Crise Interna)': 1.35,
-    'Risco à Integridade / Hostilidade (Crise Externa)': 1.45,
+    'Risco à Integridade / Hostilidade': 1.45,
     'Ambivalência / Pedido de Ajuda Velado': 1.15,
     'Sinalização de Rendição / Desescalada de violência': -0.55,
 }
