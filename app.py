@@ -1007,7 +1007,7 @@ else:
             st.markdown("### 📊 Etapa 2: Análise Semântica (Machine Learning e Context-Aware NLP)")
             
             # --- INÍCIO DO BLOCO DE EXPLICAÇÃO (EXPANDER) ---
-            with st.expander("📖 Entenda a Análise Semântica Avançada e o termômetro do incidente", expanded=False):
+            with st.expander("📖 Entenda a Análise Semântica Avançada e o termômetro do incidente - Processamento de Linguagem Natural Sensível ao Contexto", expanded=False):
                 st.markdown(
                     "<div class='info-card' style='margin-top: 0px;'>"
                     "<h5 style='color: #FFD700; margin-top: 0;'>1. Análise de Valência e Pesos da estrutura da linguagem (O Contexto Importa)</h5>"
@@ -1026,8 +1026,8 @@ else:
                     "<h5 style='color: #FFD700; margin-top: 15px;'>3. N-Gramas (Identificação de Loop Psicológico)</h5>"
                     "<p style='font-size: 0.95rem; color: #ddd; line-height: 1.5;'>"
                     "Mapeia a frequência de frases curtas (2 a 3 palavras). Indivíduos sob estresse agudo entram em <strong>loop cognitivo</strong>.<br>"
-                    "• <em>No Causador:</em> Repetir \"não aguento mais\" (14x) indica exaustão emocional severa. Repetir \"cadê a imprensa\" (9x) indica foco racional/instrumental.<br>"
-                    "• <em>No Negociador:</em> Padrões como \"fica calmo\" (18x) podem apontar vício de linguagem, escassez de recursos verbais sob pressão ou quebra de rapport."
+                    "• <em>No Causador:</em> Repetir \"não aguento mais\" indica exaustão emocional severa. Repetir \"cadê a imprensa\" indica foco racional/instrumental.<br>"
+                    "• <em>No Negociador:</em> Padrões como \"fica calmo\" podem apontar vício de linguagem, escassez de recursos verbais sob pressão ou quebra de rapport."
                     "</p>"
                     "</div>", 
                     unsafe_allow_html=True
