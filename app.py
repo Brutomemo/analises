@@ -68,17 +68,24 @@ def somar_tempos_segundos(serie):
 
 # --- MOTOR GRÁFICO (MAPA EMOCIONAL COMPLETO & BLINDADO) ---
 escala_likert = {
-    # 1. Opções de Sistema / Inaudíveis
     "❓ inaudível / não observado": 0, "inaudível": 0, "não observado": 0, "n/d": 0, "nao observado": 0,
-
-    # 2. Novos Termos da sua Base (Blinda contra erros de digitação)
-    "não agressivo": 1, "nao agressivo": 1, "não agresssivo": 1, "nao agresssivo": 1, "muito baixa": 1, "muito baixo": 1,
-    "baixo": 2, "baixa": 2, "pouco receptivo": 2,
+    
+    # Nível 1: Não (Ausência)
+    "não agressivo": 1, "nao agressivo": 1, "não agresssivo": 1, "nao agresssivo": 1, 
+    "não receptivo": 1, "nao receptivo": 1, "muito baixa": 1, "muito baixo": 1,
+    
+    # Nível 2: Pouco / Baixa intensidade
+    "baixo": 2, "baixa": 2, "pouco receptivo": 2, "pouco agressivo": 2,
+    
+    # Nível 3: Neutro / Moderada
     "neutro": 3, "moderada": 3, "moderado": 3,
-    "receptivo": 4, "alta": 4, "alto": 4,
-    "muito receptivo": 5, "muito alta": 5, "muito alto": 5,
-
-    # 3. Mapeamento das Fórmulas com Emojis 
+    
+    # Nível 4: Sim / Parcialmente (Alta intensidade)
+    "receptivo": 4, "parcialmente receptivo": 4, "agressivo": 4, "parcialmente agressivo": 4, "alta": 4, "alto": 4,
+    
+    # Nível 5: Muito (Intensidade Máxima)
+    "muito receptivo": 5, "muito agressivo": 5, "muito alta": 5, "muito alto": 5,
+    
     "🔴 reação negativa": 1, "⚪ reação neutra": 3, "🟢 reação positiva": 5
 }
 
@@ -706,11 +713,17 @@ else:
                 v_agr_c, v_rec_c = l_agr_c_num, l_rec_c_num
                 v_agr_e, v_rec_e = l_agr_e_num, l_rec_e_num
 
+            # Filtro inteligente: converte 0 (Não observado) em None para o gráfico não "despencar"
+            plot_agr_c = v_agr_c if v_agr_c > 0 else None
+            plot_agr_e = v_agr_e if v_agr_e > 0 else None
+            plot_rec_c = v_rec_c if v_rec_c > 0 else None
+            plot_rec_e = v_rec_e if v_rec_e > 0 else None
+
             fig_trend = go.Figure()
             
             fig_trend.add_trace(go.Scatter(
                 x=["Chegada", "Encerramento"], 
-                y=[v_agr_c, v_agr_e], 
+                y=[plot_agr_c, plot_agr_e], 
                 mode='lines+markers', 
                 name='Agressividade', 
                 line=dict(color='#ef4444', width=4), 
@@ -719,34 +732,36 @@ else:
             
             fig_trend.add_trace(go.Scatter(
                 x=["Chegada", "Encerramento"], 
-                y=[v_rec_c, v_rec_e], 
+                y=[plot_rec_c, plot_rec_e], 
                 mode='lines+markers', 
                 name='Receptividade', 
                 line=dict(color='#22c55e', width=4), 
                 marker=dict(size=12)
             ))
             
-            # ATUALIZAÇÃO: Rótulos do eixo Y ajustados para refletir exatamente os textos do Likert
+            # Eixo Y atualizado: removido o 0 e iniciado o range a partir do 0.5
             fig_trend.update_layout(
                 paper_bgcolor="rgba(0,0,0,0)", 
                 plot_bgcolor="rgba(0,0,0,0)", 
                 font_color="#FFF",
                 yaxis=dict(
                     title="Nível Qualitativo", 
-                    tickvals=[0, 1, 2, 3, 4, 5], 
+                    tickvals=[1, 2, 3, 4, 5], 
                     ticktext=[
-                        "0 - Não observado", 
-                        "1 - Muito Baixa / Não Agressivo", 
-                        "2 - Baixa / Pouco Receptivo", 
-                        "3 - Moderada / Neutro", 
-                        "4 - Alta / Receptivo", 
-                        "5 - Muito Alta / Muito Rec."
+                        "1 - Não Receptivo / Não Agressivo", 
+                        "2 - Pouco Receptivo / Pouco Agressivo", 
+                        "3 - Neutro / Moderado", 
+                        "4 - Receptivo / Agressivo", 
+                        "5 - Muito Receptivo / Muito Agressivo"
                     ], 
-                    range=[-0.5, 5.5]
+                    range=[0.5, 5.5] # Inicia acima do zero
                 ),
-                xaxis=dict(title="Momento da Ocorrência"), 
+                xaxis=dict(title=None), 
                 legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
             )
+            
+            # Connectgaps=False garante que se houver um None, a linha é interrompida
+            fig_trend.update_traces(connectgaps=False)
             
             st.plotly_chart(fig_trend, use_container_width=True)
 
