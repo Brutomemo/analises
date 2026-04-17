@@ -707,16 +707,48 @@ else:
                 v_agr_e, v_rec_e = l_agr_e_num, l_rec_e_num
 
             fig_trend = go.Figure()
-            fig_trend.add_trace(go.Scatter(x=["Chegada", "Encerramento"], y=[v_agr_c, v_agr_e], mode='lines+markers', name='Agressividade', line=dict(color='#ef4444', width=4), marker=dict(size=12)))
-            fig_trend.add_trace(go.Scatter(x=["Chegada", "Encerramento"], y=[v_rec_c, v_rec_e], mode='lines+markers', name='Receptividade', line=dict(color='#22c55e', width=4), marker=dict(size=12)))
+            
+            fig_trend.add_trace(go.Scatter(
+                x=["Chegada", "Encerramento"], 
+                y=[v_agr_c, v_agr_e], 
+                mode='lines+markers', 
+                name='Agressividade', 
+                line=dict(color='#ef4444', width=4), 
+                marker=dict(size=12)
+            ))
+            
+            fig_trend.add_trace(go.Scatter(
+                x=["Chegada", "Encerramento"], 
+                y=[v_rec_c, v_rec_e], 
+                mode='lines+markers', 
+                name='Receptividade', 
+                line=dict(color='#22c55e', width=4), 
+                marker=dict(size=12)
+            ))
+            
+            # ATUALIZAÇÃO: Rótulos do eixo Y ajustados para refletir exatamente os textos do Likert
             fig_trend.update_layout(
-                paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font_color="#FFF",
-                yaxis=dict(title="Nível Qualitativo", tickvals=[0,1,2,3,4,5], ticktext=["Não obs.", "Muito Baixa", "Baixa", "Moderada", "Alta", "Muito Alta"], range=[-0.5, 5.5]),
-                xaxis=dict(title="Momento da Ocorrência"), legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
+                paper_bgcolor="rgba(0,0,0,0)", 
+                plot_bgcolor="rgba(0,0,0,0)", 
+                font_color="#FFF",
+                yaxis=dict(
+                    title="Nível Qualitativo", 
+                    tickvals=[0, 1, 2, 3, 4, 5], 
+                    ticktext=[
+                        "0 - Não observado", 
+                        "1 - Muito Baixa / Não Agressivo", 
+                        "2 - Baixa / Pouco Receptivo", 
+                        "3 - Moderada / Neutro", 
+                        "4 - Alta / Receptivo", 
+                        "5 - Muito Alta / Muito Rec."
+                    ], 
+                    range=[-0.5, 5.5]
+                ),
+                xaxis=dict(title="Momento da Ocorrência"), 
+                legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
             )
+            
             st.plotly_chart(fig_trend, use_container_width=True)
-
-            st.markdown("---")
 
             st.markdown("### 🧠 Percepção dos negociadores sobre a receptividade e agressividade do causador no início e encerramento da ocorrência (Textual)")
             tab_chegada, tab_encerramento = st.tabs(["➡️ Na Chegada à Ocorrência", "🛑 No Encerramento"])
