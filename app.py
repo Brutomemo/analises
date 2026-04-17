@@ -1009,30 +1009,30 @@ else:
             # --- INÍCIO DO BLOCO DE EXPLICAÇÃO (EXPANDER) ---
             with st.expander("📖 Entenda a Análise Semântica Avançada e o termômetro do incidente", expanded=False):
                 st.markdown("""
-                <div class='info-card' style='margin-top: 0px;'>
-                    <h5 style='color: #FFD700; margin-top: 0;'>1. Análise de Valência e Pesos da estrutura da linguagem (O Contexto Importa)</h5>
-                    <p style='font-size: 0.95rem; color: #ddd; line-height: 1.5;'>
-                        O sistema utiliza um motor de <strong>Processamento de Linguagem Natural Sensível ao Contexto</strong>. Ele não apenas procura palavras soltas, mas entende a intenção da frase.<br>
-                        • <strong>Pesos Relativos:</strong> Termos mais graves (ex: "vou me matar") têm uma pontuação matemática muito maior que termos brandos (ex: "dor").<br>
-                        • <strong>Modificadores de Valência:</strong> O algoritmo varre o entorno da palavra para identificar <em>Negações</em> (ex: "<strong>não</strong> quero morrer" reduz o risco da palavra morrer), <em>Intensificadores</em> (ex: "estou <strong>muito</strong> armado" aumenta o risco) e marcadores de <em>Urgência</em> (ex: "quero isso <strong>agora</strong>").
-                    </p>
+<div class='info-card' style='margin-top: 0px;'>
+    <h5 style='color: #FFD700; margin-top: 0;'>1. Análise de Valência e Pesos da estrutura da linguagem (O Contexto Importa)</h5>
+    <p style='font-size: 0.95rem; color: #ddd; line-height: 1.5;'>
+        O sistema utiliza um motor de <strong>Processamento de Linguagem Natural Sensível ao Contexto</strong>. Ele não apenas procura palavras soltas, mas entende a intenção da frase.<br>
+        • <strong>Pesos Relativos:</strong> Termos mais graves (ex: "vou me matar") têm uma pontuação matemática muito maior que termos brandos (ex: "dor").<br>
+        • <strong>Modificadores de Valência:</strong> O algoritmo varre o entorno da palavra para identificar <em>Negações</em> (ex: "<strong>não</strong> quero morrer" reduz o risco da palavra morrer), <em>Intensificadores</em> (ex: "estou <strong>muito</strong> armado" aumenta o risco) e marcadores de <em>Urgência</em> (ex: "quero isso <strong>agora</strong>").
+    </p>
 
-                    <h5 style='color: #FFD700;'>2. O Índice Geral do Incidente Crítico (Termômetro do incidente)</h5>
-                    <p style='font-size: 0.95rem; color: #ddd; line-height: 1.5;'>
-                        A IA calcula a "temperatura" da ocorrência ponderando as categorias de risco (Hostilidade e Suicídio pesam mais que Vínculos Afetivos, por exemplo). O resultado é classificado em: <br>
-                        🔴 <strong>CRÍTICO (Score > 18):</strong> Iminência de ruptura, grave risco à vida ou exigências sob forte hostilidade e urgência.<br>
-                        🟡 <strong>MODERADO (Score 8 a 17):</strong> Tensão evidente, mas com janelas de ambivalência, vínculos ou diálogo instrumental.<br>
-                        🟢 <strong>BAIXO (Score < 8):</strong> Fortes indicadores de desescalada, rendição sinalizada ou diálogo altamente racionalizado.
-                    </p>
+    <h5 style='color: #FFD700;'>2. O Índice Geral do Incidente Crítico (Termômetro do incidente)</h5>
+    <p style='font-size: 0.95rem; color: #ddd; line-height: 1.5;'>
+        A IA calcula a "temperatura" da ocorrência ponderando as categorias de risco (Hostilidade e Suicídio pesam mais que Vínculos Afetivos, por exemplo). O resultado é classificado em: <br>
+        🔴 <strong>CRÍTICO (Score > 18):</strong> Iminência de ruptura, grave risco à vida ou exigências sob forte hostilidade e urgência.<br>
+        🟡 <strong>MODERADO (Score 8 a 17):</strong> Tensão evidente, mas com janelas de ambivalência, vínculos ou diálogo instrumental.<br>
+        🟢 <strong>BAIXO (Score < 8):</strong> Fortes indicadores de desescalada, rendição sinalizada ou diálogo altamente racionalizado.
+    </p>
 
-                    <h5 style='color: #FFD700;'>3. N-Gramas (Identificação de Loop Psicológico)</h5>
-                    <p style='font-size: 0.95rem; color: #ddd; line-height: 1.5;'>
-                        Mapeia a frequência de frases curtas (2 a 3 palavras). Indivíduos sob estresse agudo entram em <strong>loop cognitivo</strong>.<br>
-                        • <em>No Causador:</em> Repetir "não aguento mais" (14x) indica exaustão emocional severa. Repetir "cadê a imprensa" (9x) indica foco racional/instrumental.<br>
-                        • <em>No Negociador:</em> Padrões como "fica calmo" (18x) podem apontar vício de linguagem, escassez de recursos verbais sob pressão ou quebra de rapport.
-                    </p>
-                </div>
-                """, unsafe_allow_html=True)
+    <h5 style='color: #FFD700;'>3. N-Gramas (Identificação de Loop Psicológico)</h5>
+    <p style='font-size: 0.95rem; color: #ddd; line-height: 1.5;'>
+        Mapeia a frequência de frases curtas (2 a 3 palavras). Indivíduos sob estresse agudo entram em <strong>loop cognitivo</strong>.<br>
+        • <em>No Causador:</em> Repetir "não aguento mais" (14x) indica exaustão emocional severa. Repetir "cadê a imprensa" (9x) indica foco racional/instrumental.<br>
+        • <em>No Negociador:</em> Padrões como "fica calmo" (18x) podem apontar vício de linguagem, escassez de recursos verbais sob pressão ou quebra de rapport.
+    </p>
+</div>
+""", unsafe_allow_html=True)
             # --- FIM DO BLOCO DE EXPLICAÇÃO ---
 
             if st.button("⚙️ 2. GERAR NUVEM DE PALAVRAS E N-GRAMS"):
