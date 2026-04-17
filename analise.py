@@ -78,7 +78,7 @@ DICIONARIO_TATICO = {
             "estou descendo": 2.00
         }
     },
-    "Tentativa de Estabelecimento de Contato / Rapport": {
+    "Tentativa de Estabelecimento de Contato": {
         "tipo": "protecao",
         "peso_base": 1.15,
         "termos": {
