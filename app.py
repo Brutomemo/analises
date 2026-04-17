@@ -1006,114 +1006,114 @@ else:
 
             st.markdown("### 📊 Etapa 2: Análise Semântica (Machine Learning e Context-Aware NLP)")
             
-            # --- INÍCIO DO BLOCO DE EXPLICAÇÃO (EXPANDER) ---
-with st.expander("📖 Entenda a Análise Semântica Avançada e o Termômetro do Incidente", expanded=False):
-    st.markdown(
-        """
-        <div class='info-card' style='margin-top: 0px;'>
+                        # --- INÍCIO DO BLOCO DE EXPLICAÇÃO (EXPANDER) ---
+            with st.expander("📖 Entenda a Análise Semântica Avançada e o Termômetro do Incidente", expanded=False):
+                st.markdown(
+                    """
+                    <div class='info-card' style='margin-top: 0px;'>
 
-        <h5 style='color: #FFD700; margin-top: 0;'>🧠 Como o sistema lê o diálogo?</h5>
-        <p style='font-size: 0.92rem; color: #ddd; line-height: 1.6;'>
-        O sistema não conta palavras — ele <strong>interpreta intenções</strong>.<br>
-        Cada fala é analisada em contexto: o que foi dito, como foi dito, e o que estava ao redor da frase.
-        </p>
+                    <h5 style='color: #FFD700; margin-top: 0;'>🧠 Como o sistema lê o diálogo?</h5>
+                    <p style='font-size: 0.92rem; color: #ddd; line-height: 1.6;'>
+                    O sistema não conta palavras — ele <strong>interpreta intenções</strong>.<br>
+                    Cada fala é analisada em contexto: o que foi dito, como foi dito, e o que estava ao redor da frase.
+                    </p>
 
-        <hr style='border-color: #444; margin: 12px 0;'>
+                    <hr style='border-color: #444; margin: 12px 0;'>
 
-        <h5 style='color: #FFD700; margin-top: 10px;'>⚖️ 1. Pesos e Gravidade das Palavras</h5>
-        <p style='font-size: 0.92rem; color: #ddd; line-height: 1.6;'>
-        Nem toda palavra tem o mesmo peso. O sistema atribui uma <strong>pontuação de gravidade</strong> a cada termo:<br>
-        • <em>"dor"</em> → peso baixo (sinal de sofrimento, mas não de ação imediata)<br>
-        • <em>"vou me matar"</em> → peso muito alto (ação declarada, risco imediato)<br><br>
-        Isso evita que palavras comuns inflem artificialmente o resultado.
-        </p>
+                    <h5 style='color: #FFD700; margin-top: 10px;'>⚖️ 1. Pesos e Gravidade das Palavras</h5>
+                    <p style='font-size: 0.92rem; color: #ddd; line-height: 1.6;'>
+                    Nem toda palavra tem o mesmo peso. O sistema atribui uma <strong>pontuação de gravidade</strong> a cada termo:<br>
+                    • <em>"dor"</em> → peso baixo (sinal de sofrimento, mas não de ação imediata)<br>
+                    • <em>"vou me matar"</em> → peso muito alto (ação declarada, risco imediato)<br><br>
+                    Isso evita que palavras comuns inflem artificialmente o resultado.
+                    </p>
 
-        <h5 style='color: #FFD700; margin-top: 15px;'>🔄 2. O Contexto Muda Tudo (Modificadores de Valência)</h5>
-        <p style='font-size: 0.92rem; color: #ddd; line-height: 1.6;'>
-        O sistema varre as palavras ao redor de cada termo para entender a intenção real:<br><br>
-        • <strong>Negação:</strong> <em>"<u>não</u> quero morrer"</em> → o risco da palavra <em>morrer</em> é reduzido. A frase sinaliza ambivalência, não intenção.<br>
-        • <strong>Intensificador:</strong> <em>"estou <u>muito</u> armado"</em> → o risco aumenta. A ênfase eleva a gravidade.<br>
-        • <strong>Atenuador:</strong> <em>"<u>talvez</u> eu faça isso"</em> → o peso é reduzido. Há hesitação.<br>
-        • <strong>Urgência:</strong> <em>"quero isso <u>agora</u>"</em> → sinaliza pressão temporal, aumenta o risco instrumental.
-        </p>
+                    <h5 style='color: #FFD700; margin-top: 15px;'>🔄 2. O Contexto Muda Tudo (Modificadores de Valência)</h5>
+                    <p style='font-size: 0.92rem; color: #ddd; line-height: 1.6;'>
+                    O sistema varre as palavras ao redor de cada termo para entender a intenção real:<br><br>
+                    • <strong>Negação:</strong> <em>"<u>não</u> quero morrer"</em> → o risco da palavra <em>morrer</em> é reduzido. A frase sinaliza ambivalência, não intenção.<br>
+                    • <strong>Intensificador:</strong> <em>"estou <u>muito</u> armado"</em> → o risco aumenta. A ênfase eleva a gravidade.<br>
+                    • <strong>Atenuador:</strong> <em>"<u>talvez</u> eu faça isso"</em> → o peso é reduzido. Há hesitação.<br>
+                    • <strong>Urgência:</strong> <em>"quero isso <u>agora</u>"</em> → sinaliza pressão temporal, aumenta o risco instrumental.
+                    </p>
 
-        <hr style='border-color: #444; margin: 12px 0;'>
+                    <hr style='border-color: #444; margin: 12px 0;'>
 
-        <h5 style='color: #FFD700; margin-top: 10px;'>🧭 3. Os Três Vetores da Crise</h5>
-        <p style='font-size: 0.92rem; color: #ddd; line-height: 1.6;'>
-        O sistema separa o diálogo em <strong>três forças opostas</strong>, como um cabo de guerra:<br><br>
-        🔴 <strong>Vetor de Risco:</strong> linguagem de ameaça, hostilidade, ideação suicida, exigências sob pressão.<br>
-        &nbsp;&nbsp;&nbsp;&nbsp;<em>Exemplo: "vou matar", "ninguém entra", "quero morrer"</em><br><br>
-        🟢 <strong>Vetor de Proteção / Desescalada:</strong> rendição, cooperação, vínculo afetivo, pedido de ajuda.<br>
-        &nbsp;&nbsp;&nbsp;&nbsp;<em>Exemplo: "me entrego", "fala comigo", "minha filha"</em><br><br>
-        🟡 <strong>Vetor Contextual:</strong> gatilhos de fundo — frustração, dívida, traição — que explicam a crise, mas não são risco direto.<br>
-        &nbsp;&nbsp;&nbsp;&nbsp;<em>Exemplo: "perdi tudo", "fui traído", "estou desempregado"</em>
-        </p>
+                    <h5 style='color: #FFD700; margin-top: 10px;'>🧭 3. Os Três Vetores da Crise</h5>
+                    <p style='font-size: 0.92rem; color: #ddd; line-height: 1.6;'>
+                    O sistema separa o diálogo em <strong>três forças opostas</strong>, como um cabo de guerra:<br><br>
+                    🔴 <strong>Vetor de Risco:</strong> linguagem de ameaça, hostilidade, ideação suicida, exigências sob pressão.<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;<em>Exemplo: "vou matar", "ninguém entra", "quero morrer"</em><br><br>
+                    🟢 <strong>Vetor de Proteção / Desescalada:</strong> rendição, cooperação, vínculo afetivo, pedido de ajuda.<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;<em>Exemplo: "me entrego", "fala comigo", "minha filha"</em><br><br>
+                    🟡 <strong>Vetor Contextual:</strong> gatilhos de fundo — frustração, dívida, traição — que explicam a crise, mas não são risco direto.<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;<em>Exemplo: "perdi tudo", "fui traído", "estou desempregado"</em>
+                    </p>
 
-        <hr style='border-color: #444; margin: 12px 0;'>
+                    <hr style='border-color: #444; margin: 12px 0;'>
 
-        <h5 style='color: #FFD700; margin-top: 10px;'>🌡️ 4. O Termômetro do Incidente — Como Ler os Índices</h5>
-        <p style='font-size: 0.92rem; color: #ddd; line-height: 1.6;'>
-        Com os três vetores, o sistema calcula quatro indicadores principais:<br><br>
+                    <h5 style='color: #FFD700; margin-top: 10px;'>🌡️ 4. O Termômetro do Incidente — Como Ler os Índices</h5>
+                    <p style='font-size: 0.92rem; color: #ddd; line-height: 1.6;'>
+                    Com os três vetores, o sistema calcula quatro indicadores principais:<br><br>
 
-        📊 <strong>Intensidade Global:</strong> o quanto o incidente está "carregado" emocionalmente — independente de ser risco ou proteção.<br>
-        &nbsp;&nbsp;&nbsp;&nbsp;<em>Alta intensidade não significa alta periculosidade. Pode ser uma crise intensa, mas em resolução.</em><br><br>
+                    📊 <strong>Intensidade Global:</strong> o quanto o incidente está "carregado" emocionalmente — independente de ser risco ou proteção.<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;<em>Alta intensidade não significa alta periculosidade. Pode ser uma crise intensa, mas em resolução.</em><br><br>
 
-        🧭 <strong>Direção da Crise:</strong> para onde o incidente está caminhando.<br>
-        &nbsp;&nbsp;&nbsp;&nbsp;• Valor <strong>positivo</strong> → predomínio de desescalada (proteção > risco)<br>
-        &nbsp;&nbsp;&nbsp;&nbsp;• Valor <strong>negativo</strong> → predomínio de escalada (risco > proteção)<br>
-        &nbsp;&nbsp;&nbsp;&nbsp;• Próximo de zero → forças opostas em equilíbrio — situação instável<br><br>
+                    🧭 <strong>Direção da Crise:</strong> para onde o incidente está caminhando.<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;• Valor <strong>positivo</strong> → predomínio de desescalada (proteção > risco)<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;• Valor <strong>negativo</strong> → predomínio de escalada (risco > proteção)<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;• Próximo de zero → forças opostas em equilíbrio — situação instável<br><br>
 
-        ⚡ <strong>Volatilidade Semântica:</strong> mede a coexistência de risco e proteção ao mesmo tempo.<br>
-        &nbsp;&nbsp;&nbsp;&nbsp;<em>Alta volatilidade = o sujeito oscila entre ameaça e cooperação. Momento de maior imprevisibilidade.</em><br><br>
+                    ⚡ <strong>Volatilidade Semântica:</strong> mede a coexistência de risco e proteção ao mesmo tempo.<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;<em>Alta volatilidade = o sujeito oscila entre ameaça e cooperação. Momento de maior imprevisibilidade.</em><br><br>
 
-        🎯 <strong>Classificação Final:</strong> síntese operacional do estado da crise.
-        </p>
+                    🎯 <strong>Classificação Final:</strong> síntese operacional do estado da crise.
+                    </p>
 
-        <hr style='border-color: #444; margin: 12px 0;'>
+                    <hr style='border-color: #444; margin: 12px 0;'>
 
-        <h5 style='color: #FFD700; margin-top: 10px;'>🚦 5. Classificações Possíveis — O que cada uma significa</h5>
-        <p style='font-size: 0.92rem; color: #ddd; line-height: 1.6;'>
-        🔴 <strong>CRÍTICO:</strong> Linguagem de ameaça ou autoaniquilação dominante, sem sinais protetivos suficientes. Risco imediato à vida.<br><br>
-        🟠 <strong>TRANSIÇÃO INSTÁVEL:</strong> Há tanto risco quanto sinais de rendição ao mesmo tempo. O incidente está em ponto de virada — janela de resolução existe, mas o risco residual é alto. <em>Momento mais delicado da negociação.</em><br><br>
-        🟡 <strong>MODERADO COM VIÉS DE ESCALADA:</strong> Sinais de deterioração do diálogo, mas sem configuração crítica consolidada. Atenção redobrada.<br><br>
-        🔵 <strong>DESACELERAÇÃO OU DESESCALADA DA AGRESSIVIDADE:</strong> A direção do diálogo aponta para cooperação e rendição. O risco não desapareceu, mas perdeu centralidade. Negociação em curso positivo.<br><br>
-        🟢 <strong>CONTROLADO / COOPERATIVO:</strong> Predominam sinais de escuta, vínculo e desescalada. Quadro de maior estabilização verbal.<br><br>
-        ⚪ <strong>AMBIVALENTE / INDETERMINADO:</strong> Sinais mistos ou densidade semântica insuficiente. Recomenda-se leitura integrada com o contexto operacional.<br><br>
-        ⬜ <strong>BAIXA PRESSÃO:</strong> Pouca carga semântica relevante detectada. Pode indicar diálogo racional, registro incompleto ou ausência de crise verbal.
-        </p>
+                    <h5 style='color: #FFD700; margin-top: 10px;'>🚦 5. Classificações Possíveis — O que cada uma significa</h5>
+                    <p style='font-size: 0.92rem; color: #ddd; line-height: 1.6;'>
+                    🔴 <strong>CRÍTICO:</strong> Linguagem de ameaça ou autoaniquilação dominante, sem sinais protetivos suficientes. Risco imediato à vida.<br><br>
+                    🟠 <strong>TRANSIÇÃO INSTÁVEL:</strong> Há tanto risco quanto sinais de rendição ao mesmo tempo. O incidente está em ponto de virada — janela de resolução existe, mas o risco residual é alto. <em>Momento mais delicado da negociação.</em><br><br>
+                    🟡 <strong>MODERADO COM VIÉS DE ESCALADA:</strong> Sinais de deterioração do diálogo, mas sem configuração crítica consolidada. Atenção redobrada.<br><br>
+                    🔵 <strong>DESACELERAÇÃO TÁTICA:</strong> A direção do diálogo aponta para cooperação e rendição. O risco não desapareceu, mas perdeu centralidade. Negociação em curso positivo.<br><br>
+                    🟢 <strong>CONTROLADO / COOPERATIVO:</strong> Predominam sinais de escuta, vínculo e desescalada. Quadro de maior estabilização verbal.<br><br>
+                    ⚪ <strong>AMBIVALENTE / INDETERMINADO:</strong> Sinais mistos ou densidade semântica insuficiente. Recomenda-se leitura integrada com o contexto operacional.<br><br>
+                    ⬜ <strong>BAIXA PRESSÃO:</strong> Pouca carga semântica relevante detectada. Pode indicar diálogo racional, registro incompleto ou ausência de crise verbal.
+                    </p>
 
-        <hr style='border-color: #444; margin: 12px 0;'>
+                    <hr style='border-color: #444; margin: 12px 0;'>
 
-        <h5 style='color: #FFD700; margin-top: 10px;'>🔁 6. N-Gramas — Identificando o Loop Psicológico</h5>
-        <p style='font-size: 0.92rem; color: #ddd; line-height: 1.6;'>
-        O sistema mapeia <strong>frases curtas repetidas</strong> (2 a 3 palavras) ao longo de toda a transcrição.<br>
-        Pessoas sob estresse agudo tendem a repetir as mesmas expressões — isso é chamado de <strong>loop cognitivo</strong>.<br><br>
-        O que a repetição revela:<br>
-        • <em>"não aguento mais"</em> repetido → exaustão emocional severa, risco de ruptura<br>
-        • <em>"cadê a imprensa"</em> repetido → foco racional e instrumental, não emocional<br>
-        • <em>"fica calmo"</em> repetido pelo negociador → pode indicar escassez de recursos verbais ou quebra de rapport<br><br>
-        <strong>Atenção:</strong> a repetição em si não é risco — é um sinal de fixação cognitiva que precisa ser interpretado junto com o tema dominante.
-        </p>
+                    <h5 style='color: #FFD700; margin-top: 10px;'>🔁 6. N-Gramas — Identificando o Loop Psicológico</h5>
+                    <p style='font-size: 0.92rem; color: #ddd; line-height: 1.6;'>
+                    O sistema mapeia <strong>frases curtas repetidas</strong> (2 a 3 palavras) ao longo de toda a transcrição.<br>
+                    Pessoas sob estresse agudo tendem a repetir as mesmas expressões — isso é chamado de <strong>loop cognitivo</strong>.<br><br>
+                    O que a repetição revela:<br>
+                    • <em>"não aguento mais"</em> repetido → exaustão emocional severa, risco de ruptura<br>
+                    • <em>"cadê a imprensa"</em> repetido → foco racional e instrumental, não emocional<br>
+                    • <em>"fica calmo"</em> repetido pelo negociador → pode indicar escassez de recursos verbais ou quebra de rapport<br><br>
+                    <strong>Atenção:</strong> a repetição em si não é risco — é um sinal de fixação cognitiva que precisa ser interpretado junto com o tema dominante.
+                    </p>
 
-        <hr style='border-color: #444; margin: 12px 0;'>
+                    <hr style='border-color: #444; margin: 12px 0;'>
 
-        <h5 style='color: #FFD700; margin-top: 10px;'>⚠️ Limitações importantes</h5>
-        <p style='font-size: 0.92rem; color: #ddd; line-height: 1.6;'>
-        Este sistema é uma <strong>ferramenta de apoio à decisão</strong>, não um substituto ao julgamento do negociador.<br>
-        • Transcrições incompletas ou com erros de digitação reduzem a precisão.<br>
-        • Gírias regionais, ironia e sarcasmo podem não ser capturados corretamente.<br>
-        • Os índices numéricos são relativos ao volume do texto — transcrições muito curtas geram resultados menos confiáveis.<br><br>
-        <em>Sempre interprete os dados em conjunto com o contexto operacional, a timeline do incidente e o perfil do causador.</em>
-        </p>
+                    <h5 style='color: #FFD700; margin-top: 10px;'>⚠️ Limitações importantes</h5>
+                    <p style='font-size: 0.92rem; color: #ddd; line-height: 1.6;'>
+                    Este sistema é uma <strong>ferramenta de apoio à decisão</strong>, não um substituto ao julgamento do negociador.<br>
+                    • Transcrições incompletas ou com erros de digitação reduzem a precisão.<br>
+                    • Gírias regionais, ironia e sarcasmo podem não ser capturados corretamente.<br>
+                    • Os índices numéricos são relativos ao volume do texto — transcrições muito curtas geram resultados menos confiáveis.<br><br>
+                    <em>Sempre interprete os dados em conjunto com o contexto operacional, a timeline do incidente e o perfil do causador.</em>
+                    </p>
 
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-# --- FIM DO BLOCO DE EXPLICAÇÃO ---
+                    </div>
+                    """,
+                    unsafe_allow_html=True
+                )
+            # --- FIM DO BLOCO DE EXPLICAÇÃO ---
 
-if st.button("⚙️ 2. GERAR NUVEM DE PALAVRAS E N-GRAMS"):
+            if st.button("⚙️ 2. GERAR NUVEM DE PALAVRAS E N-GRAMS"):
                 with st.spinner("Processando N-Grams e plotando gráficos..."):
                     texto_c = limpar_valor(df_apa.get('TRANSCRIÇÃO DO CAUSADOR'))
                     texto_np = limpar_valor(df_apa.get('TRANSCRIÇÃO DO NEGOCIADOR PRINCIPAL'))
@@ -1145,11 +1145,11 @@ if st.button("⚙️ 2. GERAR NUVEM DE PALAVRAS E N-GRAMS"):
 
             st.markdown("---")
             
-st.markdown("### 📄 Etapa 3: Inteligência de Apoio à Decisão e Exportação")
+            st.markdown("### 📄 Etapa 3: Inteligência de Apoio à Decisão e Exportação")
             
             #url_n8n = "http://host.docker.internal:5680/webhook/analise-doc"
             
-if st.button("📡 3. GERAR ANALYTICS E EXPORTAR ANÁLISE (PDF)"):
+            if st.button("📡 3. GERAR ANALYTICS E EXPORTAR ANÁLISE (PDF)"):
                 with st.spinner("Compilando dados técnicos, consultando IA e desenhando PDF..."):
                     try:
                         t_causador = limpar_valor(df_apa.get('TRANSCRIÇÃO DO CAUSADOR'))
@@ -1344,7 +1344,7 @@ if st.button("📡 3. GERAR ANALYTICS E EXPORTAR ANÁLISE (PDF)"):
     # =========================================================
     # ABA 2: PAINEL (HISTÓRICO)
     # =========================================================
-with aba_geral:
+    with aba_geral:
         st.markdown("### 🧠 Série Histórica - Negociações GATE")
         st.markdown("<h5 style='color: #f97;'>Filtros por: Negociador, Tipologia e Modalidade do Incidente</h5>", unsafe_allow_html=True)
         
