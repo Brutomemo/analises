@@ -1018,7 +1018,7 @@ else:
                     "</p>"
                     "<h5 style='color: #FFD700; margin-top: 15px;'>2. O Índice Geral do Incidente Crítico (Termômetro do incidente)</h5>"
                     "<p style='font-size: 0.95rem; color: #ddd; line-height: 1.5;'>"
-                    "A IA calcula a \"temperatura\" da ocorrência ponderando as categorias de risco (Hostilidade e Suicídio pesam mais que Vínculos Afetivos, por exemplo). O resultado é classificado em: <br>"
+                    "A IA calcula a \"temperatura\" da ocorrência ponderando as categorias de risco. O resultado é classificado em: <br>"
                     "🔴 <strong>CRÍTICO (Score > 18):</strong> Iminência de ruptura, grave risco à vida ou exigências sob forte hostilidade e urgência.<br>"
                     "🟡 <strong>MODERADO (Score 8 a 17):</strong> Tensão evidente, mas com janelas de ambivalência, vínculos ou diálogo instrumental.<br>"
                     "🟢 <strong>BAIXO (Score &lt; 8):</strong> Fortes indicadores de desescalada, rendição sinalizada ou diálogo altamente racionalizado."
