@@ -1039,7 +1039,7 @@ else:
 
                     <hr style='border-color: #444; margin: 12px 0;'>
 
-                    <h5 style='color: #FFD700; margin-top: 10px;'>🧭 3. Os Três Vetores da Crise</h5>
+                    <h5 style='color: #FFD700; margin-top: 10px;'>🧭 3. Os Três Vetores do Incidente Crítico</h5>
                     <p style='font-size: 0.92rem; color: #ddd; line-height: 1.6;'>
                     O sistema separa o diálogo em <strong>três forças opostas</strong>, como um cabo de guerra:<br><br>
                     🔴 <strong>Vetor de Risco:</strong> linguagem de ameaça, hostilidade, ideação suicida, exigências sob pressão.<br>
