@@ -485,7 +485,7 @@ def classificar_estado_crise(
 
     if protecao_index >= 12 and direcao_index >= 6:
         return (
-            "DESACELERAÇÃO TÁTICA",
+            "DESACELERAÇÃO DA AGRESSIVIDADE",
             "A carga emocional ainda pode ser alta, porém a direção predominante do diálogo aponta para rendição, vínculo ou cooperação. O risco não desapareceu, mas perdeu centralidade."
         )
 
