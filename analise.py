@@ -88,7 +88,7 @@ DICIONARIO_TATICO = {
             'quero falar com': 1.5, 'preciso de': 1.0, 'me traz': 1.2
         }
     },
-    'Sinalização de Rendição / Desescalada': {
+    'Sinalização de Rendição / Desescalada de violência': {
         'peso_base': 1.5,
         'termos': {
             'entregar': 2.0, 'sair': 1.5, 'porta': 0.7, 'abrir': 1.5, 'desce': 1.0, 'mão': 0.7,
@@ -112,7 +112,7 @@ PESO_RISCO_CATEGORIA = {
     'Ideação Suicida / Desesperança (Crise Interna)': 1.35,
     'Risco à Integridade / Hostilidade (Crise Externa)': 1.45,
     'Ambivalência / Pedido de Ajuda Velado': 1.15,
-    'Sinalização de Rendição / Desescalada': -0.55,
+    'Sinalização de Rendição / Desescalada de violência': -0.55,
 }
 
 
