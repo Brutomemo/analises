@@ -12,7 +12,7 @@ import unicodedata
 # 1. LISTA DE BLOQUEIO DO GATE
 STOPWORDS_GATE = {
     'o', 'a', 'os', 'as', 'um', 'uma', 'de', 'do', 'da', 'em', 'no', 'na', 'para', 'com', 'por', 'que', 'se', 'não',
-    'é', 'dos', 'das', 'ao', 'aos', 'foi', 'houve', 'como', 'mas', 'ou', 'ele', 'ela', 'eu', 'você', 'nós', 'nos',
+    'é', 'dos', 'das', 'ao', 'aos', 'foi', 'houve', 'como', 'mas', 'ou', 'ele', 'ela', 'eu', 'você', 'voce', 'vc' 'nós', 'nos',
     'tá', 'já', 'só', 'mais', 'muito', 'isso', 'esse', 'essa', 'quando', 'onde', 'quem', 'causador', 'negociador',
     'principal', 'secundário', 'lider', 'equipe', 'ocorrência', 'incidente', 'forma', 'sim', 'ser', 'ter', 'fazer',
     'aqui', 'pra', 'vai', 'vou', 'está', 'falar', 'quer', 'então', 'coisa', 'aí', 'lá', 'né', 'bom', 'bem',
