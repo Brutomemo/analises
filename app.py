@@ -70,23 +70,23 @@ def somar_tempos_segundos(serie):
 escala_likert = {
     "❓ inaudível / não observado": 0, "inaudível": 0, "não observado": 0, "n/d": 0, "nao observado": 0,
     
-    # Nível 1: Não (Ausência)
+    # Nível 1
     "não agressivo": 1, "nao agressivo": 1, "não agresssivo": 1, "nao agresssivo": 1, 
-    "não receptivo": 1, "nao receptivo": 1, "muito baixa": 1, "muito baixo": 1,
+    "não receptivo": 1, "nao receptivo": 1,
     
-    # Nível 2: Pouco / Baixa intensidade
-    "baixo": 2, "baixa": 2, "pouco receptivo": 2, "pouco agressivo": 2,
+    # Nível 2
+    "neutro": 2, 
     
-    # Nível 3: Neutro / Moderada
-    "neutro": 3, "moderada": 3, "moderado": 3,
+    # Nível 3
+    "parcialmente agressivo": 3, "parcialmente receptivo": 3,
     
-    # Nível 4: Sim / Parcialmente (Alta intensidade)
-    "receptivo": 4, "parcialmente receptivo": 4, "agressivo": 4, "parcialmente agressivo": 4, "alta": 4, "alto": 4,
+    # Nível 4
+    "agressivo": 4, "receptivo": 4,
     
-    # Nível 5: Muito (Intensidade Máxima)
-    "muito receptivo": 5, "muito agressivo": 5, "muito alta": 5, "muito alto": 5,
+    # Nível 5
+    "muito agressivo": 5, "muito receptivo": 5,
     
-    "🔴 reação negativa": 1, "⚪ reação neutra": 3, "🟢 reação positiva": 5
+    "🔴 reação negativa": 1, "⚪ reação neutra": 2, "🟢 reação positiva": 5
 }
 
 def converter_escala(val):
@@ -739,7 +739,7 @@ else:
                 marker=dict(size=12)
             ))
             
-            # Eixo Y atualizado: removido o 0 e iniciado o range a partir do 0.5
+            # Eixo Y atualizado:
             fig_trend.update_layout(
                 paper_bgcolor="rgba(0,0,0,0)", 
                 plot_bgcolor="rgba(0,0,0,0)", 
@@ -748,13 +748,13 @@ else:
                     title="Nível Qualitativo", 
                     tickvals=[1, 2, 3, 4, 5], 
                     ticktext=[
-                        "1 - Não Receptivo / Não Agressivo", 
-                        "2 - Pouco Receptivo / Pouco Agressivo", 
-                        "3 - Neutro / Moderado", 
-                        "4 - Receptivo / Agressivo", 
-                        "5 - Muito Receptivo / Muito Agressivo"
+                        "1 - Não agressivo / não receptivo", 
+                        "2 - Neutro", 
+                        "3 - Parcialmente agressivo / parcialmente receptivo", 
+                        "4 - Agressivo / receptivo", 
+                        "5 - Muito agressivo / muito receptivo"
                     ], 
-                    range=[0.5, 5.5] # Inicia acima do zero
+                    range=[0.5, 5.5] 
                 ),
                 xaxis=dict(title=None), 
                 legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
