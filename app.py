@@ -167,21 +167,6 @@ def somar_tempos_segundos(serie):
     m = (total_s % 3600) // 60
     return f"{h:02d}h {m:02d}m"
 
-# --- MOTOR GRÁFICO (MAPA EMOCIONAL COMPLETO & BLINDADO) ---
-escala_likert = {
-    # 1. Opções de Sistema / Inaudíveis
-    "❓ inaudível / não observado": 0, "inaudível": 0, "não observado": 0, "n/d": 0, "nao observado": 0,
-
-    # 2. Novos Termos da sua Base (Blinda contra erros de digitação)
-    "não agressivo": 1, "nao agressivo": 1, "não agresssivo": 1, "nao agresssivo": 1, "muito baixa": 1, "muito baixo": 1,
-    "baixo": 2, "baixa": 2, "pouco receptivo": 2,
-    "neutro": 3, "moderada": 3, "moderado": 3,
-    "receptivo": 4, "alta": 4, "alto": 4,
-    "muito receptivo": 5, "muito alta": 5, "muito alto": 5,
-
-    # 3. Mapeamento das Fórmulas com Emojis 
-    "🔴 reação negativa": 1, "⚪ reação neutra": 3, "🟢 reação positiva": 5
-}
 
 def converter_escala(val):
     if not val: return 0
