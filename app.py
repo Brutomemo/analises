@@ -1238,7 +1238,7 @@ else:
         st.markdown("<h4 style='color: #FFD700;'>📊 Visão Geral da Amostra</h4>", unsafe_allow_html=True)
         
         def gerar_grafico_resumo(df, coluna, titulo):
-            """Gera gráfico de barras horizontais padronizado com o Design System."""
+            """Gera gráfico de colunas verticais padronizado com o Design System."""
             if coluna not in df.columns: return None
             
             # Limpa listas vazias e formata strings
@@ -1249,31 +1249,31 @@ else:
             
             contagem = serie.value_counts().reset_index()
             contagem.columns = [coluna, 'Frequência']
-            contagem = contagem.sort_values('Frequência', ascending=True) 
+            # Para colunas verticais, ordenamos decrescente para a maior ficar à esquerda
+            contagem = contagem.sort_values('Frequência', ascending=False) 
             
-            # 1. Aplicado o degradê 'Oranges' baseado no valor da Frequência
+            # 1. Inversão dos eixos X e Y para gerar colunas (vertical)
             fig = px.bar(
                 contagem, 
-                x='Frequência', 
-                y=coluna, 
-                orientation='h', 
+                x=coluna,          # Categorias no eixo horizontal (base)
+                y='Frequência',    # Valores no eixo vertical (altura)
                 title=titulo, 
                 text='Frequência',
-                color='Frequência',                 # Ativa a coloração condicional
-                color_continuous_scale='Oranges'    # Mesma escala do Treemap
+                color='Frequência',                 
+                color_continuous_scale='Oranges'    
             )
             
-            # 2. Definido width=0.4 para deixar as barras mais finas (elegantes)
+            # 2. Mantém a largura fina e coloca o número no topo da coluna
             fig.update_traces(textposition='outside', width=0.4)
             
-            # 3. coloraxis_showscale=False remove a legenda lateral de cores para manter o visual limpo
+            # 3. Oculta a régua do eixo Y, pois o número exato já está no topo de cada coluna
             fig.update_layout(
                 paper_bgcolor="rgba(0,0,0,0)", 
                 plot_bgcolor="rgba(0,0,0,0)", 
                 font_color="#FFF", 
                 margin=dict(t=40, b=10, l=10, r=10), 
-                xaxis=dict(showgrid=False, visible=False), 
-                yaxis=dict(title=""),
+                xaxis=dict(title=""),                      # Remove o título do eixo X para não poluir
+                yaxis=dict(showgrid=False, visible=False), # Esconde a régua e as linhas de grade do eixo Y
                 coloraxis_showscale=False 
             )
             return fig
