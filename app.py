@@ -1231,7 +1231,61 @@ else:
         with col_m3: st.metric("Tempo Total de Negociação Tática", somar_tempos_segundos(df_quali_filt.get('Tempo de Negociação Tática', [])))
 
         st.markdown("---")
+        
+        # =========================================================
+        # NOVOS GRÁFICOS: VISÃO GERAL DA AMOSTRA
+        # =========================================================
+        st.markdown("<h4 style='color: #FFD700;'>📊 Visão Geral da Amostra</h4>", unsafe_allow_html=True)
+        
+        def gerar_grafico_resumo(df, coluna, titulo):
+            """Gera gráfico de barras horizontais padronizado com o Design System."""
+            if coluna not in df.columns: return None
+            
+            # Limpa listas vazias e formata strings
+            serie = df[coluna].apply(lambda x: x[0] if isinstance(x, list) and len(x)>0 else str(x))
+            serie = serie[~serie.isin(["N/D", "nan", "", "None"])]
+            
+            if serie.empty: return None
+            
+            contagem = serie.value_counts().reset_index()
+            contagem.columns = [coluna, 'Frequência']
+            contagem = contagem.sort_values('Frequência', ascending=True) # Ascendente para a maior barra ficar no topo
+            
+            fig = px.bar(contagem, x='Frequência', y=coluna, orientation='h', title=titulo, text='Frequência')
+            fig.update_traces(marker_color='#f97316', textposition='outside')
+            fig.update_layout(
+                paper_bgcolor="rgba(0,0,0,0)", 
+                plot_bgcolor="rgba(0,0,0,0)", 
+                font_color="#FFF", 
+                margin=dict(t=40, b=10, l=10, r=10), 
+                xaxis=dict(showgrid=False, visible=False), 
+                yaxis=dict(title="")
+            )
+            return fig
+
+        c_g1, c_g2 = st.columns(2)
+        
+        with c_g1:
+            fig_res = gerar_grafico_resumo(df_quali_filt, 'Resolução', 'Resolução do Incidente')
+            if fig_res: st.plotly_chart(fig_res, use_container_width=True)
+            else: st.info("Sem dados de Resolução para os filtros atuais.")
+            
+            fig_uni = gerar_grafico_resumo(df_quali_filt, 'Uniforme Usado', 'Uniforme Utilizado')
+            if fig_uni: st.plotly_chart(fig_uni, use_container_width=True)
+            else: st.info("Sem dados de Uniforme para os filtros atuais.")
+
+        with c_g2:
+            fig_trans = gerar_grafico_resumo(df_quali_filt, 'Forma de Transição', 'Forma de Transição')
+            if fig_trans: st.plotly_chart(fig_trans, use_container_width=True)
+            else: st.info("Sem dados de Transição para os filtros atuais.")
+            
+            fig_sexo = gerar_grafico_resumo(df_quali_filt, 'Sexo do Causador', 'Sexo do Causador')
+            if fig_sexo: st.plotly_chart(fig_sexo, use_container_width=True)
+            else: st.info("Sem dados de Sexo para os filtros atuais.")
+
+        st.markdown("---")
         st.markdown("#### Ranking de Técnicas Aplicadas")
+        
         if not df_tec.empty:
             df_tec['Neg_Limpo'] = df_tec['Negociador Principal do incidente crítico'].apply(limpar_valor) if 'Negociador Principal do incidente crítico' in df_tec.columns else 'N/D'
             df_tec['Tip_Limpa'] = df_tec['Tipologia do incidente crítico'].apply(limpar_valor) if 'Tipologia do incidente crítico' in df_tec.columns else 'N/D'
