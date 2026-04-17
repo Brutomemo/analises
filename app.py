@@ -1046,7 +1046,7 @@ else:
                     &nbsp;&nbsp;&nbsp;&nbsp;<em>Exemplo: "vou matar", "ninguém entra", "quero morrer"</em><br><br>
                     🟢 <strong>Vetor de Proteção / Desescalada:</strong> rendição, cooperação, vínculo afetivo, pedido de ajuda.<br>
                     &nbsp;&nbsp;&nbsp;&nbsp;<em>Exemplo: "me entrego", "fala comigo", "minha filha"</em><br><br>
-                    🟡 <strong>Vetor Contextual:</strong> gatilhos de fundo — frustração, dívida, traição — que explicam a crise, mas não são risco direto.<br>
+                    🟡 <strong>Vetor Contextual:</strong> gatilhos de fundo — frustração, dívida, traição — que explicam a crise, mas não necessariamente, apresentam risco direto.<br>
                     &nbsp;&nbsp;&nbsp;&nbsp;<em>Exemplo: "perdi tudo", "fui traído", "estou desempregado"</em>
                     </p>
 
