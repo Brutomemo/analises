@@ -1006,162 +1006,162 @@ else:
 
             st.markdown("### 📊 Etapa 2: Análise Semântica (Machine Learning e Context-Aware NLP)")
 
-    # --- INÍCIO DO BLOCO DE EXPLICAÇÃO (EXPANDER) ---
-    with st.expander("📖 Entenda a Análise Semântica Avançada e o Termômetro do Incidente", expanded=False):
+            # --- INÍCIO DO BLOCO DE EXPLICAÇÃO (EXPANDER) ---
+            with st.expander("📖 Entenda a Análise Semântica Avançada e o Termômetro do Incidente", expanded=False):
 
-        tab_metodo, tab_convergencia, tab_ngramas, tab_limitacoes = st.tabs([
-            "🧠 Método",
-            "📊 Convergência",
-            "🔁 N-Gramas",
-            "⚠️ Limitações"
-        ])
+                tab_metodo, tab_convergencia, tab_ngramas, tab_limitacoes = st.tabs([
+                    "🧠 Método",
+                    "📊 Convergência",
+                    "🔁 N-Gramas",
+                    "⚠️ Limitações"
+                ])
 
-        with tab_metodo:
-            st.markdown(
-                """
-                <div class='info-card' style='margin-top: 0px;'>
+                with tab_metodo:
+                    st.markdown(
+                        """
+                        <div class='info-card' style='margin-top: 0px;'>
 
-                <h5 style='color: #FFD700; margin-top: 0;'>🧠 Como o sistema lê o diálogo?</h5>
-                <p style='font-size: 0.92rem; color: #ddd; line-height: 1.6;'>
-                O sistema não conta palavras — ele <strong>interpreta intenções</strong>.<br>
-                Cada fala é analisada em contexto: o que foi dito, como foi dito, e o que estava ao redor da frase.
-                </p>
+                        <h5 style='color: #FFD700; margin-top: 0;'>🧠 Como o sistema lê o diálogo?</h5>
+                        <p style='font-size: 0.92rem; color: #ddd; line-height: 1.6;'>
+                        O sistema não conta palavras — ele <strong>interpreta intenções</strong>.<br>
+                        Cada fala é analisada em contexto: o que foi dito, como foi dito, e o que estava ao redor da frase.
+                        </p>
 
-                <hr style='border-color: #444; margin: 12px 0;'>
+                        <hr style='border-color: #444; margin: 12px 0;'>
 
-                <h5 style='color: #FFD700; margin-top: 10px;'>⚖️ 1. Pesos e Gravidade das Palavras</h5>
-                <p style='font-size: 0.92rem; color: #ddd; line-height: 1.6;'>
-                Nem toda palavra tem o mesmo peso. O sistema atribui uma <strong>pontuação de gravidade</strong> a cada termo:<br>
-                • <em>"dor"</em> → peso baixo (sinal de sofrimento, mas não de ação imediata)<br>
-                • <em>"vou me matar"</em> → peso muito alto (ação declarada, risco imediato)<br><br>
-                Isso evita que palavras comuns inflem artificialmente o resultado.
-                </p>
+                        <h5 style='color: #FFD700; margin-top: 10px;'>⚖️ 1. Pesos e Gravidade das Palavras</h5>
+                        <p style='font-size: 0.92rem; color: #ddd; line-height: 1.6;'>
+                        Nem toda palavra tem o mesmo peso. O sistema atribui uma <strong>pontuação de gravidade</strong> a cada termo:<br>
+                        • <em>"dor"</em> → peso baixo (sinal de sofrimento, mas não de ação imediata)<br>
+                        • <em>"vou me matar"</em> → peso muito alto (ação declarada, risco imediato)<br><br>
+                        Isso evita que palavras comuns inflem artificialmente o resultado.
+                        </p>
 
-                <h5 style='color: #FFD700; margin-top: 15px;'>🔄 2. O Contexto Muda Tudo (Modificadores de Valência)</h5>
-                <p style='font-size: 0.92rem; color: #ddd; line-height: 1.6;'>
-                O sistema varre as palavras ao redor de cada termo para entender a intenção real:<br><br>
-                • <strong>Negação:</strong> <em>"<u>não</u> quero morrer"</em> → o risco da palavra <em>morrer</em> é reduzido. A frase sinaliza ambivalência, não intenção.<br>
-                • <strong>Intensificador:</strong> <em>"estou <u>fortemente</u> armado"</em> → o risco aumenta. A ênfase eleva a gravidade.<br>
-                • <strong>Atenuador:</strong> <em>"<u>talvez</u> eu faça isso"</em> → o peso é reduzido. Há hesitação.<br>
-                • <strong>Urgência:</strong> <em>"quero isso <u>agora</u>"</em> → sinaliza pressão temporal, aumenta o risco instrumental.
-                </p>
+                        <h5 style='color: #FFD700; margin-top: 15px;'>🔄 2. O Contexto Muda Tudo (Modificadores de Valência)</h5>
+                        <p style='font-size: 0.92rem; color: #ddd; line-height: 1.6;'>
+                        O sistema varre as palavras ao redor de cada termo para entender a intenção real:<br><br>
+                        • <strong>Negação:</strong> <em>"<u>não</u> quero morrer"</em> → o risco da palavra <em>morrer</em> é reduzido. A frase sinaliza ambivalência, não intenção.<br>
+                        • <strong>Intensificador:</strong> <em>"estou <u>fortemente</u> armado"</em> → o risco aumenta. A ênfase eleva a gravidade.<br>
+                        • <strong>Atenuador:</strong> <em>"<u>talvez</u> eu faça isso"</em> → o peso é reduzido. Há hesitação.<br>
+                        • <strong>Urgência:</strong> <em>"quero isso <u>agora</u>"</em> → sinaliza pressão temporal, aumenta o risco instrumental.
+                        </p>
 
-                <hr style='border-color: #444; margin: 12px 0;'>
+                        <hr style='border-color: #444; margin: 12px 0;'>
 
-                <h5 style='color: #FFD700; margin-top: 10px;'>🧭 3. Os Três Vetores do Incidente Crítico</h5>
-                <p style='font-size: 0.92rem; color: #ddd; line-height: 1.6;'>
-                O sistema separa o diálogo em <strong>três forças opostas</strong>, como um cabo de guerra:<br><br>
-                🔴 <strong>Vetor de Risco:</strong> linguagem de ameaça, hostilidade, ideação suicida, exigências sob pressão.<br>
-                &nbsp;&nbsp;&nbsp;&nbsp;<em>Exemplo: "vou matar", "ninguém entra", "quero morrer"</em><br><br>
-                🟢 <strong>Vetor de Proteção / Desescalada:</strong> rendição, cooperação, vínculo afetivo, pedido de ajuda.<br>
-                &nbsp;&nbsp;&nbsp;&nbsp;<em>Exemplo: "me entrego", "fala comigo", "minha filha"</em><br><br>
-                🟡 <strong>Vetor Contextual:</strong> gatilhos de fundo — frustração, dívida, traição — que explicam a crise, mas não necessariamente apresentam risco direto.<br>
-                &nbsp;&nbsp;&nbsp;&nbsp;<em>Exemplo: "perdi tudo", "fui traído", "estou desempregado"</em>
-                </p>
+                        <h5 style='color: #FFD700; margin-top: 10px;'>🧭 3. Os Três Vetores do Incidente Crítico</h5>
+                        <p style='font-size: 0.92rem; color: #ddd; line-height: 1.6;'>
+                        O sistema separa o diálogo em <strong>três forças opostas</strong>, como um cabo de guerra:<br><br>
+                        🔴 <strong>Vetor de Risco:</strong> linguagem de ameaça, hostilidade, ideação suicida, exigências sob pressão.<br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;<em>Exemplo: "vou matar", "ninguém entra", "quero morrer"</em><br><br>
+                        🟢 <strong>Vetor de Proteção / Desescalada:</strong> rendição, cooperação, vínculo afetivo, pedido de ajuda.<br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;<em>Exemplo: "me entrego", "fala comigo", "minha filha"</em><br><br>
+                        🟡 <strong>Vetor Contextual:</strong> gatilhos de fundo — frustração, dívida, traição — que explicam a crise, mas não necessariamente apresentam risco direto.<br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;<em>Exemplo: "perdi tudo", "fui traído", "estou desempregado"</em>
+                        </p>
 
-                </div>
-                """,
-                unsafe_allow_html=True
-            )
+                        </div>
+                        """,
+                        unsafe_allow_html=True
+                    )
 
-        with tab_convergencia:
-            st.markdown(
-                """
-                <div class='info-card' style='margin-top: 0px;'>
+                with tab_convergencia:
+                    st.markdown(
+                        """
+                        <div class='info-card' style='margin-top: 0px;'>
 
-                <h5 style='color: #FFD700; margin-top: 0;'>📊 Como entender a pontuação da Convergência</h5>
-                <p style='font-size: 0.92rem; color: #ddd; line-height: 1.6;'>
-                Este bloco não mede apenas repetição de palavras. Ele mede a <strong>relação tática e semântica</strong> entre os interlocutores.<br>
-                Por isso, a leitura correta é diferente da análise de similitude lexical.
-                </p>
+                        <h5 style='color: #FFD700; margin-top: 0;'>📊 Como entender a pontuação da Convergência</h5>
+                        <p style='font-size: 0.92rem; color: #ddd; line-height: 1.6;'>
+                        Este bloco não mede apenas repetição de palavras. Ele mede a <strong>relação tática e semântica</strong> entre os interlocutores.<br>
+                        Por isso, a leitura correta é diferente da análise de similitude lexical.
+                        </p>
 
-                <hr style='border-color: #444; margin: 12px 0;'>
+                        <hr style='border-color: #444; margin: 12px 0;'>
 
-                <h5 style='color: #FFD700; margin-top: 10px;'>🔴 Δ Risco (Causador - NP)</h5>
-                <p style='font-size: 0.92rem; color: #ddd; line-height: 1.6;'>
-                Mostra a diferença entre a carga de risco do causador e a do Negociador Principal.<br><br>
-                • <strong>Valor positivo</strong> → o causador está mais carregado em linguagem de risco do que o NP.<br>
-                • <strong>Valor negativo</strong> → o NP está usando mais linguagem de risco do que o causador.<br>
-                • <strong>Próximo de zero</strong> → há equilíbrio entre os dois em termos de risco.
-                </p>
+                        <h5 style='color: #FFD700; margin-top: 10px;'>🔴 Δ Risco (Causador - NP)</h5>
+                        <p style='font-size: 0.92rem; color: #ddd; line-height: 1.6;'>
+                        Mostra a diferença entre a carga de risco do causador e a do Negociador Principal.<br><br>
+                        • <strong>Valor positivo</strong> → o causador está mais carregado em linguagem de risco do que o NP.<br>
+                        • <strong>Valor negativo</strong> → o NP está usando mais linguagem de risco do que o causador.<br>
+                        • <strong>Próximo de zero</strong> → há equilíbrio entre os dois em termos de risco.
+                        </p>
 
-                <h5 style='color: #FFD700; margin-top: 15px;'>🟢 Δ Proteção (NP - Causador)</h5>
-                <p style='font-size: 0.92rem; color: #ddd; line-height: 1.6;'>
-                Mostra a diferença entre a linguagem protetiva/desescaladora do Negociador Principal e a do causador.<br><br>
-                • <strong>Valor positivo</strong> → o NP está mais protetivo, mais acolhedor e mais orientado à desescalada.<br>
-                • <strong>Valor negativo</strong> → o causador está mais protetivo que o NP, ou o NP está pouco desescalador.<br>
-                • <strong>Próximo de zero</strong> → ambos estão em patamar semelhante de proteção.
-                </p>
+                        <h5 style='color: #FFD700; margin-top: 15px;'>🟢 Δ Proteção (NP - Causador)</h5>
+                        <p style='font-size: 0.92rem; color: #ddd; line-height: 1.6;'>
+                        Mostra a diferença entre a linguagem protetiva/desescaladora do Negociador Principal e a do causador.<br><br>
+                        • <strong>Valor positivo</strong> → o NP está mais protetivo, mais acolhedor e mais orientado à desescalada.<br>
+                        • <strong>Valor negativo</strong> → o causador está mais protetivo que o NP, ou o NP está pouco desescalador.<br>
+                        • <strong>Próximo de zero</strong> → ambos estão em patamar semelhante de proteção.
+                        </p>
 
-                <h5 style='color: #FFD700; margin-top: 15px;'>📎 Índice de Espelhamento / Convergência</h5>
-                <p style='font-size: 0.92rem; color: #ddd; line-height: 1.6;'>
-                Este índice mostra o quanto os interlocutores estão <strong>semanticamente alinhados</strong>.<br>
-                Ele <strong>não é espelhamento léxico literal</strong>. Ele mede a sobreposição de padrões táticos, não apenas palavras iguais.<br><br>
-                • <strong>Valor alto</strong> → maior convergência entre os vetores do causador e do NP.<br>
-                • <strong>Valor médio</strong> → existe alguma aproximação, mas ainda com diferenças relevantes.<br>
-                • <strong>Valor baixo</strong> → os interlocutores estão operando em registros semânticos mais distantes.
-                </p>
+                        <h5 style='color: #FFD700; margin-top: 15px;'>📎 Índice de Espelhamento / Convergência</h5>
+                        <p style='font-size: 0.92rem; color: #ddd; line-height: 1.6;'>
+                        Este índice mostra o quanto os interlocutores estão <strong>semanticamente alinhados</strong>.<br>
+                        Ele <strong>não é espelhamento léxico literal</strong>. Ele mede a sobreposição de padrões táticos, não apenas palavras iguais.<br><br>
+                        • <strong>Valor alto</strong> → maior convergência entre os vetores do causador e do NP.<br>
+                        • <strong>Valor médio</strong> → existe alguma aproximação, mas ainda com diferenças relevantes.<br>
+                        • <strong>Valor baixo</strong> → os interlocutores estão operando em registros semânticos mais distantes.
+                        </p>
 
-                <hr style='border-color: #444; margin: 12px 0;'>
+                        <hr style='border-color: #444; margin: 12px 0;'>
 
-                <h5 style='color: #FFD700; margin-top: 10px;'>🧩 Importante: por que isso não é igual ao espelhamento léxico?</h5>
-                <p style='font-size: 0.92rem; color: #ddd; line-height: 1.6;'>
-                O radar de convergência compara <strong>categorias semânticas e táticas</strong>.<br>
-                Já o bloco de similitude compara <strong>palavras efetivamente compartilhadas</strong>.<br><br>
-                Por isso, é normal o radar apontar um percentual maior e o grafo lexical mostrar um valor menor.
-                </p>
+                        <h5 style='color: #FFD700; margin-top: 10px;'>🧩 Importante: por que isso não é igual ao espelhamento léxico?</h5>
+                        <p style='font-size: 0.92rem; color: #ddd; line-height: 1.6;'>
+                        O radar de convergência compara <strong>categorias semânticas e táticas</strong>.<br>
+                        Já o bloco de similitude compara <strong>palavras efetivamente compartilhadas</strong>.<br><br>
+                        Por isso, é normal o radar apontar um percentual maior e o grafo lexical mostrar um valor menor.
+                        </p>
 
-                <div style='margin-top: 12px; padding: 12px; border-radius: 10px; background: rgba(255, 215, 0, 0.06); border: 1px solid rgba(255, 215, 0, 0.15);'>
-                    <p style='font-size: 0.9rem; color: #ddd; margin: 0; line-height: 1.6;'>
-                    <strong>Leitura prática:</strong> se o <em>Espelhamento Léxico</em> estiver em 42% e o radar em 70%, isso pode indicar que houve <strong>alto alinhamento tático</strong> sem repetição literal intensa de palavras.
-                    </p>
-                </div>
+                        <div style='margin-top: 12px; padding: 12px; border-radius: 10px; background: rgba(255, 215, 0, 0.06); border: 1px solid rgba(255, 215, 0, 0.15);'>
+                            <p style='font-size: 0.9rem; color: #ddd; margin: 0; line-height: 1.6;'>
+                            <strong>Leitura prática:</strong> se o <em>Espelhamento Léxico</em> estiver em 42% e o radar em 70%, isso pode indicar que houve <strong>alto alinhamento tático</strong> sem repetição literal intensa de palavras.
+                            </p>
+                        </div>
 
-                </div>
-                """,
-                unsafe_allow_html=True
-            )
+                        </div>
+                        """,
+                        unsafe_allow_html=True
+                    )
 
-        with tab_ngramas:
-            st.markdown(
-                """
-                <div class='info-card' style='margin-top: 0px;'>
+                with tab_ngramas:
+                    st.markdown(
+                        """
+                        <div class='info-card' style='margin-top: 0px;'>
 
-                <h5 style='color: #FFD700; margin-top: 0;'>🔁 4. N-Gramas — Identificando o Loop Psicológico</h5>
-                <p style='font-size: 0.92rem; color: #ddd; line-height: 1.6;'>
-                O sistema mapeia <strong>frases curtas repetidas</strong> (2 a 3 palavras) ao longo de toda a transcrição.<br>
-                Pessoas sob estresse agudo tendem a repetir as mesmas expressões — isso é chamado de <strong>loop cognitivo</strong>.<br><br>
-                O que a repetição revela:<br>
-                • <em>"não aguento mais"</em> repetido → exaustão emocional severa, risco de ruptura<br>
-                • <em>"cadê a imprensa"</em> repetido → foco racional e instrumental, não emocional<br>
-                • <em>"fica calmo"</em> repetido pelo negociador → pode indicar escassez de recursos verbais ou quebra de rapport<br><br>
-                <strong>Atenção:</strong> a repetição em si não é risco — é um sinal de fixação cognitiva que precisa ser interpretado junto com o tema dominante.
-                </p>
+                        <h5 style='color: #FFD700; margin-top: 0;'>🔁 4. N-Gramas — Identificando o Loop Psicológico</h5>
+                        <p style='font-size: 0.92rem; color: #ddd; line-height: 1.6;'>
+                        O sistema mapeia <strong>frases curtas repetidas</strong> (2 a 3 palavras) ao longo de toda a transcrição.<br>
+                        Pessoas sob estresse agudo tendem a repetir as mesmas expressões — isso é chamado de <strong>loop cognitivo</strong>.<br><br>
+                        O que a repetição revela:<br>
+                        • <em>"não aguento mais"</em> repetido → exaustão emocional severa, risco de ruptura<br>
+                        • <em>"cadê a imprensa"</em> repetido → foco racional e instrumental, não emocional<br>
+                        • <em>"fica calmo"</em> repetido pelo negociador → pode indicar escassez de recursos verbais ou quebra de rapport<br><br>
+                        <strong>Atenção:</strong> a repetição em si não é risco — é um sinal de fixação cognitiva que precisa ser interpretado junto com o tema dominante.
+                        </p>
 
-                </div>
-                """,
-                unsafe_allow_html=True
-            )
+                        </div>
+                        """,
+                        unsafe_allow_html=True
+                    )
 
-        with tab_limitacoes:
-            st.markdown(
-                """
-                <div class='info-card' style='margin-top: 0px;'>
+                with tab_limitacoes:
+                    st.markdown(
+                        """
+                        <div class='info-card' style='margin-top: 0px;'>
 
-                <h5 style='color: #FFD700; margin-top: 0;'>⚠️ Limitações importantes</h5>
-                <p style='font-size: 0.92rem; color: #ddd; line-height: 1.6;'>
-                Este sistema é uma <strong>ferramenta de apoio à decisão</strong>, não um substituto ao julgamento do negociador.<br>
-                • Transcrições incompletas ou com erros de digitação reduzem a precisão.<br>
-                • Gírias regionais, ironia e sarcasmo podem não ser capturados corretamente.<br>
-                • Os índices numéricos são relativos ao volume do texto — transcrições muito curtas geram resultados menos confiáveis.<br><br>
-                <em>Sempre interprete os dados em conjunto com o contexto operacional, a timeline do incidente e o perfil do causador.</em>
-                </p>
+                        <h5 style='color: #FFD700; margin-top: 0;'>⚠️ Limitações importantes</h5>
+                        <p style='font-size: 0.92rem; color: #ddd; line-height: 1.6;'>
+                        Este sistema é uma <strong>ferramenta de apoio à decisão</strong>, não um substituto ao julgamento do negociador.<br>
+                        • Transcrições incompletas ou com erros de digitação reduzem a precisão.<br>
+                        • Gírias regionais, ironia e sarcasmo podem não ser capturados corretamente.<br>
+                        • Os índices numéricos são relativos ao volume do texto — transcrições muito curtas geram resultados menos confiáveis.<br><br>
+                        <em>Sempre interprete os dados em conjunto com o contexto operacional, a timeline do incidente e o perfil do causador.</em>
+                        </p>
 
-                </div>
-                """,
-                unsafe_allow_html=True
-        )
-# --- FIM DO BLOCO DE EXPLICAÇÃO ---
+                        </div>
+                        """,
+                        unsafe_allow_html=True
+                )
+        # --- FIM DO BLOCO DE EXPLICAÇÃO ---
 
             ##N-GRAMAS
             if st.button("⚙️ 2. GERAR NUVEM DE PALAVRAS E N-GRAMS"):
