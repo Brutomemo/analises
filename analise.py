@@ -712,25 +712,4 @@ def calcular_qui_quadrado(df_historico, col_cat1, col_cat2):
             "msg": f"Erro no cálculo: {str(e)}"
         }
     
-def sumarizar_banco_para_ia(df):
-    """
-    Transforma o DataFrame em um dicionário de fatos estatísticos
-    que a IA usará como fonte da verdade.
-    """
-    if df.empty:
-        return "Banco de dados vazio."
-
-    resumo = {
-        "n_total": len(df),
-        "resolucoes": df['RESOLUÇÃO'].value_counts().to_dict() if 'RESOLUÇÃO' in df.columns else {},
-        "top_tecnicas": df['TÉCNICAS'].value_counts().head(5).to_dict() if 'TÉCNICAS' in df.columns else {},
-        "media_tempo": df['TEMPO TOTAL'].mean() if 'TEMPO TOTAL' in df.columns else 0,
-        "tipologias": df['TIPOLOGIA'].value_counts().to_dict() if 'TIPOLOGIA' in df.columns else {},
-        "sucesso_por_negociador": df[df['RESOLUÇÃO'] == 'Rendiçao']['NEGOCIADOR PRINCIPAL'].value_counts().to_dict() if 'RESOLUÇÃO' in df.columns else {}
-    }
     
-    # Adicionar correlações pré-calculadas
-    corr_tempo = calcular_spearman(df, 'TEMPO TOTAL', 'DESESCALADA_VAL') # Assumindo que você tenha essa col numérica
-    resumo['correlacao_tempo_sucesso'] = corr_tempo
-    
-    return resumo
