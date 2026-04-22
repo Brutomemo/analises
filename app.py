@@ -1113,18 +1113,72 @@ else:
                 )
             # --- FIM DO BLOCO DE EXPLICAÇÃO ---
 
+            def analisar_topicos_individuais(texto):
+                texto = limpar_valor(texto)
+                if texto in ["N/D", "None", "nan", ""] or len(texto.strip()) <= 10:
+                    return ["Texto insuficiente para análise."]
+                return analise.extrair_topicos_ngrams(texto)
+
             if st.button("⚙️ 2. GERAR NUVEM DE PALAVRAS E N-GRAMS"):
                 with st.spinner("Processando N-Grams e plotando gráficos..."):
                     texto_c = limpar_valor(df_apa.get('TRANSCRIÇÃO DO CAUSADOR'))
                     texto_np = limpar_valor(df_apa.get('TRANSCRIÇÃO DO NEGOCIADOR PRINCIPAL'))
                     texto_ns = limpar_valor(df_apa.get('TRANSCRIÇÃO DO NEGOCIADOR SECUNDÁRIO'))
-                    texto_total = f"{texto_c} {texto_np} {texto_ns}"
+
+                    texto_total = " ".join(
+                        [t for t in [texto_c, texto_np, texto_ns] if t not in ["N/D", "None", "nan", ""]]
+                    ).strip()
+
                     st.session_state['stats_calculados'] = {
+                        # mantém compatibilidade com o restante do app/PDF
                         "topicos": analise.extrair_topicos_ngrams(texto_total) if len(texto_total) > 10 else ["Texto insuficiente"],
+                        "topicos_c": analisar_topicos_individuais(texto_c),
+                        "topicos_np": analisar_topicos_individuais(texto_np),
+                        "topicos_ns": analisar_topicos_individuais(texto_ns),
                         "wc_c": analise.gerar_wordcloud(texto_c) if len(texto_c) > 5 else None,
                         "wc_np": analise.gerar_wordcloud(texto_np) if len(texto_np) > 5 else None,
                         "wc_ns": analise.gerar_wordcloud(texto_ns) if len(texto_ns) > 5 else None
                     }
+
+            if st.session_state['stats_calculados']:
+                stats = st.session_state['stats_calculados']
+
+                tab_ng1, tab_ng2, tab_ng3, tab_ng4 = st.tabs([
+                    "Causador",
+                    "Negociador Principal",
+                    "Negociador Secundário",
+                    "Visão Global"
+                ])
+
+                with tab_ng1:
+                    st.markdown('<div class="info-card"><h4 style="color: #f97316; margin-top: 0;">🧠 Temas Dominantes - Causador</h4>', unsafe_allow_html=True)
+                    for t in stats['topicos_c']:
+                        st.markdown(t)
+                    st.markdown('</div>', unsafe_allow_html=True)
+                    if stats['wc_c']:
+                        st.pyplot(stats['wc_c'])
+
+                with tab_ng2:
+                    st.markdown('<div class="info-card"><h4 style="color: #f97316; margin-top: 0;">🧠 Temas Dominantes - Negociador Principal</h4>', unsafe_allow_html=True)
+                    for t in stats['topicos_np']:
+                        st.markdown(t)
+                    st.markdown('</div>', unsafe_allow_html=True)
+                    if stats['wc_np']:
+                        st.pyplot(stats['wc_np'])
+
+                with tab_ng3:
+                    st.markdown('<div class="info-card"><h4 style="color: #f97316; margin-top: 0;">🧠 Temas Dominantes - Negociador Secundário</h4>', unsafe_allow_html=True)
+                    for t in stats['topicos_ns']:
+                        st.markdown(t)
+                    st.markdown('</div>', unsafe_allow_html=True)
+                    if stats['wc_ns']:
+                        st.pyplot(stats['wc_ns'])
+
+                with tab_ng4:
+                    st.markdown('<div class="info-card"><h4 style="color: #f97316; margin-top: 0;">🌐 Temas Dominantes Globais</h4>', unsafe_allow_html=True)
+                    for t in stats['topicos']:
+                        st.markdown(t)
+                    st.markdown('</div>', unsafe_allow_html=True)
 
             if st.session_state['stats_calculados']:
                 stats = st.session_state['stats_calculados']
@@ -1147,8 +1201,7 @@ else:
             
             st.markdown("### 📄 Etapa 3: Inteligência de Apoio à Decisão e Exportação")
             
-            #url_n8n = "http://host.docker.internal:5680/webhook/analise-doc"
-            
+                        
             if st.button("📡 3. GERAR ANALYTICS E EXPORTAR ANÁLISE (PDF)"):
                 with st.spinner("Compilando dados técnicos, consultando IA e desenhando PDF..."):
                     try:
