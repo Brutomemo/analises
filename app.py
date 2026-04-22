@@ -1185,7 +1185,7 @@ with st.expander("📖 Entenda a Análise Semântica Avançada e o Termômetro d
                         "texto_ns_raw": texto_ns
                     }
 
-        if st.session_state.get('stats_calculados'):
+            if st.session_state.get('stats_calculados'):
                 stats = st.session_state['stats_calculados']
 
                 topicos_globais = stats.get('topicos',    ["Sem dados"])
@@ -1298,7 +1298,7 @@ with st.expander("📖 Entenda a Análise Semântica Avançada e o Termômetro d
                     st.markdown('</div>', unsafe_allow_html=True)
             
                         
-        if st.button("📡 3. GERAR ANALYTICS E EXPORTAR ANÁLISE (PDF)"):
+            if st.button("📡 3. GERAR ANALYTICS E EXPORTAR ANÁLISE (PDF)"):
                 with st.spinner("Compilando dados técnicos, consultando IA e desenhando PDF..."):
                     try:
                         t_causador = limpar_valor(df_apa.get('TRANSCRIÇÃO DO CAUSADOR'))
