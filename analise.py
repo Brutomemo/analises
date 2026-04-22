@@ -711,5 +711,107 @@ def calcular_qui_quadrado(df_historico, col_cat1, col_cat2):
             "valido": False,
             "msg": f"Erro no cálculo: {str(e)}"
         }
-    
-    
+
+##INCLUSAO DE MOTOR ESTATISTICO PARA ANALISE VIA CHAT
+
+def _normalizar_nome_coluna(texto):
+    texto = str(texto)
+    texto = unicodedata.normalize('NFKD', texto).encode('ASCII', 'ignore').decode('ASCII')
+    return texto.lower().strip()
+
+def _achar_coluna(df, candidatos):
+    if df is None or df.empty:
+        return None
+
+    mapa = {_normalizar_nome_coluna(col): col for col in df.columns}
+
+    for candidato in candidatos:
+        chave = _normalizar_nome_coluna(candidato)
+        if chave in mapa:
+            return mapa[chave]
+
+    for col_norm, col_real in mapa.items():
+        for candidato in candidatos:
+            if _normalizar_nome_coluna(candidato) in col_norm:
+                return col_real
+
+    return None
+
+def _tempo_para_minutos(valor):
+    try:
+        if isinstance(valor, list):
+            valor = valor[0] if valor else None
+        if pd.isna(valor) or valor in ["", "N/D", None]:
+            return np.nan
+        return float(valor) / 60.0
+    except Exception:
+        return np.nan
+
+def sumarizar_banco_para_ia(df_quali, df_tec=None):
+    """
+    Resume a base filtrada para uso no chat com IA.
+    Retorna apenas fatos agregados, evitando enviar a base bruta.
+    """
+
+    if df_quali is None or df_quali.empty:
+        return {
+            "n_total_ocorrencias": 0,
+            "resolucoes": {},
+            "tipologias": {},
+            "modalidades": {},
+            "negociadores": {},
+            "tempo_medio_min": None,
+            "top_tecnicas": {},
+            "observacao": "Base vazia para os filtros atuais."
+        }
+
+    resumo = {
+        "n_total_ocorrencias": int(len(df_quali)),
+        "resolucoes": {},
+        "tipologias": {},
+        "modalidades": {},
+        "negociadores": {},
+        "tempo_medio_min": None,
+        "top_tecnicas": {},
+        "observacao": "Resumo gerado com sucesso."
+    }
+
+    col_resolucao = _achar_coluna(df_quali, ["Resolução", "RESOLUCAO"])
+    col_tipologia = _achar_coluna(df_quali, ["Tipologia"])
+    col_modalidade = _achar_coluna(df_quali, ["Modalidade do incidente", "Modalidade"])
+    col_negociador = _achar_coluna(df_quali, ["Negociador Principal", "Negociador principal"])
+    col_tempo = _achar_coluna(df_quali, ["Tempo de Negociação Real", "Tempo Total"])
+
+    if col_resolucao:
+        resumo["resolucoes"] = df_quali[col_resolucao].fillna("N/D").astype(str).value_counts().head(10).to_dict()
+
+    if col_tipologia:
+        resumo["tipologias"] = df_quali[col_tipologia].fillna("N/D").astype(str).value_counts().head(10).to_dict()
+
+    if col_modalidade:
+        resumo["modalidades"] = df_quali[col_modalidade].fillna("N/D").astype(str).value_counts().head(10).to_dict()
+
+    if col_negociador:
+        resumo["negociadores"] = df_quali[col_negociador].fillna("N/D").astype(str).value_counts().head(10).to_dict()
+
+    if col_tempo:
+        tempos = df_quali[col_tempo].apply(_tempo_para_minutos).dropna()
+        if not tempos.empty:
+            resumo["tempo_medio_min"] = round(float(tempos.mean()), 2)
+
+    if df_tec is not None and not df_tec.empty:
+        col_tecnica = _achar_coluna(df_tec, ["TÉCNICAS", "TECNICAS", "TÉCNICA", "TECNICA"])
+        if col_tecnica:
+            resumo["top_tecnicas"] = (
+                df_tec[col_tecnica]
+                .dropna()
+                .astype(str)
+                .str.strip()
+                .replace("", np.nan)
+                .dropna()
+                .value_counts()
+                .head(10)
+                .to_dict()
+            )
+
+    return resumo    
