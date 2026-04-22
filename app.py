@@ -410,7 +410,7 @@ script_dir = os.path.dirname(os.path.abspath(__file__))
 path_assets = os.path.join(script_dir, "Assets") 
 
 # Padronizando os caminhos limpos (Apenas banner e logo em webp)
-path_teste_gate = os.path.join(path_assets, "teste_gate.webp")
+#path_teste_gate = os.path.join(path_assets, "teste_gate.webp")
 path_brasao_gate = os.path.join(path_assets, "brasao_gate.webp")
 
 # --- 1. PREPARAR IMAGENS (Codificar para Base64) ---
