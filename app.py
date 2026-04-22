@@ -1214,7 +1214,7 @@ else:
                         st.markdown(t)
                     st.markdown('</div>', unsafe_allow_html=True)
                     if wc_c:
-                        st.pyplot(wc_c)
+                        st.pyplot(wc_c, clear_figure=True)
 
                 with tab_ng2:
                     st.markdown('<div class="info-card"><h4 style="color: #f97316; margin-top: 0;">🧠 Temas Dominantes - Negociador Principal</h4>', unsafe_allow_html=True)
@@ -1222,7 +1222,7 @@ else:
                         st.markdown(t)
                     st.markdown('</div>', unsafe_allow_html=True)
                     if wc_np:
-                        st.pyplot(wc_np)
+                        st.pyplot(wc_np, clear_figure=True)
 
                 with tab_ng3:
                     st.markdown('<div class="info-card"><h4 style="color: #f97316; margin-top: 0;">🧠 Temas Dominantes - Negociador Secundário</h4>', unsafe_allow_html=True)
@@ -1230,16 +1230,20 @@ else:
                         st.markdown(t)
                     st.markdown('</div>', unsafe_allow_html=True)
                     if wc_ns:
-                        st.pyplot(wc_ns)
+                        st.pyplot(wc_ns, clear_figure=True)
 
                 with tab_ng4:
                     st.markdown('<div class="info-card"><h4 style="color: #f97316; margin-top: 0;">🌐 Temas Dominantes Gerais</h4>', unsafe_allow_html=True)
+
                     for t in topicos_globais:
                         st.markdown(t)
 
                     st.markdown("<​hr style='border-color: rgba(255,255,255,0.12); margin: 16px 0;'>", unsafe_allow_html=True)
                     st.markdown("#### 🖼️ Mapas de palavras por interlocutor", unsafe_allow_html=True)
-                    st.markdown("<p style='color:#aaa; font-size:0.9rem; margin-top:-5px;'>Os mesmos mapas exibidos nas abas individuais também são mostrados aqui para facilitar a comparação visual no contexto global da ocorrência.</p>", unsafe_allow_html=True)
+                    st.markdown(
+                        "<p style='color:#aaa; font-size:0.9rem; margin-top:-5px;'>Os mesmos mapas exibidos nas abas individuais também são mostrados aqui para facilitar a comparação visual no contexto global da ocorrência.</p>",
+                        unsafe_allow_html=True
+                    )
 
                     col_wc_g1, col_wc_g2, col_wc_g3 = st.columns(3)
 
@@ -1247,7 +1251,6 @@ else:
                         st.markdown("**Causador**")
                         if wc_c:
                             st.pyplot(wc_c, clear_figure=True)
-                            plt.close(wc_c)
                         else:
                             st.info("Sem mapa de palavras do Causador para esta ocorrência.")
 
@@ -1255,7 +1258,6 @@ else:
                         st.markdown("**Negociador Principal**")
                         if wc_np:
                             st.pyplot(wc_np, clear_figure=True)
-                            plt.close(wc_np)
                         else:
                             st.info("Sem mapa de palavras do Negociador Principal para esta ocorrência.")
 
@@ -1263,7 +1265,6 @@ else:
                         st.markdown("**Negociador Secundário**")
                         if wc_ns:
                             st.pyplot(wc_ns, clear_figure=True)
-                            plt.close(wc_ns)
                         else:
                             st.info("Sem mapa de palavras do Negociador Secundário para esta ocorrência.")
 
