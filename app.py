@@ -392,8 +392,12 @@ st.markdown("""
 # </script>
 # """, height=0, width=0)
 
-if 'stats_calculados' not in st.session_state: st.session_state['stats_calculados'] = None
-#if 'dados_n8n' not in st.session_state: st.session_state['dados_n8n'] = None
+if 'stats_calculados' not in st.session_state:
+    st.session_state['stats_calculados'] = None
+
+if 'ultima_apa_analisada' not in st.session_state:
+    st.session_state['ultima_apa_analisada'] = None
+
 
 # =========================================================
 # 2. CABEÇALHO VISUAL E FUNDO DO CABEÇALHO
@@ -406,7 +410,7 @@ script_dir = os.path.dirname(os.path.abspath(__file__))
 path_assets = os.path.join(script_dir, "Assets") 
 
 # Padronizando os caminhos limpos (Apenas banner e logo em webp)
-#path_teste_gate = os.path.join(path_assets, "teste_gate.webp")
+path_teste_gate = os.path.join(path_assets, "teste_gate.webp")
 path_brasao_gate = os.path.join(path_assets, "brasao_gate.webp")
 
 # --- 1. PREPARAR IMAGENS (Codificar para Base64) ---
@@ -1004,9 +1008,10 @@ else:
             
             st.markdown("---")
 
+            st.markdown("---")
+
             st.markdown("### 📊 Etapa 2: Análise Semântica (Machine Learning e Context-Aware NLP)")
-            
-                        # --- INÍCIO DO BLOCO DE EXPLICAÇÃO (EXPANDER) ---
+
             with st.expander("📖 Entenda a Análise Semântica Avançada e o Termômetro do Incidente", expanded=False):
                 st.markdown(
                     """
@@ -1111,37 +1116,51 @@ else:
                     """,
                     unsafe_allow_html=True
                 )
-            # --- FIM DO BLOCO DE EXPLICAÇÃO ---
 
             def analisar_topicos_individuais(texto):
-                texto = limpar_valor(texto)
-                if texto in ["N/D", "None", "nan", ""] or len(texto.strip()) <= 10:
+                texto = limpar_valor(texto).strip()
+                if texto.lower() in ["n/d", "none", "nan", ""] or len(texto) <= 10:
                     return ["Texto insuficiente para análise."]
                 return analise.extrair_topicos_ngrams(texto)
 
+            # evita reaproveitar estrutura antiga ao trocar de APA
+            if st.session_state.get("ultima_apa_analisada") != apa_selecionada:
+                st.session_state["stats_calculados"] = None
+                st.session_state["ultima_apa_analisada"] = apa_selecionada
+
             if st.button("⚙️ 2. GERAR NUVEM DE PALAVRAS E N-GRAMS"):
                 with st.spinner("Processando N-Grams e plotando gráficos..."):
-                    texto_c = limpar_valor(df_apa.get('TRANSCRIÇÃO DO CAUSADOR'))
-                    texto_np = limpar_valor(df_apa.get('TRANSCRIÇÃO DO NEGOCIADOR PRINCIPAL'))
-                    texto_ns = limpar_valor(df_apa.get('TRANSCRIÇÃO DO NEGOCIADOR SECUNDÁRIO'))
+                    texto_c = limpar_valor(df_apa.get('TRANSCRIÇÃO DO CAUSADOR')).strip()
+                    texto_np = limpar_valor(df_apa.get('TRANSCRIÇÃO DO NEGOCIADOR PRINCIPAL')).strip()
+                    texto_ns = limpar_valor(df_apa.get('TRANSCRIÇÃO DO NEGOCIADOR SECUNDÁRIO')).strip()
 
-                    texto_total = " ".join(
-                        [t for t in [texto_c, texto_np, texto_ns] if t not in ["N/D", "None", "nan", ""]]
-                    ).strip()
+                    partes_validas = [
+                        t for t in [texto_c, texto_np, texto_ns]
+                        if t.lower() not in ["n/d", "none", "nan", ""]
+                    ]
+                    texto_total = " ".join(partes_validas).strip()
 
                     st.session_state['stats_calculados'] = {
-                        # mantém compatibilidade com o restante do app/PDF
-                        "topicos": analise.extrair_topicos_ngrams(texto_total) if len(texto_total) > 10 else ["Texto insuficiente"],
+                        "topicos": analise.extrair_topicos_ngrams(texto_total) if len(texto_total) > 10 else ["Texto insuficiente para análise."],
                         "topicos_c": analisar_topicos_individuais(texto_c),
                         "topicos_np": analisar_topicos_individuais(texto_np),
                         "topicos_ns": analisar_topicos_individuais(texto_ns),
-                        "wc_c": analise.gerar_wordcloud(texto_c) if len(texto_c) > 5 else None,
-                        "wc_np": analise.gerar_wordcloud(texto_np) if len(texto_np) > 5 else None,
-                        "wc_ns": analise.gerar_wordcloud(texto_ns) if len(texto_ns) > 5 else None
+                        "wc_c": analise.gerar_wordcloud(texto_c) if len(texto_c) > 5 and texto_c.lower() not in ["n/d", "none", "nan"] else None,
+                        "wc_np": analise.gerar_wordcloud(texto_np) if len(texto_np) > 5 and texto_np.lower() not in ["n/d", "none", "nan"] else None,
+                        "wc_ns": analise.gerar_wordcloud(texto_ns) if len(texto_ns) > 5 and texto_ns.lower() not in ["n/d", "none", "nan"] else None
                     }
 
-            if st.session_state['stats_calculados']:
+            if st.session_state.get('stats_calculados'):
                 stats = st.session_state['stats_calculados']
+
+                topicos_globais = stats.get('topicos', ["Sem dados"])
+                topicos_c = stats.get('topicos_c', ["Análise individual ainda não gerada."])
+                topicos_np = stats.get('topicos_np', ["Análise individual ainda não gerada."])
+                topicos_ns = stats.get('topicos_ns', ["Análise individual ainda não gerada."])
+
+                wc_c = stats.get('wc_c')
+                wc_np = stats.get('wc_np')
+                wc_ns = stats.get('wc_ns')
 
                 tab_ng1, tab_ng2, tab_ng3, tab_ng4 = st.tabs([
                     "Causador",
@@ -1152,54 +1171,33 @@ else:
 
                 with tab_ng1:
                     st.markdown('<div class="info-card"><h4 style="color: #f97316; margin-top: 0;">🧠 Temas Dominantes - Causador</h4>', unsafe_allow_html=True)
-                    for t in stats['topicos_c']:
+                    for t in topicos_c:
                         st.markdown(t)
                     st.markdown('</div>', unsafe_allow_html=True)
-                    if stats['wc_c']:
-                        st.pyplot(stats['wc_c'])
+                    if wc_c:
+                        st.pyplot(wc_c)
 
                 with tab_ng2:
                     st.markdown('<div class="info-card"><h4 style="color: #f97316; margin-top: 0;">🧠 Temas Dominantes - Negociador Principal</h4>', unsafe_allow_html=True)
-                    for t in stats['topicos_np']:
+                    for t in topicos_np:
                         st.markdown(t)
                     st.markdown('</div>', unsafe_allow_html=True)
-                    if stats['wc_np']:
-                        st.pyplot(stats['wc_np'])
+                    if wc_np:
+                        st.pyplot(wc_np)
 
                 with tab_ng3:
                     st.markdown('<div class="info-card"><h4 style="color: #f97316; margin-top: 0;">🧠 Temas Dominantes - Negociador Secundário</h4>', unsafe_allow_html=True)
-                    for t in stats['topicos_ns']:
+                    for t in topicos_ns:
                         st.markdown(t)
                     st.markdown('</div>', unsafe_allow_html=True)
-                    if stats['wc_ns']:
-                        st.pyplot(stats['wc_ns'])
+                    if wc_ns:
+                        st.pyplot(wc_ns)
 
                 with tab_ng4:
                     st.markdown('<div class="info-card"><h4 style="color: #f97316; margin-top: 0;">🌐 Temas Dominantes Globais</h4>', unsafe_allow_html=True)
-                    for t in stats['topicos']:
+                    for t in topicos_globais:
                         st.markdown(t)
                     st.markdown('</div>', unsafe_allow_html=True)
-
-            if st.session_state['stats_calculados']:
-                stats = st.session_state['stats_calculados']
-                st.markdown('<div class="info-card"><h4 style="color: #f97316; margin-top: 0;">🧠 Temas Dominantes Globais (N-Gramas)</h4>', unsafe_allow_html=True)
-                for t in stats['topicos']: st.markdown(t)
-                st.markdown('</div>', unsafe_allow_html=True)
-                
-                c_w1, c_w2, c_w3 = st.columns(3)
-                with c_w1:
-                    st.markdown('<p style="color: #FFD700; font-weight: bold; text-align:center;">Causador</p>', unsafe_allow_html=True)
-                    if stats['wc_c']: st.pyplot(stats['wc_c'])
-                with c_w2:
-                    st.markdown('<p style="color: #FFD700; font-weight: bold; text-align:center;">Negociador Principal</p>', unsafe_allow_html=True)
-                    if stats['wc_np']: st.pyplot(stats['wc_np'])
-                with c_w3:
-                    st.markdown('<p style="color: #FFD700; font-weight: bold; text-align:center;">Negociador Secundário</p>', unsafe_allow_html=True)
-                    if stats['wc_ns']: st.pyplot(stats['wc_ns'])
-
-            st.markdown("---")
-            
-            st.markdown("### 📄 Etapa 3: Inteligência de Apoio à Decisão e Exportação")
             
                         
             if st.button("📡 3. GERAR ANALYTICS E EXPORTAR ANÁLISE (PDF)"):
