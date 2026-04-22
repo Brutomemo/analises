@@ -9,6 +9,7 @@ import plotly.express as px
 from scipy.stats import chi2_contingency, spearmanr
 from sklearn.feature_extraction.text import CountVectorizer
 from wordcloud import WordCloud
+from sklearn.metrics.pairwise import cosine_similarity
 
 # ============================================================
 # 1. STOPWORDS E CONFIGURAÇÕES GERAIS
@@ -637,7 +638,7 @@ def gerar_treemap(df_tecnicas):
 def gerar_radar_comparativo(texto_c, texto_np, texto_ns=None):
     """
     Gera gráfico radar comparativo entre interlocutores
-    e calcula o Índice de Convergência Tática.
+    e calcula o Índice de Convergência Temática.
 
     Retorna:
         fig_radar   -> plotly Figure (radar)
@@ -769,26 +770,52 @@ def gerar_radar_comparativo(texto_c, texto_np, texto_ns=None):
             leitura_protecao = "🔵 Linguagem protetiva distribuída de forma similar entre os dois."
 
         # Índice de espelhamento (quanto o NP absorveu o vocabulário do causador)
-        soma_c  = sum(vals_c)  or 1
-        soma_np = sum(vals_np) or 1
-        espelhamento = round(1 - abs(soma_c - soma_np) / max(soma_c, soma_np), 2)
+        
+       # ----- Índices de espelhamento (forma e volume) -----
+# normaliza vetores por norma para comparar forma (distribuição por eixo)
+def _normalizar_vetor(v):
+    v = np.array(v, dtype=float)
+    norma = np.linalg.norm(v)
+    return v if norma == 0 else v / norma
 
-        if espelhamento >= 0.85:
-            leitura_espelhamento = "🔁 Alto espelhamento léxico — negociador em sincronia com o causador (mirroring ativo)."
-        elif espelhamento >= 0.65:
-            leitura_espelhamento = "🔁 Espelhamento moderado — alguma divergência de registro entre os interlocutores."
-        else:
-            leitura_espelhamento = "⚡ Baixo espelhamento — os dois interlocutores operam em registros semânticos distintos."
+    v_c_norm  = _normalizar_vetor(vals_c)
+    v_np_norm = _normalizar_vetor(vals_np)
 
-        convergencia = {
-            "delta_risco": delta_risco,
-            "delta_protecao": delta_protecao,
-            "delta_intensidade": delta_intensidade,
-            "espelhamento": espelhamento,
-            "leitura_risco": leitura_risco,
-            "leitura_protecao": leitura_protecao,
-            "leitura_espelhamento": leitura_espelhamento
-        }
+    # 1) Espelhamento por forma (cosine similarity entre vetores táticos)
+    try:
+        espelhamento_forma = float(cosine_similarity([v_c_norm], [v_np_norm])[0][0])
+    except Exception:
+        espelhamento_forma = 0.0
+
+    # 2) Espelhamento por volume (compatibilidade com implementação anterior)
+    soma_c  = sum(vals_c) or 1
+    soma_np = sum(vals_np) or 1
+    espelhamento_volume = round(1 - abs(soma_c - soma_np) / max(soma_c, soma_np), 2)
+
+    # Por compatibilidade com o app, defina "espelhamento" canônico como o baseado na FORMA
+    espelhamento = round(espelhamento_forma, 2)
+
+    # Leitura textual com thresholds adequados para similaridade por forma
+    if espelhamento_forma >= 0.85:
+        leitura_espelhamento = "🔁 Alto espelhamento temático — forte convergência de padrão entre os interlocutores."
+    elif espelhamento_forma >= 0.65:
+        leitura_espelhamento = "🔁 Espelhamento temático moderado — há convergência parcial, mas com diferenças de distribuição."
+    else:
+        leitura_espelhamento = "⚡ Baixo espelhamento temático — os interlocutores operam em padrões semânticos distintos."
+
+    convergencia = {
+        "delta_risco": delta_risco,
+        "delta_protecao": delta_protecao,
+        "delta_intensidade": delta_intensidade,
+        # mantemos as duas métricas para debug/UX
+        "espelhamento_forma": round(espelhamento_forma, 2),
+        "espelhamento_volume": round(float(espelhamento_volume), 2),
+        # campo "espelhamento" para compatibilidade com app.py (usa-se espelhamento_forma)
+        "espelhamento": espelhamento,
+        "leitura_risco": leitura_risco,
+        "leitura_protecao": leitura_protecao,
+        "leitura_espelhamento": leitura_espelhamento
+    }
 
     return fig, convergencia
 
