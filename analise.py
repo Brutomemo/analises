@@ -631,6 +631,168 @@ def gerar_treemap(df_tecnicas):
     fig.update_coloraxes(showscale=False)
     return fig
 
+# ====
+# 9. RADAR COMPARATIVO + ÍNDICE DE CONVERGÊNCIA
+# ====
+
+def gerar_radar_comparativo(texto_c, texto_np, texto_ns=None):
+    """
+    Gera gráfico radar comparativo entre interlocutores
+    e calcula o Índice de Convergência Tática.
+
+    Retorna:
+        fig_radar   -> plotly Figure (radar)
+        convergencia -> dict com os índices calculados
+    """
+    import plotly.graph_objects as go
+
+    def _extrair_sumario(texto):
+        if not texto or texto.strip().lower() in ["n/d", "none", "nan", ""]:
+            return None
+        resultado = analisar_crise_direcional(texto)
+        return resultado["sumario"]
+
+    s_c  = _extrair_sumario(texto_c)
+    s_np = _extrair_sumario(texto_np)
+    s_ns = _extrair_sumario(texto_ns) if texto_ns else None
+
+    # Eixos do radar
+    categorias = [
+        "Risco",
+        "Proteção",
+        "Contexto",
+        "Intensidade",
+        "Volatilidade"
+    ]
+    chaves = [
+        "risco_index",
+        "protecao_index",
+        "contexto_index",
+        "intensidade_index",
+        "volatilidade_index"
+    ]
+
+    def _valores(sumario):
+        if sumario is None:
+            return [0] * len(chaves)
+        return [sumario.get(k, 0) for k in chaves]
+
+    vals_c  = _valores(s_c)
+    vals_np = _valores(s_np)
+    vals_ns = _valores(s_ns)
+
+    # Fecha o polígono
+    cats_fechadas = categorias + [categorias[0]]
+    v_c_f  = vals_c  + [vals_c[0]]
+    v_np_f = vals_np + [vals_np[0]]
+    v_ns_f = vals_ns + [vals_ns[0]]
+
+    fig = go.Figure()
+
+    fig.add_trace(go.Scatterpolar(
+        r=v_c_f,
+        theta=cats_fechadas,
+        fill="toself",
+        name="Causador",
+        line=dict(color="#ef4444", width=2),
+        fillcolor="rgba(239,68,68,0.15)"
+    ))
+
+    fig.add_trace(go.Scatterpolar(
+        r=v_np_f,
+        theta=cats_fechadas,
+        fill="toself",
+        name="Neg. Principal",
+        line=dict(color="#22c55e", width=2),
+        fillcolor="rgba(34,197,94,0.15)"
+    ))
+
+    if s_ns is not None:
+        fig.add_trace(go.Scatterpolar(
+            r=v_ns_f,
+            theta=cats_fechadas,
+            fill="toself",
+            name="Neg. Secundário",
+            line=dict(color="#3b82f6", width=2),
+            fillcolor="rgba(59,130,246,0.12)"
+        ))
+
+    fig.update_layout(
+        polar=dict(
+            bgcolor="rgba(0,0,0,0)",
+            radialaxis=dict(
+                visible=True,
+                showticklabels=True,
+                tickfont=dict(color="#aaa", size=10),
+                gridcolor="#333",
+                linecolor="#444"
+            ),
+            angularaxis=dict(
+                tickfont=dict(color="#FFD700", size=12),
+                gridcolor="#333",
+                linecolor="#444"
+            )
+        ),
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
+        font=dict(color="#fff"),
+        legend=dict(
+            font=dict(color="#fff", size=12),
+            bgcolor="rgba(0,0,0,0.4)",
+            bordercolor="#444"
+        ),
+        margin=dict(t=30, b=30, l=40, r=40),
+        height=420
+    )
+
+    # ---- Índice de Convergência ----
+    convergencia = {}
+
+    if s_c and s_np:
+        delta_risco      = round(s_c["risco_index"]    - s_np["risco_index"],    2)
+        delta_protecao   = round(s_np["protecao_index"] - s_c["protecao_index"],  2)
+        delta_intensidade = round(abs(s_c["intensidade_index"] - s_np["intensidade_index"]), 2)
+
+        # Interpretação do delta de risco
+        if delta_risco > 3:
+            leitura_risco = "⚠️ Causador com carga de risco significativamente maior que o negociador."
+        elif delta_risco < -3:
+            leitura_risco = "🔴 Negociador com linguagem de risco superior ao causador — revisar abordagem."
+        else:
+            leitura_risco = "✅ Carga de risco equilibrada entre os interlocutores."
+
+        # Interpretação do delta de proteção
+        if delta_protecao > 3:
+            leitura_protecao = "✅ Negociador puxando ativamente o diálogo para desescalada."
+        elif delta_protecao < -3:
+            leitura_protecao = "⚠️ Causador com mais linguagem protetiva que o negociador — possível inversão de papel."
+        else:
+            leitura_protecao = "🔵 Linguagem protetiva distribuída de forma similar entre os dois."
+
+        # Índice de espelhamento (quanto o NP absorveu o vocabulário do causador)
+        soma_c  = sum(vals_c)  or 1
+        soma_np = sum(vals_np) or 1
+        espelhamento = round(1 - abs(soma_c - soma_np) / max(soma_c, soma_np), 2)
+
+        if espelhamento >= 0.85:
+            leitura_espelhamento = "🔁 Alto espelhamento léxico — negociador em sincronia com o causador (mirroring ativo)."
+        elif espelhamento >= 0.65:
+            leitura_espelhamento = "🔁 Espelhamento moderado — alguma divergência de registro entre os interlocutores."
+        else:
+            leitura_espelhamento = "⚡ Baixo espelhamento — os dois interlocutores operam em registros semânticos distintos."
+
+        convergencia = {
+            "delta_risco": delta_risco,
+            "delta_protecao": delta_protecao,
+            "delta_intensidade": delta_intensidade,
+            "espelhamento": espelhamento,
+            "leitura_risco": leitura_risco,
+            "leitura_protecao": leitura_protecao,
+            "leitura_espelhamento": leitura_espelhamento
+        }
+
+    return fig, convergencia
+
 # ============================================================
 # 8. TESTES ESTATÍSTICOS
 # ============================================================
