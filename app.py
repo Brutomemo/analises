@@ -1263,87 +1263,7 @@ else:
         with col_m3: st.metric("Tempo Total de Negociação Tática", somar_tempos_segundos(df_quali_filt.get('Tempo de Negociação Tática', [])))
 
         st.markdown("---")
-
-        # ====
-        # ASSISTENTE DE INTELIGÊNCIA ANALÍTICA - GATE (CHAT)
-        # ====
-        st.subheader("💬 Assistente de Inteligência Analítica - GATE")
-        st.caption("Faça perguntas diretas sobre a base histórica sem precisar gerar o relatório completo.")
-
-        if "chat_historico" not in st.session_state:
-            st.session_state.chat_historico = []
-
-        for msg in st.session_state.chat_historico:
-            with st.chat_message(msg["role"]):
-                st.markdown(msg["content"])
-
-        # Inicializa df_tec_filt com fallback seguro antes do chat
-        df_tec_filt = df_tec.copy() if not df_tec.empty else pd.DataFrame()
-
-        if pergunta := st.chat_input(
-            "Ex: Qual técnica mais gera rendição? Existe relação entre tempo e sucesso?",
-            key="chat_hist_input"
-        ):
-            st.session_state.chat_historico.append({"role": "user", "content": pergunta})
-            with st.chat_message("user"):
-                st.markdown(pergunta)
-
-            with st.chat_message("assistant"):
-                with st.spinner("Analisando base histórica..."):
-                    try:
-                        resumo = ia_estatistica.sumarizar_banco_para_ia(
-                            df_quali_filt,
-                            df_tec_filt if not df_tec_filt.empty else None
-                        )
-
-                        prompt_chat = f"""
-Você é um analista especialista do GATE (Grupo de Ações Táticas Especiais - PMESP).
-Responda com base EXCLUSIVA nos dados reais abaixo. Seja direto, técnico e objetivo.
-
-BASE DE DADOS ATUAL (filtros aplicados):
-- Total de ocorrências: {resumo['n_total_ocorrencias']}
-- Técnicas mais utilizadas: {resumo['top_tecnicas']}
-- Resoluções: {resumo['resolucoes']}
-- Tipologias: {resumo['tipologias']}
-- Modalidades: {resumo['modalidades']}
-- Negociadores: {resumo['negociadores']}
-- Tempo médio de negociação: {resumo['tempo_medio_min']} minutos
-
-PERGUNTA DO OPERADOR:
-{pergunta}
-
-REGRAS OBRIGATÓRIAS:
-1. Use APENAS os dados fornecidos acima. Nunca invente números ou técnicas.
-2. Se a pergunta não puder ser respondida com os dados disponíveis, diga explicitamente.
-3. Seja conciso: máximo 4 parágrafos.
-4. Tom de oficial de operações: direto, técnico, sem floreio.
-"""
-                        resposta = ia_link.analisar_ocorrencia_gate(
-                            {"prompt_livre": prompt_chat},
-                            estatisticas_ocorrencia={},
-                            tecnicas_ocorrencia=[]
-                        )
-
-                        if isinstance(resposta, dict):
-                            texto = (
-                                resposta.get("parecer")
-                                or resposta.get("interpretacao")
-                                or resposta.get("analise")
-                                or str(resposta)
-                            )
-                        else:
-                            texto = str(resposta)
-
-                        st.markdown(texto)
-                        st.session_state.chat_historico.append({"role": "assistant", "content": texto})
-
-                    except Exception as e:
-                        erro = f"Erro no assistente: {str(e)}"
-                        st.error(erro)
-                        st.session_state.chat_historico.append({"role": "assistant", "content": erro})
-
-        st.markdown("---")
-
+        
         # ====
         # NOVOS GRÁFICOS: VISÃO GERAL DA AMOSTRA
         # ====
@@ -1430,11 +1350,12 @@ REGRAS OBRIGATÓRIAS:
                     freq_global.columns = ['Técnica', 'Vezes Utilizada']
                     
                     c_tab, c_tree = st.columns([1, 2])
-                    with c_tab: st.dataframe(freq_global, use_container_width=True, hide_index=True)
+                    with c_tab:
+                        st.dataframe(freq_global, use_container_width=True, hide_index=True)
                     with c_tree:
-                    fig_g = px.treemap(freq_global, path=['Técnica'], values='Vezes Utilizada', color='Vezes Utilizada', color_continuous_scale='Oranges')
-                    fig_g.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font_color="#FFF", margin=dict(t=0, l=0, r=0, b=0))
-                    st.plotly_chart(fig_g, use_container_width=True)
+                        fig_g = px.treemap(freq_global, path=['Técnica'], values='Vezes Utilizada', color='Vezes Utilizada', color_continuous_scale='Oranges')
+                        fig_g.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font_color="#FFF", margin=dict(t=0, l=0, r=0, b=0))
+                        st.plotly_chart(fig_g, use_container_width=True)
                 else: st.warning("Coluna 'TÉCNICAS' não encontrada.")
             else: st.info("Nenhuma técnica encontrada para os filtros selecionados.")
             
