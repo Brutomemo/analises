@@ -1214,7 +1214,7 @@ else:
                         st.markdown(t)
                     st.markdown('</div>', unsafe_allow_html=True)
                     if wc_c:
-                        st.pyplot(wc_c, clear_figure=True)
+                        st.pyplot(wc_c)
 
                 with tab_ng2:
                     st.markdown('<div class="info-card"><h4 style="color: #f97316; margin-top: 0;">🧠 Temas Dominantes - Negociador Principal</h4>', unsafe_allow_html=True)
@@ -1222,7 +1222,7 @@ else:
                         st.markdown(t)
                     st.markdown('</div>', unsafe_allow_html=True)
                     if wc_np:
-                        st.pyplot(wc_np, clear_figure=True)
+                        st.pyplot(wc_np)
 
                 with tab_ng3:
                     st.markdown('<div class="info-card"><h4 style="color: #f97316; margin-top: 0;">🧠 Temas Dominantes - Negociador Secundário</h4>', unsafe_allow_html=True)
@@ -1230,7 +1230,7 @@ else:
                         st.markdown(t)
                     st.markdown('</div>', unsafe_allow_html=True)
                     if wc_ns:
-                        st.pyplot(wc_ns, clear_figure=True)
+                        st.pyplot(wc_ns)
 
                 with tab_ng4:
                     st.markdown('<div class="info-card"><h4 style="color: #f97316; margin-top: 0;">🌐 Temas Dominantes Gerais</h4>', unsafe_allow_html=True)
