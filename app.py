@@ -1077,7 +1077,7 @@ else:
 
                         <hr style='border-color: #444; margin: 12px 0;'>
 
-                        <h5 style='color: #FFD700; margin-top: 10px;'>🔴 Δ Risco (Causador - NP)</h5>
+                        <h5 style='color: #FFD700; margin-top: 10px;'>🔴 Δ Risco (Causador - Negociador Principal)</h5>
                         <p style='font-size: 0.92rem; color: #ddd; line-height: 1.6;'>
                         Mostra a diferença entre a carga de risco do causador e a do Negociador Principal.<br><br>
                         • <strong>Valor positivo</strong> → o causador está mais carregado em linguagem de risco do que o NP.<br>
@@ -1085,7 +1085,7 @@ else:
                         • <strong>Próximo de zero</strong> → há equilíbrio entre os dois em termos de risco.
                         </p>
 
-                        <h5 style='color: #FFD700; margin-top: 15px;'>🟢 Δ Proteção (NP - Causador)</h5>
+                        <h5 style='color: #FFD700; margin-top: 15px;'>🟢 Δ Proteção (Negociador Principal - Causador)</h5>
                         <p style='font-size: 0.92rem; color: #ddd; line-height: 1.6;'>
                         Mostra a diferença entre a linguagem protetiva/desescaladora do Negociador Principal e a do causador.<br><br>
                         • <strong>Valor positivo</strong> → o NP está mais protetivo, mais acolhedor e mais orientado à desescalada.<br>
@@ -1093,10 +1093,10 @@ else:
                         • <strong>Próximo de zero</strong> → ambos estão em patamar semelhante de proteção.
                         </p>
 
-                        <h5 style='color: #FFD700; margin-top: 15px;'>📎 Índice de Espelhamento / Convergência</h5>
+                        <h5 style='color: #FFD700; margin-top: 15px;'>📎 Índice de Convergência</h5>
                         <p style='font-size: 0.92rem; color: #ddd; line-height: 1.6;'>
                         Este índice mostra o quanto os interlocutores estão <strong>semanticamente alinhados</strong>.<br>
-                        Ele <strong>não é espelhamento léxico literal</strong>. Ele mede a sobreposição de padrões táticos, não apenas palavras iguais.<br><br>
+                        Ele <strong>não é espelhamento léxico literal</strong>. Ele mede a sobreposição de padrões temáticos, não apenas palavras iguais.<br><br>
                         • <strong>Valor alto</strong> → maior convergência entre os vetores do causador e do NP.<br>
                         • <strong>Valor médio</strong> → existe alguma aproximação, mas ainda com diferenças relevantes.<br>
                         • <strong>Valor baixo</strong> → os interlocutores estão operando em registros semânticos mais distantes.
@@ -1106,14 +1106,14 @@ else:
 
                         <h5 style='color: #FFD700; margin-top: 10px;'>🧩 Importante: por que isso não é igual ao espelhamento léxico?</h5>
                         <p style='font-size: 0.92rem; color: #ddd; line-height: 1.6;'>
-                        O radar de convergência compara <strong>categorias semânticas e táticas</strong>.<br>
+                        O radar de convergência compara <strong>categorias semânticas e temáticas</strong>.<br>
                         Já o bloco de similitude compara <strong>palavras efetivamente compartilhadas</strong>.<br><br>
                         Por isso, é normal o radar apontar um percentual maior e o grafo lexical mostrar um valor menor.
                         </p>
 
                         <div style='margin-top: 12px; padding: 12px; border-radius: 10px; background: rgba(255, 215, 0, 0.06); border: 1px solid rgba(255, 215, 0, 0.15);'>
                             <p style='font-size: 0.9rem; color: #ddd; margin: 0; line-height: 1.6;'>
-                            <strong>Leitura prática:</strong> se o <em>Espelhamento Léxico</em> estiver em 42% e o radar em 70%, isso pode indicar que houve <strong>alto alinhamento tático</strong> sem repetição literal intensa de palavras.
+                            <strong>Leitura prática:</strong> se o <em>Espelhamento Léxico</em> estiver maior que o radar temático, isso pode indicar que houve <strong>bom alinhamento do temas abordados</strong> sem repetição literal de palavras.
                             </p>
                         </div>
 
@@ -1232,9 +1232,32 @@ else:
                         st.pyplot(wc_ns)
 
                 with tab_ng4:
-                    st.markdown('<div class="info-card"><h4 style="color: #f97316; margin-top: 0;">🌐 Temas Dominantes Globais</h4>', unsafe_allow_html=True)
+                    st.markdown('<div class="info-card"><h4 style="color: #f97316; margin-top: 0;">🌐 Temas Dominantes Gerais</h4>', unsafe_allow_html=True)
                     for t in topicos_globais:
                         st.markdown(t)
+                        st.markdown("<hr style='border-color: rgba(255,255,255,0.12); margin: 16px 0;'>", unsafe_allow_html=True)
+                        st.markdown("#### 🖼️ Mapas de palavras por interlocutor", unsafe_allow_html=True)
+                        st.markdown("<p style='color:#aaa; font-size:0.9rem; margin-top:-5px;'>Os mesmos mapas exibidos nas abas individuais também são mostrados aqui para facilitar a comparação visual no contexto global da ocorrência.</p>", unsafe_allow_html=True)
+
+                        col_wc_g1, col_wc_g2, col_wc_g3 = st.columns(3)
+                        with col_wc_g1:
+                            st.markdown("**Causador**")
+                            if wc_c:
+                                st.pyplot(wc_c)
+                            else:
+                                st.info("Sem mapa de palavras do Causador para esta ocorrência.")
+                        with col_wc_g2:
+                            st.markdown("**Negociador Principal**")
+                            if wc_np:
+                                st.pyplot(wc_np)
+                            else:
+                                st.info("Sem mapa de palavras do Negociador Principal para esta ocorrência.")
+                        with col_wc_g3:
+                            st.markdown("**Negociador Secundário**")
+                            if wc_ns:
+                                st.pyplot(wc_ns)
+                            else:
+                                st.info("Sem mapa de palavras do Negociador Secundário para esta ocorrência.")
                     st.markdown('</div>', unsafe_allow_html=True)
 
                 with tab_ng5:
