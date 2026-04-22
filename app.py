@@ -1004,9 +1004,115 @@ else:
             
             st.markdown("---")
 
-            st.markdown("### 📊 Etapa 2: Análise Semântica (Scikit-learn: Machine Learning in Python)")
+            st.markdown("### 📊 Etapa 2: Análise Semântica (Machine Learning e Context-Aware NLP)")
+            
+                        # --- INÍCIO DO BLOCO DE EXPLICAÇÃO (EXPANDER) ---
+            with st.expander("📖 Entenda a Análise Semântica Avançada e o Termômetro do Incidente", expanded=False):
+                st.markdown(
+                    """
+                    <div class='info-card' style='margin-top: 0px;'>
 
-            ##N-GRAMAS
+                    <h5 style='color: #FFD700; margin-top: 0;'>🧠 Como o sistema lê o diálogo?</h5>
+                    <p style='font-size: 0.92rem; color: #ddd; line-height: 1.6;'>
+                    O sistema não conta palavras — ele <strong>interpreta intenções</strong>.<br>
+                    Cada fala é analisada em contexto: o que foi dito, como foi dito, e o que estava ao redor da frase.
+                    </p>
+
+                    <hr style='border-color: #444; margin: 12px 0;'>
+
+                    <h5 style='color: #FFD700; margin-top: 10px;'>⚖️ 1. Pesos e Gravidade das Palavras</h5>
+                    <p style='font-size: 0.92rem; color: #ddd; line-height: 1.6;'>
+                    Nem toda palavra tem o mesmo peso. O sistema atribui uma <strong>pontuação de gravidade</strong> a cada termo:<br>
+                    • <em>"dor"</em> → peso baixo (sinal de sofrimento, mas não de ação imediata)<br>
+                    • <em>"vou me matar"</em> → peso muito alto (ação declarada, risco imediato)<br><br>
+                    Isso evita que palavras comuns inflem artificialmente o resultado.
+                    </p>
+
+                    <h5 style='color: #FFD700; margin-top: 15px;'>🔄 2. O Contexto Muda Tudo (Modificadores de Valência)</h5>
+                    <p style='font-size: 0.92rem; color: #ddd; line-height: 1.6;'>
+                    O sistema varre as palavras ao redor de cada termo para entender a intenção real:<br><br>
+                    • <strong>Negação:</strong> <em>"<u>não</u> quero morrer"</em> → o risco da palavra <em>morrer</em> é reduzido. A frase sinaliza ambivalência, não intenção.<br>
+                    • <strong>Intensificador:</strong> <em>"estou <u>muito</u> armado"</em> → o risco aumenta. A ênfase eleva a gravidade.<br>
+                    • <strong>Atenuador:</strong> <em>"<u>talvez</u> eu faça isso"</em> → o peso é reduzido. Há hesitação.<br>
+                    • <strong>Urgência:</strong> <em>"quero isso <u>agora</u>"</em> → sinaliza pressão temporal, aumenta o risco instrumental.
+                    </p>
+
+                    <hr style='border-color: #444; margin: 12px 0;'>
+
+                    <h5 style='color: #FFD700; margin-top: 10px;'>🧭 3. Os Três Vetores do Incidente Crítico</h5>
+                    <p style='font-size: 0.92rem; color: #ddd; line-height: 1.6;'>
+                    O sistema separa o diálogo em <strong>três forças opostas</strong>, como um cabo de guerra:<br><br>
+                    🔴 <strong>Vetor de Risco:</strong> linguagem de ameaça, hostilidade, ideação suicida, exigências sob pressão.<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;<em>Exemplo: "vou matar", "ninguém entra", "quero morrer"</em><br><br>
+                    🟢 <strong>Vetor de Proteção / Desescalada:</strong> rendição, cooperação, vínculo afetivo, pedido de ajuda.<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;<em>Exemplo: "me entrego", "fala comigo", "minha filha"</em><br><br>
+                    🟡 <strong>Vetor Contextual:</strong> gatilhos de fundo — frustração, dívida, traição — que explicam a crise, mas não necessariamente, apresentam risco direto.<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;<em>Exemplo: "perdi tudo", "fui traído", "estou desempregado"</em>
+                    </p>
+
+                    <hr style='border-color: #444; margin: 12px 0;'>
+
+                    <h5 style='color: #FFD700; margin-top: 10px;'>🌡️ 4. O Termômetro do Incidente — Como Ler os Índices</h5>
+                    <p style='font-size: 0.92rem; color: #ddd; line-height: 1.6;'>
+                    Com os três vetores, o sistema calcula quatro indicadores principais:<br><br>
+
+                    📊 <strong>Intensidade Global:</strong> o quanto o incidente está "carregado" emocionalmente — independente de ser risco ou proteção.<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;<em>Alta intensidade não significa alta periculosidade. Pode ser uma crise intensa, mas em resolução.</em><br><br>
+
+                    🧭 <strong>Direção da Crise:</strong> para onde o incidente está caminhando.<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;• Valor <strong>positivo</strong> → predomínio de desescalada (proteção > risco)<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;• Valor <strong>negativo</strong> → predomínio de escalada (risco > proteção)<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;• Próximo de zero → forças opostas em equilíbrio — situação instável<br><br>
+
+                    ⚡ <strong>Volatilidade Semântica:</strong> mede a coexistência de risco e proteção ao mesmo tempo.<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;<em>Alta volatilidade = o sujeito oscila entre ameaça e cooperação. Momento de maior imprevisibilidade.</em><br><br>
+
+                    🎯 <strong>Classificação Final:</strong> síntese operacional do estado da crise.
+                    </p>
+
+                    <hr style='border-color: #444; margin: 12px 0;'>
+
+                    <h5 style='color: #FFD700; margin-top: 10px;'>🚦 5. Classificações Possíveis — O que cada uma significa</h5>
+                    <p style='font-size: 0.92rem; color: #ddd; line-height: 1.6;'>
+                    🔴 <strong>CRÍTICO:</strong> Linguagem de ameaça ou autoaniquilação dominante, sem sinais protetivos suficientes. Risco imediato à vida.<br><br>
+                    🟠 <strong>TRANSIÇÃO INSTÁVEL:</strong> Há tanto risco quanto sinais de rendição ao mesmo tempo. O incidente está em ponto de virada — janela de resolução existe, mas o risco residual é alto. <em>Momento mais delicado da negociação.</em><br><br>
+                    🟡 <strong>MODERADO COM VIÉS DE ESCALADA:</strong> Sinais de deterioração do diálogo, mas sem configuração crítica consolidada. Atenção redobrada.<br><br>
+                    🔵 <strong>DESACELERAÇÃO DA AGRESSIVIDADE:</strong> A direção do diálogo aponta para cooperação e rendição. O risco não desapareceu, mas perdeu centralidade. Negociação em curso positivo.<br><br>
+                    🟢 <strong>CONTROLADO / COOPERATIVO:</strong> Predominam sinais de escuta, vínculo e desescalada. Quadro de maior estabilização verbal.<br><br>
+                    ⚪ <strong>AMBIVALENTE / INDETERMINADO:</strong> Sinais mistos ou densidade semântica insuficiente. Recomenda-se leitura integrada com o contexto operacional.<br><br>
+                    ⬜ <strong>BAIXA PRESSÃO:</strong> Pouca carga semântica relevante detectada. Pode indicar diálogo racional, registro incompleto ou ausência de crise verbal.
+                    </p>
+
+                    <hr style='border-color: #444; margin: 12px 0;'>
+
+                    <h5 style='color: #FFD700; margin-top: 10px;'>🔁 6. N-Gramas — Identificando o Loop Psicológico</h5>
+                    <p style='font-size: 0.92rem; color: #ddd; line-height: 1.6;'>
+                    O sistema mapeia <strong>frases curtas repetidas</strong> (2 a 3 palavras) ao longo de toda a transcrição.<br>
+                    Pessoas sob estresse agudo tendem a repetir as mesmas expressões — isso é chamado de <strong>loop cognitivo</strong>.<br><br>
+                    O que a repetição revela:<br>
+                    • <em>"não aguento mais"</em> repetido → exaustão emocional severa, risco de ruptura<br>
+                    • <em>"cadê a imprensa"</em> repetido → foco racional e instrumental, não emocional<br>
+                    • <em>"fica calmo"</em> repetido pelo negociador → pode indicar escassez de recursos verbais ou quebra de rapport<br><br>
+                    <strong>Atenção:</strong> a repetição em si não é risco — é um sinal de fixação cognitiva que precisa ser interpretado junto com o tema dominante.
+                    </p>
+
+                    <hr style='border-color: #444; margin: 12px 0;'>
+
+                    <h5 style='color: #FFD700; margin-top: 10px;'>⚠️ Limitações importantes</h5>
+                    <p style='font-size: 0.92rem; color: #ddd; line-height: 1.6;'>
+                    Este sistema é uma <strong>ferramenta de apoio à decisão</strong>, não um substituto ao julgamento do negociador.<br>
+                    • Transcrições incompletas ou com erros de digitação reduzem a precisão.<br>
+                    • Gírias regionais, ironia e sarcasmo podem não ser capturados corretamente.<br>
+                    • Os índices numéricos são relativos ao volume do texto — transcrições muito curtas geram resultados menos confiáveis.<br><br>
+                    <em>Sempre interprete os dados em conjunto com o contexto operacional, a timeline do incidente e o perfil do causador.</em>
+                    </p>
+
+                    </div>
+                    """,
+                    unsafe_allow_html=True
+                )
+            # --- FIM DO BLOCO DE EXPLICAÇÃO ---
+
             if st.button("⚙️ 2. GERAR NUVEM DE PALAVRAS E N-GRAMS"):
                 with st.spinner("Processando N-Grams e plotando gráficos..."):
                     texto_c = limpar_valor(df_apa.get('TRANSCRIÇÃO DO CAUSADOR'))
@@ -1015,130 +1121,33 @@ else:
                     texto_total = f"{texto_c} {texto_np} {texto_ns}"
                     st.session_state['stats_calculados'] = {
                         "topicos": analise.extrair_topicos_ngrams(texto_total) if len(texto_total) > 10 else ["Texto insuficiente"],
-                        "topicos_c":  analise.extrair_topicos_ngrams(texto_c)  if len(texto_c)  > 10 else ["Texto insuficiente"],
-                        "topicos_np": analise.extrair_topicos_ngrams(texto_np) if len(texto_np) > 10 else ["Texto insuficiente"],
-                        "topicos_ns": analise.extrair_topicos_ngrams(texto_ns) if len(texto_ns) > 10 else ["Texto insuficiente"],
-                        "wc_c":  analise.gerar_wordcloud(texto_c)  if len(texto_c)  > 5 else None,
+                        "wc_c": analise.gerar_wordcloud(texto_c) if len(texto_c) > 5 else None,
                         "wc_np": analise.gerar_wordcloud(texto_np) if len(texto_np) > 5 else None,
-                        "wc_ns": analise.gerar_wordcloud(texto_ns) if len(texto_ns) > 5 else None,
-                        "texto_c_raw":  texto_c,
-                        "texto_np_raw": texto_np,
-                        "texto_ns_raw": texto_ns
+                        "wc_ns": analise.gerar_wordcloud(texto_ns) if len(texto_ns) > 5 else None
                     }
 
-            if st.session_state.get('stats_calculados'):
+            if st.session_state['stats_calculados']:
                 stats = st.session_state['stats_calculados']
+                st.markdown('<div class="info-card"><h4 style="color: #f97316; margin-top: 0;">🧠 Temas Dominantes Globais (N-Gramas)</h4>', unsafe_allow_html=True)
+                for t in stats['topicos']: st.markdown(t)
+                st.markdown('</div>', unsafe_allow_html=True)
+                
+                c_w1, c_w2, c_w3 = st.columns(3)
+                with c_w1:
+                    st.markdown('<p style="color: #FFD700; font-weight: bold; text-align:center;">Causador</p>', unsafe_allow_html=True)
+                    if stats['wc_c']: st.pyplot(stats['wc_c'])
+                with c_w2:
+                    st.markdown('<p style="color: #FFD700; font-weight: bold; text-align:center;">Negociador Principal</p>', unsafe_allow_html=True)
+                    if stats['wc_np']: st.pyplot(stats['wc_np'])
+                with c_w3:
+                    st.markdown('<p style="color: #FFD700; font-weight: bold; text-align:center;">Negociador Secundário</p>', unsafe_allow_html=True)
+                    if stats['wc_ns']: st.pyplot(stats['wc_ns'])
 
-                topicos_globais = stats.get('topicos',    ["Sem dados"])
-                topicos_c  = stats.get('topicos_c',  ["Análise individual ainda não gerada."])
-                topicos_np = stats.get('topicos_np', ["Análise individual ainda não gerada."])
-                topicos_ns = stats.get('topicos_ns', ["Análise individual ainda não gerada."])
-
-                wc_c  = stats.get('wc_c')
-                wc_np = stats.get('wc_np')
-                wc_ns = stats.get('wc_ns')
-
-                texto_c_raw  = stats.get('texto_c_raw',  limpar_valor(df_apa.get('TRANSCRIÇÃO DO CAUSADOR', '')))
-                texto_np_raw = stats.get('texto_np_raw', limpar_valor(df_apa.get('TRANSCRIÇÃO DO NEGOCIADOR PRINCIPAL', '')))
-                texto_ns_raw = stats.get('texto_ns_raw', limpar_valor(df_apa.get('TRANSCRIÇÃO DO NEGOCIADOR SECUNDÁRIO', '')))
-
-                tab_ng1, tab_ng2, tab_ng3, tab_ng4, tab_ng5 = st.tabs([
-                    "Causador",
-                    "Negociador Principal",
-                    "Negociador Secundário",
-                    "Visão Global",
-                    "⚡ Convergência"
-                ])
-
-                with tab_ng1:
-                    st.markdown('<div class="info-card"><h4 style="color: #f97316; margin-top: 0;">🧠 Temas Dominantes - Causador</h4>', unsafe_allow_html=True)
-                    for t in topicos_c:
-                        st.markdown(t)
-                    st.markdown('</div>', unsafe_allow_html=True)
-                    if wc_c:
-                        st.pyplot(wc_c)
-
-                with tab_ng2:
-                    st.markdown('<div class="info-card"><h4 style="color: #f97316; margin-top: 0;">🧠 Temas Dominantes - Negociador Principal</h4>', unsafe_allow_html=True)
-                    for t in topicos_np:
-                        st.markdown(t)
-                    st.markdown('</div>', unsafe_allow_html=True)
-                    if wc_np:
-                        st.pyplot(wc_np)
-
-                with tab_ng3:
-                    st.markdown('<div class="info-card"><h4 style="color: #f97316; margin-top: 0;">🧠 Temas Dominantes - Negociador Secundário</h4>', unsafe_allow_html=True)
-                    for t in topicos_ns:
-                        st.markdown(t)
-                    st.markdown('</div>', unsafe_allow_html=True)
-                    if wc_ns:
-                        st.pyplot(wc_ns)
-
-                with tab_ng4:
-                    st.markdown('<div class="info-card"><h4 style="color: #f97316; margin-top: 0;">🌐 Temas Dominantes Globais</h4>', unsafe_allow_html=True)
-                    for t in topicos_globais:
-                        st.markdown(t)
-                    st.markdown('</div>', unsafe_allow_html=True)
-
-                with tab_ng5:
-                    st.markdown(
-                        '<div class="info-card">'
-                        '<h4 style="color:#FFD700; margin-top:0;">⚡ Radar Comparativo & Índice de Convergência Tática</h4>'
-                        '<p style="color:#ccc; font-size:0.9rem; margin-bottom:1rem;">'
-                        'Comparação direta dos vetores semânticos entre os interlocutores. '
-                        'Quanto mais sobrepostos os polígonos, maior o espelhamento léxico.</p>',
-                        unsafe_allow_html=True
-                    )
-
-                    if not texto_c_raw or not texto_np_raw:
-                        st.warning("⚠️ Transcrições insuficientes para gerar o radar comparativo.")
-                    else:
-                        try:
-                            fig_radar, conv = analise.gerar_radar_comparativo(
-                                texto_c_raw,
-                                texto_np_raw,
-                                texto_ns_raw if texto_ns_raw else None
-                            )
-                            st.plotly_chart(fig_radar, use_container_width=True)
-
-                            if conv:
-                                st.markdown("---")
-                                st.markdown(
-                                    '<h5 style="color:#FFD700;">📐 Índice de Convergência Tática</h5>',
-                                    unsafe_allow_html=True
-                                )
-                                col_cv1, col_cv2, col_cv3 = st.columns(3)
-
-                                with col_cv1:
-                                    st.metric(
-                                        label="Δ Risco (Causador − NP)",
-                                        value=f"{conv['delta_risco']:+.2f}",
-                                        help="Positivo = causador com mais risco. Negativo = negociador com mais risco."
-                                    )
-                                    st.caption(conv["leitura_risco"])
-
-                                with col_cv2:
-                                    st.metric(
-                                        label="Δ Proteção (NP − Causador)",
-                                        value=f"{conv['delta_protecao']:+.2f}",
-                                        help="Positivo = negociador puxando para desescalada."
-                                    )
-                                    st.caption(conv["leitura_protecao"])
-
-                                with col_cv3:
-                                    st.metric(
-                                        label="Índice de Espelhamento",
-                                        value=f"{conv['espelhamento']:.0%}",
-                                        help="Quanto mais próximo de 100%, maior a sincronia léxica."
-                                    )
-                                    st.caption(conv["leitura_espelhamento"])
-
-                        except Exception as e:
-                            st.error(f"Erro ao gerar radar comparativo: {str(e)}")
-
-                    st.markdown('</div>', unsafe_allow_html=True)
+            st.markdown("---")
             
+            st.markdown("### 📄 Etapa 3: Inteligência de Apoio à Decisão e Exportação")
             
+            #url_n8n = "http://host.docker.internal:5680/webhook/analise-doc"
             
             if st.button("📡 3. GERAR ANALYTICS E EXPORTAR ANÁLISE (PDF)"):
                 with st.spinner("Compilando dados técnicos, consultando IA e desenhando PDF..."):
