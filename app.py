@@ -1945,13 +1945,13 @@ else:
     }
 </style>
 
+st.markdown("""
 <div class="liquid-blob blob1"></div>
 <div class="liquid-blob blob2"></div>
 <div class="liquid-blob blob3"></div>
 """, unsafe_allow_html=True)
 
-# Cursor Customizado Global via JavaScript
-# Cursor Customizado Global via JavaScript
+# Cursor Customizado Global via JavaScript (comentado — descomente se quiser usar)
 # components.html("""
 # <script>
 #     const doc = window.parent.document;
@@ -1983,7 +1983,12 @@ else:
 #             cursor.style.height = '15px';
 #             cursor.style.backgroundColor = '#FFD700';
 #         });
-#         
+#
 #         doc.addEventListener('mouseup', () => {
 #             cursor.style.width = '20px';
-#             cursor.style.height
+#             cursor.style.height = '20px';
+#             cursor.style.backgroundColor = 'rgba(255, 255, 255, 0.8)';
+#         });
+#     }
+# </script>
+# """, height=0)
