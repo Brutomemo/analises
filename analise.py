@@ -638,122 +638,146 @@ def gerar_treemap(df_tecnicas):
 def gerar_radar_comparativo(texto_c, texto_np, texto_ns=None):
     """
     Gera gráfico radar comparativo entre interlocutores
-    e calcula o Índice de Convergência Temática.
+    e calcula o Índice de Convergência Tática.
 
     Retorna:
         fig_radar   -> plotly Figure (radar)
-        convergencia -> dict com os índices calculados
+        convergencia -> dict com os índices calculados (sempre um dict; nunca None)
     """
     import plotly.graph_objects as go
 
     def _extrair_sumario(texto):
-        if not texto or texto.strip().lower() in ["n/d", "none", "nan", ""]:
+        if not texto or str(texto).strip().lower() in ["n/d", "none", "nan", ""]:
             return None
-        resultado = analisar_crise_direcional(texto)
-        return resultado["sumario"]
+        try:
+            resultado = analisar_crise_direcional(texto)
+            return resultado.get("sumario")
+        except Exception:
+            return None
 
-    s_c  = _extrair_sumario(texto_c)
-    s_np = _extrair_sumario(texto_np)
-    s_ns = _extrair_sumario(texto_ns) if texto_ns else None
+    try:
+        s_c  = _extrair_sumario(texto_c)
+        s_np = _extrair_sumario(texto_np)
+        s_ns = _extrair_sumario(texto_ns) if texto_ns else None
 
-    # Eixos do radar
-    categorias = [
-        "Risco",
-        "Proteção",
-        "Contexto",
-        "Intensidade",
-        "Volatilidade"
-    ]
-    chaves = [
-        "risco_index",
-        "protecao_index",
-        "contexto_index",
-        "intensidade_index",
-        "volatilidade_index"
-    ]
+        # Eixos do radar
+        categorias = [
+            "Risco",
+            "Proteção",
+            "Contexto",
+            "Intensidade",
+            "Volatilidade"
+        ]
+        chaves = [
+            "risco_index",
+            "protecao_index",
+            "contexto_index",
+            "intensidade_index",
+            "volatilidade_index"
+        ]
 
-    def _valores(sumario):
-        if sumario is None:
-            return [0] * len(chaves)
-        return [sumario.get(k, 0) for k in chaves]
+        def _valores(sumario):
+            if sumario is None:
+                return [0] * len(chaves)
+            return [float(sumario.get(k, 0.0)) for k in chaves]
 
-    vals_c  = _valores(s_c)
-    vals_np = _valores(s_np)
-    vals_ns = _valores(s_ns)
+        vals_c  = _valores(s_c)
+        vals_np = _valores(s_np)
+        vals_ns = _valores(s_ns)
 
-    # Fecha o polígono
-    cats_fechadas = categorias + [categorias[0]]
-    v_c_f  = vals_c  + [vals_c[0]]
-    v_np_f = vals_np + [vals_np[0]]
-    v_ns_f = vals_ns + [vals_ns[0]]
+        # Fecha o polígono
+        cats_fechadas = categorias + [categorias[0]]
+        v_c_f  = vals_c  + [vals_c[0]]
+        v_np_f = vals_np + [vals_np[0]]
+        v_ns_f = vals_ns + [vals_ns[0]]
 
-    fig = go.Figure()
+        fig = go.Figure()
 
-    fig.add_trace(go.Scatterpolar(
-        r=v_c_f,
-        theta=cats_fechadas,
-        fill="toself",
-        name="Causador",
-        line=dict(color="#ef4444", width=2),
-        fillcolor="rgba(239,68,68,0.15)"
-    ))
-
-    fig.add_trace(go.Scatterpolar(
-        r=v_np_f,
-        theta=cats_fechadas,
-        fill="toself",
-        name="Neg. Principal",
-        line=dict(color="#22c55e", width=2),
-        fillcolor="rgba(34,197,94,0.15)"
-    ))
-
-    if s_ns is not None:
         fig.add_trace(go.Scatterpolar(
-            r=v_ns_f,
+            r=v_c_f,
             theta=cats_fechadas,
             fill="toself",
-            name="Neg. Secundário",
-            line=dict(color="#3b82f6", width=2),
-            fillcolor="rgba(59,130,246,0.12)"
+            name="Causador",
+            line=dict(color="#ef4444", width=2),
+            fillcolor="rgba(239,68,68,0.15)"
         ))
 
-    fig.update_layout(
-        polar=dict(
-            bgcolor="rgba(0,0,0,0)",
-            radialaxis=dict(
-                visible=True,
-                showticklabels=True,
-                tickfont=dict(color="#aaa", size=10),
-                gridcolor="#333",
-                linecolor="#444"
+        fig.add_trace(go.Scatterpolar(
+            r=v_np_f,
+            theta=cats_fechadas,
+            fill="toself",
+            name="Neg. Principal",
+            line=dict(color="#22c55e", width=2),
+            fillcolor="rgba(34,197,94,0.15)"
+        ))
+
+        if s_ns is not None:
+            fig.add_trace(go.Scatterpolar(
+                r=v_ns_f,
+                theta=cats_fechadas,
+                fill="toself",
+                name="Neg. Secundário",
+                line=dict(color="#3b82f6", width=2),
+                fillcolor="rgba(59,130,246,0.12)"
+            ))
+
+        fig.update_layout(
+            polar=dict(
+                bgcolor="rgba(0,0,0,0)",
+                radialaxis=dict(
+                    visible=True,
+                    showticklabels=True,
+                    tickfont=dict(color="#aaa", size=10),
+                    gridcolor="#333",
+                    linecolor="#444"
+                ),
+                angularaxis=dict(
+                    tickfont=dict(color="#FFD700", size=12),
+                    gridcolor="#333",
+                    linecolor="#444"
+                )
             ),
-            angularaxis=dict(
-                tickfont=dict(color="#FFD700", size=12),
-                gridcolor="#333",
-                linecolor="#444"
-            )
-        ),
-        paper_bgcolor="rgba(0,0,0,0)",
-        plot_bgcolor="rgba(0,0,0,0)",
-        font=dict(color="#fff"),
-        legend=dict(
-            font=dict(color="#fff", size=12),
-            bgcolor="rgba(0,0,0,0.4)",
-            bordercolor="#444"
-        ),
-        margin=dict(t=30, b=30, l=40, r=40),
-        height=420
-    )
+            paper_bgcolor="rgba(0,0,0,0)",
+            plot_bgcolor="rgba(0,0,0,0)",
+            font=dict(color="#fff"),
+            legend=dict(
+                font=dict(color="#fff", size=12),
+                bgcolor="rgba(0,0,0,0.4)",
+                bordercolor="#444"
+            ),
+            margin=dict(t=30, b=30, l=40, r=40),
+            height=420
+        )
 
-    # ---- Índice de Convergência ----
-    convergencia = {}
+        # ---- Índice de Convergência ----
+        convergencia = {
+            "delta_risco": None,
+            "delta_protecao": None,
+            "delta_intensidade": None,
+            "espelhamento_forma": None,
+            "espelhamento_volume": None,
+            "espelhamento": None,
+            "leitura_risco": None,
+            "leitura_protecao": None,
+            "leitura_espelhamento": None,
+            "debug_msg": None
+        }
 
-    if s_c and s_np:
-        delta_risco      = round(s_c["risco_index"]    - s_np["risco_index"],    2)
-        delta_protecao   = round(s_np["protecao_index"] - s_c["protecao_index"],  2)
-        delta_intensidade = round(abs(s_c["intensidade_index"] - s_np["intensidade_index"]), 2)
+        if s_c is None or s_np is None:
+            convergencia["debug_msg"] = "Dados insuficientes: sumário do causador ou do negociador principal ausente."
+            # retorna o fig (com zeros) e o dicionário informando insuficiência
+            return fig, convergencia
 
-        # Interpretação do delta de risco
+        # cálculos de delta
+        delta_risco       = round(s_c.get("risco_index", 0.0) - s_np.get("risco_index", 0.0), 2)
+        delta_protecao    = round(s_np.get("protecao_index", 0.0) - s_c.get("protecao_index", 0.0), 2)
+        delta_intensidade = round(abs(s_c.get("intensidade_index", 0.0) - s_np.get("intensidade_index", 0.0)), 2)
+
+        convergencia["delta_risco"] = delta_risco
+        convergencia["delta_protecao"] = delta_protecao
+        convergencia["delta_intensidade"] = delta_intensidade
+
+        # Interpretações do delta de risco
         if delta_risco > 3:
             leitura_risco = "⚠️ Causador com carga de risco significativamente maior que o negociador."
         elif delta_risco < -3:
@@ -761,7 +785,7 @@ def gerar_radar_comparativo(texto_c, texto_np, texto_ns=None):
         else:
             leitura_risco = "✅ Carga de risco equilibrada entre os interlocutores."
 
-        # Interpretação do delta de proteção
+        # Interpretações do delta de proteção
         if delta_protecao > 3:
             leitura_protecao = "✅ Negociador puxando ativamente o diálogo para desescalada."
         elif delta_protecao < -3:
@@ -769,55 +793,73 @@ def gerar_radar_comparativo(texto_c, texto_np, texto_ns=None):
         else:
             leitura_protecao = "🔵 Linguagem protetiva distribuída de forma similar entre os dois."
 
-        # Índice de espelhamento (quanto o NP absorveu o vocabulário do causador)
-        
-       # ----- Índices de espelhamento (forma e volume) -----
-# normaliza vetores por norma para comparar forma (distribuição por eixo)
-def _normalizar_vetor(v):
-    v = np.array(v, dtype=float)
-    norma = np.linalg.norm(v)
-    return v if norma == 0 else v / norma
+        # ----- Índices de espelhamento (forma e volume) -----
+        def _normalizar_vetor(v):
+            arr = np.array(v, dtype=float)
+            norma = np.linalg.norm(arr)
+            return arr if norma == 0 else arr / norma
 
-    v_c_norm  = _normalizar_vetor(vals_c)
-    v_np_norm = _normalizar_vetor(vals_np)
+        v_c_norm  = _normalizar_vetor(vals_c)
+        v_np_norm = _normalizar_vetor(vals_np)
 
-    # 1) Espelhamento por forma (cosine similarity entre vetores táticos)
-    try:
-        espelhamento_forma = float(cosine_similarity([v_c_norm], [v_np_norm])[0][0])
-    except Exception:
+        # 1) Espelhamento por forma (cosine similarity)
         espelhamento_forma = 0.0
+        try:
+            # apenas se ambos não forem vetores zero
+            if np.linalg.norm(v_c_norm) != 0 and np.linalg.norm(v_np_norm) != 0:
+                espelhamento_forma = float(cosine_similarity([v_c_norm], [v_np_norm])[0][0])
+            else:
+                espelhamento_forma = 0.0
+        except Exception as e:
+            espelhamento_forma = 0.0
+            convergencia["debug_msg"] = f"Erro cosine_similarity: {str(e)}"
 
-    # 2) Espelhamento por volume (compatibilidade com implementação anterior)
-    soma_c  = sum(vals_c) or 1
-    soma_np = sum(vals_np) or 1
-    espelhamento_volume = round(1 - abs(soma_c - soma_np) / max(soma_c, soma_np), 2)
+        # 2) Espelhamento por volume (compatibilidade com implementação anterior)
+        soma_c  = sum(vals_c) or 1
+        soma_np = sum(vals_np) or 1
+        espelhamento_volume = round(1 - abs(soma_c - soma_np) / max(soma_c, soma_np), 2)
 
-    # Por compatibilidade com o app, defina "espelhamento" canônico como o baseado na FORMA
-    espelhamento = round(espelhamento_forma, 2)
+        # canônico -> forma
+        convergencia["espelhamento_forma"] = round(float(espelhamento_forma), 2)
+        convergencia["espelhamento_volume"] = round(float(espelhamento_volume), 2)
+        convergencia["espelhamento"] = convergencia["espelhamento_forma"]
 
-    # Leitura textual com thresholds adequados para similaridade por forma
-    if espelhamento_forma >= 0.85:
-        leitura_espelhamento = "🔁 Alto espelhamento temático — forte convergência de padrão entre os interlocutores."
-    elif espelhamento_forma >= 0.65:
-        leitura_espelhamento = "🔁 Espelhamento temático moderado — há convergência parcial, mas com diferenças de distribuição."
-    else:
-        leitura_espelhamento = "⚡ Baixo espelhamento temático — os interlocutores operam em padrões semânticos distintos."
+        # Leitura textual com thresholds adequados para similaridade por forma
+        if espelhamento_forma >= 0.85:
+            leitura_espelhamento = "🔁 Alto espelhamento tático — forte convergência de padrão entre os interlocutores."
+        elif espelhamento_forma >= 0.65:
+            leitura_espelhamento = "🔁 Espelhamento moderado — há convergência parcial, mas com diferenças de distribuição."
+        else:
+            leitura_espelhamento = "⚡ Baixo espelhamento — os interlocutores operam em padrões semânticos distintos."
 
-    convergencia = {
-        "delta_risco": delta_risco,
-        "delta_protecao": delta_protecao,
-        "delta_intensidade": delta_intensidade,
-        # mantemos as duas métricas para debug/UX
-        "espelhamento_forma": round(espelhamento_forma, 2),
-        "espelhamento_volume": round(float(espelhamento_volume), 2),
-        # campo "espelhamento" para compatibilidade com app.py (usa-se espelhamento_forma)
-        "espelhamento": espelhamento,
-        "leitura_risco": leitura_risco,
-        "leitura_protecao": leitura_protecao,
-        "leitura_espelhamento": leitura_espelhamento
-    }
+        convergencia["leitura_risco"] = leitura_risco
+        convergencia["leitura_protecao"] = leitura_protecao
+        convergencia["leitura_espelhamento"] = leitura_espelhamento
 
-    return fig, convergencia
+        return fig, convergencia
+
+    except Exception as err:
+        # Em caso de erro inesperado, garantir retorno e registrar mensagem útil
+        fig = go.Figure()
+        fig.update_layout(
+            title="Erro ao gerar radar comparativo",
+            paper_bgcolor="rgba(0,0,0,0)",
+            plot_bgcolor="rgba(0,0,0,0)",
+            font=dict(color="#fff")
+        )
+        convergencia = {
+            "delta_risco": None,
+            "delta_protecao": None,
+            "delta_intensidade": None,
+            "espelhamento_forma": None,
+            "espelhamento_volume": None,
+            "espelhamento": None,
+            "leitura_risco": None,
+            "leitura_protecao": None,
+            "leitura_espelhamento": None,
+            "debug_msg": f"Exceção inesperada: {str(err)}"
+        }
+        return fig, convergencia
 
 # ============================================================
 # 8. TESTES ESTATÍSTICOS
