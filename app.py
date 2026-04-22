@@ -217,7 +217,7 @@ st.markdown("""
         text-align: center;
     }
 
-    /* Reset de margens para os títulos dentro da caixa gloss */
+    /* Reset de margens para os titles dentro da caixa gloss */
     .header-box .main-title { margin-bottom: 5px !important; }
     .header-box .sub-title { margin-top: 0 !important; }
     
@@ -362,7 +362,7 @@ st.markdown("""
 #         cursor.style.left = '0';
 #         cursor.style.width = '20px';
 #         cursor.style.height = '20px';
-#         cursor.style.backgroundColor = 'rgba(255, 255, 255, 0.8)';
+#         cursor.style.backgroundColor = 'rgba(255, 255, 0.8)';
 #         cursor.style.borderRadius = '50%';
 #         cursor.style.pointerEvents = 'none';
 #         cursor.style.zIndex = '9999';
@@ -386,7 +386,7 @@ st.markdown("""
 #         doc.addEventListener('mouseup', () => {
 #             cursor.style.width = '20px';
 #             cursor.style.height = '20px';
-#             cursor.style.backgroundColor = 'rgba(255, 255, 255, 0.8)';
+#             cursor.style.backgroundColor = 'rgba(255, 255, 0.8)';
 #         });
 #     }
 # </script>
@@ -650,7 +650,7 @@ else:
                 
                 for col_orig, col_n in colunas_norm.items():
                     if p_n in col_n and m_n in col_n and mo_n in col_n:
-                    return limpar_valor(df_apa[col_orig])
+                        return limpar_valor(df_apa[col_orig])
                 return "N/D"
             
             # Principal
@@ -816,151 +816,151 @@ else:
                     st.warning("⚠️ **Volume Verbal Insuficiente:** O diálogo registrado possui menos de 5 palavras válidas por parte, impossibilitando a análise matemática de similitude.")
                 else:
                     try:
-                    from sklearn.feature_extraction.text import TfidfVectorizer
-                    from sklearn.metrics.pairwise import cosine_similarity
-                    import re
+                        from sklearn.feature_extraction.text import TfidfVectorizer
+                        from sklearn.metrics.pairwise import cosine_similarity
+                        import re
 
-                    def limpar_texto(t):
-                    return re.sub(r'[^\w\s]', '', t.lower())
+                        def limpar_texto(t):
+                            return re.sub(r'[^\w\s]', '', t.lower())
 
-                    txt_caus_limpo = limpar_texto(txt_caus)
-                    txt_neg_limpo = limpar_texto(txt_neg)
+                        txt_caus_limpo = limpar_texto(txt_caus)
+                        txt_neg_limpo = limpar_texto(txt_neg)
 
-                    stopwords_pt = [
-                    'o', 'a', 'os', 'as', 'um', 'uma', 'de', 'do', 'da', 'em', 'no', 'na', 'para', 'com', 
-                    'que', 'é', 'e', 'se', 'por', 'como', 'pra', 'ta', 'tá', 'eu', 'vc', 'você', 'me', 
-                    'meu', 'minha', 'aqui', 'vou', 'isso', 'mas', 'não', 'nao', 'sim', 'só', 'ele', 'ela', 
-                    'eles', 'elas', 'vai', 'foi', 'fui', 'tudo', 'bem', 'tem', 'têm', 'bom', 'pode', 'então', 
-                    'gente', 'muito', 'mais', 'já', 'agora', 'quando', 'onde', 'quem', 'qual', 'ser', 'fazer', 
-                    'ter', 'estar', 'dizer', 'falar', 'quer', 'quero', 'sei', 'sabe', 'ver', 'lá', 'aí', 
-                    'pro', 'pra', 'dos', 'das', 'nas', 'nos', 'ou', 'nem', 'até', 'mesmo', 'porque', 'pq', 'mim', 'assim', 'falou', 'dele', 'comigo', 'faz', 'ficar'
-                    ]
-                    vectorizer = TfidfVectorizer(stop_words=stopwords_pt)
-                    
-                    tfidf_matrix = vectorizer.fit_transform([txt_neg_limpo, txt_caus_limpo])
-                    similaridade = cosine_similarity(tfidf_matrix[0:1], tfidf_matrix[1:2])[0][0]
-                    sintonia_pct = similaridade * 100
+                        stopwords_pt = [
+                        'o', 'a', 'os', 'as', 'um', 'uma', 'de', 'do', 'da', 'em', 'no', 'na', 'para', 'com', 
+                        'que', 'é', 'e', 'se', 'por', 'como', 'pra', 'ta', 'tá', 'eu', 'vc', 'você', 'me', 
+                        'meu', 'minha', 'aqui', 'vou', 'isso', 'mas', 'não', 'nao', 'sim', 'só', 'ele', 'ela', 
+                        'eles', 'elas', 'vai', 'foi', 'fui', 'tudo', 'bem', 'tem', 'têm', 'bom', 'pode', 'então', 
+                        'gente', 'muito', 'mais', 'já', 'agora', 'quando', 'onde', 'quem', 'qual', 'ser', 'fazer', 
+                        'ter', 'estar', 'dizer', 'falar', 'quer', 'quero', 'sei', 'sabe', 'ver', 'lá', 'aí', 
+                        'pro', 'pra', 'dos', 'das', 'nas', 'nos', 'ou', 'nem', 'até', 'mesmo', 'porque', 'pq', 'mim', 'assim', 'falou', 'dele', 'comigo', 'faz', 'ficar'
+                        ]
+                        vectorizer = TfidfVectorizer(stop_words=stopwords_pt)
+                        
+                        tfidf_matrix = vectorizer.fit_transform([txt_neg_limpo, txt_caus_limpo])
+                        similaridade = cosine_similarity(tfidf_matrix[0:1], tfidf_matrix[1:2])[0][0]
+                        sintonia_pct = similaridade * 100
 
-                    col_sin1, col_sin2 = st.columns([1, 3])
-                    
-                    with col_sin1:
-                    st.metric(label="Grau de Espelhamento", value=f"{sintonia_pct:.1f}%")
-                    
-                    with col_sin2:
-                    cor_barra = "#28a745" if sintonia_pct > 25 else "#ffc107" if sintonia_pct > 10 else "#dc3545"
-                    st.markdown(f"""
-                    <div style='background-color: #333; border-radius: 5px; width: 100%; height: 25px; margin-top: 15px;'>
-                    <div style='background-color: {cor_barra}; width: {sintonia_pct}%; height: 100%; border-radius: 5px;'></div>
-                    </div>
-                    """, unsafe_allow_html=True)
-                    
-                    if sintonia_pct >= 25:
-                    st.success("✅ **Forte Vínculo (Espelhamento Tático):** Alto nível de ancoragem. O negociador adequou-se ao código linguístico do causador (espelhamento) e validou seus pontos de interesse.")
-                    elif sintonia_pct >= 10:
-                    st.info("ℹ️ **Vínculo Moderado:** Há pontos de ancoragem semântica, mas os discursos ainda guardam distanciamento conceitual.")
-                    else:
-                    st.error("🚨 **Divergência de Discurso:** Vocabulários quase completamente distintos. Indica ruptura ou negociação puramente transacional.")
+                        col_sin1, col_sin2 = st.columns([1, 3])
+                        
+                        with col_sin1:
+                            st.metric(label="Grau de Espelhamento", value=f"{sintonia_pct:.1f}%")
+                        
+                        with col_sin2:
+                            cor_barra = "#28a745" if sintonia_pct > 25 else "#ffc107" if sintonia_pct > 10 else "#dc3545"
+                            st.markdown(f"""
+                            <div style='background-color: #333; border-radius: 5px; width: 100%; height: 25px; margin-top: 15px;'>
+                            <div style='background-color: {cor_barra}; width: {sintonia_pct}%; height: 100%; border-radius: 5px;'></div>
+                            </div>
+                            """, unsafe_allow_html=True)
+                        
+                        if sintonia_pct >= 25:
+                            st.success("✅ **Forte Vínculo (Espelhamento Tático):** Alto nível de ancoragem. O negociador adequou-se ao código linguístico do causador (espelhamento) e validou seus pontos de interesse.")
+                        elif sintonia_pct >= 10:
+                            st.info("ℹ️ **Vínculo Moderado:** Há pontos de ancoragem semântica, mas os discursos ainda guardam distanciamento conceitual.")
+                        else:
+                            st.error("🚨 **Divergência de Discurso:** Vocabulários quase completamente distintos. Indica ruptura ou negociação puramente transacional.")
 
-                    if sintonia_pct > 0:
-                    st.markdown("#### 🕸️ Grafo de Espelhamento Léxico (Núcleos Semânticos Compartilhados)")
-                    st.write("<span style='font-size: 0.85rem; color: #aaa;'>Visualização interativa dos termos que serviram de ponte para o estabelecimento do Rapport.</span>", unsafe_allow_html=True)
-                    
-                    try:
-                    import plotly.graph_objects as go
-                    from collections import Counter
+                        if sintonia_pct > 0:
+                            st.markdown("#### 🕸️ Grafo de Espelhamento Léxico (Núcleos Semânticos Compartilhados)")
+                            st.write("<span style='font-size: 0.85rem; color: #aaa;'>Visualização interativa dos termos que serviram de ponte para o estabelecimento do Rapport.</span>", unsafe_allow_html=True)
+                            
+                            try:
+                                import plotly.graph_objects as go
+                                from collections import Counter
 
-                    palavras_neg = [w for w in txt_neg_limpo.split() if w not in stopwords_pt and len(w) > 2]
-                    palavras_caus = [w for w in txt_caus_limpo.split() if w not in stopwords_pt and len(w) > 2]
-                    
-                    set_comuns = set(palavras_neg).intersection(set(palavras_caus))
-                    
-                    if set_comuns:
-                    contagem_comuns = Counter({w: palavras_neg.count(w) + palavras_caus.count(w) for w in set_comuns})
-                    top_comuns = dict(contagem_comuns.most_common(12))
-                    
-                    node_x = []
-                    node_y = []
-                    node_text = []
-                    node_color = []
-                    node_size = []
+                                palavras_neg = [w for w in txt_neg_limpo.split() if w not in stopwords_pt and len(w) > 2]
+                                palavras_caus = [w for w in txt_caus_limpo.split() if w not in stopwords_pt and len(w) > 2]
+                                
+                                set_comuns = set(palavras_neg).intersection(set(palavras_caus))
+                                
+                                if set_comuns:
+                                    contagem_comuns = Counter({w: palavras_neg.count(w) + palavras_caus.count(w) for w in set_comuns})
+                                    top_comuns = dict(contagem_comuns.most_common(12))
+                                    
+                                    node_x = []
+                                    node_y = []
+                                    node_text = []
+                                    node_color = []
+                                    node_size = []
 
-                    node_x.append(-2)
-                    node_y.append(0)
-                    node_text.append("<b>NEGOCIADOR</b>")
-                    node_color.append("#2196F3") 
-                    node_size.append(40)
+                                    node_x.append(-2)
+                                    node_y.append(0)
+                                    node_text.append("<b>NEGOCIADOR</b>")
+                                    node_color.append("#2196F3") 
+                                    node_size.append(40)
 
-                    node_x.append(2)
-                    node_y.append(0)
-                    node_text.append("<b>CAUSADOR</b>")
-                    node_color.append("#F44336") 
-                    node_size.append(40)
+                                    node_x.append(2)
+                                    node_y.append(0)
+                                    node_text.append("<b>CAUSADOR</b>")
+                                    node_color.append("#F44336") 
+                                    node_size.append(40)
 
-                    edge_x = []
-                    edge_y = []
-                    
-                    y_pos = 1.5 
-                    passo_y = 3 / max(len(top_comuns), 1) 
-                    
-                    for palavra, peso in top_comuns.items():
-                    node_x.append(0)
-                    node_y.append(y_pos)
-                    node_text.append(palavra)
-                    node_color.append("#FFC107") 
-                    tamanho_calc = min(max(peso * 3, 15), 35) 
-                    node_size.append(tamanho_calc)
-                    
-                    edge_x.extend([-2, 0, None])
-                    edge_y.extend([0, y_pos, None])
-                    
-                    edge_x.extend([0, 2, None])
-                    edge_y.extend([y_pos, 0, None])
-                    
-                    y_pos -= passo_y
+                                    edge_x = []
+                                    edge_y = []
+                                    
+                                    y_pos = 1.5 
+                                    passo_y = 3 / max(len(top_comuns), 1) 
+                                    
+                                    for palavra, peso in top_comuns.items():
+                                        node_x.append(0)
+                                        node_y.append(y_pos)
+                                        node_text.append(palavra)
+                                        node_color.append("#FFC107") 
+                                        tamanho_calc = min(max(peso * 3, 15), 35) 
+                                        node_size.append(tamanho_calc)
+                                        
+                                        edge_x.extend([-2, 0, None])
+                                        edge_y.extend([0, y_pos, None])
+                                        
+                                        edge_x.extend([0, 2, None])
+                                        edge_y.extend([y_pos, 0, None])
+                                        
+                                        y_pos -= passo_y
 
-                    edge_trace = go.Scatter(
-                    x=edge_x, y=edge_y,
-                    line=dict(width=1, color='#555'),
-                    hoverinfo='none',
-                    mode='lines')
+                                    edge_trace = go.Scatter(
+                                    x=edge_x, y=edge_y,
+                                    line=dict(width=1, color='#555'),
+                                    hoverinfo='none',
+                                    mode='lines')
 
-                    node_trace = go.Scatter(
-                    x=node_x, y=node_y,
-                    mode='markers+text',
-                    text=node_text,
-                    textposition="bottom center",
-                    hoverinfo='text',
-                    marker=dict(
-                    color=node_color,
-                    size=node_size,
-                    line=dict(width=2, color='white')
-                    ),
-                    textfont=dict(color='white', size=12)
-                    )
+                                    node_trace = go.Scatter(
+                                    x=node_x, y=node_y,
+                                    mode='markers+text',
+                                    text=node_text,
+                                    textposition="bottom center",
+                                    hoverinfo='text',
+                                    marker=dict(
+                                    color=node_color,
+                                    size=node_size,
+                                    line=dict(width=2, color='white')
+                                    ),
+                                    textfont=dict(color='white', size=12)
+                                    )
 
-                    fig_grafo = go.Figure(data=[edge_trace, node_trace],
-                    layout=go.Layout(
-                    showlegend=False,
-                    hovermode='closest',
-                    margin=dict(b=20,l=5,r=5,t=40),
-                    paper_bgcolor="rgba(0,0,0,0)", 
-                    plot_bgcolor="rgba(0,0,0,0)",
-                    xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
-                    yaxis=dict(showgrid=False, zeroline=False, showticklabels=False)
-                    ))
-                    
-                    fig_grafo.update_layout(height=400)
-                    
-                    st.plotly_chart(fig_grafo, use_container_width=True)
-                    
-                    else:
-                    st.info("ℹ️ Não há intersecção semântica suficiente para gerar um grafo estrutural (Discursos completamente isolados).")
+                                    fig_grafo = go.Figure(data=[edge_trace, node_trace],
+                                    layout=go.Layout(
+                                    showlegend=False,
+                                    hovermode='closest',
+                                    margin=dict(b=20,l=5,r=5,t=40),
+                                    paper_bgcolor="rgba(0,0,0,0)", 
+                                    plot_bgcolor="rgba(0,0,0,0)",
+                                    xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
+                                    yaxis=dict(showgrid=False, zeroline=False, showticklabels=False)
+                                    ))
+                                    
+                                    fig_grafo.update_layout(height=400)
+                                    
+                                    st.plotly_chart(fig_grafo, use_container_width=True)
+                                    
+                                else:
+                                    st.info("ℹ️ Não há intersecção semântica suficiente para gerar um grafo estrutural (Discursos completamente isolados).")
 
+                            except Exception as e:
+                                st.error(f"Erro ao desenhar o grafo estrutural: {e}")
+                            
                     except Exception as e:
-                    st.error(f"Erro ao desenhar o grafo estrutural: {e}")
-                    
-                    except Exception as e:
-                    st.error(f"Erro no cálculo base de similaridade: {e}")
+                        st.error(f"Erro no cálculo base de similaridade: {e}")
             else:
                 st.info("Colunas de transcrição não encontradas para o cálculo de Sintonia Léxica.")
                 
@@ -977,26 +977,26 @@ else:
                     df_tec_filtrado = df_tec[df_tec['Vinculo_Str'] == id_visivel]
                     
                     if df_tec_filtrado.empty and 'Airtable_Record_ID' in df_apa:
-                    id_interno = str(df_apa['Airtable_Record_ID']).strip()
-                    df_tec_filtrado = df_tec[df_tec[col_vinculo].astype(str).str.contains(id_interno, na=False, regex=False)]
+                        id_interno = str(df_apa['Airtable_Record_ID']).strip()
+                        df_tec_filtrado = df_tec[df_tec[col_vinculo].astype(str).str.contains(id_interno, na=False, regex=False)]
                     
                     if not df_tec_filtrado.empty:
-                    col_tecnica = next((col for col in ['TÉCNICAS', 'TECNICAS', 'TÉCNICA', 'TECNICA'] if col in df_tec_filtrado.columns), None)
-                    if col_tecnica:
-                    freq_abs = df_tec_filtrado[col_tecnica].value_counts()
-                    freq_rel = (df_tec_filtrado[col_tecnica].value_counts(normalize=True) * 100).round(1)
-                    df_freq = pd.DataFrame({'Frequência Absoluta': freq_abs, 'Frequência Relativa (%)': freq_rel}).reset_index().rename(columns={col_tecnica: 'Técnica Empregada'})
-                    
-                    st.dataframe(df_freq, use_container_width=True, hide_index=True)
-                    
-                    st.markdown("<h4 style='text-align:center; color: #FFFF; margin-top: 20px;'>Frequencias das Técnicas Aplicadas (Treemap)</h5>", unsafe_allow_html=True)
-                    fig_tree = px.treemap(df_freq, path=['Técnica Empregada'], values='Frequência Absoluta', color='Frequência Absoluta', color_continuous_scale='Oranges')
-                    fig_tree.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font_color="#FFF", margin=dict(t=10, l=10, r=10, b=10))
-                    st.plotly_chart(fig_tree, use_container_width=True)
+                        col_tecnica = next((col for col in ['TÉCNICAS', 'TECNICAS', 'TÉCNICA', 'TECNICA'] if col in df_tec_filtrado.columns), None)
+                        if col_tecnica:
+                            freq_abs = df_tec_filtrado[col_tecnica].value_counts()
+                            freq_rel = (df_tec_filtrado[col_tecnica].value_counts(normalize=True) * 100).round(1)
+                            df_freq = pd.DataFrame({'Frequência Absoluta': freq_abs, 'Frequência Relativa (%)': freq_rel}).reset_index().rename(columns={col_tecnica: 'Técnica Empregada'})
+                            
+                            st.dataframe(df_freq, use_container_width=True, hide_index=True)
+                            
+                            st.markdown("<h4 style='text-align:center; color: #FFFF; margin-top: 20px;'>Frequencias das Técnicas Aplicadas (Treemap)</h5>", unsafe_allow_html=True)
+                            fig_tree = px.treemap(df_freq, path=['Técnica Empregada'], values='Frequência Absoluta', color='Frequência Absoluta', color_continuous_scale='Oranges')
+                            fig_tree.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font_color="#FFF", margin=dict(t=10, l=10, r=10, b=10))
+                            st.plotly_chart(fig_tree, use_container_width=True)
+                        else:
+                            st.warning("Técnicas encontradas, mas a coluna 'TÉCNICAS' não foi identificada no Airtable.")
                     else:
-                    st.warning("Técnicas encontradas, mas a coluna 'TÉCNICAS' não foi identificada no Airtable.")
-                    else:
-                    st.info(f"Nenhuma técnica cruzou com a APA atual.")
+                        st.info(f"Nenhuma técnica cruzou com a APA atual.")
                 else:
                     st.warning("A coluna de vínculo (ex: 'Vinculo_APA') não foi encontrada na aba de técnicas.")
             else:
@@ -1215,16 +1215,16 @@ else:
                     texto_total = f"{texto_c} {texto_np} {texto_ns}"
 
                     st.session_state['stats_calculados'] = {
-                    "topicos": analise.extrair_topicos_ngrams(texto_total) if len(texto_total) > 10 else ["Texto insuficiente"],
-                    "topicos_c": analise.extrair_topicos_ngrams(texto_c) if len(texto_c) > 10 else ["Texto insuficiente"],
-                    "topicos_np": analise.extrair_topicos_ngrams(texto_np) if len(texto_np) > 10 else ["Texto insuficiente"],
-                    "topicos_ns": analise.extrair_topicos_ngrams(texto_ns) if len(texto_ns) > 10 else ["Texto insuficiente"],
-                    "wc_c": analise.gerar_wordcloud(texto_c) if len(texto_c) > 5 else None,
-                    "wc_np": analise.gerar_wordcloud(texto_np) if len(texto_np) > 5 else None,
-                    "wc_ns": analise.gerar_wordcloud(texto_ns) if len(texto_ns) > 5 else None,
-                    "texto_c_raw": texto_c,
-                    "texto_np_raw": texto_np,
-                    "texto_ns_raw": texto_ns
+                        "topicos": analise.extrair_topicos_ngrams(texto_total) if len(texto_total) > 10 else ["Texto insuficiente"],
+                        "topicos_c": analise.extrair_topicos_ngrams(texto_c) if len(texto_c) > 10 else ["Texto insuficiente"],
+                        "topicos_np": analise.extrair_topicos_ngrams(texto_np) if len(texto_np) > 10 else ["Texto insuficiente"],
+                        "topicos_ns": analise.extrair_topicos_ngrams(texto_ns) if len(texto_ns) > 10 else ["Texto insuficiente"],
+                        "wc_c": analise.gerar_wordcloud(texto_c) if len(texto_c) > 5 else None,
+                        "wc_np": analise.gerar_wordcloud(texto_np) if len(texto_np) > 5 else None,
+                        "wc_ns": analise.gerar_wordcloud(texto_ns) if len(texto_ns) > 5 else None,
+                        "texto_c_raw": texto_c,
+                        "texto_np_raw": texto_np,
+                        "texto_ns_raw": texto_ns
                     }
 
             if st.session_state.get('stats_calculados'):
@@ -1254,120 +1254,120 @@ else:
                 with tab_ng1:
                     st.markdown('<div class="info-card"><h4 style="color: #f97316; margin-top: 0;">🧠 Temas Dominantes - Causador</h4>', unsafe_allow_html=True)
                     for t in topicos_c:
-                    st.markdown(t)
+                        st.markdown(t)
                     st.markdown('</div>', unsafe_allow_html=True)
                     if wc_c:
-                    st.pyplot(wc_c)
+                        st.pyplot(wc_c)
 
                 with tab_ng2:
                     st.markdown('<div class="info-card"><h4 style="color: #f97316; margin-top: 0;">🧠 Temas Dominantes - Negociador Principal</h4>', unsafe_allow_html=True)
                     for t in topicos_np:
-                    st.markdown(t)
+                        st.markdown(t)
                     st.markdown('</div>', unsafe_allow_html=True)
                     if wc_np:
-                    st.pyplot(wc_np)
+                        st.pyplot(wc_np)
 
                 with tab_ng3:
                     st.markdown('<div class="info-card"><h4 style="color: #f97316; margin-top: 0;">🧠 Temas Dominantes - Negociador Secundário</h4>', unsafe_allow_html=True)
                     for t in topicos_ns:
-                    st.markdown(t)
+                        st.markdown(t)
                     st.markdown('</div>', unsafe_allow_html=True)
                     if wc_ns:
-                    st.pyplot(wc_ns)
+                        st.pyplot(wc_ns)
 
                 with tab_ng4:
                     st.markdown('<div class="info-card"><h4 style="color: #f97316; margin-top: 0;">🌐 Temas Dominantes Gerais</h4>', unsafe_allow_html=True)
 
                     for t in topicos_globais:
-                    st.markdown(t)
+                        st.markdown(t)
 
                     st.markdown("<​hr style='border-color: rgba(255,255,255,0.12); margin: 16px 0;'>", unsafe_allow_html=True)
                     st.markdown("#### 🖼️ Mapas de palavras por interlocutor", unsafe_allow_html=True)
                     st.markdown(
-                    "<p style='color:#aaa; font-size:0.9rem; margin-top:-5px;'>Os mesmos mapas exibidos nas abas individuais também são mostrados aqui para facilitar a comparação visual no contexto global da ocorrência.</p>",
-                    unsafe_allow_html=True
+                        "<p style='color:#aaa; font-size:0.9rem; margin-top:-5px;'>Os mesmos mapas exibidos nas abas individuais também são mostrados aqui para facilitar a comparação visual no contexto global da ocorrência.</p>",
+                        unsafe_allow_html=True
                     )
 
                     col_wc_g1, col_wc_g2, col_wc_g3 = st.columns(3)
 
                     with col_wc_g1:
-                    st.markdown("**Causador**")
-                    if wc_c:
-                    st.pyplot(wc_c, clear_figure=True)
-                    else:
-                    st.info("Sem mapa de palavras do Causador para esta ocorrência.")
+                        st.markdown("**Causador**")
+                        if wc_c:
+                            st.pyplot(wc_c, clear_figure=True)
+                        else:
+                            st.info("Sem mapa de palavras do Causador para esta ocorrência.")
 
                     with col_wc_g2:
-                    st.markdown("**Negociador Principal**")
-                    if wc_np:
-                    st.pyplot(wc_np, clear_figure=True)
-                    else:
-                    st.info("Sem mapa de palavras do Negociador Principal para esta ocorrência.")
+                        st.markdown("**Negociador Principal**")
+                        if wc_np:
+                            st.pyplot(wc_np, clear_figure=True)
+                        else:
+                            st.info("Sem mapa de palavras do Negociador Principal para esta ocorrência.")
 
                     with col_wc_g3:
-                    st.markdown("**Negociador Secundário**")
-                    if wc_ns:
-                    st.pyplot(wc_ns, clear_figure=True)
-                    else:
-                    st.info("Sem mapa de palavras do Negociador Secundário para esta ocorrência.")
+                        st.markdown("**Negociador Secundário**")
+                        if wc_ns:
+                            st.pyplot(wc_ns, clear_figure=True)
+                        else:
+                            st.info("Sem mapa de palavras do Negociador Secundário para esta ocorrência.")
 
                     st.markdown('</div>', unsafe_allow_html=True)
 
                 with tab_ng5:
                     st.markdown(
-                    '<div class="info-card">'
-                    '<h4 style="color:#FFD700; margin-top:0;">⚡ Radar Comparativo & Índice de Convergência Temática</h4>'
-                    '<p style="color:#ccc; font-size:0.9rem; margin-bottom:1rem;">'
-                    'Comparação direta dos vetores semânticos entre os interlocutores. '
-                    'Quanto mais sobrepostos os polígonos, maior o espelhamento temático.</p>',
-                    unsafe_allow_html=True
+                        '<div class="info-card">'
+                        '<h4 style="color:#FFD700; margin-top:0;">⚡ Radar Comparativo & Índice de Convergência Temática</h4>'
+                        '<p style="color:#ccc; font-size:0.9rem; margin-bottom:1rem;">'
+                        'Comparação direta dos vetores semânticos entre os interlocutores. '
+                        'Quanto mais sobrepostos os polígonos, maior o espelhamento temático.</p>',
+                        unsafe_allow_html=True
                     )
 
                     if not texto_c_raw or not texto_np_raw:
-                    st.warning("⚠️ Transcrições insuficientes para gerar o radar comparativo.")
+                        st.warning("⚠️ Transcrições insuficientes para gerar o radar comparativo.")
                     else:
-                    try:
-                    fig_radar, conv = analise.gerar_radar_comparativo(
-                    texto_c_raw,
-                    texto_np_raw,
-                    texto_ns_raw if texto_ns_raw else None
-                    )
-                    st.plotly_chart(fig_radar, use_container_width=True)
+                        try:
+                            fig_radar, conv = analise.gerar_radar_comparativo(
+                                texto_c_raw,
+                                texto_np_raw,
+                                texto_ns_raw if texto_ns_raw else None
+                            )
+                            st.plotly_chart(fig_radar, use_container_width=True)
 
-                    if conv:
-                    st.markdown("---")
-                    st.markdown(
-                    '<h5 style="color:#FFD700;">📐 Índice de Convergência Temática</h5>',
-                    unsafe_allow_html=True
-                    )
-                    col_cv1, col_cv2, col_cv3 = st.columns(3)
+                            if conv:
+                                st.markdown("---")
+                                st.markdown(
+                                    '<h5 style="color:#FFD700;">📐 Índice de Convergência Temática</h5>',
+                                    unsafe_allow_html=True
+                                )
+                                col_cv1, col_cv2, col_cv3 = st.columns(3)
 
-                    with col_cv1:
-                    st.metric(
-                    label="Δ Risco (Causador − Negociador Principal)",
-                    value=f"{conv['delta_risco']:+.2f}",
-                    help="Positivo = o causador está mais carregado em linguagem de risco do que o negociador principal. Negativo = o negociador principal está usando mais linguagem de risco do que o causador. Próximo de zero: equilíbrio de carga de risco entre os dois"
-                    )
-                    st.caption(conv["leitura_risco"])
+                                with col_cv1:
+                                    st.metric(
+                                        label="Δ Risco (Causador − Negociador Principal)",
+                                        value=f"{conv['delta_risco']:+.2f}",
+                                        help="Positivo = o causador está mais carregado em linguagem de risco do que o negociador principal. Negativo = o negociador principal está usando mais linguagem de risco do que o causador. Próximo de zero: equilíbrio de carga de risco entre os dois"
+                                    )
+                                    st.caption(conv["leitura_risco"])
 
-                    with col_cv2:
-                    st.metric(
-                    label="Δ Proteção (Negociador Principal − Causador)",
-                    value=f"{conv['delta_protecao']:+.2f}",
-                    help="Positivo = negociador puxando para desescalada. Próximo de zero: pouca diferença entre os dois"
-                    )
-                    st.caption(conv["leitura_protecao"])
+                                with col_cv2:
+                                    st.metric(
+                                        label="Δ Proteção (Negociador Principal − Causador)",
+                                        value=f"{conv['delta_protecao']:+.2f}",
+                                        help="Positivo = negociador puxando para desescalada. Próximo de zero: pouca diferença entre os dois"
+                                    )
+                                    st.caption(conv["leitura_protecao"])
 
-                    with col_cv3:
-                    st.metric(
-                    label="índice de convergência temática",
-                    value=f"{conv['espelhamento']:.0%}",
-                    help="Quanto mais próximo de 100%, maior a sincronia dos temas abordados entre Negociador e Causador. Ele representa o quanto os dois interlocutores se aproximam semanticamente, não o quanto repetem as mesmas palavras. Este índice mede a convergência temática — não o vocabulário compartilhado. Para o espelhamento léxico literal, veja o Grafo de Similitude."
-                    )
-                    st.caption(conv["leitura_espelhamento"])
+                                with col_cv3:
+                                    st.metric(
+                                        label="índice de convergência temática",
+                                        value=f"{conv['espelhamento']:.0%}",
+                                        help="Quanto mais próximo de 100%, maior a sincronia dos temas abordados entre Negociador e Causador. Ele representa o quanto os dois interlocutores se aproximam semanticamente, não o quanto repetem as mesmas palavras. Este índice mede a convergência temática — não o vocabulário compartilhado. Para o espelhamento léxico literal, veja o Grafo de Similitude."
+                                    )
+                                    st.caption(conv["leitura_espelhamento"])
 
-                    except Exception as e:
-                    st.error(f"Erro ao gerar radar comparativo: {str(e)}")
+                        except Exception as e:
+                            st.error(f"Erro ao gerar radar comparativo: {str(e)}")
 
                     st.markdown('</div>', unsafe_allow_html=True)
             
@@ -1375,194 +1375,194 @@ else:
             if st.button("📡 3. GERAR ANALYTICS E EXPORTAR ANÁLISE (PDF)"):
                 with st.spinner("Compilando dados técnicos, consultando IA e desenhando PDF..."):
                     try:
-                    t_causador = limpar_valor(df_apa.get('TRANSCRIÇÃO DO CAUSADOR'))
-                    t_principal = limpar_valor(df_apa.get('TRANSCRIÇÃO DO NEGOCIADOR PRINCIPAL'))
-                    t_secundario = limpar_valor(df_apa.get('TRANSCRIÇÃO DO NEGOCIADOR SECUNDÁRIO'))
+                        t_causador = limpar_valor(df_apa.get('TRANSCRIÇÃO DO CAUSADOR'))
+                        t_principal = limpar_valor(df_apa.get('TRANSCRIÇÃO DO NEGOCIADOR PRINCIPAL'))
+                        t_secundario = limpar_valor(df_apa.get('TRANSCRIÇÃO DO NEGOCIADOR SECUNDÁRIO'))
 
-                    df_transcricoes = pd.DataFrame([{
-                    "Causador": t_causador,
-                    "Neg_Principal": t_principal,
-                    "Neg_Secundario": t_secundario
-                    }])
+                        df_transcricoes = pd.DataFrame([{
+                            "Causador": t_causador,
+                            "Neg_Principal": t_principal,
+                            "Neg_Secundario": t_secundario
+                        }])
 
-                    temas_extraidos = st.session_state['stats_calculados']['topicos'] if st.session_state.get('stats_calculados') else ["Etapa 2 não executada"]
+                        temas_extraidos = st.session_state['stats_calculados']['topicos'] if st.session_state.get('stats_calculados') else ["Etapa 2 não executada"]
 
-                    meta_dict = df_apa.to_dict()
-                    meta_dict["temas_dominantes_scikit_learn"] = " | ".join(temas_extraidos)
-                    df_meta = pd.DataFrame([meta_dict])
-                    
-                    dados_extraidos = {
-                    "transcricao": df_transcricoes,
-                    "metadados": df_meta
-                    }
+                        meta_dict = df_apa.to_dict()
+                        meta_dict["temas_dominantes_scikit_learn"] = " | ".join(temas_extraidos)
+                        df_meta = pd.DataFrame([meta_dict])
+                        
+                        dados_extraidos = {
+                            "transcricao": df_transcricoes,
+                            "metadados": df_meta
+                        }
 
-                    # ====
-                    # MONTA AS TÉCNICAS DA APA E A FREQUÊNCIA PARA ENVIAR À IA
-                    # ====
-                    tecnicas_da_apa = []
-                    freq_tecnicas_dict = {}
-                    estatisticas_ocorrencia = {}
+                        # ====
+                        # MONTA AS TÉCNICAS DA APA E A FREQUÊNCIA PARA ENVIAR À IA
+                        # ====
+                        tecnicas_da_apa = []
+                        freq_tecnicas_dict = {}
+                        estatisticas_ocorrencia = {}
 
-                    try:
-                    if not df_tec.empty:
-                    col_vinculo = next((c for c in df_tec.columns if 'VINCULO' in c.upper() or 'VÍNCULO' in c.upper()), None)
+                        try:
+                            if not df_tec.empty:
+                                col_vinculo = next((c for c in df_tec.columns if 'VINCULO' in c.upper() or 'VÍNCULO' in c.upper()), None)
 
-                    if col_vinculo:
-                    id_visivel = str(apa_selecionada).strip()
+                                if col_vinculo:
+                                    id_visivel = str(apa_selecionada).strip()
 
-                    df_tec_tmp = df_tec.copy()
-                    df_tec_tmp['Vinculo_Str'] = (
-                    df_tec_tmp[col_vinculo]
-                    .astype(str)
-                    .str.replace(r"[\[\]'\"]", "", regex=True)
-                    .str.strip()
-                    )
+                                    df_tec_tmp = df_tec.copy()
+                                    df_tec_tmp['Vinculo_Str'] = (
+                                        df_tec_tmp[col_vinculo]
+                                        .astype(str)
+                                        .str.replace(r"[\[\]'\"]", "", regex=True)
+                                        .str.strip()
+                                    )
 
-                    df_tec_filtrado_pdf = df_tec_tmp[df_tec_tmp['Vinculo_Str'] == id_visivel].copy()
+                                    df_tec_filtrado_pdf = df_tec_tmp[df_tec_tmp['Vinculo_Str'] == id_visivel].copy()
 
-                    if df_tec_filtrado_pdf.empty and 'Airtable_Record_ID' in df_apa:
-                    id_interno = str(df_apa['Airtable_Record_ID']).strip()
-                    df_tec_filtrado_pdf = df_tec_tmp[
-                    df_tec_tmp[col_vinculo].astype(str).str.contains(id_interno, na=False, regex=False)
-                    ].copy()
+                                    if df_tec_filtrado_pdf.empty and 'Airtable_Record_ID' in df_apa:
+                                        id_interno = str(df_apa['Airtable_Record_ID']).strip()
+                                        df_tec_filtrado_pdf = df_tec_tmp[
+                                            df_tec_tmp[col_vinculo].astype(str).str.contains(id_interno, na=False, regex=False)
+                                        ].copy()
 
-                    if not df_tec_filtrado_pdf.empty:
-                    col_tecnica = next(
-                    (col for col in ['TÉCNICAS', 'TECNICAS', 'TÉCNICA', 'TECNICA'] if col in df_tec_filtrado_pdf.columns),
-                    None
-                    )
+                                    if not df_tec_filtrado_pdf.empty:
+                                        col_tecnica = next(
+                                            (col for col in ['TÉCNICAS', 'TECNICAS', 'TÉCNICA', 'TECNICA'] if col in df_tec_filtrado_pdf.columns),
+                                            None
+                                        )
 
-                    if col_tecnica:
-                    freq_abs = df_tec_filtrado_pdf[col_tecnica].value_counts()
-                    freq_rel = (df_tec_filtrado_pdf[col_tecnica].value_counts(normalize=True) * 100).round(1)
+                                        if col_tecnica:
+                                            freq_abs = df_tec_filtrado_pdf[col_tecnica].value_counts()
+                                            freq_rel = (df_tec_filtrado_pdf[col_tecnica].value_counts(normalize=True) * 100).round(1)
 
-                    df_freq_pdf = pd.DataFrame({
-                    'Técnica Empregada': freq_abs.index,
-                    'Frequência Absoluta': freq_abs.values,
-                    'Frequência Relativa (%)': freq_rel.values
-                    })
+                                            df_freq_pdf = pd.DataFrame({
+                                                'Técnica Empregada': freq_abs.index,
+                                                'Frequência Absoluta': freq_abs.values,
+                                                'Frequência Relativa (%)': freq_rel.values
+                                            })
 
-                    tecnicas_da_apa = df_freq_pdf['Técnica Empregada'].dropna().astype(str).tolist()
+                                            tecnicas_da_apa = df_freq_pdf['Técnica Empregada'].dropna().astype(str).tolist()
 
-                    frequencia_tecnicas_ocorrencia = []
-                    for _, row in df_freq_pdf.iterrows():
-                    frequencia_tecnicas_ocorrencia.append({
-                    "tecnica": str(row["Técnica Empregada"]),
-                    "frequencia_absoluta": int(row["Frequência Absoluta"]),
-                    "frequencia_relativa": float(row["Frequência Relativa (%)"])
-                    })
+                                            frequencia_tecnicas_ocorrencia = []
+                                            for _, row in df_freq_pdf.iterrows():
+                                                frequencia_tecnicas_ocorrencia.append({
+                                                    "tecnica": str(row["Técnica Empregada"]),
+                                                    "frequencia_absoluta": int(row["Frequência Absoluta"]),
+                                                    "frequencia_relativa": float(row["Frequência Relativa (%)"])
+                                                })
 
-                    freq_tecnicas_dict = dict(
-                    zip(
-                    df_freq_pdf['Técnica Empregada'].astype(str),
-                    df_freq_pdf['Frequência Absoluta'].astype(int)
-                    )
-                    )
+                                            freq_tecnicas_dict = dict(
+                                                zip(
+                                                    df_freq_pdf['Técnica Empregada'].astype(str),
+                                                    df_freq_pdf['Frequência Absoluta'].astype(int)
+                                                )
+                                            )
 
-                    estatisticas_ocorrencia = {
-                    "frequencia_tecnicas_ocorrencia": frequencia_tecnicas_ocorrencia,
-                    "frequencia_absoluta_por_tecnica": freq_tecnicas_dict
-                    }
+                                            estatisticas_ocorrencia = {
+                                                "frequencia_tecnicas_ocorrencia": frequencia_tecnicas_ocorrencia,
+                                                "frequencia_absoluta_por_tecnica": freq_tecnicas_dict
+                                            }
+
+                        except Exception as e:
+                            st.warning(f"Falha ao montar frequências para a IA: {e}")
+
+                        resultado_ia = ia_link.analisar_ocorrencia_gate(
+                            dados_extraidos,
+                            estatisticas_ocorrencia=estatisticas_ocorrencia,
+                            tecnicas_ocorrencia=tecnicas_da_apa
+                        )
+                        
+                        if isinstance(resultado_ia, dict) and 'parecer' in resultado_ia:
+                            parecer_ia = resultado_ia['parecer']
+                        else:
+                            parecer_ia = f"Sinal recebido, mas os dados estão incompletos ou a URL precisa de ajuste. Bruto: {resultado_ia}"
+
+                        def calcular_media_equipe(*valores):
+                            validos = [v for v in valores if v > 0]
+                            return sum(validos) / len(validos) if validos else 0
+
+                        likert_inicio = {
+                            'agressividade_media': calcular_media_equipe(p_agr_c_num, s_agr_c_num, l_agr_c_num), 
+                            'receptividade_media': calcular_media_equipe(p_rec_c_num, s_rec_c_num, l_rec_c_num)
+                        }
+                        likert_fim = {
+                            'agressividade_media': calcular_media_equipe(p_agr_e_num, s_agr_e_num, l_agr_e_num), 
+                            'receptividade_media': calcular_media_equipe(p_rec_e_num, s_rec_e_num, l_rec_e_num)
+                        }
+                        stats_spearman = {'valido': False, 'p_value': 0.0, 'rho': 0.0} 
+                        laudo_frio = ia_link.gerar_laudo_frio(likert_inicio, likert_fim, stats_spearman)
+
+                        st.markdown(f"""
+                        <div class="info-card" style="border-left: 4px solid #FFD700;">
+                        <h4 style="color: #FFD700; margin-top: 0;">Inferência Estatística (Motor Frio)</h4>
+                        <p style="font-size: 1.05rem; line-height: 1.6;">{laudo_frio}</p>
+                        <hr style="border-color: rgba(255,255,255,0.1); margin: 15px 0;">
+                        <h4 style="color: #06C755; margin-top: 0;">Leitura Analítica (Interpretação descritiva dos resultados)</h4>
+                        <p style="font-size: 1.05rem; line-height: 1.6;">{parecer_ia}</p>
+                        </div>
+                        """, unsafe_allow_html=True)
+
+                        if isinstance(parecer_ia, dict):
+                            partes = [f"{k.upper()}:\n{v}" for k, v in parecer_ia.items()]
+                            texto_str = "\n\n".join(partes)
+                        else:
+                            texto_str = str(parecer_ia)
+                        
+                        texto_str = texto_str.replace("**", "").replace("### ", "")
+                        texto_final_pdf = unicodedata.normalize('NFKD', texto_str).encode('ASCII', 'ignore').decode('ASCII')
+
+                        pdf = FPDF()
+                        pdf.add_page()
+                        
+                        pdf.set_fill_color(249, 115, 22)
+                        pdf.rect(0, 0, 210, 40, 'F')
+                        pdf.set_font("Arial", "B", 18)
+                        pdf.set_text_color(255, 255, 255)
+                        pdf.cell(0, 15, "LAUDO DE ANALISE POS-ACAO (APA)", ln=True, align="C")
+                        pdf.set_font("Arial", "I", 12)
+                        pdf.cell(0, 5, f"Unidade: GATE | ID: {apa_selecionada}", ln=True, align="C")
+                        
+                        pdf.ln(20)
+                        pdf.set_text_color(0, 0, 0)
+                        pdf.set_font("Arial", "B", 14)
+                        pdf.set_fill_color(240, 240, 240)
+                        pdf.cell(0, 10, " 1. INFORMACOES DO INCIDENTE", ln=True, fill=True)
+                        pdf.set_font("Arial", "", 11)
+                        
+                        dt_oc = limpar_valor(df_apa.get('Data da ocorrência'))
+                        tip = limpar_valor(df_apa.get('Tipologia'))
+                        neg = limpar_valor(df_apa.get('Negociador Principal'))
+                        info_str = f"Data: {dt_oc} | Tipologia: {tip} | Negociador: {neg}"
+                        
+                        pdf.multi_cell(0, 8, txt=unicodedata.normalize('NFKD', info_str).encode('ASCII', 'ignore').decode('ASCII'), border='L')
+                        
+                        pdf.ln(10)
+                        pdf.set_font("Arial", "B", 14)
+                        pdf.set_fill_color(249, 115, 22)
+                        pdf.set_text_color(255, 255, 255)
+                        pdf.cell(0, 10, " 2. INTELIGENCIA DE APOIO A DECISAO (IA)", ln=True, fill=True)
+                        pdf.ln(5)
+                        pdf.set_text_color(0, 0, 0)
+                        pdf.set_font("Arial", "", 11)
+                        
+                        pdf.multi_cell(0, 7, txt=texto_final_pdf)
+                        
+                        pdf_saida = pdf.output(dest="S")
+                        if isinstance(pdf_saida, str):
+                            pdf_bytes = pdf_saida.encode('latin-1', errors='replace')
+                        else:
+                            pdf_bytes = bytes(pdf_saida)
+                        
+                        st.download_button(
+                            label="📥 BAIXAR ANÁLISE COMPLETA (PDF)", 
+                            data=pdf_bytes, 
+                            file_name=f"Laudo_GATE_{apa_selecionada}.pdf", 
+                            mime="application/pdf"
+                        )
 
                     except Exception as e:
-                    st.warning(f"Falha ao montar frequências para a IA: {e}")
-
-                    resultado_ia = ia_link.analisar_ocorrencia_gate(
-                    dados_extraidos,
-                    estatisticas_ocorrencia=estatisticas_ocorrencia,
-                    tecnicas_ocorrencia=tecnicas_da_apa
-                    )
-                    
-                    if isinstance(resultado_ia, dict) and 'parecer' in resultado_ia:
-                    parecer_ia = resultado_ia['parecer']
-                    else:
-                    parecer_ia = f"Sinal recebido, mas os dados estão incompletos ou a URL precisa de ajuste. Bruto: {resultado_ia}"
-
-                    def calcular_media_equipe(*valores):
-                    validos = [v for v in valores if v > 0]
-                    return sum(validos) / len(validos) if validos else 0
-
-                    likert_inicio = {
-                    'agressividade_media': calcular_media_equipe(p_agr_c_num, s_agr_c_num, l_agr_c_num), 
-                    'receptividade_media': calcular_media_equipe(p_rec_c_num, s_rec_c_num, l_rec_c_num)
-                    }
-                    likert_fim = {
-                    'agressividade_media': calcular_media_equipe(p_agr_e_num, s_agr_e_num, l_agr_e_num), 
-                    'receptividade_media': calcular_media_equipe(p_rec_e_num, s_rec_e_num, l_rec_e_num)
-                    }
-                    stats_spearman = {'valido': False, 'p_value': 0.0, 'rho': 0.0} 
-                    laudo_frio = ia_link.gerar_laudo_frio(likert_inicio, likert_fim, stats_spearman)
-
-                    st.markdown(f"""
-                    <div class="info-card" style="border-left: 4px solid #FFD700;">
-                    <h4 style="color: #FFD700; margin-top: 0;">Inferência Estatística (Motor Frio)</h4>
-                    <p style="font-size: 1.05rem; line-height: 1.6;">{laudo_frio}</p>
-                    <hr style="border-color: rgba(255,255,255,0.1); margin: 15px 0;">
-                    <h4 style="color: #06C755; margin-top: 0;">Leitura Analítica (Interpretação descritiva dos resultados)</h4>
-                    <p style="font-size: 1.05rem; line-height: 1.6;">{parecer_ia}</p>
-                    </div>
-                    """, unsafe_allow_html=True)
-
-                    if isinstance(parecer_ia, dict):
-                    partes = [f"{k.upper()}:\n{v}" for k, v in parecer_ia.items()]
-                    texto_str = "\n\n".join(partes)
-                    else:
-                    texto_str = str(parecer_ia)
-                    
-                    texto_str = texto_str.replace("**", "").replace("### ", "")
-                    texto_final_pdf = unicodedata.normalize('NFKD', texto_str).encode('ASCII', 'ignore').decode('ASCII')
-
-                    pdf = FPDF()
-                    pdf.add_page()
-                    
-                    pdf.set_fill_color(249, 115, 22)
-                    pdf.rect(0, 0, 210, 40, 'F')
-                    pdf.set_font("Arial", "B", 18)
-                    pdf.set_text_color(255, 255, 255)
-                    pdf.cell(0, 15, "LAUDO DE ANALISE POS-ACAO (APA)", ln=True, align="C")
-                    pdf.set_font("Arial", "I", 12)
-                    pdf.cell(0, 5, f"Unidade: GATE | ID: {apa_selecionada}", ln=True, align="C")
-                    
-                    pdf.ln(20)
-                    pdf.set_text_color(0, 0, 0)
-                    pdf.set_font("Arial", "B", 14)
-                    pdf.set_fill_color(240, 240, 240)
-                    pdf.cell(0, 10, " 1. INFORMACOES DO INCIDENTE", ln=True, fill=True)
-                    pdf.set_font("Arial", "", 11)
-                    
-                    dt_oc = limpar_valor(df_apa.get('Data da ocorrência'))
-                    tip = limpar_valor(df_apa.get('Tipologia'))
-                    neg = limpar_valor(df_apa.get('Negociador Principal'))
-                    info_str = f"Data: {dt_oc} | Tipologia: {tip} | Negociador: {neg}"
-                    
-                    pdf.multi_cell(0, 8, txt=unicodedata.normalize('NFKD', info_str).encode('ASCII', 'ignore').decode('ASCII'), border='L')
-                    
-                    pdf.ln(10)
-                    pdf.set_font("Arial", "B", 14)
-                    pdf.set_fill_color(249, 115, 22)
-                    pdf.set_text_color(255, 255, 255)
-                    pdf.cell(0, 10, " 2. INTELIGENCIA DE APOIO A DECISAO (IA)", ln=True, fill=True)
-                    pdf.ln(5)
-                    pdf.set_text_color(0, 0, 0)
-                    pdf.set_font("Arial", "", 11)
-                    
-                    pdf.multi_cell(0, 7, txt=texto_final_pdf)
-                    
-                    pdf_saida = pdf.output(dest="S")
-                    if isinstance(pdf_saida, str):
-                    pdf_bytes = pdf_saida.encode('latin-1', errors='replace')
-                    else:
-                    pdf_bytes = bytes(pdf_saida)
-                    
-                    st.download_button(
-                    label="📥 BAIXAR ANÁLISE COMPLETA (PDF)", 
-                    data=pdf_bytes, 
-                    file_name=f"Laudo_GATE_{apa_selecionada}.pdf", 
-                    mime="application/pdf"
-                    )
-
-                    except Exception as e:
-                    st.error(f"Erro na análise da IA ou geração do PDF: {str(e)}")
+                        st.error(f"Erro na análise da IA ou geração do PDF: {str(e)}")
 
     # ====
     # ABA 2: PAINEL (HISTÓRICO)
@@ -1683,9 +1683,9 @@ else:
                     c_tab, c_tree = st.columns([1, 2])
                     with c_tab: st.dataframe(freq_global, use_container_width=True, hide_index=True)
                     with c_tree:
-                    fig_g = px.treemap(freq_global, path=['Técnica'], values='Vezes Utilizada', color='Vezes Utilizada', color_continuous_scale='Oranges')
-                    fig_g.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font_color="#FFF", margin=dict(t=0, l=0, r=0, b=0))
-                    st.plotly_chart(fig_g, use_container_width=True)
+                        fig_g = px.treemap(freq_global, path=['Técnica'], values='Vezes Utilizada', color='Vezes Utilizada', color_continuous_scale='Oranges')
+                        fig_g.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font_color="#FFF", margin=dict(t=0, l=0, r=0, b=0))
+                        st.plotly_chart(fig_g, use_container_width=True)
                 else: st.warning("Coluna 'TÉCNICAS' não encontrada.")
             else: st.info("Nenhuma técnica encontrada para os filtros selecionados.")
             
@@ -1729,9 +1729,9 @@ else:
                 
                 def tempo_para_minutos(val):
                     try:
-                    if isinstance(val, list): val = val[0]
-                    if pd.isna(val) or val == "N/D" or val == "": return 0
-                    return int(float(val)) / 60
+                        if isinstance(val, list): val = val[0]
+                        if pd.isna(val) or val == "N/D" or val == "": return 0
+                        return int(float(val)) / 60
                     except: return 0
                 
                 df_sp['Tempo_Minutos'] = df_sp['Tempo de Negociação Real'].apply(tempo_para_minutos)
@@ -1772,15 +1772,15 @@ else:
                     res_chi = analise.calcular_qui_quadrado(df_qui_clean, col_v1, col_v2)
                     
                     if res_chi.get('valido', False):
-                    st.write(f"Estatística Qui-Quadrado: `{res_chi['chi2']:.2f}`")
-                    st.write(f"P-Valor: `{res_chi['p_value']:.4f}`")
-                    
-                    if res_chi['p_value'] < 0.05:
-                    st.success(f"✅ **Existe Padrão:** O uso de técnicas **depende** do(a) {var_analise}. Isso indica uma atuação padronizada/doutrinária.")
+                        st.write(f"Estatística Qui-Quadrado: `{res_chi['chi2']:.2f}`")
+                        st.write(f"P-Valor: `{res_chi['p_value']:.4f}`")
+                        
+                        if res_chi['p_value'] < 0.05:
+                            st.success(f"✅ **Existe Padrão:** O uso de técnicas **depende** do(a) {var_analise}. Isso indica uma atuação padronizada/doutrinária.")
+                        else:
+                            st.info(f"ℹ️ **Sem Padrão:** O uso de técnicas é independente do(a) {var_analise}. A aplicação parece ser situacional ou improvisada.")
                     else:
-                    st.info(f"ℹ️ **Sem Padrão:** O uso de técnicas é independente do(a) {var_analise}. A aplicação parece ser situacional ou improvisada.")
-                    else:
-                    st.warning("Variância insuficiente para este cruzamento específico.")
+                        st.warning("Variância insuficiente para este cruzamento específico.")
                 else:
                     st.warning("Sem dados suficientes após filtragem.")
             st.markdown("</div>", unsafe_allow_html=True)
@@ -1830,14 +1830,14 @@ else:
                     
                     tab_vies = pd.crosstab(df_adv_clean['Neg_Limpo'], df_adv_clean['Resposta_Cat'])
                     if tab_vies.shape[0] > 1 and tab_vies.shape[1] > 1:
-                    chi2, p, dof, exp = chi2_contingency(tab_vies)
-                    residuos = (tab_vies - exp) / np.sqrt(exp)
-                    st.write(f"**P-Valor global:** `{p:.4e}`")
-                    fig_heat = px.imshow(residuos, text_auto=".2f", color_continuous_scale="RdBu", title="Mapa de Calor do Viés")
-                    fig_heat.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font_color="#FFF")
-                    st.plotly_chart(fig_heat, use_container_width=True)
+                        chi2, p, dof, exp = chi2_contingency(tab_vies)
+                        residuos = (tab_vies - exp) / np.sqrt(exp)
+                        st.write(f"**P-Valor global:** `{p:.4e}`")
+                        fig_heat = px.imshow(residuos, text_auto=".2f", color_continuous_scale="RdBu", title="Mapa de Calor do Viés")
+                        fig_heat.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font_color="#FFF")
+                        st.plotly_chart(fig_heat, use_container_width=True)
                     else:
-                    st.write("Dados insuficientes para comparar múltiplos negociadores.")
+                        st.write("Dados insuficientes para comparar múltiplos negociadores.")
                     st.markdown("</div>", unsafe_allow_html=True)
                     
                     st.markdown("<div class='info-card'>", unsafe_allow_html=True)
@@ -1845,25 +1845,25 @@ else:
                     st.markdown("<span style='font-size: 0.85rem; color: #aaa;'><strong>O que significa:</strong> Isola o peso da técnica, removendo a influência do negociador e da tipologia da crise.</span>", unsafe_allow_html=True)
                     
                     if 'col_t' in locals() and col_t:
-                    df_adv_clean['Tecnica_Patsy'] = df_adv_clean[col_t].astype(str).str.replace(' ', '_').str.replace('-', '_')
-                    df_adv_clean['Neg_Patsy'] = df_adv_clean['Neg_Limpo'].astype(str).str.replace(' ', '_')
-                    df_adv_clean['Tip_Patsy'] = df_adv_clean['Tip_Limpa'].astype(str).str.replace(' ', '_')
+                        df_adv_clean['Tecnica_Patsy'] = df_adv_clean[col_t].astype(str).str.replace(' ', '_').str.replace('-', '_')
+                        df_adv_clean['Neg_Patsy'] = df_adv_clean['Neg_Limpo'].astype(str).str.replace(' ', '_')
+                        df_adv_clean['Tip_Patsy'] = df_adv_clean['Tip_Limpa'].astype(str).str.replace(' ', '_')
 
-                    try:
-                    mod_ord = OrderedModel.from_formula("Resposta_Ord ~ C(Tecnica_Patsy) + C(Neg_Patsy) + C(Tip_Patsy)", data=df_adv_clean, distr='logit')
-                    res_ord = mod_ord.fit(method='bfgs', disp=False)
-                    coefs = res_ord.params[res_ord.params.index.str.contains('Tecnica')]
-                    pvals = res_ord.pvalues[res_ord.params.index.str.contains('Tecnica')]
-                    df_or = pd.DataFrame({'Técnica': coefs.index.str.extract(r'\[T\.(.*?)\]')[0], 'Odds_Ratio': np.exp(coefs), 'P_Valor': pvals})
-                    df_or = df_or[df_or['P_Valor'] < 0.05].sort_values('Odds_Ratio', ascending=False)
-                    
-                    if not df_or.empty:
-                    st.dataframe(df_or.style.format({'Odds_Ratio': '{:.2f}', 'P_Valor': '{:.4f}'}), use_container_width=True, hide_index=True)
-                    st.success("💡 Um Odds Ratio de 2.0 indica que a técnica dobra a chance de uma resposta positiva.")
-                    else:
-                    st.info("ℹ️ Nenhuma técnica isolada apresentou significância estatística neste cenário.")
-                    except:
-                    st.warning("O modelo Ordinal não convergiu para este subconjunto.")
+                        try:
+                            mod_ord = OrderedModel.from_formula("Resposta_Ord ~ C(Tecnica_Patsy) + C(Neg_Patsy) + C(Tip_Patsy)", data=df_adv_clean, distr='logit')
+                            res_ord = mod_ord.fit(method='bfgs', disp=False)
+                            coefs = res_ord.params[res_ord.params.index.str.contains('Tecnica')]
+                            pvals = res_ord.pvalues[res_ord.params.index.str.contains('Tecnica')]
+                            df_or = pd.DataFrame({'Técnica': coefs.index.str.extract(r'\[T\.(.*?)\]')[0], 'Odds_Ratio': np.exp(coefs), 'P_Valor': pvals})
+                            df_or = df_or[df_or['P_Valor'] < 0.05].sort_values('Odds_Ratio', ascending=False)
+                            
+                            if not df_or.empty:
+                                st.dataframe(df_or.style.format({'Odds_Ratio': '{:.2f}', 'P_Valor': '{:.4f}'}), use_container_width=True, hide_index=True)
+                                st.success("💡 Um Odds Ratio de 2.0 indica que a técnica dobra a chance de uma resposta positiva.")
+                            else:
+                                st.info("ℹ️ Nenhuma técnica isolada apresentou significância estatística neste cenário.")
+                        except:
+                            st.warning("O modelo Ordinal não convergiu para este subconjunto.")
                     st.markdown("</div>", unsafe_allow_html=True)
                     
                     st.markdown("<div class='info-card'>", unsafe_allow_html=True)
@@ -1873,19 +1873,19 @@ else:
                     df_gee_real = df_adv_clean.copy()
                     df_gee_real['Sucesso'] = np.where(df_gee_real['Resposta_Cat'] == 'Positiva', 1, 0)
                     try:
-                    if 'Tecnica_Patsy' in df_gee_real.columns:
-                    modelo_gee = smf.gee("Sucesso ~ C(Tecnica_Patsy)", groups=df_gee_real['Neg_Patsy'], data=df_gee_real, family=sm.families.Binomial(), cov_struct=sm.cov_struct.Exchangeable())
-                    res_gee = modelo_gee.fit()
-                    gee_coefs = res_gee.params[res_gee.params.index.str.contains('Tecnica')]
-                    gee_pvals = res_gee.pvalues[res_gee.params.index.str.contains('Tecnica')]
-                    df_gee = pd.DataFrame({'Técnica': gee_coefs.index.str.extract(r'\[T\.(.*?)\]')[0], 'Coeficiente_GEE': gee_coefs, 'P_Valor': gee_pvals})
-                    
-                    if not df_gee.empty:
-                    st.dataframe(df_gee.style.format({'Coeficiente_GEE': '{:.2f}', 'P_Valor': '{:.4f}'}), use_container_width=True, hide_index=True)
-                    if (gee_pvals < 0.05).any(): st.success("✅ **Doutrina Validada:** Técnica sobreviveu ao controle de viés.")
-                    else: st.info("ℹ️ Nenhuma técnica atingiu significância.")
+                        if 'Tecnica_Patsy' in df_gee_real.columns:
+                            modelo_gee = smf.gee("Sucesso ~ C(Tecnica_Patsy)", groups=df_gee_real['Neg_Patsy'], data=df_gee_real, family=sm.families.Binomial(), cov_struct=sm.cov_struct.Exchangeable())
+                            res_gee = modelo_gee.fit()
+                            gee_coefs = res_gee.params[res_gee.params.index.str.contains('Tecnica')]
+                            gee_pvals = res_gee.pvalues[res_gee.params.index.str.contains('Tecnica')]
+                            df_gee = pd.DataFrame({'Técnica': gee_coefs.index.str.extract(r'\[T\.(.*?)\]')[0], 'Coeficiente_GEE': gee_coefs, 'P_Valor': gee_pvals})
+                            
+                            if not df_gee.empty:
+                                st.dataframe(df_gee.style.format({'Coeficiente_GEE': '{:.2f}', 'P_Valor': '{:.4f}'}), use_container_width=True, hide_index=True)
+                                if (gee_pvals < 0.05).any(): st.success("✅ **Doutrina Validada:** Técnica sobreviveu ao controle de viés.")
+                                else: st.info("ℹ️ Nenhuma técnica atingiu significância.")
                     except:
-                    st.error("Erro no processamento GEE.")
+                        st.error("Erro no processamento GEE.")
                     st.markdown("</div>", unsafe_allow_html=True)
                     
                 except ImportError:
@@ -1923,95 +1923,95 @@ else:
                     
                     ord_data = None
                     if 'df_or' in locals() and not df_or.empty:
-                    ord_data = df_or.to_dict('records')
+                        ord_data = df_or.to_dict('records')
                     
                     gee_data = None
                     if 'df_gee' in locals() and not df_gee.empty:
-                    gee_data = df_gee.to_dict('records')
+                        gee_data = df_gee.to_dict('records')
 
                     payload_ia = ia_estatistica.estruturar_resultado_para_ia(
-                    amostra_total=len(df_quali_filt),
-                    resultados_chi=qui_data,
-                    resultados_ordinal=ord_data,
-                    resultados_gee=gee_data
+                        amostra_total=len(df_quali_filt),
+                        resultados_chi=qui_data,
+                        resultados_ordinal=ord_data,
+                        resultados_gee=gee_data
                     )
 
                     relatorio_json = ia_estatistica.gerar_relatorio_com_ia(payload_ia)
 
                     if "erro" in relatorio_json:
-                    st.error(relatorio_json["erro"])
-                    with st.expander("Ver Payload Enviado"):
-                    st.json(payload_ia)
+                        st.error(relatorio_json["erro"])
+                        with st.expander("Ver Payload Enviado"):
+                            st.json(payload_ia)
                     else:
-                    def render_ia_card(titulo, texto, icone="📌"):
-                    return f"""
-                    <div class="info-card" style="border-left: 3px solid #06C755; padding: 15px; margin-bottom: 15px;">
-                    <h5 style="color: #06C755; margin-top: 0; font-size: 1.1rem;">{icone} {titulo}</h5>
-                    <p style="font-size: 1.05rem; line-height: 1.6; color: #FFF;">{texto}</p>
-                    </div>
-                    """
+                        def render_ia_card(titulo, texto, icone="📌"):
+                            return f"""
+                            <div class="info-card" style="border-left: 3px solid #06C755; padding: 15px; margin-bottom: 15px;">
+                            <h5 style="color: #06C755; margin-top: 0; font-size: 1.1rem;">{icone} {titulo}</h5>
+                            <p style="font-size: 1.05rem; line-height: 1.6; color: #FFF;">{texto}</p>
+                            </div>
+                            """
 
-                    c_ia1, c_ia2 = st.columns(2)
-                    with c_ia1:
-                    st.markdown(render_ia_card("Objetivo Analítico", relatorio_json.get("objetivo", "N/D"), "🎯"), unsafe_allow_html=True)
-                    st.markdown(render_ia_card("Premissas e Limitações da Análise", relatorio_json.get("premissas", "N/D") + "<br><br><strong>Limitações Técnicas:</strong> " + relatorio_json.get("limitacoes", "N/D"), "⚖️"), unsafe_allow_html=True)
-                    with c_ia2:
-                    st.markdown(render_ia_card("Resultados Principais", relatorio_json.get("resultados_principais", "N/D"), "📊"), unsafe_allow_html=True)
-                    st.markdown(render_ia_card("Tamanho do Efeito", relatorio_json.get("tamanho_efeito", "N/D"), "📈"), unsafe_allow_html=True)
+                        c_ia1, c_ia2 = st.columns(2)
+                        with c_ia1:
+                            st.markdown(render_ia_card("Objetivo Analítico", relatorio_json.get("objetivo", "N/D"), "🎯"), unsafe_allow_html=True)
+                            st.markdown(render_ia_card("Premissas e Limitações da Análise", relatorio_json.get("premissas", "N/D") + "<br><br><strong>Limitações Técnicas:</strong> " + relatorio_json.get("limitacoes", "N/D"), "⚖️"), unsafe_allow_html=True)
+                        with c_ia2:
+                            st.markdown(render_ia_card("Resultados Principais", relatorio_json.get("resultados_principais", "N/D"), "📊"), unsafe_allow_html=True)
+                            st.markdown(render_ia_card("Tamanho do Efeito", relatorio_json.get("tamanho_efeito", "N/D"), "📈"), unsafe_allow_html=True)
 
-                    st.markdown(render_ia_card("Implicações Analíticas para a Tomada de Decisão", relatorio_json.get("interpretacao", "N/D"), "🧠"), unsafe_allow_html=True)
-                    st.markdown(render_ia_card("Direcionamento Estratégico Baseado em Evidências", relatorio_json.get("conclusao", "N/D"), "🏆"), unsafe_allow_html=True)
+                        st.markdown(render_ia_card("Implicações Analíticas para a Tomada de Decisão", relatorio_json.get("interpretacao", "N/D"), "🧠"), unsafe_allow_html=True)
+                        st.markdown(render_ia_card("Direcionamento Estratégico Baseado em Evidências", relatorio_json.get("conclusao", "N/D"), "🏆"), unsafe_allow_html=True)
 
-                    with st.expander("🕵️ Ver Matriz Bruta de Dados (JSON Payload e Retorno)"):
-                    st.markdown("**Payload enviado para a IA (O que o Python calculou):**")
-                    st.json(payload_ia)
-                    st.markdown("**JSON Retornado pela IA:**")
-                    st.json(relatorio_json)
+                        with st.expander("🕵️ Ver Matriz Bruta de Dados (JSON Payload e Retorno)"):
+                            st.markdown("**Payload enviado para a IA (O que o Python calculou):**")
+                            st.json(payload_ia)
+                            st.markdown("**JSON Retornado pela IA:**")
+                            st.json(relatorio_json)
 
-                    st.markdown("---")
-                    st.markdown("### 🖨️ Exportar Relatório")
-                    
-                    try:
-                    pdf_hist = FPDF()
-                    pdf_hist.add_page()
-                    
-                    pdf_hist.set_fill_color(249, 115, 22)
-                    pdf_hist.rect(0, 0, 210, 40, 'F')
-                    pdf_hist.set_font("Arial", "B", 16)
-                    pdf_hist.set_text_color(255, 255, 255)
-                    pdf_hist.cell(0, 15, "RELATORIO DA ANÁLISE - SÉRIE HISTÓRICA", ln=True, align="C")
-                    pdf_hist.set_font("Arial", "I", 12)
-                    pdf_hist.cell(0, 5, "GATE - Inteligencia de Apoio ao Processo Decisório", ln=True, align="C")
-                    
-                    pdf_hist.ln(20)
-                    pdf_hist.set_text_color(0, 0, 0)
-                    pdf_hist.set_font("Arial", "B", 14)
-                    pdf_hist.set_fill_color(240, 240, 240)
-                    pdf_hist.cell(0, 10, " 1. SINTESE DAS TECNICAS APLICADAS", ln=True, fill=True)
-                    pdf_hist.ln(5)
-                    
-                    pdf_hist.set_font("Arial", "", 12)
-                    
-                    partes_hist = [f"{k.upper()}:\n{v}" for k, v in relatorio_json.items() if isinstance(v, str)]
-                    texto_hist_str = "\n\n".join(partes_hist).replace("**", "").replace("### ", "")
-                    texto_pdf_limpo_hist = unicodedata.normalize('NFKD', texto_hist_str).encode('ASCII', 'ignore').decode('ASCII')
-                    
-                    pdf_hist.multi_cell(0, 8, txt=texto_pdf_limpo_hist)
-                    
-                    pdf_saida_hist = pdf_hist.output(dest="S")
-                    if isinstance(pdf_saida_hist, str):
-                    pdf_bytes_hist = pdf_saida_hist.encode('latin-1', errors='replace')
-                    else:
-                    pdf_bytes_hist = bytes(pdf_saida_hist)
-                    
-                    st.download_button(
-                    label="📥 BAIXAR RELATÓRIO (PDF)", 
-                    data=pdf_bytes_hist, 
-                    file_name="Relatorio_de_análise_GATE.pdf", 
-                    mime="application/pdf"
-                    )
-                    except Exception as e:
-                    st.error(f"Erro na geração do PDF Série Histórica: {str(e)}")
+                        st.markdown("---")
+                        st.markdown("### 🖨️ Exportar Relatório")
+                        
+                        try:
+                            pdf_hist = FPDF()
+                            pdf_hist.add_page()
+                            
+                            pdf_hist.set_fill_color(249, 115, 22)
+                            pdf_hist.rect(0, 0, 210, 40, 'F')
+                            pdf_hist.set_font("Arial", "B", 16)
+                            pdf_hist.set_text_color(255, 255, 255)
+                            pdf_hist.cell(0, 15, "RELATORIO DA ANÁLISE - SÉRIE HISTÓRICA", ln=True, align="C")
+                            pdf_hist.set_font("Arial", "I", 12)
+                            pdf_hist.cell(0, 5, "GATE - Inteligencia de Apoio ao Processo Decisório", ln=True, align="C")
+                            
+                            pdf_hist.ln(20)
+                            pdf_hist.set_text_color(0, 0, 0)
+                            pdf_hist.set_font("Arial", "B", 14)
+                            pdf_hist.set_fill_color(240, 240, 240)
+                            pdf_hist.cell(0, 10, " 1. SINTESE DAS TECNICAS APLICADAS", ln=True, fill=True)
+                            pdf_hist.ln(5)
+                            
+                            pdf_hist.set_font("Arial", "", 12)
+                            
+                            partes_hist = [f"{k.upper()}:\n{v}" for k, v in relatorio_json.items() if isinstance(v, str)]
+                            texto_hist_str = "\n\n".join(partes_hist).replace("**", "").replace("### ", "")
+                            texto_pdf_limpo_hist = unicodedata.normalize('NFKD', texto_hist_str).encode('ASCII', 'ignore').decode('ASCII')
+                            
+                            pdf_hist.multi_cell(0, 8, txt=texto_pdf_limpo_hist)
+                            
+                            pdf_saida_hist = pdf_hist.output(dest="S")
+                            if isinstance(pdf_saida_hist, str):
+                                pdf_bytes_hist = pdf_saida_hist.encode('latin-1', errors='replace')
+                            else:
+                                pdf_bytes_hist = bytes(pdf_saida_hist)
+                            
+                            st.download_button(
+                                label="📥 BAIXAR RELATÓRIO (PDF)", 
+                                data=pdf_bytes_hist, 
+                                file_name="Relatorio_de_análise_GATE.pdf", 
+                                mime="application/pdf"
+                            )
+                        except Exception as e:
+                            st.error(f"Erro na geração do PDF Série Histórica: {str(e)}")
 
                 except Exception as e:
                     st.error(f"Erro na geração do relatório de IA: {str(e)}")
