@@ -1691,59 +1691,7 @@ else:
         st.markdown("<p style='color: #bbb;'>Este módulo traduz a matriz matemática gerada acima em um relatório estratégico que visa o aperfeiçoamento técnico contínuo do Negociador.</p>", unsafe_allow_html=True)
 
 
-        # --- SÉRIE HISTÓRICA (chat de perguntas e respostas) ---
-st.divider()
-st.subheader("💬 Assistente de Inteligência Analítica - GATE")
-
-# Inicializar histórico do chat se não existir
-if "messages" not in st.session_state:
-    st.session_state.messages = []
-
-# Exibir mensagens anteriores
-for message in st.session_state.messages:
-    with st.chat_message(message["role"]):
-        st.markdown(message["content"])
-
-# Input do usuário
-if prompt := st.chat_input("Ex: Qual técnica mais gera rendição? ou Existe relação entre tempo e sucesso?"):
-    # 1. Mostrar pergunta do usuário
-    st.session_state.messages.append({"role": "user", "content": prompt})
-    with st.chat_message("user"):
-        st.markdown(prompt)
-
-    # 2. Processar Resposta
-    with st.chat_message("assistant"):
-        with st.spinner("Analisando base de dados histórica..."):
-            # Preparar o contexto de dados
-            dados_resumo = analise.sumarizar_banco_para_ia(df_filtrado)
-            
-            # Montar o Prompt para a IA (via sua ia_link ou ia_estatistica)
-            # O ideal é que você passe o resumo dos dados + a pergunta
-            conteudo_prompt = f"""
-            Você é o Assistente Analítico do GATE (PMESP).
-            Sua base de dados atual contém {dados_resumo['n_total']} ocorrências filtradas.
-            
-            Fatos Estatísticos Reais:
-            - Técnicas mais usadas: {dados_resumo['top_tecnicas']}
-            - Resoluções: {dados_resumo['resolucoes']}
-            - Tempo médio: {dados_resumo['media_tempo']:.2f} min
-            
-            Pergunta do Operador: {prompt}
-            
-            Instruções:
-            1. Responda de forma técnica e objetiva, mantendo o tom de um oficial de operações.
-            2. Se a pergunta for sobre correlação, cite os dados.
-            3. Se os dados não permitirem responder, seja honesto.
-            4. Não invente números. Use apenas o que foi passado no resumo.
-            """
-            
-            # Chamar sua função de IA existente
-            from ia_estatistica import gerar_relatorio_com_ia # Exemplo de sua função
-            resposta = gerar_relatorio_com_ia(conteudo_prompt) 
-            
-            st.markdown(resposta)
-            st.session_state.messages.append({"role": "assistant", "content": resposta})
-
+        
         if st.button("🤖 GERAR RELATÓRIO ESTATÍSTICO DESCRITIVO"):
             with st.spinner("Estruturando matrizes e consultando Cientista de Dados IA..."):
                 try:
