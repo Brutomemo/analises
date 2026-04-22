@@ -1113,6 +1113,7 @@ else:
                 )
             # --- FIM DO BLOCO DE EXPLICAÇÃO ---
 
+            ##N-GRAMAS
             if st.button("⚙️ 2. GERAR NUVEM DE PALAVRAS E N-GRAMS"):
                 with st.spinner("Processando N-Grams e plotando gráficos..."):
                     texto_c = limpar_valor(df_apa.get('TRANSCRIÇÃO DO CAUSADOR'))
@@ -1121,34 +1122,130 @@ else:
                     texto_total = f"{texto_c} {texto_np} {texto_ns}"
                     st.session_state['stats_calculados'] = {
                         "topicos": analise.extrair_topicos_ngrams(texto_total) if len(texto_total) > 10 else ["Texto insuficiente"],
-                        "wc_c": analise.gerar_wordcloud(texto_c) if len(texto_c) > 5 else None,
+                        "topicos_c":  analise.extrair_topicos_ngrams(texto_c)  if len(texto_c)  > 10 else ["Texto insuficiente"],
+                        "topicos_np": analise.extrair_topicos_ngrams(texto_np) if len(texto_np) > 10 else ["Texto insuficiente"],
+                        "topicos_ns": analise.extrair_topicos_ngrams(texto_ns) if len(texto_ns) > 10 else ["Texto insuficiente"],
+                        "wc_c":  analise.gerar_wordcloud(texto_c)  if len(texto_c)  > 5 else None,
                         "wc_np": analise.gerar_wordcloud(texto_np) if len(texto_np) > 5 else None,
-                        "wc_ns": analise.gerar_wordcloud(texto_ns) if len(texto_ns) > 5 else None
+                        "wc_ns": analise.gerar_wordcloud(texto_ns) if len(texto_ns) > 5 else None,
+                        "texto_c_raw":  texto_c,
+                        "texto_np_raw": texto_np,
+                        "texto_ns_raw": texto_ns
                     }
 
-            if st.session_state['stats_calculados']:
+            if st.session_state.get('stats_calculados'):
                 stats = st.session_state['stats_calculados']
-                st.markdown('<div class="info-card"><h4 style="color: #f97316; margin-top: 0;">🧠 Temas Dominantes Globais (N-Gramas)</h4>', unsafe_allow_html=True)
-                for t in stats['topicos']: st.markdown(t)
-                st.markdown('</div>', unsafe_allow_html=True)
-                
-                c_w1, c_w2, c_w3 = st.columns(3)
-                with c_w1:
-                    st.markdown('<p style="color: #FFD700; font-weight: bold; text-align:center;">Causador</p>', unsafe_allow_html=True)
-                    if stats['wc_c']: st.pyplot(stats['wc_c'])
-                with c_w2:
-                    st.markdown('<p style="color: #FFD700; font-weight: bold; text-align:center;">Negociador Principal</p>', unsafe_allow_html=True)
-                    if stats['wc_np']: st.pyplot(stats['wc_np'])
-                with c_w3:
-                    st.markdown('<p style="color: #FFD700; font-weight: bold; text-align:center;">Negociador Secundário</p>', unsafe_allow_html=True)
-                    if stats['wc_ns']: st.pyplot(stats['wc_ns'])
 
-            st.markdown("---")
+                topicos_globais = stats.get('topicos',    ["Sem dados"])
+                topicos_c  = stats.get('topicos_c',  ["Análise individual ainda não gerada."])
+                topicos_np = stats.get('topicos_np', ["Análise individual ainda não gerada."])
+                topicos_ns = stats.get('topicos_ns', ["Análise individual ainda não gerada."])
+
+                wc_c  = stats.get('wc_c')
+                wc_np = stats.get('wc_np')
+                wc_ns = stats.get('wc_ns')
+
+                texto_c_raw  = stats.get('texto_c_raw',  limpar_valor(df_apa.get('TRANSCRIÇÃO DO CAUSADOR', '')))
+                texto_np_raw = stats.get('texto_np_raw', limpar_valor(df_apa.get('TRANSCRIÇÃO DO NEGOCIADOR PRINCIPAL', '')))
+                texto_ns_raw = stats.get('texto_ns_raw', limpar_valor(df_apa.get('TRANSCRIÇÃO DO NEGOCIADOR SECUNDÁRIO', '')))
+
+                tab_ng1, tab_ng2, tab_ng3, tab_ng4, tab_ng5 = st.tabs([
+                    "Causador",
+                    "Negociador Principal",
+                    "Negociador Secundário",
+                    "Visão Global",
+                    "⚡ Convergência"
+                ])
+
+                with tab_ng1:
+                    st.markdown('<div class="info-card"><h4 style="color: #f97316; margin-top: 0;">🧠 Temas Dominantes - Causador</h4>', unsafe_allow_html=True)
+                    for t in topicos_c:
+                        st.markdown(t)
+                    st.markdown('</div>', unsafe_allow_html=True)
+                    if wc_c:
+                        st.pyplot(wc_c)
+
+                with tab_ng2:
+                    st.markdown('<div class="info-card"><h4 style="color: #f97316; margin-top: 0;">🧠 Temas Dominantes - Negociador Principal</h4>', unsafe_allow_html=True)
+                    for t in topicos_np:
+                        st.markdown(t)
+                    st.markdown('</div>', unsafe_allow_html=True)
+                    if wc_np:
+                        st.pyplot(wc_np)
+
+                with tab_ng3:
+                    st.markdown('<div class="info-card"><h4 style="color: #f97316; margin-top: 0;">🧠 Temas Dominantes - Negociador Secundário</h4>', unsafe_allow_html=True)
+                    for t in topicos_ns:
+                        st.markdown(t)
+                    st.markdown('</div>', unsafe_allow_html=True)
+                    if wc_ns:
+                        st.pyplot(wc_ns)
+
+                with tab_ng4:
+                    st.markdown('<div class="info-card"><h4 style="color: #f97316; margin-top: 0;">🌐 Temas Dominantes Globais</h4>', unsafe_allow_html=True)
+                    for t in topicos_globais:
+                        st.markdown(t)
+                    st.markdown('</div>', unsafe_allow_html=True)
+
+                with tab_ng5:
+                    st.markdown(
+                        '<div class="info-card">'
+                        '<h4 style="color:#FFD700; margin-top:0;">⚡ Radar Comparativo & Índice de Convergência Tática</h4>'
+                        '<p style="color:#ccc; font-size:0.9rem; margin-bottom:1rem;">'
+                        'Comparação direta dos vetores semânticos entre os interlocutores. '
+                        'Quanto mais sobrepostos os polígonos, maior o espelhamento léxico.</p>',
+                        unsafe_allow_html=True
+                    )
+
+                    if not texto_c_raw or not texto_np_raw:
+                        st.warning("⚠️ Transcrições insuficientes para gerar o radar comparativo.")
+                    else:
+                        try:
+                            fig_radar, conv = analise.gerar_radar_comparativo(
+                                texto_c_raw,
+                                texto_np_raw,
+                                texto_ns_raw if texto_ns_raw else None
+                            )
+                            st.plotly_chart(fig_radar, use_container_width=True)
+
+                            if conv:
+                                st.markdown("---")
+                                st.markdown(
+                                    '<h5 style="color:#FFD700;">📐 Índice de Convergência Tática</h5>',
+                                    unsafe_allow_html=True
+                                )
+                                col_cv1, col_cv2, col_cv3 = st.columns(3)
+
+                                with col_cv1:
+                                    st.metric(
+                                        label="Δ Risco (Causador − NP)",
+                                        value=f"{conv['delta_risco']:+.2f}",
+                                        help="Positivo = causador com mais risco. Negativo = negociador com mais risco."
+                                    )
+                                    st.caption(conv["leitura_risco"])
+
+                                with col_cv2:
+                                    st.metric(
+                                        label="Δ Proteção (NP − Causador)",
+                                        value=f"{conv['delta_protecao']:+.2f}",
+                                        help="Positivo = negociador puxando para desescalada."
+                                    )
+                                    st.caption(conv["leitura_protecao"])
+
+                                with col_cv3:
+                                    st.metric(
+                                        label="Índice de Espelhamento",
+                                        value=f"{conv['espelhamento']:.0%}",
+                                        help="Quanto mais próximo de 100%, maior a sincronia léxica."
+                                    )
+                                    st.caption(conv["leitura_espelhamento"])
+
+                        except Exception as e:
+                            st.error(f"Erro ao gerar radar comparativo: {str(e)}")
+
+                    st.markdown('</div>', unsafe_allow_html=True)
             
-            st.markdown("### 📄 Etapa 3: Inteligência de Apoio à Decisão e Exportação")
-            
-            #url_n8n = "http://host.docker.internal:5680/webhook/analise-doc"
-            
+                        
             if st.button("📡 3. GERAR ANALYTICS E EXPORTAR ANÁLISE (PDF)"):
                 with st.spinner("Compilando dados técnicos, consultando IA e desenhando PDF..."):
                     try:
