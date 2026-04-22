@@ -1065,7 +1065,7 @@ else:
                     )
 
                 with tab_convergencia:
-                        st.markdown(
+                    st.markdown(
                         """
                         <div class='info-card' style='margin-top: 0px;'>
 
@@ -1077,44 +1077,44 @@ else:
 
                         <hr style='border-color: #444; margin: 12px 0;'>
 
-                        <div style='display:flex; flex-wrap:wrap; gap:10px; margin-top:8px;'>
+                        <h5 style='color: #FFD700; margin-top: 10px;'>🔴 Δ Risco (Causador - Negociador Principal)</h5>
+                        <p style='font-size: 0.92rem; color: #ddd; line-height: 1.6;'>
+                        Mostra a diferença entre a carga de risco do causador e a do Negociador Principal.<br><br>
+                        • <strong>Valor positivo</strong> → o causador está mais carregado em linguagem de risco do que o NP.<br>
+                        • <strong>Valor negativo</strong> → o NP está usando mais linguagem de risco do que o causador.<br>
+                        • <strong>Próximo de zero</strong> → há equilíbrio entre os dois em termos de risco.
+                        </p>
 
-                        <div style='flex:1 1 30%; min-width:200px; padding:10px; border-radius:8px; background:rgba(255,255,255,0.02);'>
-                            <strong>Risco</strong><br>
-                            Indicador de linguagem ameaçadora, hostil ou que expressa intenção de dano.
-                        </div>
+                        <h5 style='color: #FFD700; margin-top: 15px;'>🟢 Δ Proteção (Negociador Principal - Causador)</h5>
+                        <p style='font-size: 0.92rem; color: #ddd; line-height: 1.6;'>
+                        Mostra a diferença entre a linguagem protetiva/desescaladora do Negociador Principal e a do causador.<br><br>
+                        • <strong>Valor positivo</strong> → o NP está mais protetivo, mais acolhedor e mais orientado à desescalada.<br>
+                        • <strong>Valor negativo</strong> → o causador está mais protetivo que o NP, ou o NP está pouco desescalador.<br>
+                        • <strong>Próximo de zero</strong> → ambos estão em patamar semelhante de proteção.
+                        </p>
 
-                        <div style='flex:1 1 30%; min-width:200px; padding:10px; border-radius:8px; background:rgba(255,255,255,0.02);'>
-                            <strong>Proteção</strong><br>
-                            Mede sinais de acolhimento, rendição, pedido de ajuda ou estratégias de desescalada.
-                        </div>
+                        <h5 style='color: #FFD700; margin-top: 15px;'>📎 Índice de Convergência</h5>
+                        <p style='font-size: 0.92rem; color: #ddd; line-height: 1.6;'>
+                        Este índice mostra o quanto os interlocutores estão <strong>semanticamente alinhados</strong>.<br>
+                        Ele <strong>não é espelhamento léxico literal</strong>. Ele mede a sobreposição de padrões temáticos, não apenas palavras iguais.<br><br>
+                        • <strong>Valor alto</strong> → maior convergência entre os vetores do causador e do NP.<br>
+                        • <strong>Valor médio</strong> → existe alguma aproximação, mas ainda com diferenças relevantes.<br>
+                        • <strong>Valor baixo</strong> → os interlocutores estão operando em registros semânticos mais distantes.
+                        </p>
 
-                        <div style='flex:1 1 30%; min-width:200px; padding:10px; border-radius:8px; background:rgba(255,255,255,0.02);'>
-                            <strong>Contexto</strong><br>
-                            Refere-se a gatilhos e motivos subjacentes que explicam a crise.
-                        </div>
+                        <hr style='border-color: #444; margin: 12px 0;'>
 
-                        <div style='flex:1 1 30%; min-width:200px; padding:10px; border-radius:8px; background:rgba(255,255,255,0.02);'>
-                            <strong>Intensidade</strong><br>
-                            Reflete a força emocional e a ênfase nas falas.
-                        </div>
-
-                        <div style='flex:1 1 30%; min-width:200px; padding:10px; border-radius:8px; background:rgba(255,255,255,0.02);'>
-                            <strong>Volatilidade</strong><br>
-                            Mede a oscilação e imprevisibilidade do discurso.
-                        </div>
-
-                        <div style='flex:1 1 30%; min-width:200px; padding:10px; border-radius:8px; background:rgba(255,255,255,0.02);'>
-                            <strong>Leitura final</strong><br>
-                            Síntese interpretativa do radar, combinando os eixos para indicar o estado geral do caso.
-                        </div>
-
-                        </div>
+                        <h5 style='color: #FFD700; margin-top: 10px;'>🧩 Importante: por que isso não é igual ao espelhamento léxico?</h5>
+                        <p style='font-size: 0.92rem; color: #ddd; line-height: 1.6;'>
+                        O radar de convergência compara <strong>categorias semânticas e temáticas</strong>.<br>
+                        Já o bloco de similitude compara <strong>palavras efetivamente compartilhadas</strong>.<br><br>
+                        Por isso, é normal o radar apontar um percentual maior e o grafo lexical mostrar um valor menor.
+                        </p>
 
                         <div style='margin-top: 12px; padding: 12px; border-radius: 10px; background: rgba(255, 215, 0, 0.06); border: 1px solid rgba(255, 215, 0, 0.15);'>
-                        <p style='font-size: 0.9rem; color: #ddd; margin: 0; line-height: 1.6;'>
-                        <strong>Nota prática:</strong> interprete os eixos em conjunto — por exemplo, risco alto com proteção alta pode indicar tensão controlada; risco alto com proteção baixa sinaliza prioridade de intervenção.
-                        </p>
+                            <p style='font-size: 0.9rem; color: #ddd; margin: 0; line-height: 1.6;'>
+                            <strong>Leitura prática:</strong> se o <em>Espelhamento Léxico</em> estiver maior que o radar temático, isso pode indicar que houve <strong>bom alinhamento do temas abordados</strong> sem repetição literal de palavras.
+                            </p>
                         </div>
 
                         </div>
