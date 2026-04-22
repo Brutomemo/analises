@@ -1147,8 +1147,7 @@ else:
             
             st.markdown("### 📄 Etapa 3: Inteligência de Apoio à Decisão e Exportação")
             
-            #url_n8n = "http://host.docker.internal:5680/webhook/analise-doc"
-            
+                       
             if st.button("📡 3. GERAR ANALYTICS E EXPORTAR ANÁLISE (PDF)"):
                 with st.spinner("Compilando dados técnicos, consultando IA e desenhando PDF..."):
                     try:
@@ -1341,9 +1340,9 @@ else:
                     except Exception as e:
                         st.error(f"Erro na análise da IA ou geração do PDF: {str(e)}")
 
-    # =========================================================
+    # ====
     # ABA 2: PAINEL (HISTÓRICO)
-    # =========================================================
+    # ====
     with aba_geral:
         st.markdown("### 🧠 Série Histórica - Negociações GATE")
         st.markdown("<h5 style='color: #f97;'>Filtros por: Negociador, Tipologia e Modalidade do Incidente</h5>", unsafe_allow_html=True)
@@ -1371,10 +1370,90 @@ else:
         with col_m3: st.metric("Tempo Total de Negociação Tática", somar_tempos_segundos(df_quali_filt.get('Tempo de Negociação Tática', [])))
 
         st.markdown("---")
-        
-        # =========================================================
+
+        # ====
+        # ASSISTENTE DE INTELIGÊNCIA ANALÍTICA - GATE (CHAT)
+        # ====
+        st.subheader("💬 Assistente de Inteligência Analítica - GATE")
+        st.caption("Faça perguntas diretas sobre a base histórica sem precisar gerar o relatório completo.")
+
+        if "chat_historico" not in st.session_state:
+            st.session_state.chat_historico = []
+
+        for msg in st.session_state.chat_historico:
+            with st.chat_message(msg["role"]):
+                st.markdown(msg["content"])
+
+        # Inicializa df_tec_filt com fallback seguro antes do chat
+        df_tec_filt = df_tec.copy() if not df_tec.empty else pd.DataFrame()
+
+        if pergunta := st.chat_input(
+            "Ex: Qual técnica mais gera rendição? Existe relação entre tempo e sucesso?",
+            key="chat_hist_input"
+        ):
+            st.session_state.chat_historico.append({"role": "user", "content": pergunta})
+            with st.chat_message("user"):
+                st.markdown(pergunta)
+
+            with st.chat_message("assistant"):
+                with st.spinner("Analisando base histórica..."):
+                    try:
+                        resumo = ia_estatistica.sumarizar_banco_para_ia(
+                            df_quali_filt,
+                            df_tec_filt if not df_tec_filt.empty else None
+                        )
+
+                        prompt_chat = f"""
+Você é um analista especialista do GATE (Grupo de Ações Táticas Especiais - PMESP).
+Responda com base EXCLUSIVA nos dados reais abaixo. Seja direto, técnico e objetivo.
+
+BASE DE DADOS ATUAL (filtros aplicados):
+- Total de ocorrências: {resumo['n_total_ocorrencias']}
+- Técnicas mais utilizadas: {resumo['top_tecnicas']}
+- Resoluções: {resumo['resolucoes']}
+- Tipologias: {resumo['tipologias']}
+- Modalidades: {resumo['modalidades']}
+- Negociadores: {resumo['negociadores']}
+- Tempo médio de negociação: {resumo['tempo_medio_min']} minutos
+
+PERGUNTA DO OPERADOR:
+{pergunta}
+
+REGRAS OBRIGATÓRIAS:
+1. Use APENAS os dados fornecidos acima. Nunca invente números ou técnicas.
+2. Se a pergunta não puder ser respondida com os dados disponíveis, diga explicitamente.
+3. Seja conciso: máximo 4 parágrafos.
+4. Tom de oficial de operações: direto, técnico, sem floreio.
+"""
+                        resposta = ia_link.analisar_ocorrencia_gate(
+                            {"prompt_livre": prompt_chat},
+                            estatisticas_ocorrencia={},
+                            tecnicas_ocorrencia=[]
+                        )
+
+                        if isinstance(resposta, dict):
+                            texto = (
+                                resposta.get("parecer")
+                                or resposta.get("interpretacao")
+                                or resposta.get("analise")
+                                or str(resposta)
+                            )
+                        else:
+                            texto = str(resposta)
+
+                        st.markdown(texto)
+                        st.session_state.chat_historico.append({"role": "assistant", "content": texto})
+
+                    except Exception as e:
+                        erro = f"Erro no assistente: {str(e)}"
+                        st.error(erro)
+                        st.session_state.chat_historico.append({"role": "assistant", "content": erro})
+
+        st.markdown("---")
+
+        # ====
         # NOVOS GRÁFICOS: VISÃO GERAL DA AMOSTRA
-        # =========================================================
+        # ====
         st.markdown("<h4 style='color: #FFD700;'>📊 Visão Geral da Amostra</h4>", unsafe_allow_html=True)
         
         def gerar_grafico_resumo(df, coluna, titulo):
@@ -1412,7 +1491,7 @@ else:
                 plot_bgcolor="rgba(0,0,0,0)", 
                 font_color="#FFF", 
                 margin=dict(t=40, b=10, l=10, r=10), 
-                xaxis=dict(title=""),                      # Remove o título do eixo X para não poluir
+                xaxis=dict(title=""),                    # Remove o título do eixo X para não poluir
                 yaxis=dict(showgrid=False, visible=False), # Esconde a régua e as linhas de grade do eixo Y
                 coloraxis_showscale=False 
             )
@@ -1460,9 +1539,9 @@ else:
                     c_tab, c_tree = st.columns([1, 2])
                     with c_tab: st.dataframe(freq_global, use_container_width=True, hide_index=True)
                     with c_tree:
-                        fig_g = px.treemap(freq_global, path=['Técnica'], values='Vezes Utilizada', color='Vezes Utilizada', color_continuous_scale='Oranges')
-                        fig_g.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font_color="#FFF", margin=dict(t=0, l=0, r=0, b=0))
-                        st.plotly_chart(fig_g, use_container_width=True)
+                    fig_g = px.treemap(freq_global, path=['Técnica'], values='Vezes Utilizada', color='Vezes Utilizada', color_continuous_scale='Oranges')
+                    fig_g.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font_color="#FFF", margin=dict(t=0, l=0, r=0, b=0))
+                    st.plotly_chart(fig_g, use_container_width=True)
                 else: st.warning("Coluna 'TÉCNICAS' não encontrada.")
             else: st.info("Nenhuma técnica encontrada para os filtros selecionados.")
             
@@ -1506,9 +1585,9 @@ else:
                 
                 def tempo_para_minutos(val):
                     try:
-                        if isinstance(val, list): val = val[0]
-                        if pd.isna(val) or val == "N/D" or val == "": return 0
-                        return int(float(val)) / 60
+                    if isinstance(val, list): val = val[0]
+                    if pd.isna(val) or val == "N/D" or val == "": return 0
+                    return int(float(val)) / 60
                     except: return 0
                 
                 df_sp['Tempo_Minutos'] = df_sp['Tempo de Negociação Real'].apply(tempo_para_minutos)
@@ -1549,15 +1628,15 @@ else:
                     res_chi = analise.calcular_qui_quadrado(df_qui_clean, col_v1, col_v2)
                     
                     if res_chi.get('valido', False):
-                        st.write(f"Estatística Qui-Quadrado: `{res_chi['chi2']:.2f}`")
-                        st.write(f"P-Valor: `{res_chi['p_value']:.4f}`")
-                        
-                        if res_chi['p_value'] < 0.05:
-                            st.success(f"✅ **Existe Padrão:** O uso de técnicas **depende** do(a) {var_analise}. Isso indica uma atuação padronizada/doutrinária.")
-                        else:
-                            st.info(f"ℹ️ **Sem Padrão:** O uso de técnicas é independente do(a) {var_analise}. A aplicação parece ser situacional ou improvisada.")
+                    st.write(f"Estatística Qui-Quadrado: `{res_chi['chi2']:.2f}`")
+                    st.write(f"P-Valor: `{res_chi['p_value']:.4f}`")
+                    
+                    if res_chi['p_value'] < 0.05:
+                    st.success(f"✅ **Existe Padrão:** O uso de técnicas **depende** do(a) {var_analise}. Isso indica uma atuação padronizada/doutrinária.")
                     else:
-                        st.warning("Variância insuficiente para este cruzamento específico.")
+                    st.info(f"ℹ️ **Sem Padrão:** O uso de técnicas é independente do(a) {var_analise}. A aplicação parece ser situacional ou improvisada.")
+                    else:
+                    st.warning("Variância insuficiente para este cruzamento específico.")
                 else:
                     st.warning("Sem dados suficientes após filtragem.")
             st.markdown("</div>", unsafe_allow_html=True)
@@ -1593,8 +1672,8 @@ else:
 
                     df_adv = df_tec_limpo.copy()
                     mapa_resp = {'-1': 'Negativa', '-1.0': 'Negativa', -1: 'Negativa', '🔴 reação negativa': 'Negativa',
-                                 '0': 'Neutra', '0.0': 'Neutra', 0: 'Neutra', '⚪ reação neutra': 'Neutra',
-                                 '1': 'Positiva', '1.0': 'Positiva', 1: 'Positiva', '🟢 reação positiva': 'Positiva'}
+                    '0': 'Neutra', '0.0': 'Neutra', 0: 'Neutra', '⚪ reação neutra': 'Neutra',
+                    '1': 'Positiva', '1.0': 'Positiva', 1: 'Positiva', '🟢 reação positiva': 'Positiva'}
                     
                     df_adv['Resposta_Cat'] = df_adv[col_resposta].astype(str).str.lower().str.strip().map(mapa_resp).fillna('Nao_Observado')
                     df_adv_clean = df_adv[df_adv['Resposta_Cat'] != 'Nao_Observado'].copy()
@@ -1602,67 +1681,67 @@ else:
                     df_adv_clean['Resposta_Ord'] = pd.Categorical(df_adv_clean['Resposta_Cat'], categories=['Negativa', 'Neutra', 'Positiva'], ordered=True)
                     
                     st.markdown("<div class='info-card'>", unsafe_allow_html=True)
-                    st.markdown("##### 1. Teste de Viés por Negociador (Qui-Quadrado de Resíduos)")
+                    st.markdown("#### 1. Teste de Viés por Negociador (Qui-Quadrado de Resíduos)")
                     st.markdown("<span style='font-size: 0.85rem; color: #aaa;'><strong>O que significa:</strong> Verifica se os relatos de 'sucesso' estão concentrados em apenas alguns negociadores ou se são homogêneos.</span>", unsafe_allow_html=True)
                     
                     tab_vies = pd.crosstab(df_adv_clean['Neg_Limpo'], df_adv_clean['Resposta_Cat'])
                     if tab_vies.shape[0] > 1 and tab_vies.shape[1] > 1:
-                        chi2, p, dof, exp = chi2_contingency(tab_vies)
-                        residuos = (tab_vies - exp) / np.sqrt(exp)
-                        st.write(f"**P-Valor global:** `{p:.4e}`")
-                        fig_heat = px.imshow(residuos, text_auto=".2f", color_continuous_scale="RdBu", title="Mapa de Calor do Viés")
-                        fig_heat.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font_color="#FFF")
-                        st.plotly_chart(fig_heat, use_container_width=True)
+                    chi2, p, dof, exp = chi2_contingency(tab_vies)
+                    residuos = (tab_vies - exp) / np.sqrt(exp)
+                    st.write(f"**P-Valor global:** `{p:.4e}`")
+                    fig_heat = px.imshow(residuos, text_auto=".2f", color_continuous_scale="RdBu", title="Mapa de Calor do Viés")
+                    fig_heat.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font_color="#FFF")
+                    st.plotly_chart(fig_heat, use_container_width=True)
                     else:
-                        st.write("Dados insuficientes para comparar múltiplos negociadores.")
+                    st.write("Dados insuficientes para comparar múltiplos negociadores.")
                     st.markdown("</div>", unsafe_allow_html=True)
                     
                     st.markdown("<div class='info-card'>", unsafe_allow_html=True)
-                    st.markdown("##### 2. Eficácia Isolada da Técnica (Regressão Ordinal)")
+                    st.markdown("#### 2. Eficácia Isolada da Técnica (Regressão Ordinal)")
                     st.markdown("<span style='font-size: 0.85rem; color: #aaa;'><strong>O que significa:</strong> Isola o peso da técnica, removendo a influência do negociador e da tipologia da crise.</span>", unsafe_allow_html=True)
                     
                     if 'col_t' in locals() and col_t:
-                        df_adv_clean['Tecnica_Patsy'] = df_adv_clean[col_t].astype(str).str.replace(' ', '_').str.replace('-', '_')
-                        df_adv_clean['Neg_Patsy'] = df_adv_clean['Neg_Limpo'].astype(str).str.replace(' ', '_')
-                        df_adv_clean['Tip_Patsy'] = df_adv_clean['Tip_Limpa'].astype(str).str.replace(' ', '_')
+                    df_adv_clean['Tecnica_Patsy'] = df_adv_clean[col_t].astype(str).str.replace(' ', '_').str.replace('-', '_')
+                    df_adv_clean['Neg_Patsy'] = df_adv_clean['Neg_Limpo'].astype(str).str.replace(' ', '_')
+                    df_adv_clean['Tip_Patsy'] = df_adv_clean['Tip_Limpa'].astype(str).str.replace(' ', '_')
 
-                        try:
-                            mod_ord = OrderedModel.from_formula("Resposta_Ord ~ C(Tecnica_Patsy) + C(Neg_Patsy) + C(Tip_Patsy)", data=df_adv_clean, distr='logit')
-                            res_ord = mod_ord.fit(method='bfgs', disp=False)
-                            coefs = res_ord.params[res_ord.params.index.str.contains('Tecnica')]
-                            pvals = res_ord.pvalues[res_ord.params.index.str.contains('Tecnica')]
-                            df_or = pd.DataFrame({'Técnica': coefs.index.str.extract(r'\[T\.(.*?)\]')[0], 'Odds_Ratio': np.exp(coefs), 'P_Valor': pvals})
-                            df_or = df_or[df_or['P_Valor'] < 0.05].sort_values('Odds_Ratio', ascending=False)
-                            
-                            if not df_or.empty:
-                                st.dataframe(df_or.style.format({'Odds_Ratio': '{:.2f}', 'P_Valor': '{:.4f}'}), use_container_width=True, hide_index=True)
-                                st.success("💡 Um Odds Ratio de 2.0 indica que a técnica dobra a chance de uma resposta positiva.")
-                            else:
-                                st.info("ℹ️ Nenhuma técnica isolada apresentou significância estatística neste cenário.")
-                        except:
-                            st.warning("O modelo Ordinal não convergiu para este subconjunto.")
+                    try:
+                    mod_ord = OrderedModel.from_formula("Resposta_Ord ~ C(Tecnica_Patsy) + C(Neg_Patsy) + C(Tip_Patsy)", data=df_adv_clean, distr='logit')
+                    res_ord = mod_ord.fit(method='bfgs', disp=False)
+                    coefs = res_ord.params[res_ord.params.index.str.contains('Tecnica')]
+                    pvals = res_ord.pvalues[res_ord.params.index.str.contains('Tecnica')]
+                    df_or = pd.DataFrame({'Técnica': coefs.index.str.extract(r'\[T\.(.*?)\]')[0], 'Odds_Ratio': np.exp(coefs), 'P_Valor': pvals})
+                    df_or = df_or[df_or['P_Valor'] < 0.05].sort_values('Odds_Ratio', ascending=False)
+                    
+                    if not df_or.empty:
+                    st.dataframe(df_or.style.format({'Odds_Ratio': '{:.2f}', 'P_Valor': '{:.4f}'}), use_container_width=True, hide_index=True)
+                    st.success("💡 Um Odds Ratio de 2.0 indica que a técnica dobra a chance de uma resposta positiva.")
+                    else:
+                    st.info("ℹ️ Nenhuma técnica isolada apresentou significância estatística neste cenário.")
+                    except:
+                    st.warning("O modelo Ordinal não convergiu para este subconjunto.")
                     st.markdown("</div>", unsafe_allow_html=True)
                     
                     st.markdown("<div class='info-card'>", unsafe_allow_html=True)
-                    st.markdown("##### 3. Robustez Hierárquica (Equações de Estimação Generalizadas - GEE)")
+                    st.markdown("#### 3. Robustez Hierárquica (Equações de Estimação Generalizadas - GEE)")
                     st.markdown("<span style='font-size: 0.85rem; color: #aaa;'><strong>O que significa:</strong> Valida se a técnica é eficaz para a Tropa inteira ou apenas resultado do talento individual.</span>", unsafe_allow_html=True)
                     
                     df_gee_real = df_adv_clean.copy()
                     df_gee_real['Sucesso'] = np.where(df_gee_real['Resposta_Cat'] == 'Positiva', 1, 0)
                     try:
-                        if 'Tecnica_Patsy' in df_gee_real.columns:
-                            modelo_gee = smf.gee("Sucesso ~ C(Tecnica_Patsy)", groups=df_gee_real['Neg_Patsy'], data=df_gee_real, family=sm.families.Binomial(), cov_struct=sm.cov_struct.Exchangeable())
-                            res_gee = modelo_gee.fit()
-                            gee_coefs = res_gee.params[res_gee.params.index.str.contains('Tecnica')]
-                            gee_pvals = res_gee.pvalues[res_gee.params.index.str.contains('Tecnica')]
-                            df_gee = pd.DataFrame({'Técnica': gee_coefs.index.str.extract(r'\[T\.(.*?)\]')[0], 'Coeficiente_GEE': gee_coefs, 'P_Valor': gee_pvals})
-                            
-                            if not df_gee.empty:
-                                st.dataframe(df_gee.style.format({'Coeficiente_GEE': '{:.2f}', 'P_Valor': '{:.4f}'}), use_container_width=True, hide_index=True)
-                                if (gee_pvals < 0.05).any(): st.success("✅ **Doutrina Validada:** Técnica sobreviveu ao controle de viés.")
-                                else: st.info("ℹ️ Nenhuma técnica atingiu significância.")
+                    if 'Tecnica_Patsy' in df_gee_real.columns:
+                    modelo_gee = smf.gee("Sucesso ~ C(Tecnica_Patsy)", groups=df_gee_real['Neg_Patsy'], data=df_gee_real, family=sm.families.Binomial(), cov_struct=sm.cov_struct.Exchangeable())
+                    res_gee = modelo_gee.fit()
+                    gee_coefs = res_gee.params[res_gee.params.index.str.contains('Tecnica')]
+                    gee_pvals = res_gee.pvalues[res_gee.params.index.str.contains('Tecnica')]
+                    df_gee = pd.DataFrame({'Técnica': gee_coefs.index.str.extract(r'\[T\.(.*?)\]')[0], 'Coeficiente_GEE': gee_coefs, 'P_Valor': gee_pvals})
+                    
+                    if not df_gee.empty:
+                    st.dataframe(df_gee.style.format({'Coeficiente_GEE': '{:.2f}', 'P_Valor': '{:.4f}'}), use_container_width=True, hide_index=True)
+                    if (gee_pvals < 0.05).any(): st.success("✅ **Doutrina Validada:** Técnica sobreviveu ao controle de viés.")
+                    else: st.info("ℹ️ Nenhuma técnica atingiu significância.")
                     except:
-                        st.error("Erro no processamento GEE.")
+                    st.error("Erro no processamento GEE.")
                     st.markdown("</div>", unsafe_allow_html=True)
                     
                 except ImportError:
@@ -1700,95 +1779,95 @@ else:
                     
                     ord_data = None
                     if 'df_or' in locals() and not df_or.empty:
-                        ord_data = df_or.to_dict('records')
-                        
+                    ord_data = df_or.to_dict('records')
+                    
                     gee_data = None
                     if 'df_gee' in locals() and not df_gee.empty:
-                        gee_data = df_gee.to_dict('records')
+                    gee_data = df_gee.to_dict('records')
 
                     payload_ia = ia_estatistica.estruturar_resultado_para_ia(
-                        amostra_total=len(df_quali_filt),
-                        resultados_chi=qui_data,
-                        resultados_ordinal=ord_data,
-                        resultados_gee=gee_data
+                    amostra_total=len(df_quali_filt),
+                    resultados_chi=qui_data,
+                    resultados_ordinal=ord_data,
+                    resultados_gee=gee_data
                     )
 
                     relatorio_json = ia_estatistica.gerar_relatorio_com_ia(payload_ia)
 
                     if "erro" in relatorio_json:
-                        st.error(relatorio_json["erro"])
-                        with st.expander("Ver Payload Enviado"):
-                            st.json(payload_ia)
+                    st.error(relatorio_json["erro"])
+                    with st.expander("Ver Payload Enviado"):
+                    st.json(payload_ia)
                     else:
-                        def render_ia_card(titulo, texto, icone="📌"):
-                            return f"""
-                            <div class="info-card" style="border-left: 3px solid #06C755; padding: 15px; margin-bottom: 15px;">
-                                <h5 style="color: #06C755; margin-top: 0; font-size: 1.1rem;">{icone} {titulo}</h5>
-                                <p style="font-size: 1.05rem; line-height: 1.6; color: #FFF;">{texto}</p>
-                            </div>
-                            """
+                    def render_ia_card(titulo, texto, icone="📌"):
+                    return f"""
+                    <div class="info-card" style="border-left: 3px solid #06C755; padding: 15px; margin-bottom: 15px;">
+                    <h5 style="color: #06C755; margin-top: 0; font-size: 1.1rem;">{icone} {titulo}</h5>
+                    <p style="font-size: 1.05rem; line-height: 1.6; color: #FFF;">{texto}</p>
+                    </div>
+                    """
 
-                        c_ia1, c_ia2 = st.columns(2)
-                        with c_ia1:
-                            st.markdown(render_ia_card("Objetivo Analítico", relatorio_json.get("objetivo", "N/D"), "🎯"), unsafe_allow_html=True)
-                            st.markdown(render_ia_card("Premissas e Limitações da Análise", relatorio_json.get("premissas", "N/D") + "<br><br><strong>Limitações Técnicas:</strong> " + relatorio_json.get("limitacoes", "N/D"), "⚖️"), unsafe_allow_html=True)
-                        with c_ia2:
-                            st.markdown(render_ia_card("Resultados Principais", relatorio_json.get("resultados_principais", "N/D"), "📊"), unsafe_allow_html=True)
-                            st.markdown(render_ia_card("Tamanho do Efeito", relatorio_json.get("tamanho_efeito", "N/D"), "📈"), unsafe_allow_html=True)
+                    c_ia1, c_ia2 = st.columns(2)
+                    with c_ia1:
+                    st.markdown(render_ia_card("Objetivo Analítico", relatorio_json.get("objetivo", "N/D"), "🎯"), unsafe_allow_html=True)
+                    st.markdown(render_ia_card("Premissas e Limitações da Análise", relatorio_json.get("premissas", "N/D") + "<br><br><strong>Limitações Técnicas:</strong> " + relatorio_json.get("limitacoes", "N/D"), "⚖️"), unsafe_allow_html=True)
+                    with c_ia2:
+                    st.markdown(render_ia_card("Resultados Principais", relatorio_json.get("resultados_principais", "N/D"), "📊"), unsafe_allow_html=True)
+                    st.markdown(render_ia_card("Tamanho do Efeito", relatorio_json.get("tamanho_efeito", "N/D"), "📈"), unsafe_allow_html=True)
 
-                        st.markdown(render_ia_card("Implicações Analíticas para a Tomada de Decisão", relatorio_json.get("interpretacao", "N/D"), "🧠"), unsafe_allow_html=True)
-                        st.markdown(render_ia_card("Direcionamento Estratégico Baseado em Evidências", relatorio_json.get("conclusao", "N/D"), "🏆"), unsafe_allow_html=True)
+                    st.markdown(render_ia_card("Implicações Analíticas para a Tomada de Decisão", relatorio_json.get("interpretacao", "N/D"), "🧠"), unsafe_allow_html=True)
+                    st.markdown(render_ia_card("Direcionamento Estratégico Baseado em Evidências", relatorio_json.get("conclusao", "N/D"), "🏆"), unsafe_allow_html=True)
 
-                        with st.expander("🕵️ Ver Matriz Bruta de Dados (JSON Payload e Retorno)"):
-                            st.markdown("**Payload enviado para a IA (O que o Python calculou):**")
-                            st.json(payload_ia)
-                            st.markdown("**JSON Retornado pela IA:**")
-                            st.json(relatorio_json)
+                    with st.expander("🕵️ Ver Matriz Bruta de Dados (JSON Payload e Retorno)"):
+                    st.markdown("**Payload enviado para a IA (O que o Python calculou):**")
+                    st.json(payload_ia)
+                    st.markdown("**JSON Retornado pela IA:**")
+                    st.json(relatorio_json)
 
-                        st.markdown("---")
-                        st.markdown("### 🖨️ Exportar Relatório")
-                        
-                        try:
-                            pdf_hist = FPDF()
-                            pdf_hist.add_page()
-                            
-                            pdf_hist.set_fill_color(249, 115, 22)
-                            pdf_hist.rect(0, 0, 210, 40, 'F')
-                            pdf_hist.set_font("Arial", "B", 16)
-                            pdf_hist.set_text_color(255, 255, 255)
-                            pdf_hist.cell(0, 15, "RELATORIO DA ANÁLISE - SÉRIE HISTÓRICA", ln=True, align="C")
-                            pdf_hist.set_font("Arial", "I", 12)
-                            pdf_hist.cell(0, 5, "GATE - Inteligencia de Apoio ao Processo Decisório", ln=True, align="C")
-                            
-                            pdf_hist.ln(20)
-                            pdf_hist.set_text_color(0, 0, 0)
-                            pdf_hist.set_font("Arial", "B", 14)
-                            pdf_hist.set_fill_color(240, 240, 240)
-                            pdf_hist.cell(0, 10, " 1. SINTESE DAS TECNICAS APLICADAS", ln=True, fill=True)
-                            pdf_hist.ln(5)
-                            
-                            pdf_hist.set_font("Arial", "", 12)
-                            
-                            partes_hist = [f"{k.upper()}:\n{v}" for k, v in relatorio_json.items() if isinstance(v, str)]
-                            texto_hist_str = "\n\n".join(partes_hist).replace("**", "").replace("### ", "")
-                            texto_pdf_limpo_hist = unicodedata.normalize('NFKD', texto_hist_str).encode('ASCII', 'ignore').decode('ASCII')
-                            
-                            pdf_hist.multi_cell(0, 8, txt=texto_pdf_limpo_hist)
-                            
-                            pdf_saida_hist = pdf_hist.output(dest="S")
-                            if isinstance(pdf_saida_hist, str):
-                                pdf_bytes_hist = pdf_saida_hist.encode('latin-1', errors='replace')
-                            else:
-                                pdf_bytes_hist = bytes(pdf_saida_hist)
-                                
-                            st.download_button(
-                                label="📥 BAIXAR RELATÓRIO (PDF)", 
-                                data=pdf_bytes_hist, 
-                                file_name="Relatorio_de_análise_GATE.pdf", 
-                                mime="application/pdf"
-                            )
-                        except Exception as e:
-                            st.error(f"Erro na geração do PDF Série Histórica: {str(e)}")
+                    st.markdown("---")
+                    st.markdown("### 🖨️ Exportar Relatório")
+                    
+                    try:
+                    pdf_hist = FPDF()
+                    pdf_hist.add_page()
+                    
+                    pdf_hist.set_fill_color(249, 115, 22)
+                    pdf_hist.rect(0, 0, 210, 40, 'F')
+                    pdf_hist.set_font("Arial", "B", 16)
+                    pdf_hist.set_text_color(255, 255, 255)
+                    pdf_hist.cell(0, 15, "RELATORIO DA ANÁLISE - SÉRIE HISTÓRICA", ln=True, align="C")
+                    pdf_hist.set_font("Arial", "I", 12)
+                    pdf_hist.cell(0, 5, "GATE - Inteligencia de Apoio ao Processo Decisório", ln=True, align="C")
+                    
+                    pdf_hist.ln(20)
+                    pdf_hist.set_text_color(0, 0, 0)
+                    pdf_hist.set_font("Arial", "B", 14)
+                    pdf_hist.set_fill_color(240, 240, 240)
+                    pdf_hist.cell(0, 10, " 1. SINTESE DAS TECNICAS APLICADAS", ln=True, fill=True)
+                    pdf_hist.ln(5)
+                    
+                    pdf_hist.set_font("Arial", "", 12)
+                    
+                    partes_hist = [f"{k.upper()}:\n{v}" for k, v in relatorio_json.items() if isinstance(v, str)]
+                    texto_hist_str = "\n\n".join(partes_hist).replace("**", "").replace("### ", "")
+                    texto_pdf_limpo_hist = unicodedata.normalize('NFKD', texto_hist_str).encode('ASCII', 'ignore').decode('ASCII')
+                    
+                    pdf_hist.multi_cell(0, 8, txt=texto_pdf_limpo_hist)
+                    
+                    pdf_saida_hist = pdf_hist.output(dest="S")
+                    if isinstance(pdf_saida_hist, str):
+                    pdf_bytes_hist = pdf_saida_hist.encode('latin-1', errors='replace')
+                    else:
+                    pdf_bytes_hist = bytes(pdf_saida_hist)
+                    
+                    st.download_button(
+                    label="📥 BAIXAR RELATÓRIO (PDF)", 
+                    data=pdf_bytes_hist, 
+                    file_name="Relatorio_de_análise_GATE.pdf", 
+                    mime="application/pdf"
+                    )
+                    except Exception as e:
+                    st.error(f"Erro na geração do PDF Série Histórica: {str(e)}")
 
                 except Exception as e:
                     st.error(f"Erro na geração do relatório de IA: {str(e)}")
