@@ -1147,8 +1147,7 @@ else:
             
             st.markdown("### 📄 Etapa 3: Inteligência de Apoio à Decisão e Exportação")
             
-            #url_n8n = "http://host.docker.internal:5680/webhook/analise-doc"
-            
+                       
             if st.button("📡 3. GERAR ANALYTICS E EXPORTAR ANÁLISE (PDF)"):
                 with st.spinner("Compilando dados técnicos, consultando IA e desenhando PDF..."):
                     try:
@@ -1451,6 +1450,7 @@ else:
             if filtro_tip_g != "Todas": df_tec_filt = df_tec_filt[df_tec_filt['Tip_Limpa'] == filtro_tip_g]
             if filtro_mod_g != "Todas": df_tec_filt = df_tec_filt[df_tec_filt['Mod_Limpa'] == filtro_mod_g]
             
+           
             if not df_tec_filt.empty:
                 col_t = next((col for col in ['TÉCNICAS', 'TECNICAS', 'TÉCNICA', 'TECNICA'] if col in df_tec_filt.columns), None)
                 if col_t:
@@ -1691,6 +1691,8 @@ else:
         st.markdown("<h4 style='color: #06C755;'>🧠 Síntese Interpretativa Avançada (Interpretação descritiva dos resultados estatísticos assistida por modelo de linguagem (LLM – OpenAI GPT-4o-mini), com base em dados previamente processados por métodos estatísticos.)</h4>", unsafe_allow_html=True)
         st.markdown("<p style='color: #bbb;'>Este módulo traduz a matriz matemática gerada acima em um relatório estratégico que visa o aperfeiçoamento técnico contínuo do Negociador.</p>", unsafe_allow_html=True)
 
+
+        
         if st.button("🤖 GERAR RELATÓRIO ESTATÍSTICO DESCRITIVO"):
             with st.spinner("Estruturando matrizes e consultando Cientista de Dados IA..."):
                 try:
@@ -1745,6 +1747,74 @@ else:
                             st.markdown("**JSON Retornado pela IA:**")
                             st.json(relatorio_json)
 
+                            # ====
+        # CHAT - ASSISTENTE (ÚLTIMA SEÇÃO DA ABA SÉRIE HISTÓRICA)
+        # ====
+        st.markdown("---")
+        st.subheader("💬 Assistente de Inteligência Analítica - GATE")
+
+        if "chat_messages" not in st.session_state:
+            st.session_state.chat_messages = []
+
+        for message in st.session_state.chat_messages:
+            with st.chat_message(message["role"]):
+                st.markdown(message["content"])
+
+        if prompt_chat := st.chat_input("Ex: Qual técnica mais gera rendição? Existe relação entre tempo e sucesso?", key="chat_historico"):
+            st.session_state.chat_messages.append({"role": "user", "content": prompt_chat})
+            with st.chat_message("user"):
+                st.markdown(prompt_chat)
+
+            with st.chat_message("assistant"):
+                with st.spinner("Analisando base de dados histórica..."):
+                    try:
+                        dados_resumo = analise.sumarizar_banco_para_ia(
+                            df_quali_filt,
+                            df_tec_filt if not df_tec_filt.empty else None
+                        )
+
+                        conteudo_prompt_ia = f"""
+Você é o Assistente Analítico do GATE (PMESP). Responda de forma técnica e objetiva.
+Base atual: {dados_resumo['n_total_ocorrencias']} ocorrências filtradas.
+
+Dados reais disponíveis:
+- Técnicas mais usadas: {dados_resumo['top_tecnicas']}
+- Resoluções: {dados_resumo['resolucoes']}
+- Tipologias: {dados_resumo['tipologias']}
+- Modalidades: {dados_resumo['modalidades']}
+- Negociadores: {dados_resumo['negociadores']}
+- Tempo médio de negociação: {dados_resumo['tempo_medio_min']} minutos
+
+Pergunta do Operador: {prompt_chat}
+
+Regras:
+1. Responda com tom de oficial de operações, direto e técnico.
+2. Use APENAS os dados fornecidos acima. Não invente números.
+3. Se a pergunta não puder ser respondida com os dados disponíveis, diga claramente.
+4. Seja conciso: máximo 4 parágrafos.
+"""
+                        # Chama a IA via ia_link (que já está configurado no projeto)
+                        resultado = ia_link.analisar_ocorrencia_gate(
+                            {"prompt_livre": conteudo_prompt_ia},
+                            estatisticas_ocorrencia={},
+                            tecnicas_ocorrencia=[]
+                        )
+
+                        if isinstance(resultado, dict):
+                            texto_resposta = resultado.get("parecer") or resultado.get("interpretacao") or str(resultado)
+                        else:
+                            texto_resposta = str(resultado)
+
+                        st.markdown(texto_resposta)
+                        st.session_state.chat_messages.append({"role": "assistant", "content": texto_resposta})
+
+                    except Exception as e:
+                        erro_msg = f"Erro no assistente: {e}"
+                        st.error(erro_msg)
+                        st.session_state.chat_messages.append({"role": "assistant", "content": erro_msg})
+
+                        ##fim do chat
+
                         st.markdown("---")
                         st.markdown("### 🖨️ Exportar Relatório")
                         
@@ -1790,5 +1860,85 @@ else:
                         except Exception as e:
                             st.error(f"Erro na geração do PDF Série Histórica: {str(e)}")
 
-                except Exception as e:
-                    st.error(f"Erro na geração do relatório de IA: {str(e)}")
+                        except Exception as e:
+                            st.error(f"Erro na geração do relatório de IA: {str(e)}")
+
+                            # ====
+                            # ASSISTENTE DE INTELIGÊNCIA ANALÍTICA - GATE (CHAT)
+                            # ====
+                            st.markdown("---")
+                            st.subheader("💬 Assistente de Inteligência Analítica - GATE")
+
+                            # Estado isolado — não contamina a aba individual
+                            if "chat_historico" not in st.session_state:
+                                st.session_state.chat_historico = []
+
+                            # Exibe histórico da conversa
+                            for msg in st.session_state.chat_historico:
+                                with st.chat_message(msg["role"]):
+                                    st.markdown(msg["content"])
+
+                            # Input do usuário
+                            if pergunta := st.chat_input(
+                                "Ex: Qual técnica mais gera rendição? Existe relação entre tempo e sucesso?",
+                                key="chat_hist_input"
+                            ):
+                                st.session_state.chat_historico.append({"role": "user", "content": pergunta})
+                                with st.chat_message("user"):
+                                    st.markdown(pergunta)
+
+                                with st.chat_message("assistant"):
+                                    with st.spinner("Analisando base histórica..."):
+                                        try:
+                                            # Sumariza os dados filtrados para enviar à IA
+                                            resumo = ia_estatistica.sumarizar_banco_para_ia(
+                                                df_quali_filt,
+                                                df_tec_filt if not df_tec_filt.empty else None
+                                            )
+
+                                            prompt_chat = f"""
+                    Você é um analista especialista do GATE (Grupo de Ações Táticas Especiais - PMESP).
+                    Responda com base EXCLUSIVA nos dados reais abaixo. Seja direto, técnico e objetivo.
+
+                    BASE DE DADOS ATUAL (filtros aplicados):
+                    - Total de ocorrências: {resumo['n_total_ocorrencias']}
+                    - Técnicas mais utilizadas: {resumo['top_tecnicas']}
+                    - Resoluções: {resumo['resolucoes']}
+                    - Tipologias: {resumo['tipologias']}
+                    - Modalidades: {resumo['modalidades']}
+                    - Negociadores: {resumo['negociadores']}
+                    - Tempo médio de negociação: {resumo['tempo_medio_min']} minutos
+
+                    PERGUNTA DO OPERADOR:
+                    {pergunta}
+
+                    REGRAS OBRIGATÓRIAS:
+                    1. Use APENAS os dados fornecidos acima. Nunca invente números ou técnicas.
+                    2. Se a pergunta não puder ser respondida com os dados disponíveis, diga explicitamente.
+                    3. Seja conciso: máximo 4 parágrafos.
+                    4. Tom de oficial de operações: direto, técnico, sem floreio.
+                    """
+
+                                            resposta = ia_link.analisar_ocorrencia_gate(
+                                                {"prompt_livre": prompt_chat},
+                                                estatisticas_ocorrencia={},
+                                                tecnicas_ocorrencia=[]
+                                            )
+
+                                            if isinstance(resposta, dict):
+                                                texto = (
+                                                    resposta.get("parecer")
+                                                    or resposta.get("interpretacao")
+                                                    or resposta.get("analise")
+                                                    or str(resposta)
+                                                )
+                                            else:
+                                                texto = str(resposta)
+
+                                            st.markdown(texto)
+                                            st.session_state.chat_historico.append({"role": "assistant", "content": texto})
+
+                                        except Exception as e:
+                                            erro = f"Erro no assistente: {str(e)}"
+                                            st.error(erro)
+                                            st.session_state.chat_historico.append({"role": "assistant", "content": erro})
