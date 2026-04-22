@@ -1450,6 +1450,66 @@ else:
             if filtro_tip_g != "Todas": df_tec_filt = df_tec_filt[df_tec_filt['Tip_Limpa'] == filtro_tip_g]
             if filtro_mod_g != "Todas": df_tec_filt = df_tec_filt[df_tec_filt['Mod_Limpa'] == filtro_mod_g]
             
+           # ====
+# CHAT - ASSISTENTE DE INTELIGÊNCIA ANALÍTICA
+# ====
+st.divider()
+st.subheader("💬 Assistente de Inteligência Analítica - GATE")
+
+if "messages" not in st.session_state:
+    st.session_state.messages = []
+
+for message in st.session_state.messages:
+    with st.chat_message(message["role"]):
+        st.markdown(message["content"])
+
+if prompt_chat := st.chat_input("Ex: Qual técnica mais gera rendição? Existe relação entre tempo e sucesso?"):
+    st.session_state.messages.append({"role": "user", "content": prompt_chat})
+    with st.chat_message("user"):
+        st.markdown(prompt_chat)
+
+    with st.chat_message("assistant"):
+        with st.spinner("Analisando base de dados histórica..."):
+            try:
+                dados_resumo = analise.sumarizar_banco_para_ia(
+                    df_quali_filt,
+                    df_tec_filt if not df_tec_filt.empty else None
+                )
+
+                conteudo_prompt = f"""
+Você é o Assistente Analítico do GATE (PMESP). Responda de forma técnica e objetiva.
+Base atual: {dados_resumo['n_total_ocorrencias']} ocorrências filtradas.
+
+Fatos Estatísticos Reais:
+- Técnicas mais usadas: {dados_resumo['top_tecnicas']}
+- Resoluções: {dados_resumo['resolucoes']}
+- Tipologias: {dados_resumo['tipologias']}
+- Tempo médio de negociação: {dados_resumo['tempo_medio_min']} min
+
+Pergunta do Operador: {prompt_chat}
+
+Instruções:
+1. Responda com tom de oficial de operações.
+2. Se a pergunta for sobre correlação, cite os dados reais.
+3. Se os dados não permitirem responder, seja honesto.
+4. Não invente números. Use apenas o que foi passado acima.
+"""
+                import ia_estatistica
+                resposta = ia_estatistica.gerar_relatorio_com_ia(conteudo_prompt)
+
+                if isinstance(resposta, dict):
+                    texto_resposta = resposta.get("interpretacao") or resposta.get("conclusao") or str(resposta)
+                else:
+                    texto_resposta = str(resposta)
+
+                st.markdown(texto_resposta)
+                st.session_state.messages.append({"role": "assistant", "content": texto_resposta})
+
+            except Exception as e:
+                st.error(f"Erro no assistente: {e}")
+
+                ##fim do bloco do chat
+
             if not df_tec_filt.empty:
                 col_t = next((col for col in ['TÉCNICAS', 'TECNICAS', 'TÉCNICA', 'TECNICA'] if col in df_tec_filt.columns), None)
                 if col_t:
