@@ -1065,7 +1065,7 @@ else:
                     )
 
                 with tab_convergencia:
-                    st.markdown(
+                        st.markdown(
                         """
                         <div class='info-card' style='margin-top: 0px;'>
 
