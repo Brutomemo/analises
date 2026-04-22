@@ -268,28 +268,27 @@ def _tokenizar(texto):
 # 4. WORDCLOUD
 # ============================================================
 
-def gerar_wordcloud(texto):
-    texto_limpo = limpar_texto(texto)
-    tokens = [t for t in texto_limpo.split() if t not in STOPWORDS_GATE and len(t) > 2]
+# em analise.py
+import matplotlib.pyplot as plt
+from wordcloud import WordCloud
 
-    if len(tokens) < 3:
+def gerar_wordcloud(texto):
+    if not texto or len(texto.strip()) < 5:
         return None
 
     wc = WordCloud(
-        background_color=None,
-        mode="RGBA",
-        width=700,
-        height=350,
-        stopwords=STOPWORDS_GATE,
+        width=1600,
+        height=800,
+        background_color="black",
         colormap="Oranges",
-        max_words=50
-    ).generate(" ".join(tokens))
+        stopwords=STOPWORDS_GATE
+    ).generate(texto)
 
-    fig, ax = plt.subplots(figsize=(7, 3.5))
+    fig, ax = plt.subplots(figsize=(16, 8))
     ax.imshow(wc, interpolation="bilinear")
     ax.axis("off")
-    fig.patch.set_facecolor("#0f0f0f")
-    ax.set_facecolor("#0f0f0f")
+    fig.tight_layout()
+
     return fig
 
 # ============================================================
