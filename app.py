@@ -1218,25 +1218,25 @@ else:
 
                                 with col_cv1:
                                     st.metric(
-                                        label="Δ Risco (Causador − NP)",
+                                        label="Δ Risco (Causador − Negociador Principal)",
                                         value=f"{conv['delta_risco']:+.2f}",
-                                        help="Positivo = causador com mais risco. Negativo = negociador com mais risco."
+                                        help="Positivo = o causador está mais carregado em linguagem de risco do que o negociador principal. Negativo = o negociador principal está usando mais linguagem de risco do que o causador. Próximo de zero: equilíbrio de carga de risco entre os dois"
                                     )
                                     st.caption(conv["leitura_risco"])
 
                                 with col_cv2:
                                     st.metric(
-                                        label="Δ Proteção (NP − Causador)",
+                                        label="Δ Proteção (Negociador Principal − Causador)",
                                         value=f"{conv['delta_protecao']:+.2f}",
-                                        help="Positivo = negociador puxando para desescalada."
+                                        help="Positivo = negociador puxando para desescalada. Próximo de zero: pouca diferença entre os dois"
                                     )
                                     st.caption(conv["leitura_protecao"])
 
                                 with col_cv3:
                                     st.metric(
-                                        label="Índice de Espelhamento",
+                                        label="índice de convergência temática",
                                         value=f"{conv['espelhamento']:.0%}",
-                                        help="Quanto mais próximo de 100%, maior a sincronia léxica."
+                                        help="Quanto mais próximo de 100%, maior a sincronia dos temas abordados entre Negociador e Causador. Ele representa o quanto os dois interlocutores se aproximam semanticamente, não o quanto repetem as mesmas palavras. Este índice mede a convergência temática — não o vocabulário compartilhado. Para o espelhamento léxico literal, veja o Grafo de Similitude."
                                     )
                                     st.caption(conv["leitura_espelhamento"])
 
