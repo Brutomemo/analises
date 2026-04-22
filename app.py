@@ -1032,7 +1032,7 @@ else:
                     <p style='font-size: 0.92rem; color: #ddd; line-height: 1.6;'>
                     O sistema varre as palavras ao redor de cada termo para entender a intenção real:<br><br>
                     • <strong>Negação:</strong> <em>"<u>não</u> quero morrer"</em> → o risco da palavra <em>morrer</em> é reduzido. A frase sinaliza ambivalência, não intenção.<br>
-                    • <strong>Intensificador:</strong> <em>"estou <u>muito</u> armado"</em> → o risco aumenta. A ênfase eleva a gravidade.<br>
+                    • <strong>Intensificador:</strong> <em>"estou <u>fortemente</u> armado"</em> → o risco aumenta. A ênfase eleva a gravidade.<br>
                     • <strong>Atenuador:</strong> <em>"<u>talvez</u> eu faça isso"</em> → o peso é reduzido. Há hesitação.<br>
                     • <strong>Urgência:</strong> <em>"quero isso <u>agora</u>"</em> → sinaliza pressão temporal, aumenta o risco instrumental.
                     </p>
