@@ -1860,85 +1860,85 @@ Regras:
                         except Exception as e:
                             st.error(f"Erro na geração do PDF Série Histórica: {str(e)}")
 
-                        except Exception as e:
-                            st.error(f"Erro na geração do relatório de IA: {str(e)}")
+                    except Exception as e:
+                        st.error(f"Erro na geração do relatório de IA: {str(e)}")
 
-                            # ====
-                            # ASSISTENTE DE INTELIGÊNCIA ANALÍTICA - GATE (CHAT)
-                            # ====
-                            st.markdown("---")
-                            st.subheader("💬 Assistente de Inteligência Analítica - GATE")
+                    # ====
+        # ASSISTENTE DE INTELIGÊNCIA ANALÍTICA - GATE (CHAT)
+        # ====
+        st.markdown("---")
+        st.subheader("💬 Assistente de Inteligência Analítica - GATE")
 
-                            # Estado isolado — não contamina a aba individual
-                            if "chat_historico" not in st.session_state:
-                                st.session_state.chat_historico = []
+        # Estado isolado — não contamina a aba individual
+        if "chat_historico" not in st.session_state:
+            st.session_state.chat_historico = []
 
-                            # Exibe histórico da conversa
-                            for msg in st.session_state.chat_historico:
-                                with st.chat_message(msg["role"]):
-                                    st.markdown(msg["content"])
+        # Exibe histórico da conversa
+        for msg in st.session_state.chat_historico:
+            with st.chat_message(msg["role"]):
+                st.markdown(msg["content"])
 
-                            # Input do usuário
-                            if pergunta := st.chat_input(
-                                "Ex: Qual técnica mais gera rendição? Existe relação entre tempo e sucesso?",
-                                key="chat_hist_input"
-                            ):
-                                st.session_state.chat_historico.append({"role": "user", "content": pergunta})
-                                with st.chat_message("user"):
-                                    st.markdown(pergunta)
+        # Input do usuário
+        if pergunta := st.chat_input(
+            "Ex: Qual técnica mais gera rendição? Existe relação entre tempo e sucesso?",
+            key="chat_hist_input"
+        ):
+            st.session_state.chat_historico.append({"role": "user", "content": pergunta})
+            with st.chat_message("user"):
+                st.markdown(pergunta)
 
-                                with st.chat_message("assistant"):
-                                    with st.spinner("Analisando base histórica..."):
-                                        try:
-                                            # Sumariza os dados filtrados para enviar à IA
-                                            resumo = ia_estatistica.sumarizar_banco_para_ia(
-                                                df_quali_filt,
-                                                df_tec_filt if not df_tec_filt.empty else None
-                                            )
+            with st.chat_message("assistant"):
+                with st.spinner("Analisando base histórica..."):
+                    try:
+                        # Sumariza os dados filtrados para enviar à IA
+                        resumo = ia_estatistica.sumarizar_banco_para_ia(
+                            df_quali_filt,
+                            df_tec_filt if not df_tec_filt.empty else None
+                        )
 
-                                            prompt_chat = f"""
-                    Você é um analista especialista do GATE (Grupo de Ações Táticas Especiais - PMESP).
-                    Responda com base EXCLUSIVA nos dados reais abaixo. Seja direto, técnico e objetivo.
+                        prompt_chat = f"""
+Você é um analista especialista do GATE (Grupo de Ações Táticas Especiais - PMESP).
+Responda com base EXCLUSIVA nos dados reais abaixo. Seja direto, técnico e objetivo.
 
-                    BASE DE DADOS ATUAL (filtros aplicados):
-                    - Total de ocorrências: {resumo['n_total_ocorrencias']}
-                    - Técnicas mais utilizadas: {resumo['top_tecnicas']}
-                    - Resoluções: {resumo['resolucoes']}
-                    - Tipologias: {resumo['tipologias']}
-                    - Modalidades: {resumo['modalidades']}
-                    - Negociadores: {resumo['negociadores']}
-                    - Tempo médio de negociação: {resumo['tempo_medio_min']} minutos
+BASE DE DADOS ATUAL (filtros aplicados):
+- Total de ocorrências: {resumo['n_total_ocorrencias']}
+- Técnicas mais utilizadas: {resumo['top_tecnicas']}
+- Resoluções: {resumo['resolucoes']}
+- Tipologias: {resumo['tipologias']}
+- Modalidades: {resumo['modalidades']}
+- Negociadores: {resumo['negociadores']}
+- Tempo médio de negociação: {resumo['tempo_medio_min']} minutos
 
-                    PERGUNTA DO OPERADOR:
-                    {pergunta}
+PERGUNTA DO OPERADOR:
+{pergunta}
 
-                    REGRAS OBRIGATÓRIAS:
-                    1. Use APENAS os dados fornecidos acima. Nunca invente números ou técnicas.
-                    2. Se a pergunta não puder ser respondida com os dados disponíveis, diga explicitamente.
-                    3. Seja conciso: máximo 4 parágrafos.
-                    4. Tom de oficial de operações: direto, técnico, sem floreio.
-                    """
+REGRAS OBRIGATÓRIAS:
+1. Use APENAS os dados fornecidos acima. Nunca invente números ou técnicas.
+2. Se a pergunta não puder ser respondida com os dados disponíveis, diga explicitamente.
+3. Seja conciso: máximo 4 parágrafos.
+4. Tom de oficial de operações: direto, técnico, sem floreio.
+"""
 
-                                            resposta = ia_link.analisar_ocorrencia_gate(
-                                                {"prompt_livre": prompt_chat},
-                                                estatisticas_ocorrencia={},
-                                                tecnicas_ocorrencia=[]
-                                            )
+                        resposta = ia_link.analisar_ocorrencia_gate(
+                            {"prompt_livre": prompt_chat},
+                            estatisticas_ocorrencia={},
+                            tecnicas_ocorrencia=[]
+                        )
 
-                                            if isinstance(resposta, dict):
-                                                texto = (
-                                                    resposta.get("parecer")
-                                                    or resposta.get("interpretacao")
-                                                    or resposta.get("analise")
-                                                    or str(resposta)
-                                                )
-                                            else:
-                                                texto = str(resposta)
+                        if isinstance(resposta, dict):
+                            texto = (
+                                resposta.get("parecer")
+                                or resposta.get("interpretacao")
+                                or resposta.get("analise")
+                                or str(resposta)
+                            )
+                        else:
+                            texto = str(resposta)
 
-                                            st.markdown(texto)
-                                            st.session_state.chat_historico.append({"role": "assistant", "content": texto})
+                        st.markdown(texto)
+                        st.session_state.chat_historico.append({"role": "assistant", "content": texto})
 
-                                        except Exception as e:
-                                            erro = f"Erro no assistente: {str(e)}"
-                                            st.error(erro)
-                                            st.session_state.chat_historico.append({"role": "assistant", "content": erro})
+                    except Exception as e:
+                        erro = f"Erro no assistente: {str(e)}"
+                        st.error(erro)
+                        st.session_state.chat_historico.append({"role": "assistant", "content": erro})
