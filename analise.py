@@ -50,7 +50,7 @@ ATENUADORES = {
 # ============================================================
 
 DICIONARIO_TATICO = {
-    "Sinalização de Rendição / Desescalada de Violência": {
+    "Sinalização de Rendição / Desescalada da agressividade": {
         "tipo": "protecao",
         "peso_base": 1.60,
         "termos": {
@@ -320,7 +320,7 @@ def _avaliar_modificadores(tokens, idx_inicio, idx_fim):
 
     return negado, intensificador
 
-def analisar_crise_direcional(texto):
+def analisar_crise_direcional(texto, intervencao_operacional=False):
     texto_norm = normalizar_texto(texto)
     if not texto_norm:
         return {
@@ -342,7 +342,31 @@ def analisar_crise_direcional(texto):
         }
 
     tokens, starts = _obter_tokens_e_posicoes(texto_norm)
-    total_tokens = max(len([t for t in tokens if len(t) > 1]), 1)
+
+    # Remove ruído textual e reduz viés por repetição de termos não informativos
+    tokens_validos = [t for t in tokens if len(t) > 1 and t not in STOPWORDS_GATE]
+    total_tokens = len(tokens_validos)
+
+    # Se o corpus for curto demais ou muito pobre lexicalmente,
+    # não forçar leitura direcional para evitar viés em diálogo unilateral.
+    if total_tokens < 15 or len(set(tokens_validos)) < 6:
+        return {
+            "temas": [],
+            "sumario": {
+                "tokens_validos": total_tokens,
+                "risco_bruto": 0.0,
+                "protecao_bruto": 0.0,
+                "contexto_bruto": 0.0,
+                "risco_index": 0.0,
+                "protecao_index": 0.0,
+                "contexto_index": 0.0,
+                "intensidade_index": 0.0,
+                "direcao_index": 0.0,
+                "volatilidade_index": 0.0,
+                "classificacao": "DADOS INSUFICIENTES",
+                "leitura": "Corpus insuficiente ou lexicalmente pobre para inferência direcional confiável."
+            }
+        }
 
     resultados = []
     risco_bruto = 0.0
@@ -424,7 +448,8 @@ def analisar_crise_direcional(texto):
         contexto_index=contexto_index,
         intensidade_index=intensidade_index,
         direcao_index=direcao_index,
-        volatilidade_index=volatilidade_index
+        volatilidade_index=volatilidade_index,
+        tokens_validos=total_tokens
     )
 
     return {
@@ -451,7 +476,8 @@ def classificar_estado_crise(
     contexto_index,
     intensidade_index,
     direcao_index,
-    volatilidade_index
+    volatilidade_index,
+    tokens_validos=None
 ):
     """
     Regras heurísticas calibráveis.
@@ -464,6 +490,12 @@ def classificar_estado_crise(
     Observação:
     Esses thresholds devem ser recalibrados com amostra histórica rotulada.
     """
+
+    if tokens_validos is not None and tokens_validos < 15:
+        return (
+            "DADOS INSUFICIENTES",
+            "O corpus analisado é curto demais para sustentar uma inferência direcional confiável. Evita-se leitura enviesada em diálogo unilateral ou de baixa reciprocidade."
+        )
 
     if intensidade_index < 4:
         return (
@@ -497,7 +529,7 @@ def classificar_estado_crise(
 
     if risco_index >= 10 and direcao_index < 0:
         return (
-            "MODERADO COM VIÉS DE ESCALADA",
+            "MODERADO COM VIES DE ESCALADA",
             "Existem sinais de deterioração ou endurecimento discursivo, embora sem configuração semântica forte o bastante para enquadramento como crítico."
         )
 
@@ -515,7 +547,7 @@ def extrair_topicos_ngrams(texto):
     texto_norm = limpar_texto(texto)
     palavras_validas = [p for p in texto_norm.split() if p not in STOPWORDS_GATE and len(p) > 2]
 
-    if len(palavras_validas) < 5:
+    if len(palavras_validas) < 8:
         return ["*Texto insuficiente para análise semântica.*"]
 
     analise = analisar_crise_direcional(texto)
@@ -541,7 +573,10 @@ def extrair_topicos_ngrams(texto):
                 f"*(score ponderado: {item['score']:.2f} | evidências: {item['evidencias']} | polaridade: {polaridade}{texto_neg})*"
             )
     else:
-        resultado.append("*Diálogo pulverizado: nenhum tema dominante detectado.*")
+        if resumo["classificacao"] == "DADOS INSUFICIENTES":
+            resultado.append("*Corpus insuficiente para inferência direcional confiável.*")
+        else:
+            resultado.append("*Diálogo pulverizado: nenhum tema dominante detectado.*")
 
     # N-gramas estatísticos recorrentes
     try:
@@ -555,11 +590,23 @@ def extrair_topicos_ngrams(texto):
         features = vectorizer.get_feature_names_out()
         scores = counts.toarray()[0]
 
-        pares = sorted(
-            [(features[idx], int(scores[idx])) for idx in scores.argsort()[::-1] if scores[idx] > 1],
-            key=lambda x: x[1],
-            reverse=True
-        )
+        pares = []
+        for idx in scores.argsort()[::-1]:
+            score = int(scores[idx])
+            feature = features[idx].strip()
+
+            # Evita referências arbitrárias, redundantes ou apenas repetição do mesmo token
+            tokens_feature = feature.split()
+            if score <= 1:
+                continue
+            if len(tokens_feature) < 2:
+                continue
+            if len(set(tokens_feature)) < 2:
+                continue
+
+            pares.append((feature, score))
+
+        pares = sorted(pares, key=lambda x: x[1], reverse=True)
 
         for feature, score in pares:
             resultado.append(f"*(Padrão de fala recorrente: '{feature.title()}' - {score}x)*")
