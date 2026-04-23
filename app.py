@@ -1212,208 +1212,170 @@ else:
                 )
         # --- FIM DO BLOCO DE EXPLICAÇÃO ---
 
-                ## N-GRAMAS
-    if st.button("⚙️ 2. GERAR NUVEM DE PALAVRAS E N-GRAMS"):
-        with st.spinner("Processando N-Grams e plotando gráficos..."):
-            texto_c = limpar_valor(df_apa.get('TRANSCRIÇÃO DO CAUSADOR', ''))
-            texto_np = limpar_valor(df_apa.get('TRANSCRIÇÃO DO NEGOCIADOR PRINCIPAL', ''))
-            texto_ns = limpar_valor(df_apa.get('TRANSCRIÇÃO DO NEGOCIADOR SECUNDÁRIO', ''))
-            texto_total = f"{texto_c} {texto_np} {texto_ns}".strip()
+            ##N-GRAMAS
+            if st.button("⚙️ 2. GERAR NUVEM DE PALAVRAS E N-GRAMS"):
+                with st.spinner("Processando N-Grams e plotando gráficos..."):
+                    texto_c = limpar_valor(df_apa.get('TRANSCRIÇÃO DO CAUSADOR'))
+                    texto_np = limpar_valor(df_apa.get('TRANSCRIÇÃO DO NEGOCIADOR PRINCIPAL'))
+                    texto_ns = limpar_valor(df_apa.get('TRANSCRIÇÃO DO NEGOCIADOR SECUNDÁRIO'))
+                    texto_total = f"{texto_c} {texto_np} {texto_ns}"
 
-            def _tokens_util(texto):
-                return [t for t in str(texto).split() if len(t.strip()) > 2]
+                    st.session_state['stats_calculados'] = {
+                        "topicos": analise.extrair_topicos_ngrams(texto_total) if len(texto_total) > 10 else ["Texto insuficiente"],
+                        "topicos_c": analise.extrair_topicos_ngrams(texto_c) if len(texto_c) > 10 else ["Texto insuficiente"],
+                        "topicos_np": analise.extrair_topicos_ngrams(texto_np) if len(texto_np) > 10 else ["Texto insuficiente"],
+                        "topicos_ns": analise.extrair_topicos_ngrams(texto_ns) if len(texto_ns) > 10 else ["Texto insuficiente"],
+                        "wc_c": analise.gerar_wordcloud(texto_c) if len(texto_c) > 5 else None,
+                        "wc_np": analise.gerar_wordcloud(texto_np) if len(texto_np) > 5 else None,
+                        "wc_ns": analise.gerar_wordcloud(texto_ns) if len(texto_ns) > 5 else None,
+                        "texto_c_raw": texto_c,
+                        "texto_np_raw": texto_np,
+                        "texto_ns_raw": texto_ns
+                    }
 
-            tokens_c = _tokens_util(texto_c)
-            tokens_np = _tokens_util(texto_np)
-            tokens_ns = _tokens_util(texto_ns)
-            tokens_total = _tokens_util(texto_total)
+            if st.session_state.get('stats_calculados'):
+                stats = st.session_state['stats_calculados']
 
-            # Regras mínimas para reduzir viés em diálogo unilateral:
-            # - análise individual só quando houver massa textual suficiente
-            # - análise global só quando houver pelo menos 2 interlocutores com texto suficiente
-            tem_c = len(tokens_c) >= 8
-            tem_np = len(tokens_np) >= 8
-            tem_ns = len(tokens_ns) >= 8
-            tem_total = len(tokens_total) >= 12
-            interlocutores_suficientes = sum([tem_c, tem_np, tem_ns])
+                topicos_globais = stats.get('topicos',    ["Sem dados"])
+                topicos_c  = stats.get('topicos_c',  ["Análise individual ainda não gerada."])
+                topicos_np = stats.get('topicos_np', ["Análise individual ainda não gerada."])
+                topicos_ns = stats.get('topicos_ns', ["Análise individual ainda não gerada."])
 
-            st.session_state['stats_calculados'] = {
-                "topicos": analise.extrair_topicos_ngrams(texto_total) if (tem_total and interlocutores_suficientes >= 2) else ["Texto insuficiente para análise"],
-                "topicos_c": analise.extrair_topicos_ngrams(texto_c) if tem_c else ["Texto insuficiente para análise"],
-                "topicos_np": analise.extrair_topicos_ngrams(texto_np) if tem_np else ["Texto insuficiente para análise"],
-                "topicos_ns": analise.extrair_topicos_ngrams(texto_ns) if tem_ns else ["Texto insuficiente para análise"],
-                "wc_c": analise.gerar_wordcloud(texto_c) if tem_c else None,
-                "wc_np": analise.gerar_wordcloud(texto_np) if tem_np else None,
-                "wc_ns": analise.gerar_wordcloud(texto_ns) if tem_ns else None,
-                "texto_c_raw": texto_c,
-                "texto_np_raw": texto_np,
-                "texto_ns_raw": texto_ns,
-                "tem_c": tem_c,
-                "tem_np": tem_np,
-                "tem_ns": tem_ns,
-                "interlocutores_suficientes": interlocutores_suficientes
-            }
+                wc_c  = stats.get('wc_c')
+                wc_np = stats.get('wc_np')
+                wc_ns = stats.get('wc_ns')
 
-    if st.session_state.get('stats_calculados'):
-        stats = st.session_state['stats_calculados']
+                texto_c_raw  = stats.get('texto_c_raw',  limpar_valor(df_apa.get('TRANSCRIÇÃO DO CAUSADOR', '')))
+                texto_np_raw = stats.get('texto_np_raw', limpar_valor(df_apa.get('TRANSCRIÇÃO DO NEGOCIADOR PRINCIPAL', '')))
+                texto_ns_raw = stats.get('texto_ns_raw', limpar_valor(df_apa.get('TRANSCRIÇÃO DO NEGOCIADOR SECUNDÁRIO', '')))
 
-        topicos_globais = stats.get('topicos', ["Sem dados"])
-        topicos_c = stats.get('topicos_c', ["Análise individual ainda não gerada."])
-        topicos_np = stats.get('topicos_np', ["Análise individual ainda não gerada."])
-        topicos_ns = stats.get('topicos_ns', ["Análise individual ainda não gerada."])
+                tab_ng1, tab_ng2, tab_ng3, tab_ng4, tab_ng5 = st.tabs([
+                    "Causador",
+                    "Negociador Principal",
+                    "Negociador Secundário",
+                    "Visão Global",
+                    "⚡ Convergência"
+                ])
 
-        wc_c = stats.get('wc_c')
-        wc_np = stats.get('wc_np')
-        wc_ns = stats.get('wc_ns')
+                with tab_ng1:
+                    st.markdown('<div class="info-card"><h4 style="color: #f97316; margin-top: 0;">🧠 Temas Dominantes - Causador</h4>', unsafe_allow_html=True)
+                    for t in topicos_c:
+                        st.markdown(t)
+                    st.markdown('</div>', unsafe_allow_html=True)
+                    if wc_c:
+                        st.pyplot(wc_c)
 
-        texto_c_raw = stats.get('texto_c_raw', limpar_valor(df_apa.get('TRANSCRIÇÃO DO CAUSADOR', '')))
-        texto_np_raw = stats.get('texto_np_raw', limpar_valor(df_apa.get('TRANSCRIÇÃO DO NEGOCIADOR PRINCIPAL', '')))
-        texto_ns_raw = stats.get('texto_ns_raw', limpar_valor(df_apa.get('TRANSCRIÇÃO DO NEGOCIADOR SECUNDÁRIO', '')))
+                with tab_ng2:
+                    st.markdown('<div class="info-card"><h4 style="color: #f97316; margin-top: 0;">🧠 Temas Dominantes - Negociador Principal</h4>', unsafe_allow_html=True)
+                    for t in topicos_np:
+                        st.markdown(t)
+                    st.markdown('</div>', unsafe_allow_html=True)
+                    if wc_np:
+                        st.pyplot(wc_np)
 
-        tem_c = stats.get('tem_c', False)
-        tem_np = stats.get('tem_np', False)
-        tem_ns = stats.get('tem_ns', False)
-        interlocutores_suficientes = stats.get('interlocutores_suficientes', 0)
+                with tab_ng3:
+                    st.markdown('<div class="info-card"><h4 style="color: #f97316; margin-top: 0;">🧠 Temas Dominantes - Negociador Secundário</h4>', unsafe_allow_html=True)
+                    for t in topicos_ns:
+                        st.markdown(t)
+                    st.markdown('</div>', unsafe_allow_html=True)
+                    if wc_ns:
+                        st.pyplot(wc_ns)
 
-        tab_ng1, tab_ng2, tab_ng3, tab_ng4, tab_ng5 = st.tabs([
-            "Causador",
-            "Negociador Principal",
-            "Negociador Secundário",
-            "Visão Global",
-            "⚡ Convergência"
-        ])
+                with tab_ng4:
+                    st.markdown('<div class="info-card"><h4 style="color: #f97316; margin-top: 0;">🌐 Temas Dominantes Gerais</h4>', unsafe_allow_html=True)
 
-        with tab_ng1:
-            st.markdown('<div class="info-card"><h4 style="color: #f97316; margin-top: 0;">🧠 Temas Dominantes - Causador</h4>', unsafe_allow_html=True)
-            for t in topicos_c:
-                st.markdown(t)
-            st.markdown('</div>', unsafe_allow_html=True)
-            if wc_c:
-                st.pyplot(wc_c)
-            else:
-                st.info("Sem dados suficientes para gerar mapa de palavras do Causador.")
+                    for t in topicos_globais:
+                        st.markdown(t)
 
-        with tab_ng2:
-            st.markdown('<div class="info-card"><h4 style="color: #f97316; margin-top: 0;">🧠 Temas Dominantes - Negociador Principal</h4>', unsafe_allow_html=True)
-            for t in topicos_np:
-                st.markdown(t)
-            st.markdown('</div>', unsafe_allow_html=True)
-            if wc_np:
-                st.pyplot(wc_np)
-            else:
-                st.info("Sem dados suficientes para gerar mapa de palavras do Negociador Principal.")
-
-        with tab_ng3:
-            st.markdown('<div class="info-card"><h4 style="color: #f97316; margin-top: 0;">🧠 Temas Dominantes - Negociador Secundário</h4>', unsafe_allow_html=True)
-            for t in topicos_ns:
-                st.markdown(t)
-            st.markdown('</div>', unsafe_allow_html=True)
-            if wc_ns:
-                st.pyplot(wc_ns)
-            else:
-                st.info("Sem dados suficientes para gerar mapa de palavras do Negociador Secundário.")
-
-        with tab_ng4:
-            st.markdown('<div class="info-card"><h4 style="color: #f97316; margin-top: 0;">🌐 Temas Dominantes Gerais</h4>', unsafe_allow_html=True)
-
-            if interlocutores_suficientes >= 2:
-                for t in topicos_globais:
-                    st.markdown(t)
-            else:
-                st.warning("⚠️ Texto global insuficiente ou unilateral para uma leitura temática não enviesada.")
-                for t in topicos_globais:
-                    st.markdown(t)
-
-            st.markdown("<​hr style='border-color: rgba(255,255,255,0.12); margin: 16px 0;'>", unsafe_allow_html=True)
-            st.markdown("#### 🖼️ Mapas de palavras por interlocutor", unsafe_allow_html=True)
-            st.markdown(
-                "<p style='color:#aaa; font-size:0.9rem; margin-top:-5px;'>Os mesmos mapas exibidos nas abas individuais também são mostrados aqui para facilitar a comparação visual no contexto global da ocorrência.</p>",
-                unsafe_allow_html=True
-            )
-
-            col_wc_g1, col_wc_g2, col_wc_g3 = st.columns(3)
-
-            with col_wc_g1:
-                st.markdown("**Causador**")
-                if wc_c:
-                    st.pyplot(wc_c, clear_figure=True)
-                else:
-                    st.info("Sem mapa de palavras do Causador para esta ocorrência.")
-
-            with col_wc_g2:
-                st.markdown("**Negociador Principal**")
-                if wc_np:
-                    st.pyplot(wc_np, clear_figure=True)
-                else:
-                    st.info("Sem mapa de palavras do Negociador Principal para esta ocorrência.")
-
-            with col_wc_g3:
-                st.markdown("**Negociador Secundário**")
-                if wc_ns:
-                    st.pyplot(wc_ns, clear_figure=True)
-                else:
-                    st.info("Sem mapa de palavras do Negociador Secundário para esta ocorrência.")
-
-            st.markdown('</div>', unsafe_allow_html=True)
-
-        with tab_ng5:
-            st.markdown(
-                '<div class="info-card">'
-                '<h4 style="color:#FFD700; margin-top:0;">⚡ Radar Comparativo & Índice de Convergência Temática</h4>'
-                '<p style="color:#ccc; font-size:0.9rem; margin-bottom:1rem;">'
-                'Comparação direta dos vetores semânticos entre os interlocutores. '
-                'Quanto mais sobrepostos os polígonos, maior o espelhamento temático.</p>',
-                unsafe_allow_html=True
-            )
-
-            # Evita comparação enviesada quando não há dois interlocutores com texto suficiente
-            if not tem_c or not tem_np:
-                st.warning("⚠️ Não há texto suficiente nos dois lados principais para gerar um radar comparativo sem viés.")
-            else:
-                try:
-                    fig_radar, conv = analise.gerar_radar_comparativo(
-                        texto_c_raw,
-                        texto_np_raw,
-                        texto_ns_raw if tem_ns else None
+                    st.markdown("<​hr style='border-color: rgba(255,255,255,0.12); margin: 16px 0;'>", unsafe_allow_html=True)
+                    st.markdown("#### 🖼️ Mapas de palavras por interlocutor", unsafe_allow_html=True)
+                    st.markdown(
+                        "<p style='color:#aaa; font-size:0.9rem; margin-top:-5px;'>Os mesmos mapas exibidos nas abas individuais também são mostrados aqui para facilitar a comparação visual no contexto global da ocorrência.</p>",
+                        unsafe_allow_html=True
                     )
-                    st.plotly_chart(fig_radar, use_container_width=True)
 
-                    if conv:
-                        st.markdown("---")
-                        st.markdown(
-                            '<h5 style="color:#FFD700;">📐 Índice de Convergência Temática</h5>',
-                            unsafe_allow_html=True
-                        )
-                        col_cv1, col_cv2, col_cv3 = st.columns(3)
+                    col_wc_g1, col_wc_g2, col_wc_g3 = st.columns(3)
 
-                        with col_cv1:
-                            st.metric(
-                                label="Δ Risco (Causador − Negociador Principal)",
-                                value=f"{conv['delta_risco']:+.2f}",
-                                help="Positivo = o causador está mais carregado em linguagem de risco do que o negociador principal. Negativo = o negociador principal está usando mais linguagem de risco do que o causador. Próximo de zero: equilíbrio de carga de risco entre os dois"
+                    with col_wc_g1:
+                        st.markdown("**Causador**")
+                        if wc_c:
+                            st.pyplot(wc_c, clear_figure=True)
+                        else:
+                            st.info("Sem mapa de palavras do Causador para esta ocorrência.")
+
+                    with col_wc_g2:
+                        st.markdown("**Negociador Principal**")
+                        if wc_np:
+                            st.pyplot(wc_np, clear_figure=True)
+                        else:
+                            st.info("Sem mapa de palavras do Negociador Principal para esta ocorrência.")
+
+                    with col_wc_g3:
+                        st.markdown("**Negociador Secundário**")
+                        if wc_ns:
+                            st.pyplot(wc_ns, clear_figure=True)
+                        else:
+                            st.info("Sem mapa de palavras do Negociador Secundário para esta ocorrência.")
+
+                    st.markdown('</div>', unsafe_allow_html=True)
+
+                with tab_ng5:
+                    st.markdown(
+                        '<div class="info-card">'
+                        '<h4 style="color:#FFD700; margin-top:0;">⚡ Radar Comparativo & Índice de Convergência Temática</h4>'
+                        '<p style="color:#ccc; font-size:0.9rem; margin-bottom:1rem;">'
+                        'Comparação direta dos vetores semânticos entre os interlocutores. '
+                        'Quanto mais sobrepostos os polígonos, maior o espelhamento temático.</p>',
+                        unsafe_allow_html=True
+                    )
+
+                    if not texto_c_raw or not texto_np_raw:
+                        st.warning("⚠️ Transcrições insuficientes para gerar o radar comparativo.")
+                    else:
+                        try:
+                            fig_radar, conv = analise.gerar_radar_comparativo(
+                                texto_c_raw,
+                                texto_np_raw,
+                                texto_ns_raw if texto_ns_raw else None
                             )
-                            st.caption(conv["leitura_risco"])
+                            st.plotly_chart(fig_radar, use_container_width=True)
 
-                        with col_cv2:
-                            st.metric(
-                                label="Δ Proteção (Negociador Principal − Causador)",
-                                value=f"{conv['delta_protecao']:+.2f}",
-                                help="Positivo = negociador puxando para desescalada. Próximo de zero: pouca diferença entre os dois"
-                            )
-                            st.caption(conv["leitura_protecao"])
+                            if conv:
+                                st.markdown("---")
+                                st.markdown(
+                                    '<h5 style="color:#FFD700;">📐 Índice de Convergência Temática</h5>',
+                                    unsafe_allow_html=True
+                                )
+                                col_cv1, col_cv2, col_cv3 = st.columns(3)
 
-                        with col_cv3:
-                            st.metric(
-                                label="índice de convergência temática",
-                                value=f"{conv['espelhamento']:.0%}",
-                                help="Quanto mais próximo de 100%, maior a sincronia dos temas abordados entre Negociador e Causador. Ele representa o quanto os dois interlocutores se aproximam semanticamente, não o quanto repetem as mesmas palavras. Este índice mede a convergência temática — não o vocabulário compartilhado. Para o espelhamento léxico literal, veja o Grafo de Similitude."
-                            )
-                            st.caption(conv["leitura_espelhamento"])
+                                with col_cv1:
+                                    st.metric(
+                                        label="Δ Risco (Causador − Negociador Principal)",
+                                        value=f"{conv['delta_risco']:+.2f}",
+                                        help="Positivo = o causador está mais carregado em linguagem de risco do que o negociador principal. Negativo = o negociador principal está usando mais linguagem de risco do que o causador. Próximo de zero: equilíbrio de carga de risco entre os dois"
+                                    )
+                                    st.caption(conv["leitura_risco"])
 
-                except Exception as e:
-                    st.error(f"Erro ao gerar radar comparativo: {str(e)}")
+                                with col_cv2:
+                                    st.metric(
+                                        label="Δ Proteção (Negociador Principal − Causador)",
+                                        value=f"{conv['delta_protecao']:+.2f}",
+                                        help="Positivo = negociador puxando para desescalada. Próximo de zero: pouca diferença entre os dois"
+                                    )
+                                    st.caption(conv["leitura_protecao"])
 
-            st.markdown('</div>', unsafe_allow_html=True)
+                                with col_cv3:
+                                    st.metric(
+                                        label="índice de convergência temática",
+                                        value=f"{conv['espelhamento']:.0%}",
+                                        help="Quanto mais próximo de 100%, maior a sincronia dos temas abordados entre Negociador e Causador. Ele representa o quanto os dois interlocutores se aproximam semanticamente, não o quanto repetem as mesmas palavras. Este índice mede a convergência temática — não o vocabulário compartilhado. Para o espelhamento léxico literal, veja o Grafo de Similitude."
+                                    )
+                                    st.caption(conv["leitura_espelhamento"])
+
+                        except Exception as e:
+                            st.error(f"Erro ao gerar radar comparativo: {str(e)}")
+
+                    st.markdown('</div>', unsafe_allow_html=True)
             
                     
             if st.button("📡 3. GERAR ANALYTICS E EXPORTAR ANÁLISE (PDF)"):
