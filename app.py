@@ -1077,8 +1077,8 @@ else:
 
                     <h5 style='color: #FFD700; margin-top: 0;'>📊 Como entender a pontuação da Convergência</h5>
                     <p style='font-size: 0.92rem; color: #ddd; line-height: 1.6;'>
-                    Este bloco não mede apenas repetição de palavras. Ele mede a <strong>relação tática e semântica</strong> entre os interlocutores.<br>
-                    Por isso, a leitura correta é diferente da análise de similitude lexical.
+                    Este bloco não mede apenas repetição de palavras. Ele mede a <strong>relação do ponto de vista técnico e semântico</strong> entre os interlocutores.<br>
+                    Por isso, a leitura correta pode ser diferente da análise de similitude lexical. São análises complementares.
                     </p>
 
                     <hr style='border-color: #444; margin: 12px 0;'>
