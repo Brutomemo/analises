@@ -13,3 +13,7 @@ statsmodels
 patsy
 python-docx
 networkx
+langchain
+langchain-openai
+langchain-experimental
+tabulate
