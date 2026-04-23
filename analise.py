@@ -320,7 +320,7 @@ def _avaliar_modificadores(tokens, idx_inicio, idx_fim):
 
     return negado, intensificador
 
-def analisar_crise_direcional(texto, intervencao_operacional=False):
+def analisar_crise_direcional(texto, resolucao_tipo="desconhecida"):
     texto_norm = normalizar_texto(texto)
     if not texto_norm:
         return {
@@ -449,7 +449,8 @@ def analisar_crise_direcional(texto, intervencao_operacional=False):
         intensidade_index=intensidade_index,
         direcao_index=direcao_index,
         volatilidade_index=volatilidade_index,
-        tokens_validos=total_tokens
+        tokens_validos=total_tokens,
+        resolucao_tipo=resolucao_tipo
     )
 
     return {
@@ -477,8 +478,18 @@ def classificar_estado_crise(
     intensidade_index,
     direcao_index,
     volatilidade_index,
-    tokens_validos=None
+    tokens_validos=None,
+    resolucao_tipo="desconhecida"
 ):
+    
+    # Regra de negócio principal:
+    # só permitimos leitura de desescalada quando a resolução foi "Negociação".
+    # Qualquer outra resolução não pode ser interpretada como desescalada da agressividade.
+    if resolucao_tipo == "nao_negociacao":
+        return (
+            "INTERVENÇÃO OPERACIONAL",
+            "A ocorrência não foi resolvida por negociação. Portanto, a leitura textual não deve ser interpretada como desescalada da agressividade. O desfecho deve ser entendido como intervenção/coerção operacional."
+        )
     """
     Regras heurísticas calibráveis.
     O objetivo aqui é gerar leitura operacional mais realista:
@@ -543,14 +554,14 @@ def classificar_estado_crise(
 #    Mantém compatibilidade com o app.py
 # ============================================================
 
-def extrair_topicos_ngrams(texto):
+def extrair_topicos_ngrams(texto, resolucao_tipo="desconhecida"):
     texto_norm = limpar_texto(texto)
     palavras_validas = [p for p in texto_norm.split() if p not in STOPWORDS_GATE and len(p) > 2]
 
     if len(palavras_validas) < 8:
         return ["*Texto insuficiente para análise semântica.*"]
 
-    analise = analisar_crise_direcional(texto)
+    analise = analisar_crise_direcional(texto, resolucao_tipo=resolucao_tipo)
     temas = analise["temas"]
     resumo = analise["sumario"]
 

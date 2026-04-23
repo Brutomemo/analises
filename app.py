@@ -1220,11 +1220,24 @@ else:
                     texto_ns = limpar_valor(df_apa.get('TRANSCRIÇÃO DO NEGOCIADOR SECUNDÁRIO'))
                     texto_total = f"{texto_c} {texto_np} {texto_ns}"
 
+                    resolucao_raw = limpar_valor(
+                        df_apa.get('Resolução', df_apa.get('RESOLUÇÃO', df_apa.get('resolucao', '')))
+                    ).strip()
+
+                    resolucao_norm = resolucao_raw.lower()
+
+                    if not resolucao_norm:
+                        resolucao_tipo = "desconhecida"
+                    elif "negocia" in resolucao_norm:
+                        resolucao_tipo = "negociacao"
+                    else:
+                        resolucao_tipo = "nao_negociacao"
+
                     st.session_state['stats_calculados'] = {
-                        "topicos": analise.extrair_topicos_ngrams(texto_total) if len(texto_total) > 10 else ["Texto insuficiente"],
-                        "topicos_c": analise.extrair_topicos_ngrams(texto_c) if len(texto_c) > 10 else ["Texto insuficiente"],
-                        "topicos_np": analise.extrair_topicos_ngrams(texto_np) if len(texto_np) > 10 else ["Texto insuficiente"],
-                        "topicos_ns": analise.extrair_topicos_ngrams(texto_ns) if len(texto_ns) > 10 else ["Texto insuficiente"],
+                        "topicos": analise.extrair_topicos_ngrams(texto_total, resolucao_tipo=resolucao_tipo) if len(texto_total) > 10 else ["Texto insuficiente"],
+                        "topicos_c": analise.extrair_topicos_ngrams(texto_c, resolucao_tipo=resolucao_tipo) if len(texto_c) > 10 else ["Texto insuficiente"],
+                        "topicos_np": analise.extrair_topicos_ngrams(texto_np, resolucao_tipo=resolucao_tipo) if len(texto_np) > 10 else ["Texto insuficiente"],
+                        "topicos_ns": analise.extrair_topicos_ngrams(texto_ns, resolucao_tipo=resolucao_tipo) if len(texto_ns) > 10 else ["Texto insuficiente"],
                         "wc_c": analise.gerar_wordcloud(texto_c) if len(texto_c) > 5 else None,
                         "wc_np": analise.gerar_wordcloud(texto_np) if len(texto_np) > 5 else None,
                         "wc_ns": analise.gerar_wordcloud(texto_ns) if len(texto_ns) > 5 else None,
@@ -1235,6 +1248,10 @@ else:
 
             if st.session_state.get('stats_calculados'):
                 stats = st.session_state['stats_calculados']
+
+                # Recupera metadados de resolução (definidos quando montamos stats_calculados)
+                resolucao_tipo = stats.get('resolucao_tipo', 'desconhecida')
+                resolucao_raw  = stats.get('resolucao_raw', '')
 
                 topicos_globais = stats.get('topicos',    ["Sem dados"])
                 topicos_c  = stats.get('topicos_c',  ["Análise individual ainda não gerada."])
