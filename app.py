@@ -1498,53 +1498,40 @@ else:
                         )
                         
                         if isinstance(resultado_ia, dict):
-                            parecer_ia = resultado_ia.get("parecer", "IA não retornou parecer.")
-                            sugestoes_treinamento = resultado_ia.get("sugestoes_treinamento", "")
-                        else:
-                            parecer_ia = f"Sinal recebido, mas os dados estão incompletos ou a URL precisa de ajuste. Bruto: {resultado_ia}"
-                            sugestoes_treinamento = ""
-
-                        def calcular_media_equipe(*valores):
-                            validos = [v for v in valores if v > 0]
-                            return sum(validos) / len(validos) if validos else 0
-
-                        likert_inicio = {
-                            'agressividade_media': calcular_media_equipe(p_agr_c_num, s_agr_c_num, l_agr_c_num), 
-                            'receptividade_media': calcular_media_equipe(p_rec_c_num, s_rec_c_num, l_rec_c_num)
-                        }
-                        likert_fim = {
-                            'agressividade_media': calcular_media_equipe(p_agr_e_num, s_agr_e_num, l_agr_e_num), 
-                            'receptividade_media': calcular_media_equipe(p_rec_e_num, s_rec_e_num, l_rec_e_num)
-                        }
-                        stats_spearman = {'valido': False, 'p_value': 0.0, 'rho': 0.0} 
-                        laudo_frio = ia_link.gerar_laudo_frio(likert_inicio, likert_fim, stats_spearman)
-
-                        st.markdown(f"""
-                            <div class="info-card" style="border-left: 4px solid #FFD700;">
-                            <h4 style="color: #FFD700; margin-top: 0;">Inferência Estatística (Motor Frio)</h4>
-                            <p style="font-size: 1.05rem; line-height: 1.6;">{laudo_frio}</p>
-                            <hr style="border-color: rgba(255,255,255,0.1); margin: 15px 0;">
-                            <h4 style="color: #06C755; margin-top: 0;">Leitura Analítica (Interpretação descritiva dos resultados)</h4>
-                            <p style="font-size: 1.05rem; line-height: 1.6;">{parecer_ia}</p>
-                            <hr style="border-color: rgba(255,255,255,0.1); margin: 15px 0;">
-                            <h4 style="color: #FFA500; margin-top: 0;">Sugestões para treinamentos</h4>
-                            <p style="font-size: 1.05rem; line-height: 1.6;">{sugestoes_treinamento or 'Sem base suficiente para sugerir treinamento específico.'}</p>
-                            </div>
-                            """, unsafe_allow_html=True)
-
-                        if isinstance(resultado_ia, dict):
                             parecer_ia = resultado_ia.get("parecer", "")
                             sugestoes_treinamento = resultado_ia.get("sugestoes_treinamento", "")
                         else:
                             parecer_ia = str(resultado_ia)
                             sugestoes_treinamento = ""
-                        
+
+                        st.markdown(f"""
+                        <div class="info-card" style="border-left: 4px solid #FFD700;">
+                        <h4 style="color: #FFD700; margin-top: 0;">Inferência Estatística (Motor Frio)</h4>
+                        <p style="font-size: 1.05rem; line-height: 1.6;">{laudo_frio}</p>
+                        <hr style="border-color: rgba(255,255,255,0.1); margin: 15px 0;">
+                        <h4 style="color: #06C755; margin-top: 0;">Leitura Analítica (Interpretação descritiva dos resultados)</h4>
+                        <p style="font-size: 1.05rem; line-height: 1.6;">{parecer_ia}</p>
+                        <hr style="border-color: rgba(255,255,255,0.1); margin: 15px 0;">
+                        <h4 style="color: #FFA500; margin-top: 0;">Sugestões para treinamentos</h4>
+                        <p style="font-size: 1.05rem; line-height: 1.6;">{sugestoes_treinamento or 'Sem base suficiente para sugerir treinamento específico.'}</p>
+                        </div>
+                        """, unsafe_allow_html=True)
+
+                        texto_str = f"""LEITURA ANALITICA
+
+                        {parecer_ia}
+
+                        SUGESTOES PARA TREINAMENTOS
+
+                        {sugestoes_treinamento if sugestoes_treinamento else 'Sem base suficiente para sugerir treinamento específico.'}
+                        """
+
                         texto_str = texto_str.replace("**", "").replace("### ", "")
                         texto_final_pdf = unicodedata.normalize('NFKD', texto_str).encode('ASCII', 'ignore').decode('ASCII')
 
                         pdf = FPDF()
                         pdf.add_page()
-                        
+
                         pdf.set_fill_color(249, 115, 22)
                         pdf.rect(0, 0, 210, 40, 'F')
                         pdf.set_font("Arial", "B", 18)
@@ -1552,21 +1539,21 @@ else:
                         pdf.cell(0, 15, "LAUDO DE ANALISE POS-ACAO (APA)", ln=True, align="C")
                         pdf.set_font("Arial", "I", 12)
                         pdf.cell(0, 5, f"Unidade: GATE | ID: {apa_selecionada}", ln=True, align="C")
-                        
+
                         pdf.ln(20)
                         pdf.set_text_color(0, 0, 0)
                         pdf.set_font("Arial", "B", 14)
                         pdf.set_fill_color(240, 240, 240)
                         pdf.cell(0, 10, " 1. INFORMACOES DO INCIDENTE", ln=True, fill=True)
                         pdf.set_font("Arial", "", 11)
-                        
+
                         dt_oc = limpar_valor(df_apa.get('Data da ocorrência'))
                         tip = limpar_valor(df_apa.get('Tipologia'))
                         neg = limpar_valor(df_apa.get('Negociador Principal'))
                         info_str = f"Data: {dt_oc} | Tipologia: {tip} | Negociador: {neg}"
-                        
+
                         pdf.multi_cell(0, 8, txt=unicodedata.normalize('NFKD', info_str).encode('ASCII', 'ignore').decode('ASCII'), border='L')
-                        
+
                         pdf.ln(10)
                         pdf.set_font("Arial", "B", 14)
                         pdf.set_fill_color(249, 115, 22)
@@ -1575,15 +1562,15 @@ else:
                         pdf.ln(5)
                         pdf.set_text_color(0, 0, 0)
                         pdf.set_font("Arial", "", 11)
-                        
+
                         pdf.multi_cell(0, 7, txt=texto_final_pdf)
-                        
+
                         pdf_saida = pdf.output(dest="S")
                         if isinstance(pdf_saida, str):
                             pdf_bytes = pdf_saida.encode('latin-1', errors='replace')
                         else:
                             pdf_bytes = bytes(pdf_saida)
-                        
+
                         st.download_button(
                             label="📥 BAIXAR ANÁLISE COMPLETA (PDF)", 
                             data=pdf_bytes, 
