@@ -169,6 +169,72 @@ REGRA DE BLOQUEIO:
 - Se houver qualquer evidência de técnicas com contagem (frequência), você deve tratar essas técnicas como base válida da análise.
 - Nessa condição, é proibido declarar "ausência de técnicas registradas".
 
+DADOS ESTRUTURADOS OBRIGATÓRIOS PARA LEITURA ANALÍTICA:
+
+Além da transcrição literal, você deve analisar explicitamente os seguintes campos, quando estiverem disponíveis nos dados enviados:
+
+1. Resolução:
+   - identificar o tipo de resolução da ocorrência;
+   - relacionar a resolução observada com a evolução da negociação;
+   - indicar se a resolução é compatível com contenção, escalada, impasse, acordo parcial ou encerramento sem convergência, somente se isso estiver sustentado pelos dados.
+
+2. Tempo de Negociação Real:
+   - considerar o tempo total real como variável analítica relevante;
+   - relacionar a duração com a dinâmica emocional, lexical e tática da ocorrência;
+   - evitar inferência causal automática.
+
+3. Tempo de Negociação Tática:
+   - quando existir, analisar o tempo tático como variável diferenciada do tempo real;
+   - se o campo não existir, declarar ausência.
+
+4. Tipologia:
+   - identificar a tipologia da ocorrência e sua relevância para a interpretação do caso;
+   - usar a tipologia como contexto analítico, sem generalizações fora dos dados.
+
+5. Modalidade:
+   - identificar a modalidade da ocorrência e considerar sua influência sobre o padrão observado, mas jamais inventar ou alucinar para forçar uma sensação de influencia;
+   
+6. Frequência das técnicas:
+   - usar a tabela de frequências como evidência de técnicas efetivamente registradas;
+   - destacar as técnicas de maior recorrência, com definição de percentual e dados absolutos;
+   - analisar a distribuição das técnicas, se concentrada, dispersa ou pontual;
+   - quando houver recorrência, relacionar isso com a progressão observada da ocorrência.
+
+7. Similitude lexical:
+   - quando houver análise de similitude, tratá-la como indicador auxiliar de aproximação comunicacional;
+   - identificar convergência lexical, espelhamento verbal ou redução de distância semântica somente se houver base nos dados;
+   - não tratar similitude como prova isolada de eficácia.
+
+8. N-gramas:
+   - quando houver n-gramas, identificar padrões de repetição, expressões dominantes e sequências recorrentes;
+   - usar n-gramas para complementar a leitura da transcrição e das técnicas;
+   - não inventar sentido além do que a recorrência textual permite.
+
+9. Convergência:
+   - quando houver análise de convergência, avaliar se os dados da transcrição, das frequências técnicas, da similitude, dos n-gramas e da percepção emocional apontam para a mesma direção;
+   - descrever convergência, compatibilidade parcial, divergência ou inconclusividade;
+   - evitar conclusões categóricas quando os dados forem mistos.
+
+10. Amostra dos modelos estatísticos rodados:
+   - analisar os resultados estatísticos enviados como evidência auxiliar;
+   - usar apenas o que estiver explicitamente presente nos dados;
+   - se houver métricas, valores, indicadores ou saídas de modelos, integrá-los à leitura da ocorrência;
+   - não atribuir validade estatística além do que foi efetivamente informado.
+
+   REGRAS PARA RECOMENDAÇÃO DE TREINAMENTOS:
+
+- As recomendações devem derivar exclusivamente de evidências observáveis presentes na ocorrência, dos dados reais, das técnicas observadas e resultados da análise de similitude e análise n-gramas.
+- Sempre considerar:
+  a) a tabela de frequências das técnicas;
+  b) a similitude lexical;
+  c) os n-gramas;
+  d) a convergência ou divergência entre os indicadores;
+  e) Resolução, Tempo de Negociação Real, Tempo de Negociação Tática, Tipologia e Modalidade.
+- Não sugerir treinamento genérico sem apontar o dado concreto que o sustenta.
+- Não recomendar técnicas que não estejam presentes na ocorrência.
+- Quando houver lacunas, formular a recomendação como refinamento de uso, timing, encadeamento, repetição ou distribuição das técnicas já registradas.
+- Se não houver base suficiente, declarar insuficiência de evidência para recomendação específica.
+
 REGRAS OBRIGATÓRIAS:
 1. Analise EXCLUSIVAMENTE os dados desta ocorrência.
 2. Se a lista de técnicas registradas estiver disponível, mencione SOMENTE técnicas contidas nela.
@@ -1128,8 +1194,22 @@ LISTA DE TÉCNICAS REGISTRADAS NESTA OCORRÊNCIA:
 {_safe_json_dumps(tecnicas_ocorrencia)}
 
 FORMATO OBRIGATÓRIO:
-Retorne APENAS JSON VÁLIDO, com uma única chave:
+Retorne APENAS JSON VÁLIDO, com duas chaves:
 - "parecer"
+- "sugestoes_treinamento"
+
+A chave "parecer" deve conter markdown com EXATAMENTE estes títulos:
+
+### Diagnóstico Emocional e Lexical do Causador
+### Avaliação Técnica da Doutrina Aplicada
+### Pontos Fortes e Oportunidades de Melhoria (Segundo a Inteligência Artificial)
+
+A chave "sugestoes_treinamento" deve conter sugestões objetivas, específicas e derivadas exclusivamente dos dados analisados nesta ocorrência.
+- Não use conhecimento externo.
+- Não recomende técnicas ausentes da lista registrada.
+- Não faça sugestões genéricas como “melhorar comunicação” sem sustento nos dados.
+- Foque em lacunas observáveis, recorrências, padrões de fala e pontos de atenção para treino.
+- Se não houver base suficiente, diga explicitamente que os dados são insuficientes para sugerir treinamento específico.
 
 A chave "parecer" deve conter markdown com EXATAMENTE estes títulos:
 
