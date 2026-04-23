@@ -1497,10 +1497,12 @@ else:
                             tecnicas_ocorrencia=tecnicas_da_apa
                         )
                         
-                        if isinstance(resultado_ia, dict) and 'parecer' in resultado_ia:
-                            parecer_ia = resultado_ia['parecer']
+                        if isinstance(resultado_ia, dict):
+                            parecer_ia = resultado_ia.get("parecer", "IA não retornou parecer.")
+                            sugestoes_treinamento = resultado_ia.get("sugestoes_treinamento", "")
                         else:
                             parecer_ia = f"Sinal recebido, mas os dados estão incompletos ou a URL precisa de ajuste. Bruto: {resultado_ia}"
+                            sugestoes_treinamento = ""
 
                         def calcular_media_equipe(*valores):
                             validos = [v for v in valores if v > 0]
@@ -1518,20 +1520,24 @@ else:
                         laudo_frio = ia_link.gerar_laudo_frio(likert_inicio, likert_fim, stats_spearman)
 
                         st.markdown(f"""
-                        <div class="info-card" style="border-left: 4px solid #FFD700;">
-                        <h4 style="color: #FFD700; margin-top: 0;">Inferência Estatística (Motor Frio)</h4>
-                        <p style="font-size: 1.05rem; line-height: 1.6;">{laudo_frio}</p>
-                        <hr style="border-color: rgba(255,255,255,0.1); margin: 15px 0;">
-                        <h4 style="color: #06C755; margin-top: 0;">Leitura Analítica (Interpretação descritiva dos resultados)</h4>
-                        <p style="font-size: 1.05rem; line-height: 1.6;">{parecer_ia}</p>
-                        </div>
-                        """, unsafe_allow_html=True)
+                            <div class="info-card" style="border-left: 4px solid #FFD700;">
+                            <h4 style="color: #FFD700; margin-top: 0;">Inferência Estatística (Motor Frio)</h4>
+                            <p style="font-size: 1.05rem; line-height: 1.6;">{laudo_frio}</p>
+                            <hr style="border-color: rgba(255,255,255,0.1); margin: 15px 0;">
+                            <h4 style="color: #06C755; margin-top: 0;">Leitura Analítica (Interpretação descritiva dos resultados)</h4>
+                            <p style="font-size: 1.05rem; line-height: 1.6;">{parecer_ia}</p>
+                            <hr style="border-color: rgba(255,255,255,0.1); margin: 15px 0;">
+                            <h4 style="color: #FFA500; margin-top: 0;">Sugestões para treinamentos</h4>
+                            <p style="font-size: 1.05rem; line-height: 1.6;">{sugestoes_treinamento or 'Sem base suficiente para sugerir treinamento específico.'}</p>
+                            </div>
+                            """, unsafe_allow_html=True)
 
-                        if isinstance(parecer_ia, dict):
-                            partes = [f"{k.upper()}:\n{v}" for k, v in parecer_ia.items()]
-                            texto_str = "\n\n".join(partes)
+                        if isinstance(resultado_ia, dict):
+                            parecer_ia = resultado_ia.get("parecer", "")
+                            sugestoes_treinamento = resultado_ia.get("sugestoes_treinamento", "")
                         else:
-                            texto_str = str(parecer_ia)
+                            parecer_ia = str(resultado_ia)
+                            sugestoes_treinamento = ""
                         
                         texto_str = texto_str.replace("**", "").replace("### ", "")
                         texto_final_pdf = unicodedata.normalize('NFKD', texto_str).encode('ASCII', 'ignore').decode('ASCII')

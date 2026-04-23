@@ -236,6 +236,7 @@ DICIONARIO_TATICO = {
             "quero": 1.00,
             "traz": 1.10,
             "chama": 1.00,
+            "cade": 1.00,
             "advogado": 1.30,
             "imprensa": 1.40,
             "reportagem": 1.20,
