@@ -320,6 +320,42 @@ def _avaliar_modificadores(tokens, idx_inicio, idx_fim):
 
     return negado, intensificador
 
+# heurística simples para identificar vocativos / chamadas repetitivas
+VOCATIVOS_BASE = set([
+    'fala', 'fale', 'fala comigo', 'escuta', 'oi', 'alô', 'alo', 'vem', 'venha',
+    # inclua formas curtas que seu corpus use. Pode ser ampliado.
+])
+
+def _eh_vocativo(tokens, idx_inicio, idx_fim, repeticao_threshold=3):
+    """
+    Retorna True se a ocorrência parecer um vocativo / chamada repetida (não sinal de proteção real).
+    Heurísticas:
+      - span curto (1 token) que se repete muitas vezes no entorno;
+      - span contém token que está na lista de vocativos;
+      - token aparece imediatamente repetido (ex.: 'henrique henrique').
+    """
+    span = tokens[idx_inicio:idx_fim]
+    if not span:
+        return False
+
+    # se o span tem um token cuja forma base está em VOCATIVOS_BASE
+    if any(tok in VOCATIVOS_BASE for tok in span):
+        return True
+
+    # repetição local: token aparece muitas vezes na janela
+    token0 = span[0]
+    janela = tokens[max(0, idx_inicio - 6): min(len(tokens), idx_fim + 6)]
+    if janela.count(token0) >= repeticao_threshold and len(span) == 1:
+        return True
+
+    # padrão imediata repetição (ex: 'henrique henrique')
+    if idx_inicio > 0 and tokens[idx_inicio - 1] == token0:
+        return True
+    if idx_fim < len(tokens) and idx_fim < len(tokens) and tokens[idx_fim] == token0:
+        return True
+
+    return False
+
 def analisar_crise_direcional(texto, resolucao_tipo="desconhecida"):
     texto_norm = normalizar_texto(texto)
     if not texto_norm:
@@ -393,23 +429,29 @@ def analisar_crise_direcional(texto, resolucao_tipo="desconhecida"):
                 peso_final = peso_base * peso_termo * fator_contexto
                 evidencias += 1
 
+                # NOVA LÓGICA: ignorar ou reduzir sinais protetivos quando for vocativo/repetição
+                if eh_vocativo(tokens, idx_inicio, idx_fim):
+                    # trata como evidência contextual leve (não aumenta proteção)
+                    # ajusta os fatores para não induzir desescalada
+                    score_categoria += peso_final * 0.12   # muito menor que antes
+                    contexto_bruto += peso_final * 0.10
+                    # opcional: continue  # se preferir não contar como evidência para ordenação/temas
+                    continue
+
+                # comportamento pré-existente (com negado tratamentos)
                 if negado:
                     evidencias_negadas += 1
-
                     if tipo == "risco":
                         score_categoria += peso_final * 0.18
                         protecao_bruto += peso_final * 0.45
-
                     elif tipo == "protecao":
                         score_categoria += peso_final * 0.18
                         risco_bruto += peso_final * 0.65
-
                     else:
                         score_categoria += peso_final * 0.30
                         contexto_bruto += peso_final * 0.20
                 else:
                     score_categoria += peso_final
-
                     if tipo == "risco":
                         risco_bruto += peso_final
                     elif tipo == "protecao":
@@ -484,8 +526,8 @@ def classificar_estado_crise(
     # um rótulo de intervenção/contencao — evitamos classificar como desescalada.
     if resolucao_tipo == "nao_negociacao":
         return (
-            "INTERVENÇÃO",
-            "Registro externo (campo 'Resolução') indica intervenção/remoção — a leitura textual não deve ser interpretada como desescalada da agressividade."
+            " HOUVE INTERVENÇÃO",
+            "Em ocorrências resolvidas fora da negociação exige análise mais rigorosa do observador em relação ao trabalho de desescalada da agressividade."
         )
 
     # Se corpus curto demais

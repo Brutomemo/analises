@@ -96,7 +96,7 @@ def converter_escala(val):
     return escala_likert.get(v, 0)
 
 # ====
-# 4. SISTEMA DE SEGURANÇA (FUNÇÃO)
+# 4. SISTEMA DE SEGURANÇA
 # ====
 def check_password():
     """Retorna True se o usuário inseriu a senha correta."""
