@@ -2039,3 +2039,90 @@ else:
 
                 except Exception as e:
                     st.error(f"Erro na geração do relatório de IA: {str(e)}")
+
+                    # ====
+    # ABA 3: CHAT ANALÍTICO (Agente de Dados)
+    # ====
+    with aba_chat:
+        st.markdown("### 💬 Assistente Analítico de Dados Operacionais")
+        st.markdown("<p style='color: #aaa;'>Faça perguntas diretas sobre os dados históricos. O assistente cruza as planilhas matematicamente para evitar alucinações.</p>", unsafe_allow_html=True)
+
+        # 1. PREPARAÇÃO DOS DADOS (O Segredo Anti-Alucinação)
+        # Criamos um DataFrame limpo e focado apenas com o que a IA precisa saber
+        df_chat = df_quali[['ID_Busca', 'Neg_Limpo', 'Tip_Limpa', 'Mod_Limpa', 'Resolução', 'Tempo de Negociação Real']].copy()
+        
+        # Criando o "Score de Desempenho" matemático para a IA não ter que "adivinhar" o que é bom
+        # Exemplo: Se a resolução foi "Rendição Pacífica", ganha 10 pontos. Se não, 0.
+        def calcular_score_sucesso(resolucao):
+            res_str = str(resolucao).lower()
+            if "pacífica" in res_str or "rendição" in res_str:
+                return 10
+            elif "tática" in res_str:
+                return 5
+            return 0
+            
+        df_chat['Score_Desempenho'] = df_chat['Resolução'].apply(calcular_score_sucesso)
+
+        # 2. INTERFACE DO CHAT
+        if "mensagens_chat" not in st.session_state:
+            st.session_state.mensagens_chat = [
+                {"role": "assistant", "content": "Senhor, base de dados sincronizada. O que deseja saber sobre as ocorrências, negociadores ou modalidades?"}
+            ]
+
+        # Exibe o histórico na tela
+        for msg in st.session_state.mensagens_chat:
+            with st.chat_message(msg["role"]):
+                st.markdown(msg["content"])
+
+        # Campo de entrada do usuário
+        pergunta = st.chat_input("Ex: Quantas ocorrências do tipo Suicida Armado o Cap PM Pavão atendeu?")
+        
+        if pergunta:
+            # Mostra a pergunta
+            with st.chat_message("user"):
+                st.markdown(pergunta)
+            st.session_state.mensagens_chat.append({"role": "user", "content": pergunta})
+
+            with st.spinner("Consultando matriz de dados..."):
+                try:
+                    # 3. INTEGRAÇÃO COM O AGENTE (LangChain + Pandas)
+                    # NOTA: Você precisará importar: 
+                    # from langchain_experimental.agents import create_pandas_dataframe_agent
+                    # from langchain_openai import ChatOpenAI
+                    
+                    from langchain_experimental.agents import create_pandas_dataframe_agent
+                    from langchain_openai import ChatOpenAI
+                    
+                    # Inicializa o motor da IA (Ajuste a chave de API conforme seu secrets)
+                    llm = ChatOpenAI(temperature=0.0, model="gpt-4o-mini", api_key=st.secrets["OPENAI_API_KEY"])
+                    
+                    # Cria o Agente que lê o DataFrame
+                    agente_pandas = create_pandas_dataframe_agent(
+                        llm, 
+                        df_chat, 
+                        verbose=True, 
+                        agent_type="openai-tools",
+                        allow_dangerous_code=True # Necessário para o agente rodar o Pandas
+                    )
+                    
+                    # Instrução de Sistema (Guardrail de Segurança)
+                    prompt_seguro = f"""
+                    Você é um analista estatístico do GATE. 
+                    Responda à pergunta do usuário baseando-se ÚNICA E EXCLUSIVAMENTE nos dados do DataFrame.
+                    Para avaliar 'desempenho', use a coluna 'Score_Desempenho' (maior é melhor).
+                    NUNCA invente dados. Se a resposta for 0, diga 0.
+                    
+                    Pergunta: {pergunta}
+                    """
+                    
+                    # Executa a busca matemática
+                    resposta_bruta = agente_pandas.invoke(prompt_seguro)
+                    resposta_final = resposta_bruta["output"]
+                    
+                except Exception as e:
+                    resposta_final = f"⚠️ Erro ao processar os dados matemáticos. Verifique se a chave da API está configurada. Detalhe: {str(e)}"
+
+                # Mostra a resposta
+                with st.chat_message("assistant"):
+                    st.markdown(resposta_final)
+                st.session_state.mensagens_chat.append({"role": "assistant", "content": resposta_final})
