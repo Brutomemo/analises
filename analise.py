@@ -484,7 +484,7 @@ def classificar_estado_crise(
     # um rótulo de intervenção/contencao — evitamos classificar como desescalada.
     if resolucao_tipo == "nao_negociacao":
         return (
-            "INTERVENÇÃO OPERACIONAL",
+            "INTERVENÇÃO",
             "Registro externo (campo 'Resolução') indica intervenção/remoção — a leitura textual não deve ser interpretada como desescalada da agressividade."
         )
 
