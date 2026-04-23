@@ -343,12 +343,11 @@ def analisar_crise_direcional(texto, resolucao_tipo="desconhecida"):
 
     tokens, starts = _obter_tokens_e_posicoes(texto_norm)
 
-    # Remove ruído textual e reduz viés por repetição de termos não informativos
+    # Tokens válidos (remove stopwords e tokens curtos)
     tokens_validos = [t for t in tokens if len(t) > 1 and t not in STOPWORDS_GATE]
     total_tokens = len(tokens_validos)
 
-    # Se o corpus for curto demais ou muito pobre lexicalmente,
-    # não forçar leitura direcional para evitar viés em diálogo unilateral.
+    # Segurança: se corpus muito curto/lexicalmente pobre, devolve DADOS INSUFICIENTES
     if total_tokens < 15 or len(set(tokens_validos)) < 6:
         return {
             "temas": [],
@@ -398,17 +397,14 @@ def analisar_crise_direcional(texto, resolucao_tipo="desconhecida"):
                     evidencias_negadas += 1
 
                     if tipo == "risco":
-                        # Ex.: "não quero morrer" -> reduz risco e cria sinal protetivo fraco
                         score_categoria += peso_final * 0.18
                         protecao_bruto += peso_final * 0.45
 
                     elif tipo == "protecao":
-                        # Ex.: "não vou me entregar" -> desativa proteção e aumenta risco
                         score_categoria += peso_final * 0.18
                         risco_bruto += peso_final * 0.65
 
                     else:
-                        # Contexto negado tem pouco impacto operacional
                         score_categoria += peso_final * 0.30
                         contexto_bruto += peso_final * 0.20
                 else:
@@ -433,10 +429,9 @@ def analisar_crise_direcional(texto, resolucao_tipo="desconhecida"):
     resultados = sorted(resultados, key=lambda x: x["score"], reverse=True)
 
     # Normalização por densidade textual:
-    # reduz o viés de transcrições muito longas.
-    risco_index = round((risco_bruto / total_tokens) * 100, 2)
-    protecao_index = round((protecao_bruto / total_tokens) * 100, 2)
-    contexto_index = round((contexto_bruto / total_tokens) * 100, 2)
+    risco_index = round((risco_bruto / max(total_tokens, 1)) * 100, 2)
+    protecao_index = round((protecao_bruto / max(total_tokens, 1)) * 100, 2)
+    contexto_index = round((contexto_bruto / max(total_tokens, 1)) * 100, 2)
 
     intensidade_index = round(risco_index + protecao_index + (contexto_index * 0.35), 2)
     direcao_index = round(protecao_index - risco_index, 2)
@@ -481,27 +476,19 @@ def classificar_estado_crise(
     tokens_validos=None,
     resolucao_tipo="desconhecida"
 ):
-    
-    # Regra de negócio principal:
-    # só permitimos leitura de desescalada quando a resolução foi "Negociação".
-    # Qualquer outra resolução não pode ser interpretada como desescalada da agressividade.
+    """
+    Regras heurísticas calibráveis. Agora com verificação de resolução final.
+    """
+
+    # Se o metadado de resolução indica que NÃO houve negociação, priorizamos
+    # um rótulo de intervenção/contencao — evitamos classificar como desescalada.
     if resolucao_tipo == "nao_negociacao":
         return (
             "INTERVENÇÃO OPERACIONAL",
-            "A ocorrência não foi resolvida por negociação. Portanto, a leitura textual não deve ser interpretada como desescalada da agressividade. O desfecho deve ser entendido como intervenção/coerção operacional."
+            "Registro externo (campo 'Resolução') indica intervenção/remoção — a leitura textual não deve ser interpretada como desescalada da agressividade."
         )
-    """
-    Regras heurísticas calibráveis.
-    O objetivo aqui é gerar leitura operacional mais realista:
-    - risco alto + direção negativa => CRÍTICO
-    - risco e proteção altos ao mesmo tempo => TRANSIÇÃO INSTÁVEL
-    - proteção dominante => DESACELERAÇÃO TÁTICA
-    - baixa carga geral => BAIXA PRESSÃO / CONTROLADO
 
-    Observação:
-    Esses thresholds devem ser recalibrados com amostra histórica rotulada.
-    """
-
+    # Se corpus curto demais
     if tokens_validos is not None and tokens_validos < 15:
         return (
             "DADOS INSUFICIENTES",
@@ -526,6 +513,7 @@ def classificar_estado_crise(
             "Há coexistência robusta de sinais de risco e de desescalada. O incidente parece em ponto de inflexão: existe janela de resolução, mas com risco residual alto."
         )
 
+    # Permitir desescalada apenas se a resolução permisso
     if protecao_index >= 12 and direcao_index >= 6:
         return (
             "DESACELERAÇÃO DA AGRESSIVIDADE",
@@ -693,7 +681,7 @@ def gerar_treemap(df_tecnicas):
 # 9. RADAR COMPARATIVO + ÍNDICE DE CONVERGÊNCIA
 # ====
 
-def gerar_radar_comparativo(texto_c, texto_np, texto_ns=None):
+def gerar_radar_comparativo(texto_c, texto_np, texto_ns=None, resolucao_tipo="desconhecida"):
     """
     Gera gráfico radar comparativo entre interlocutores
     e calcula o Índice de Convergência Tática.
