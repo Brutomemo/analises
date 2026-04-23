@@ -575,7 +575,23 @@ with st.spinner("Sincronizando com Banco de Dados Seguro (Airtable)..."):
 if df_quali.empty:
     st.error(f"Erro na conexão com Airtable: {status_q}")
 else:
-    aba_individual, aba_geral = st.tabs(["🎯 Visão seletiva", "📊 Série Histórica"])
+    # INCLUSÃO DA TERCEIRA ABA (Chat Analítico)
+    aba_individual, aba_geral, aba_chat = st.tabs(["🎯 Visão seletiva", "📊 Série Histórica", "💬 Chat Analítico"])
+
+    # ====
+    # ABA 1: VISÃO DA NEGOCIAÇÃO SOBRE O INCIDENTE EM ANÁLISE
+    # ====
+    with aba_individual:
+        st.markdown("### 🛠️ Etapa 1: Seleção e Metadados da Ocorrência")
+        
+        df_quali['Neg_Limpo'] = df_quali.get('Negociador Principal', '').apply(limpar_valor)
+        df_quali['Tip_Limpa'] = df_quali.get('Tipologia', '').apply(limpar_valor)
+        df_quali['Mod_Limpa'] = df_quali.get('Modalidade do incidente', '').apply(limpar_valor)
+        
+        if 'ID' not in df_quali.columns: df_quali['ID'] = "APA " + df_quali.index.astype(str)
+        df_quali['ID_Busca'] = df_quali.get('ID', df_quali.index).apply(limpar_id)
+        
+        # ... (Restante do seu código da Aba 1 continua normal aqui)
 
     # ====
     # ABA 1: VISÃO DA NEGOCIAÇÃO SOBRE O INCIDENTE EM ANÁLISE
