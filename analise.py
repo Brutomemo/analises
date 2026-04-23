@@ -42,7 +42,7 @@ ATENUADORES = {
 }
 
 # ============================================================
-# 2. DICIONÁRIO TÁTICO DIRECIONAL
+# 2. DICIONÁRIO DIRECIONAL
 #    tipo:
 #      - risco
 #      - protecao
@@ -69,12 +69,12 @@ DICIONARIO_TATICO = {
             "calma": 1.10,
             "tranquilo": 1.20,
             "concordo": 1.60,
-            "ta bom": 1.30,
+            "ta bom": 1.00,
             "tudo bem": 1.30,
             "beleza": 1.10,
-            "acabou": 1.70,
+            "acabou": 0.30,
             "nao vou fazer": 1.90,
-            "desisto disso": 2.30,
+            "desisto disso": 0.30,
             "vou descer": 2.00,
             "estou descendo": 2.00
         }
@@ -83,10 +83,10 @@ DICIONARIO_TATICO = {
         "tipo": "protecao",
         "peso_base": 1.15,
         "termos": {
-            "fala comigo": 2.00,
-            "conversa comigo": 2.00,
-            "me escuta": 1.80,
-            "me ouve": 1.80,
+            "fala comigo": 0.30,
+            "conversa comigo": 0.30,
+            "me escuta": 1.00,
+            "me ouve": 1.00,
             "eu te escuto": 1.80,
             "to te ouvindo": 1.90,
             "estou te ouvindo": 1.90,
@@ -116,9 +116,12 @@ DICIONARIO_TATICO = {
             "filhos": 1.80,
             "familia": 1.70,
             "irmao": 1.30,
+            "irmão": 1.30,
             "irma": 1.30,
             "esposa": 1.40,
-            "mulher": 1.20,
+            "noiva": 1.30,
+            "noivo": 1.30,
+            "mulher": 1.00,
             "marido": 1.20,
             "namorada": 1.20,
             "parente": 1.00
@@ -187,6 +190,7 @@ DICIONARIO_TATICO = {
             "quero morrer": 3.00,
             "nao quero viver": 2.80,
             "vou pular": 3.10,
+            
             "acabar com tudo": 2.70,
             "dar fim": 2.50,
             "me matar": 2.70,
@@ -207,10 +211,11 @@ DICIONARIO_TATICO = {
             "mato": 2.40,
             "tiro": 2.10,
             "atirar": 2.30,
-            "arma": 1.80,
-            "faca": 1.90,
+            "arma": 1.20,
+            "faca": 1.20,
             "sangue": 1.60,
-            "refem": 2.40,
+            "não aguento mais": 1.60,
+            "refem": 1.40,
             "bala": 1.90,
             "explodir": 2.70,
             "explode": 2.60,
