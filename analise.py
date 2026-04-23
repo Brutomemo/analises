@@ -326,7 +326,7 @@ VOCATIVOS_BASE = set([
     # inclua formas curtas que seu corpus use. Pode ser ampliado.
 ])
 
-def _eh_vocativo(tokens, idx_inicio, idx_fim, repeticao_threshold=3):
+def eh_vocativo(tokens, idx_inicio, idx_fim, repeticao_threshold=3):
     """
     Retorna True se a ocorrência parecer um vocativo / chamada repetida (não sinal de proteção real).
     Heurísticas:
