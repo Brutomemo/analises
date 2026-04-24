@@ -850,10 +850,7 @@ else:
                 st.warning("Tabela de técnicas vazia no Airtable.")
             
             st.markdown("---")
-
-            #ANALISE DE SIMILITUDE
-        if st.button("🔍 Gerar Análise de Similitude"):
-            
+                   
             st.markdown("### 🗣️ Índice de Similitude e Grafo de Espelhamento Léxico")
             st.markdown("<div class='info-card'>", unsafe_allow_html=True)
             st.markdown("<span style='font-size: 0.85rem; color: #aaa;'><strong>O que significa:</strong> Compara matematicamente as palavras utilizadas pelo Negociador Principal e pelo Causador, mensurando o espelhamento. Índices mais altos indicam 'espelhamento' na estrutura da linguagem (mirroring). Em negociações bem-sucedidas, o negociador e o causador passam a apresentar núcleos semânticos em comum, criando uma 'Sincronia Lexical'. O grafo ilustra os núcleos semânticos que conectaram as duas partes.</span><br><br>", unsafe_allow_html=True)
@@ -916,9 +913,7 @@ else:
                         else:
                             st.error("🚨 **Divergência de Discurso:** Vocabulários quase completamente distintos. Indica ruptura ou negociação puramente transacional.")
 
-                if st.button("🕸️ Gerar Grafo de Espelhamento"):
-                                 # código do grafo
-
+                
                         if sintonia_pct > 0:
                             st.markdown("#### 🕸️ Grafo de Espelhamento Léxico (Núcleos Semânticos Compartilhados)")
                             st.write("<span style='font-size: 0.85rem; color: #aaa;'>Visualização interativa dos termos que serviram de ponte para o estabelecimento do Rapport.</span>", unsafe_allow_html=True)
