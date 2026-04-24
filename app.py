@@ -6,11 +6,11 @@ import os
 # ====
 # 1. CONFIGURAÇÃO DA PÁGINA (DEVE SER O PRIMEIRO COMANDO STREAMLIT)
 # ====
-# Movido para o topo para evitar o erro de inicialização da senha
+
 st.set_page_config(page_title="GATE - Analisador de APAs", layout="wide", initial_sidebar_state="collapsed")
 
 # ====
-# 2. SEUS IMPORTS ORIGINAIS (MANTIDOS E COMPLETOS)
+# 2. IMPORTS
 # ====
 from PIL import Image
 import base64
@@ -31,8 +31,14 @@ import ia_link        # Cérebro da Aba 1 (Transcrições)
 import ia_estatistica # Cérebro da Aba 2 (Série Histórica)
 
 # ====
-# 3. FUNÇÕES AUXILIARES E DADOS (A "CAIXA DE FERRAMENTAS")
+# 3. FUNÇÕES AUXILIARES E DADOS 
 # ====
+@st.cache_data(ttl=300)  # 5 minutos (ajustável)
+def carregar_dados_airtable():
+    df_quali, status_q = airtable_link.buscar_dados_apa()
+    df_tec, status_t = airtable_link.buscar_todas_tecnicas()
+    return df_quali, status_q, df_tec, status_t
+
 def limpar_valor(val):
     if isinstance(val, list): return val[0] if len(val) > 0 else "N/D"
     return str(val) if pd.notna(val) else "N/D"
