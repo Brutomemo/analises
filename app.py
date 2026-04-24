@@ -7,7 +7,7 @@ import os
 # 1. CONFIGURAÇÃO DA PÁGINA (DEVE SER O PRIMEIRO COMANDO STREAMLIT)
 # ====
 # Movido para o topo para evitar o erro de inicialização da senha
-st.set_page_config(page_title="GATE - Analisador de APAs", layout="wide", initial_sidebar_state="collapsed")
+st.set_page_config(page_title="Analise Qualitativa - Negociação", layout="wide", initial_sidebar_state="collapsed")
 
 # ====
 # 2. SEUS IMPORTS ORIGINAIS (MANTIDOS E COMPLETOS)
