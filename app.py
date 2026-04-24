@@ -852,7 +852,7 @@ else:
             st.markdown("---")
 
             #ANALISE DE SIMILITUDE
-            if st.button("🔍 Gerar Análise de Similitude"):
+        if st.button("🔍 Gerar Análise de Similitude"):
             
             st.markdown("### 🗣️ Índice de Similitude e Grafo de Espelhamento Léxico")
             st.markdown("<div class='info-card'>", unsafe_allow_html=True)
