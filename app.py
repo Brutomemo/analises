@@ -452,7 +452,7 @@ with col_titulo:
     """, unsafe_allow_html=True)
 
 #EFEITO UNICORN
-# EFEITO UNICORN COM O CARD EMBUTIDO (Solução Definitiva)
+# EFEITO UNICORN COM O CARD EMBUTIDO
 import streamlit as st
 import streamlit.components.v1 as components
 
@@ -2167,7 +2167,7 @@ else:
 
                     * B. Qui-Quadrado de Pearson e Análise de Resíduos:
                     - Aplicação Tática: Usado para testar a independência entre o Negociador e a Resolução, ou entre Tipologia e Técnica.
-                    - Como interpretar: Um p-valor < 0.05 rejeita a hipótese nula. A análise de resíduos padronizados ajuda a identificar onde está o viés (ex: se um negociador específico concentra mais resoluções táticas do que o estatisticamente esperado).
+                    - Como interpretar: Um p-valor < 0.05 rejeita a hipótese nula. A análise de resíduos padronizados ajuda a identificar onde está o viés (ex: se um negociador específico concentra mais resoluções do que o estatisticamente esperado).
 
                     * C. Regressão Ordinal (Odds Ratio):
                     - Por que usamos: A variável resposta (Evolução da Crise) é categórica ordenada (Negativa -> Neutra -> Positiva). 
