@@ -6,11 +6,11 @@ import os
 # ====
 # 1. CONFIGURAÇÃO DA PÁGINA (DEVE SER O PRIMEIRO COMANDO STREAMLIT)
 # ====
-
+# Movido para o topo para evitar o erro de inicialização da senha
 st.set_page_config(page_title="GATE - Analisador de APAs", layout="wide", initial_sidebar_state="collapsed")
 
 # ====
-# 2. IMPORTS
+# 2. SEUS IMPORTS ORIGINAIS (MANTIDOS E COMPLETOS)
 # ====
 from PIL import Image
 import base64
@@ -31,14 +31,8 @@ import ia_link        # Cérebro da Aba 1 (Transcrições)
 import ia_estatistica # Cérebro da Aba 2 (Série Histórica)
 
 # ====
-# 3. FUNÇÕES AUXILIARES E DADOS 
+# 3. FUNÇÕES AUXILIARES E DADOS (A "CAIXA DE FERRAMENTAS")
 # ====
-@st.cache_data(ttl=1800)  # 30 minutos 
-def carregar_dados_airtable():
-    df_quali, status_q = airtable_link.buscar_dados_apa()
-    df_tec, status_t = airtable_link.buscar_todas_tecnicas()
-    return df_quali, status_q, df_tec, status_t
-
 def limpar_valor(val):
     if isinstance(val, list): return val[0] if len(val) > 0 else "N/D"
     return str(val) if pd.notna(val) else "N/D"
@@ -574,13 +568,9 @@ st.markdown('<p style="color: #999; margin-top: 5px;">Desenvolvido por Cb PM Mar
 # ====
 # 3. CONEXÃO E NAVEGAÇÃO PRINCIPAL (ABAS)
 # ====
-placeholder = st.empty()
-
-with placeholder.container():
-    with st.spinner("🔐 Sincronizando com base segura..."):
-        df_quali, status_q, df_tec, status_t = carregar_dados_airtable()
-
-placeholder.empty()
+with st.spinner("Sincronizando com Banco de Dados Seguro (Airtable)..."):
+    df_quali, status_q = airtable_link.buscar_dados_apa()
+    df_tec, status_t = airtable_link.buscar_todas_tecnicas()
 
 if df_quali.empty:
     st.error(f"Erro na conexão com Airtable: {status_q}")
@@ -851,10 +841,7 @@ else:
             
             st.markdown("---")
 
-        ##ANALISE DE SIMILITUDE
-        if st.button("🔍 Gerar Análise de Similitude"):
-            
-                   
+            #ANALISE DE SIMILITUDE
             st.markdown("### 🗣️ Índice de Similitude e Grafo de Espelhamento Léxico")
             st.markdown("<div class='info-card'>", unsafe_allow_html=True)
             st.markdown("<span style='font-size: 0.85rem; color: #aaa;'><strong>O que significa:</strong> Compara matematicamente as palavras utilizadas pelo Negociador Principal e pelo Causador, mensurando o espelhamento. Índices mais altos indicam 'espelhamento' na estrutura da linguagem (mirroring). Em negociações bem-sucedidas, o negociador e o causador passam a apresentar núcleos semânticos em comum, criando uma 'Sincronia Lexical'. O grafo ilustra os núcleos semânticos que conectaram as duas partes.</span><br><br>", unsafe_allow_html=True)
@@ -916,9 +903,7 @@ else:
                             st.info("ℹ️ **Vínculo Moderado:** Há pontos de ancoragem semântica, mas os discursos ainda guardam distanciamento conceitual.")
                         else:
                             st.error("🚨 **Divergência de Discurso:** Vocabulários quase completamente distintos. Indica ruptura ou negociação puramente transacional.")
-                        
-                        ## GERAR GRAFO
-                                                
+
                         if sintonia_pct > 0:
                             st.markdown("#### 🕸️ Grafo de Espelhamento Léxico (Núcleos Semânticos Compartilhados)")
                             st.write("<span style='font-size: 0.85rem; color: #aaa;'>Visualização interativa dos termos que serviram de ponte para o estabelecimento do Rapport.</span>", unsafe_allow_html=True)
