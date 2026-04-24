@@ -851,10 +851,9 @@ else:
             
             st.markdown("---")
 
-        col1, col2, col3 = st.columns([1,2,1])
-    with col2:
+        ##ANALISE DE SIMILITUDE
         if st.button("🔍 Gerar Análise de Similitude"):
-           
+            
                    
             st.markdown("### 🗣️ Índice de Similitude e Grafo de Espelhamento Léxico")
             st.markdown("<div class='info-card'>", unsafe_allow_html=True)
