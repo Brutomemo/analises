@@ -850,6 +850,9 @@ else:
                 st.warning("Tabela de técnicas vazia no Airtable.")
             
             st.markdown("---")
+
+            if st.button("🔍 Gerar Análise de Similitude"):
+            # seu código atual de TF-IDF aqui
                    
             st.markdown("### 🗣️ Índice de Similitude e Grafo de Espelhamento Léxico")
             st.markdown("<div class='info-card'>", unsafe_allow_html=True)
