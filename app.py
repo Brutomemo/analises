@@ -916,7 +916,7 @@ else:
                         else:
                             st.error("🚨 **Divergência de Discurso:** Vocabulários quase completamente distintos. Indica ruptura ou negociação puramente transacional.")
 
-                    if st.button("🕸️ Gerar Grafo de Espelhamento"):
+                if st.button("🕸️ Gerar Grafo de Espelhamento"):
                                  # código do grafo
 
                         if sintonia_pct > 0:
