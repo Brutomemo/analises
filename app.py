@@ -915,8 +915,11 @@ else:
                             st.info("ℹ️ **Vínculo Moderado:** Há pontos de ancoragem semântica, mas os discursos ainda guardam distanciamento conceitual.")
                         else:
                             st.error("🚨 **Divergência de Discurso:** Vocabulários quase completamente distintos. Indica ruptura ou negociação puramente transacional.")
-
-                
+                        
+                        ## GERAR GRAFO
+                        
+                    if st.button("🕸️ Gerar Grafo de Espelhamento"):
+                        # código do grafo
                         if sintonia_pct > 0:
                             st.markdown("#### 🕸️ Grafo de Espelhamento Léxico (Núcleos Semânticos Compartilhados)")
                             st.write("<span style='font-size: 0.85rem; color: #aaa;'>Visualização interativa dos termos que serviram de ponte para o estabelecimento do Rapport.</span>", unsafe_allow_html=True)
