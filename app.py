@@ -851,7 +851,7 @@ else:
             
             st.markdown("---")
 
-            if st.button("🔍 Gerar Análise de Similitude"):
+        if st.button("🔍 Gerar Análise de Similitude"):
             # seu código atual de TF-IDF aqui
                    
             st.markdown("### 🗣️ Índice de Similitude e Grafo de Espelhamento Léxico")
