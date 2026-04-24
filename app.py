@@ -575,8 +575,7 @@ st.markdown('<p style="color: #999; margin-top: 5px;">Desenvolvido por Cb PM Mar
 # 3. CONEXÃO E NAVEGAÇÃO PRINCIPAL (ABAS)
 # ====
 with st.spinner("Sincronizando com Banco de Dados Seguro (Airtable)..."):
-    df_quali, status_q = airtable_link.buscar_dados_apa()
-    df_tec, status_t = airtable_link.buscar_todas_tecnicas()
+    df_quali, status_q, df_tec, status_t = carregar_dados_airtable()
 
 if df_quali.empty:
     st.error(f"Erro na conexão com Airtable: {status_q}")
