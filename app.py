@@ -2083,9 +2083,9 @@ else:
                 except Exception as e:
                     st.error(f"Erro na geração do relatório de IA: {str(e)}")
 
-                    # ====
-    # ==== 
-# ABA 3: CHAT ANALÍTICO (Agente de Dados - Versão Robusta)
+
+# ==== 
+# ABA 3: CHAT ANALÍTICO (Agente de Dados)
 # ====
 with aba_chat:
     st.markdown("### 💬 Assistente Analítico de Dados Operacionais")
@@ -2095,7 +2095,7 @@ with aba_chat:
     )
 
     # =========================================
-    # 1. PREPARAÇÃO DOS DADOS (FONTE DE VERDADE)
+    # 1. PREPARAÇÃO DOS DADOS 
     # =========================================
     df_chat = df_quali[['ID_Busca', 'Neg_Limpo', 'Tip_Limpa', 'Mod_Limpa', 'Resolução', 'Tempo de Negociação Real']].copy()
 
