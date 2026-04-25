@@ -2165,57 +2165,128 @@ with aba_chat:
         allow_dangerous_code=True 
     )
 
+    # ==== 
+# ABA 3: CHAT ANALÍTICO (AGENTE ROBUSTO COM TOOL CALLING E MULTI-DATAFRAME)
+# ====
+import pandas as pd
+import streamlit as st
+from langchain_openai import ChatOpenAI
+from langchain_experimental.agents.agent_toolkits import create_pandas_dataframe_agent
+
+with aba_chat:
+    st.markdown("### 💬 Assistente Analítico de Dados Operacionais - GATE")
+    st.markdown(
+        "<p style='color: #aaa;'>Consultas baseadas exclusivamente em dados reais via Tool Calling. A IA executa análises Pandas cruzando dados das Ocorrências e das Técnicas.</p>",
+        unsafe_allow_html=True
+    )
+
     # =========================================
-    # 3. INTERFACE DO CHAT
+    # 1. PREPARAÇÃO DO DATAFRAME 1: OCORRÊNCIAS
+    # =========================================
+    df_chat = df_quali[['ID_Busca', 'Neg_Limpo', 'Tip_Limpa', 'Mod_Limpa', 'Resolução']].copy()
+
+    # Correção Crítica 1: Transformar os segundos do Airtable em minutos decimais
+    def normalizar_tempo_minutos(val):
+        try:
+            if isinstance(val, list): val = val[0]
+            if pd.isna(val) or val == "N/D" or val == "": return None
+            # O Airtable envia em segundos. Convertendo para minutos inteiros.
+            return round(float(val) / 60, 2)
+        except:
+            return None
+
+    df_chat['Tempo_Minutos'] = df_quali['Tempo de Negociação Real'].apply(normalizar_tempo_minutos)
+
+    def calcular_score_sucesso(resolucao):
+        res_str = str(resolucao).lower()
+        if "pacífica" in res_str or "rendição" in res_str: return 10
+        elif "tática" in res_str: return 5
+        return 0
+
+    df_chat['Score_Desempenho'] = df_chat['Resolução'].apply(calcular_score_sucesso)
+
+    # =========================================
+    # 2. PREPARAÇÃO DO DATAFRAME 2: TÉCNICAS
+    # =========================================
+    df_tec_chat = pd.DataFrame()
+    if not df_tec.empty:
+        # Encontra a coluna correta de técnicas
+        col_t = next((col for col in ['TÉCNICAS', 'TECNICAS', 'TÉCNICA', 'TECNICA'] if col in df_tec.columns), None)
+        if col_t:
+            df_tec_chat['Nome_Tecnica'] = df_tec[col_t].astype(str).str.replace(r"[\[\]'\"]", "", regex=True).str.strip()
+            
+            # Puxa o nome do negociador para permitir perguntas cruzadas (Ex: Quais técnicas o Silva usa?)
+            if 'Negociador Principal do incidente crítico' in df_tec.columns:
+                df_tec_chat['Negociador'] = df_tec['Negociador Principal do incidente crítico'].apply(limpar_valor)
+            
+            # Limpa lixos do Airtable
+            df_tec_chat['Nome_Tecnica'] = df_tec_chat['Nome_Tecnica'].replace(['N/D', 'nan', 'None', ''], pd.NA)
+            df_tec_chat = df_tec_chat.dropna(subset=['Nome_Tecnica'])
+
+
+    # =========================================
+    # 3. CONFIGURAÇÃO DO AGENTE DE IA (MULTI-DF)
+    # =========================================
+    PREFIX = """
+    Você é um Cientista de Dados Sênior e Especialista em Negociação Policial do GATE.
+
+    Você recebeu uma lista com DOIS dataframes do Pandas.
+    - O dataframe `df1` contém o contexto geral das ocorrências (Negociador, Tipologia, Modalidade, Tempo em Minutos).
+    - O dataframe `df2` contém APENAS as técnicas aplicadas nas ocorrências (Nome da Técnica e quem aplicou).
+
+    REGRAS INQUEBRÁVEIS (ANTI-ALUCINAÇÃO):
+    1. Para falar sobre duração/tempo, use APENAS a coluna `Tempo_Minutos` do df1. NUNCA invente minutos. Se a média der 60.5, responda "Aproximadamente 60 minutos".
+    2. Quando perguntarem sobre TÉCNICAS, você OBRIGATORIAMENTE deve usar o df2 e olhar a coluna `Nome_Tecnica`.
+    3. NUNCA chame colunas do df1 como Modalidade (ex: "Criminoso embarricado") ou Tipologia de "Técnicas". Técnicas são ferramentas de comunicação (ex: Escuta ativa, Paráfrase).
+    4. Se a informação não existir em nenhum dos dois dataframes após a execução do código Pandas, você DEVE dizer: "Não temos dados registrados sobre isso na base atual".
+    5. NUNCA responda baseado na sua memória do mundo. Só responda o que o código Pandas calcular.
+    """
+
+    llm = ChatOpenAI(
+        temperature=0.0,
+        model="gpt-4o", # É fundamental usar o 4o (ou turbo) para escrita de código complexo envolvendo dois DFs
+        api_key=st.secrets["OPENAI_API_KEY"]
+    )
+
+    # Passamos uma lista com [df_chat, df_tec_chat] em vez de um só. 
+    # Para o agente, df_chat será chamado de `df1` e df_tec_chat será `df2`.
+    agent_executor = create_pandas_dataframe_agent(
+        llm,
+        [df_chat, df_tec_chat], 
+        verbose=True, 
+        agent_type="openai-tools",
+        prefix=PREFIX,
+        allow_dangerous_code=True 
+    )
+
+    # =========================================
+    # 4. INTERFACE DO CHAT
     # =========================================
     if "mensagens_chat" not in st.session_state:
         st.session_state.mensagens_chat = [
-            {"role": "assistant", "content": "Base de dados operacional conectada e ferramentas estatísticas ativas. O que você gostaria de analisar nas ocorrências?"}
+            {"role": "assistant", "content": "Base de ocorrências e técnicas carregadas. Como posso te ajudar na análise de dados operacionais?"}
         ]
 
-    # Renderiza histórico
     for msg in st.session_state.mensagens_chat:
         with st.chat_message(msg["role"]):
             st.markdown(msg["content"])
 
-    pergunta = st.chat_input("Ex: Qual o tempo médio de negociação nas ocorrências com Resolução Tática?")
+    pergunta = st.chat_input("Ex: Qual a técnica mais utilizada pelo negociador Gabriel?")
 
     if pergunta:
-        # Exibe pergunta do usuário
         with st.chat_message("user"):
             st.markdown(pergunta)
         st.session_state.mensagens_chat.append({"role": "user", "content": pergunta})
 
-        # Processamento do Agente
-        with st.spinner("Construindo query, analisando variáveis e executando código..."):
+        with st.spinner("Construindo query Python, analisando variáveis e executando código..."):
             try:
-                # O agent.invoke passa a pergunta para a IA. 
-                # A IA vai decidir qual código Pandas rodar, executá-lo no df_chat, ler a resposta e gerar o texto final.
+                # O Agente vai escrever o código para relacionar o df1 e df2 dependendo da sua pergunta
                 resposta_bruta = agent_executor.invoke({"input": pergunta})
-                resposta = resposta_bruta.get("output", "Desculpe, não consegui formular uma resposta baseada nos dados.")
+                resposta = resposta_bruta.get("output", "Desculpe, não consegui formular uma resposta.")
                 
             except Exception as e:
-                # Caso a IA gere um código Python inválido ou haja erro na consulta
-                resposta = f"⚠️ **Erro na execução analítica:** A combinação de variáveis solicitada gerou um conflito no cruzamento de dados. Tente reformular a pergunta de forma mais direta.\n\n*Detalhe técnico: {str(e)}*"
+                resposta = f"⚠️ **Erro na consulta:** Não consegui cruzar essas variáveis no Pandas. Tente ser mais específico. *Erro técnico: {str(e)}*"
 
-        # Exibe resposta do assistente
         with st.chat_message("assistant"):
             st.markdown(resposta)
         st.session_state.mensagens_chat.append({"role": "assistant", "content": resposta})
-
-    # =========================================
-    # 4. TEXTO EXPLICATIVO (RODAPÉ)
-    # =========================================
-    st.markdown("""
-    <div style='margin-top: 30px; margin-bottom: 100px; padding: 15px; background-color: #111; border-radius: 8px;'>
-        <p style='color: #bbb; font-size: 14px;'>
-        <b>Sobre a Nova Arquitetura do Assistente Analítico:</b><br><br>
-        Este sistema foi atualizado para uma arquitetura <i>Agentic</i>. O modelo de IA atua como um programador e analista autônomo: ele traduz sua pergunta do idioma natural para código (Pandas), executa as contas diretamente na base de dados carregada, e só então utiliza a doutrina de Negociação de Crises (Harvard, Cialdini, FBI) para explicar os números encontrados.
-        <br><br>
-        <b>Exemplos de perguntas avançadas que agora são possíveis:</b><br>
-        • Existe alguma correlação entre a tipologia da ocorrência e o tempo de negociação do Silva?<br>
-        • Qual a modalidade mais utilizada nas ocorrências que terminaram em rendição pacífica no último trimestre?<br>
-        • Liste os 3 negociadores com maior desvio padrão no tempo de negociação (os que têm durações mais imprevisíveis).<br>
-        </p>
-    </div>
-    """, unsafe_allow_html=True)
