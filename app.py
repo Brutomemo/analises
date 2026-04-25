@@ -2085,91 +2085,11 @@ else:
 
 
 # ==== 
-# ABA 3: CHAT ANALÍTICO (AGENTE ROBUSTO COM TOOL CALLING)
-# ====
-import pandas as pd
-import streamlit as st
-from langchain_openai import ChatOpenAI
-from langchain_experimental.agents.agent_toolkits import create_pandas_dataframe_agent
-
-with aba_chat:
-    st.markdown("### 💬 Assistente Analítico de Dados Operacionais - GATE")
-    st.markdown(
-        "<p style='color: #aaa;'>Consultas baseadas exclusivamente em dados reais via Tool Calling. A IA executa análises Pandas em tempo real antes de responder.</p>",
-        unsafe_allow_html=True
-    )
-
-    # =========================================
-    # 1. BASE DE DADOS (FONTE DE VERDADE)
-    # =========================================
-    # Certifique-se de que df_quali já existe no escopo anterior
-    df_chat = df_quali[['ID_Busca', 'Neg_Limpo', 'Tip_Limpa', 'Mod_Limpa', 'Resolução', 'Tempo de Negociação Real']].copy()
-
-    def calcular_score_sucesso(resolucao):
-        res_str = str(resolucao).lower()
-        if "pacífica" in res_str or "rendição" in res_str:
-            return 10
-        elif "tática" in res_str:
-            return 5
-        return 0
-
-    df_chat['Score_Desempenho'] = df_chat['Resolução'].apply(calcular_score_sucesso)
-
-    # =========================================
-    # 2. CONFIGURAÇÃO DO AGENTE DE IA (O CÉREBRO)
-    # =========================================
-    
-    # PROMPT DO SISTEMA: Integração do dicionário de dados com a doutrina do ia_link.py
-    PREFIX = """
-    Você é um Cientista de Dados Sênior e Especialista em Negociação Policial do GATE.
-    Sua missão é atuar como um assistente analítico capaz de cruzar dados e explicar resultados estatísticos de forma clara e profissional.
-
-    DICIONÁRIO DE DADOS (Você tem acesso a um DataFrame Pandas com estas colunas):
-    - `ID_Busca`: Identificador único da ocorrência.
-    - `Neg_Limpo`: Nome do negociador principal.
-    - `Tip_Limpa`: Tipologia da ocorrência.
-    - `Mod_Limpa`: Modalidade da negociação aplicada.
-    - `Resolução`: Desfecho da ocorrência (ex: Rendição Pacífica, Resolução Tática).
-    - `Tempo de Negociação Real`: Duração em minutos.
-    - `Score_Desempenho`: Métrica calculada (Pacífica/Rendição=10, Tática=5, Outros=0).
-
-    REGRAS INQUEBRÁVEIS DE ALUCINAÇÃO (CONTROLE ESTRITO):
-    1. Você SEMPRE deve escrever e executar código Pandas para responder a perguntas sobre os dados. NUNCA tente adivinhar ou estimar valores.
-    2. NUNCA invente ocorrências, técnicas, nomes ou cruzamentos que não existam no dataframe.
-    3. Se o código Pandas retornar vazio ou erro para um cruzamento, diga explicitamente: "Não há dados suficientes na base para fazer essa associação".
-    4. Responda sempre em Português do Brasil.
-
-    BASE TEÓRICA E REDAÇÃO (Modelo FBI, Ury e Cialdini):
-    - A comunicação visa modular a intensidade emocional. O tempo (`Tempo de Negociação Real`) é uma variável tática crítica.
-    - A persuasão é probabilística, não determinística. Use expressões como "os dados apresentam padrão compatível com...", "há associação provável entre...", "observa-se convergência".
-    - É TERMINANTEMENTE PROIBIDO afirmar causalidade forte (ex: "A tática X causou a rendição"). Diga "A tática X está associada à rendição em Y% dos casos".
-    - Se perguntado sobre melhorias ou padrões de desempenho, relacione o `Score_Desempenho` com o `Tempo de Negociação Real` e a `Mod_Limpa`, mas evite julgamentos de valor absolutos. Explique os números friamente sob a ótica da doutrina de crise.
-    - Não recomende técnicas que não estão presentes nos dados avaliados.
-    """
-
-    # Instanciando o modelo (Recomenda-se gpt-4o para geração de código Pandas preciso)
-    llm = ChatOpenAI(
-        temperature=0.0,
-        model="gpt-4o", 
-        api_key=st.secrets["OPENAI_API_KEY"]
-    )
-
-    # Criação do Agente Pandas
-    # allow_dangerous_code=True é exigido pelas versões recentes do LangChain para permitir a execução de código Python gerado pela IA.
-    agent_executor = create_pandas_dataframe_agent(
-        llm,
-        df_chat,
-        verbose=True, # Útil para ver no terminal os passos que a IA está tomando
-        agent_type="openai-tools",
-        prefix=PREFIX,
-        allow_dangerous_code=True 
-    )
-
-    # ==== 
 # ABA 3: CHAT ANALÍTICO (AGENTE ROBUSTO COM TOOL CALLING E MULTI-DATAFRAME)
 # ====
 import pandas as pd
 import streamlit as st
+import json
 from langchain_openai import ChatOpenAI
 from langchain_experimental.agents.agent_toolkits import create_pandas_dataframe_agent
 
@@ -2181,75 +2101,102 @@ with aba_chat:
     )
 
     # =========================================
-    # 1. PREPARAÇÃO DO DATAFRAME 1: OCORRÊNCIAS
+    # 1. PREPARAÇÃO DO DATAFRAME 1: OCORRÊNCIAS (INTEGRAL)
     # =========================================
-    df_chat = df_quali[['ID_Busca', 'Neg_Limpo', 'Tip_Limpa', 'Mod_Limpa', 'Resolução']].copy()
+    # Usamos o .copy() direto do df_quali inteiro para preservar TODAS as colunas 
+    # (Data da ocorrência, Uniforme Usado, Motivação, Resolução, etc.)
+    df_chat = df_quali.copy()
 
-    # Correção Crítica 1: Transformar os segundos do Airtable em minutos decimais
+    # Tratamento de Tempo para cálculos matemáticos
     def normalizar_tempo_minutos(val):
         try:
             if isinstance(val, list): val = val[0]
             if pd.isna(val) or val == "N/D" or val == "": return None
-            # O Airtable envia em segundos. Convertendo para minutos inteiros.
+            # O Airtable envia em segundos. Convertendo para minutos decimais.
             return round(float(val) / 60, 2)
         except:
             return None
 
-    df_chat['Tempo_Minutos'] = df_quali['Tempo de Negociação Real'].apply(normalizar_tempo_minutos)
+    if 'Tempo de Negociação Real' in df_chat.columns:
+        df_chat['Tempo_Minutos'] = df_chat['Tempo de Negociação Real'].apply(normalizar_tempo_minutos)
 
+    # Adição de Score de Desempenho para correlações
     def calcular_score_sucesso(resolucao):
         res_str = str(resolucao).lower()
         if "pacífica" in res_str or "rendição" in res_str: return 10
         elif "tática" in res_str: return 5
         return 0
 
-    df_chat['Score_Desempenho'] = df_chat['Resolução'].apply(calcular_score_sucesso)
+    if 'Resolução' in df_chat.columns:
+        df_chat['Score_Desempenho'] = df_chat['Resolução'].apply(calcular_score_sucesso)
+
+    # Limpeza básica para facilitar a busca do LLM
+    if 'Negociador Principal' in df_chat.columns:
+        df_chat['Neg_Limpo'] = df_chat['Negociador Principal'].apply(lambda x: str(x[0]) if isinstance(x, list) else str(x))
 
     # =========================================
-    # 2. PREPARAÇÃO DO DATAFRAME 2: TÉCNICAS
+    # 2. PREPARAÇÃO DO DATAFRAME 2: TÉCNICAS (INTEGRAL)
     # =========================================
     df_tec_chat = pd.DataFrame()
     if not df_tec.empty:
+        df_tec_chat = df_tec.copy()
+        
         # Encontra a coluna correta de técnicas
-        col_t = next((col for col in ['TÉCNICAS', 'TECNICAS', 'TÉCNICA', 'TECNICA'] if col in df_tec.columns), None)
+        col_t = next((col for col in ['TÉCNICAS', 'TECNICAS', 'TÉCNICA', 'TECNICA'] if col in df_tec_chat.columns), None)
         if col_t:
-            df_tec_chat['Nome_Tecnica'] = df_tec[col_t].astype(str).str.replace(r"[\[\]'\"]", "", regex=True).str.strip()
-            
-            # Puxa o nome do negociador para permitir perguntas cruzadas (Ex: Quais técnicas o Silva usa?)
-            if 'Negociador Principal do incidente crítico' in df_tec.columns:
-                df_tec_chat['Negociador'] = df_tec['Negociador Principal do incidente crítico'].apply(limpar_valor)
-            
-            # Limpa lixos do Airtable
+            df_tec_chat['Nome_Tecnica'] = df_tec_chat[col_t].astype(str).str.replace(r"[\[\]'\"]", "", regex=True).str.strip()
             df_tec_chat['Nome_Tecnica'] = df_tec_chat['Nome_Tecnica'].replace(['N/D', 'nan', 'None', ''], pd.NA)
+            
+            # Puxa o nome do negociador para permitir cruzamento direto por nome
+            if 'Negociador Principal do incidente crítico' in df_tec_chat.columns:
+                df_tec_chat['Negociador_Tecnica'] = df_tec_chat['Negociador Principal do incidente crítico'].apply(lambda x: str(x[0]) if isinstance(x, list) else str(x))
+            
             df_tec_chat = df_tec_chat.dropna(subset=['Nome_Tecnica'])
 
+    # =========================================
+    # 3. EXTRAÇÃO DE CONTEXTO ESTATÍSTICO DAS ABAS ANTERIORES
+    # =========================================
+    contexto_estatistico = st.session_state.get('stats_calculados', "Nenhuma análise de N-Grams ou modelagem avançada foi processada nesta sessão ainda.")
+    # Converte o dicionário em string para o prompt, ignorando objetos complexos (como imagens de wordcloud)
+    try:
+        if isinstance(contexto_estatistico, dict):
+            contexto_filtrado = {k: v for k, v in contexto_estatistico.items() if isinstance(v, (str, list, int, float))}
+            contexto_str = json.dumps(contexto_filtrado, ensure_ascii=False)
+        else:
+            contexto_str = str(contexto_estatistico)
+    except:
+        contexto_str = "Dados estatísticos em formato não legível."
 
     # =========================================
-    # 3. CONFIGURAÇÃO DO AGENTE DE IA (MULTI-DF)
+    # 4. CONFIGURAÇÃO DO AGENTE DE IA (O CÉREBRO)
     # =========================================
-    PREFIX = """
+    PREFIX = f"""
     Você é um Cientista de Dados Sênior e Especialista em Negociação Policial do GATE.
 
-    Você recebeu uma lista com DOIS dataframes do Pandas.
-    - O dataframe `df1` contém o contexto geral das ocorrências (Negociador, Tipologia, Modalidade, Tempo em Minutos).
-    - O dataframe `df2` contém APENAS as técnicas aplicadas nas ocorrências (Nome da Técnica e quem aplicou).
+    Você recebeu uma lista com DOIS dataframes do Pandas (`df1` e `df2`) e um contexto estatístico:
+    - `df1`: Base de Ocorrências (Contém colunas como Data da ocorrência, Uniforme Usado, Motivação, Resolução, Tipologia, Modalidade, Tempo de Negociação Real, Neg_Limpo).
+    - `df2`: Base de Técnicas (Contém a técnica aplicada em `Nome_Tecnica` e o negociador que a aplicou em `Negociador_Tecnica`).
+    - Contexto Estatístico/NLP gerado previamente pelo sistema: {contexto_str}
 
-    REGRAS INQUEBRÁVEIS (ANTI-ALUCINAÇÃO):
-    1. Para falar sobre duração/tempo, use APENAS a coluna `Tempo_Minutos` do df1. NUNCA invente minutos. Se a média der 60.5, responda "Aproximadamente 60 minutos".
-    2. Quando perguntarem sobre TÉCNICAS, você OBRIGATORIAMENTE deve usar o df2 e olhar a coluna `Nome_Tecnica`.
-    3. NUNCA chame colunas do df1 como Modalidade (ex: "Criminoso embarricado") ou Tipologia de "Técnicas". Técnicas são ferramentas de comunicação (ex: Escuta ativa, Paráfrase).
-    4. Se a informação não existir em nenhum dos dois dataframes após a execução do código Pandas, você DEVE dizer: "Não temos dados registrados sobre isso na base atual".
-    5. NUNCA responda baseado na sua memória do mundo. Só responda o que o código Pandas calcular.
+    REGRAS INQUEBRÁVEIS (ANTI-ALUCINAÇÃO E CRUZAMENTO):
+    1. Você SEMPRE deve executar código Pandas para consultar dados. NUNCA responda baseando-se em suposições.
+    2. Se perguntarem sobre detalhes específicos de uma ocorrência (Ex: "Qual uniforme a Vanessa usou no dia 29/07/2025?"), filtre o `df1` pelas colunas correspondentes (Data e Negociador) e retorne o valor da coluna (ex: Uniforme Usado).
+    3. Para cruzar ocorrências com técnicas (Ex: "Quais técnicas a equipe usa mais na modalidade X?"), você deve fazer um agrupamento lógico ou um `pd.merge()` entre `df1` e `df2` usando os nomes dos negociadores ou IDs em comum, ou filtrar as condições separadamente.
+    4. Se a informação não existir nos dados após a execução do Pandas, declare explicitamente: "Não temos dados registrados sobre isso na base atual". NUNCA INVENTE UM DADO.
+
+    BASE TEÓRICA E REDAÇÃO TÁTICA (Modelo FBI, William Ury e Cialdini):
+    - A comunicação modula a intensidade emocional.
+    - É TERMINANTEMENTE PROIBIDO afirmar causalidade forte (ex: "A tática X causou a rendição"). Use expressões como "os dados apresentam padrão compatível com...", "há associação provável...", "a técnica está associada a...".
+    - Ao analisar resultados estatísticos ou tempos, explique os números friamente sob a ótica da doutrina de negociação de crises.
+    - Responda de forma direta e profissional, adequada para operadores de segurança pública.
     """
 
     llm = ChatOpenAI(
         temperature=0.0,
-        model="gpt-4o", # É fundamental usar o 4o (ou turbo) para escrita de código complexo envolvendo dois DFs
+        model="gpt-4o", # Modelos menores não conseguem gerar o código de Join/Merge correto
         api_key=st.secrets["OPENAI_API_KEY"]
     )
 
-    # Passamos uma lista com [df_chat, df_tec_chat] em vez de um só. 
-    # Para o agente, df_chat será chamado de `df1` e df_tec_chat será `df2`.
     agent_executor = create_pandas_dataframe_agent(
         llm,
         [df_chat, df_tec_chat], 
@@ -2260,33 +2207,54 @@ with aba_chat:
     )
 
     # =========================================
-    # 4. INTERFACE DO CHAT
+    # 5. INTERFACE DO CHAT
     # =========================================
     if "mensagens_chat" not in st.session_state:
         st.session_state.mensagens_chat = [
-            {"role": "assistant", "content": "Base de ocorrências e técnicas carregadas. Como posso te ajudar na análise de dados operacionais?"}
+            {"role": "assistant", "content": "Base operacional integral conectada. Posso cruzar dados de uniformes, datas, resoluções, técnicas, tempos e modelos estatísticos. Qual é a sua dúvida?"}
         ]
 
     for msg in st.session_state.mensagens_chat:
         with st.chat_message(msg["role"]):
             st.markdown(msg["content"])
 
-    pergunta = st.chat_input("Ex: Qual a técnica mais utilizada pelo negociador Gabriel?")
+    pergunta = st.chat_input("Ex: Qual era o uniforme usado pela Vanessa na ocorrência de 29/07/2025?")
 
     if pergunta:
         with st.chat_message("user"):
             st.markdown(pergunta)
         st.session_state.mensagens_chat.append({"role": "user", "content": pergunta})
 
-        with st.spinner("Construindo query Python, analisando variáveis e executando código..."):
+        with st.spinner("Construindo query Python, analisando variáveis e cruzando dados..."):
             try:
                 # O Agente vai escrever o código para relacionar o df1 e df2 dependendo da sua pergunta
                 resposta_bruta = agent_executor.invoke({"input": pergunta})
-                resposta = resposta_bruta.get("output", "Desculpe, não consegui formular uma resposta.")
+                resposta = resposta_bruta.get("output", "Desculpe, não consegui formular uma resposta baseada nos dados.")
                 
             except Exception as e:
-                resposta = f"⚠️ **Erro na consulta:** Não consegui cruzar essas variáveis no Pandas. Tente ser mais específico. *Erro técnico: {str(e)}*"
+                resposta = f"⚠️ **Erro na consulta analítica:** A combinação solicitada gerou um conflito no cruzamento de variáveis no Pandas. Tente especificar um pouco mais a pergunta. *Erro técnico: {str(e)}*"
 
         with st.chat_message("assistant"):
             st.markdown(resposta)
         st.session_state.mensagens_chat.append({"role": "assistant", "content": resposta})
+
+    # =========================================
+    # 6. TEXTO EXPLICATIVO (RODAPÉ)
+    # =========================================
+    st.markdown("""
+    <div style='margin-top: 30px; margin-bottom: 100px; padding: 15px; background-color: #111; border-radius: 8px;'>
+        <p style='color: #bbb; font-size: 14px;'>
+        <b>Sobre o Assistente Analítico:</b><br><br>
+        Este sistema foi projetado para responder perguntas com base exclusivamente nos dados reais das ocorrências.
+        Nenhuma resposta é gerada por suposição ou inferência livre.
+        <br><br>
+        Todas as respostas são resultado de consultas diretas na base de dados (cruzando <b>Metadados da Ocorrência</b> com o <b>Banco de Técnicas</b>) e cálculos matemáticos controlados.
+        O modelo de IA atua como cientista de dados, escrevendo e rodando scripts internos para encontrar associações, tempos médios, rankings e dificuldades operacionais.
+        <br><br>
+        <b>Exemplos de perguntas avançadas:</b><br>
+        • Qual era o uniforme usado pela Vanessa na ocorrência de 29/07/2025?<br>
+        • Qual a modalidade de ocorrência que o negociador Silva teve mais dificuldade de atender com base no tempo?<br>
+        • Quais são as 3 técnicas mais empregadas quando a resolução termina em rendição pacífica?<br>
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
