@@ -2085,17 +2085,17 @@ else:
 
 
 # ==== 
-# ABA 3: CHAT ANALÍTICO (Agente de Dados)
+# ABA 3: CHAT ANALÍTICO (AGENTE ROBUSTO FINAL)
 # ====
 with aba_chat:
     st.markdown("### 💬 Assistente Analítico de Dados Operacionais")
     st.markdown(
-        "<p style='color: #aaa;'>Sistema de consulta estruturada com base em dados reais. As respostas são geradas a partir de cálculos determinísticos, sem inferência livre.</p>",
+        "<p style='color: #aaa;'>Consultas baseadas exclusivamente em dados reais. O sistema executa cálculos diretos na base antes de responder.</p>",
         unsafe_allow_html=True
     )
 
     # =========================================
-    # 1. PREPARAÇÃO DOS DADOS 
+    # 1. BASE DE DADOS (FONTE DE VERDADE)
     # =========================================
     df_chat = df_quali[['ID_Busca', 'Neg_Limpo', 'Tip_Limpa', 'Mod_Limpa', 'Resolução', 'Tempo de Negociação Real']].copy()
 
@@ -2110,16 +2110,26 @@ with aba_chat:
     df_chat['Score_Desempenho'] = df_chat['Resolução'].apply(calcular_score_sucesso)
 
     # =========================================
-    # 2. FUNÇÕES DETERMINÍSTICAS (ANTI-ALUCINAÇÃO)
+    # 2. EXTRAÇÃO DE ENTIDADES (CORREÇÃO CRÍTICA)
     # =========================================
+    def extrair_negociador(pergunta, df):
+        pergunta_lower = pergunta.lower()
+        nomes = df["Neg_Limpo"].dropna().unique()
 
-    def contar_ocorrencias(df, negociador=None, tipologia=None):
+        for nome in nomes:
+            if nome.lower() in pergunta_lower:
+                return nome
+
+        return None
+
+    # =========================================
+    # 3. FUNÇÕES DETERMINÍSTICAS
+    # =========================================
+    def contar_ocorrencias(df, negociador=None):
         filtro = df.copy()
 
         if negociador:
-            filtro = filtro[filtro["Neg_Limpo"].str.contains(negociador, case=False, na=False)]
-        if tipologia:
-            filtro = filtro[filtro["Tip_Limpa"].str.contains(tipologia, case=False, na=False)]
+            filtro = filtro[filtro["Neg_Limpo"] == negociador]
 
         return len(filtro)
 
@@ -2127,12 +2137,12 @@ with aba_chat:
         filtro = df.copy()
 
         if negociador:
-            filtro = filtro[filtro["Neg_Limpo"].str.contains(negociador, case=False, na=False)]
+            filtro = filtro[filtro["Neg_Limpo"] == negociador]
 
         if filtro.empty:
             return None
 
-        return filtro["Tempo de Negociação Real"].mean()
+        return round(filtro["Tempo de Negociação Real"].mean(), 2)
 
     def ranking_desempenho(df):
         return (
@@ -2143,9 +2153,8 @@ with aba_chat:
         )
 
     # =========================================
-    # 3. PARSER DE INTENÇÃO (CONTROLADO)
+    # 4. CLASSIFICAÇÃO DE INTENÇÃO
     # =========================================
-
     def interpretar_pergunta(pergunta):
         p = pergunta.lower()
 
@@ -2153,67 +2162,72 @@ with aba_chat:
             return "contagem"
 
         if "média" in p or "tempo médio" in p:
-            return "media_tempo"
+            return "media"
 
-        if "melhor" in p or "desempenho" in p or "ranking" in p:
+        if "ranking" in p or "melhor" in p:
             return "ranking"
 
         return "desconhecido"
 
     # =========================================
-    # 4. CHAT (INTERFACE)
+    # 5. CHAT
     # =========================================
-
     if "mensagens_chat" not in st.session_state:
         st.session_state.mensagens_chat = [
-            {"role": "assistant", "content": "Base de dados carregada. Faça uma pergunta sobre ocorrências, negociadores ou padrões estatísticos."}
+            {"role": "assistant", "content": "Base de dados carregada. Faça sua pergunta."}
         ]
 
     for msg in st.session_state.mensagens_chat:
         with st.chat_message(msg["role"]):
             st.markdown(msg["content"])
 
-    pergunta = st.chat_input("Ex: Quantas ocorrências o negociador X atendeu?")
+    pergunta = st.chat_input("Ex: Quantas ocorrências o Silva atendeu?")
 
     if pergunta:
         with st.chat_message("user"):
             st.markdown(pergunta)
+
         st.session_state.mensagens_chat.append({"role": "user", "content": pergunta})
 
-        with st.spinner("Processando consulta estruturada..."):
+        with st.spinner("Consultando base de dados..."):
 
             try:
                 intencao = interpretar_pergunta(pergunta)
+                negociador = extrair_negociador(pergunta, df_chat)
 
-                # ============================
-                # EXECUÇÃO SEM LLM
-                # ============================
+                # =========================================
+                # EXECUÇÃO REAL (SEM LLM)
+                # =========================================
 
                 if intencao == "contagem":
-                    resultado = contar_ocorrencias(df_chat)
+                    resultado = contar_ocorrencias(df_chat, negociador)
 
-                    contexto = f"Total de ocorrências encontradas: {resultado}"
+                    if negociador:
+                        contexto = f"O negociador {negociador} possui {resultado} ocorrências registradas."
+                    else:
+                        contexto = f"Total de ocorrências registradas: {resultado}"
 
-                elif intencao == "media_tempo":
-                    resultado = media_tempo(df_chat)
+                elif intencao == "media":
+                    resultado = media_tempo(df_chat, negociador)
 
                     if resultado is None:
                         contexto = "Não há dados suficientes para cálculo."
                     else:
-                        contexto = f"Tempo médio de negociação: {round(resultado, 2)} minutos"
+                        if negociador:
+                            contexto = f"O tempo médio de negociação de {negociador} é {resultado} minutos."
+                        else:
+                            contexto = f"O tempo médio geral de negociação é {resultado} minutos."
 
                 elif intencao == "ranking":
-                    resultado = ranking_desempenho(df_chat)
-
-                    contexto = f"Ranking dos negociadores:\n{resultado.to_string()}"
+                    ranking = ranking_desempenho(df_chat)
+                    contexto = f"Ranking dos negociadores:\n{ranking.to_string()}"
 
                 else:
-                    contexto = "A pergunta não pôde ser interpretada de forma estruturada."
+                    contexto = "A pergunta não pôde ser interpretada. Reformule de forma mais direta."
 
-                # ============================
-                # 5. LLM COMO EXPLICADOR
-                # ============================
-
+                # =========================================
+                # LLM SOMENTE PARA EXPLICAÇÃO (SEM PODER)
+                # =========================================
                 from langchain_openai import ChatOpenAI
 
                 llm = ChatOpenAI(
@@ -2222,52 +2236,49 @@ with aba_chat:
                     api_key=st.secrets["OPENAI_API_KEY"]
                 )
 
-                prompt_explicacao = f"""
-                Você é um assistente analítico.
+                prompt = f"""
+                Você deve apenas explicar o resultado abaixo.
 
                 REGRAS:
-                - Explique APENAS com base no resultado abaixo
                 - NÃO invente dados
+                - NÃO altere números
                 - NÃO extrapole
-                - Se o dado for limitado, deixe isso claro
-                - Use linguagem clara, acessível e técnica
+                - Se houver limitação, diga claramente
 
                 RESULTADO:
                 {contexto}
 
-                PERGUNTA ORIGINAL:
+                PERGUNTA:
                 {pergunta}
                 """
 
-                resposta_llm = llm.invoke(prompt_explicacao).content
+                resposta = llm.invoke(prompt).content
 
             except Exception as e:
-                resposta_llm = f"Erro ao processar a consulta: {str(e)}"
+                resposta = f"Erro ao processar: {str(e)}"
 
         with st.chat_message("assistant"):
-            st.markdown(resposta_llm)
+            st.markdown(resposta)
 
-        st.session_state.mensagens_chat.append({"role": "assistant", "content": resposta_llm})
+        st.session_state.mensagens_chat.append({"role": "assistant", "content": resposta})
 
     # =========================================
-    # 6. TEXTO EXPLICATIVO (COM MARGEM INFERIOR)
+    # 6. TEXTO EXPLICATIVO
     # =========================================
-
     st.markdown("""
-    <div style='margin-top: 30px; margin-bottom: 80px; padding: 15px; background-color: #111; border-radius: 8px;'>
+    <div style='margin-top: 30px; margin-bottom: 100px; padding: 15px; background-color: #111; border-radius: 8px;'>
         <p style='color: #bbb; font-size: 14px;'>
-        <b>Sobre este assistente:</b><br><br>
-        Este agente foi desenvolvido para responder perguntas com base exclusivamente nos dados reais das ocorrências registradas.
-        Ele não utiliza suposições, não interpreta fora dos dados e não gera respostas baseadas em opinião.
+        <b>Sobre o Assistente Analítico:</b><br><br>
+        Este sistema foi projetado para responder perguntas com base exclusivamente nos dados reais das ocorrências.
+        Nenhuma resposta é gerada por suposição ou inferência livre.
         <br><br>
-        As respostas são construídas a partir de cálculos matemáticos diretos e modelos estatísticos previamente definidos.
-        O sistema é projetado para fornecer explicações claras, mesmo para usuários sem conhecimento técnico em estatística.
+        Todas as respostas são resultado de consultas diretas na base de dados e cálculos matemáticos controlados.
+        O modelo de IA atua apenas como explicador dos resultados, sem capacidade de alterar ou inventar informações.
         <br><br>
         <b>Exemplos de perguntas:</b><br>
-        • Quantas ocorrências determinado negociador atendeu?<br>
-        • Qual o tempo médio de negociação?<br>
-        • Quem apresenta maior desempenho com base nos dados?<br>
-        • Quais padrões podem ser observados nos registros?<br>
+        • Quantas ocorrências o Silva atendeu?<br>
+        • Qual o tempo médio de negociação da Vanessa?<br>
+        • Qual o ranking de desempenho dos negociadores?<br>
         </p>
     </div>
     """, unsafe_allow_html=True)
