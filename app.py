@@ -2085,18 +2085,24 @@ else:
 
 
 # ==== 
-# ABA 3: CHAT ANALÍTICO (AGENTE ROBUSTO FINAL)
+# ABA 3: CHAT ANALÍTICO (AGENTE ROBUSTO COM TOOL CALLING)
 # ====
+import pandas as pd
+import streamlit as st
+from langchain_openai import ChatOpenAI
+from langchain_experimental.agents.agent_toolkits import create_pandas_dataframe_agent
+
 with aba_chat:
-    st.markdown("### 💬 Assistente Analítico de Dados Operacionais")
+    st.markdown("### 💬 Assistente Analítico de Dados Operacionais - GATE")
     st.markdown(
-        "<p style='color: #aaa;'>Consultas baseadas exclusivamente em dados reais. O sistema executa cálculos diretos na base antes de responder.</p>",
+        "<p style='color: #aaa;'>Consultas baseadas exclusivamente em dados reais via Tool Calling. A IA executa análises Pandas em tempo real antes de responder.</p>",
         unsafe_allow_html=True
     )
 
     # =========================================
     # 1. BASE DE DADOS (FONTE DE VERDADE)
     # =========================================
+    # Certifique-se de que df_quali já existe no escopo anterior
     df_chat = df_quali[['ID_Busca', 'Neg_Limpo', 'Tip_Limpa', 'Mod_Limpa', 'Resolução', 'Tempo de Negociação Real']].copy()
 
     def calcular_score_sucesso(resolucao):
@@ -2110,175 +2116,106 @@ with aba_chat:
     df_chat['Score_Desempenho'] = df_chat['Resolução'].apply(calcular_score_sucesso)
 
     # =========================================
-    # 2. EXTRAÇÃO DE ENTIDADES (CORREÇÃO CRÍTICA)
+    # 2. CONFIGURAÇÃO DO AGENTE DE IA (O CÉREBRO)
     # =========================================
-    def extrair_negociador(pergunta, df):
-        pergunta_lower = pergunta.lower()
-        nomes = df["Neg_Limpo"].dropna().unique()
+    
+    # PROMPT DO SISTEMA: Integração do dicionário de dados com a doutrina do ia_link.py
+    PREFIX = """
+    Você é um Cientista de Dados Sênior e Especialista em Negociação Policial do GATE.
+    Sua missão é atuar como um assistente analítico capaz de cruzar dados e explicar resultados estatísticos de forma clara e profissional.
 
-        for nome in nomes:
-            if nome.lower() in pergunta_lower:
-                return nome
+    DICIONÁRIO DE DADOS (Você tem acesso a um DataFrame Pandas com estas colunas):
+    - `ID_Busca`: Identificador único da ocorrência.
+    - `Neg_Limpo`: Nome do negociador principal.
+    - `Tip_Limpa`: Tipologia da ocorrência.
+    - `Mod_Limpa`: Modalidade da negociação aplicada.
+    - `Resolução`: Desfecho da ocorrência (ex: Rendição Pacífica, Resolução Tática).
+    - `Tempo de Negociação Real`: Duração em minutos.
+    - `Score_Desempenho`: Métrica calculada (Pacífica/Rendição=10, Tática=5, Outros=0).
 
-        return None
+    REGRAS INQUEBRÁVEIS DE ALUCINAÇÃO (CONTROLE ESTRITO):
+    1. Você SEMPRE deve escrever e executar código Pandas para responder a perguntas sobre os dados. NUNCA tente adivinhar ou estimar valores.
+    2. NUNCA invente ocorrências, técnicas, nomes ou cruzamentos que não existam no dataframe.
+    3. Se o código Pandas retornar vazio ou erro para um cruzamento, diga explicitamente: "Não há dados suficientes na base para fazer essa associação".
+    4. Responda sempre em Português do Brasil.
 
-    # =========================================
-    # 3. FUNÇÕES DETERMINÍSTICAS
-    # =========================================
-    def contar_ocorrencias(df, negociador=None):
-        filtro = df.copy()
+    BASE TEÓRICA E REDAÇÃO (Modelo FBI, Ury e Cialdini):
+    - A comunicação visa modular a intensidade emocional. O tempo (`Tempo de Negociação Real`) é uma variável tática crítica.
+    - A persuasão é probabilística, não determinística. Use expressões como "os dados apresentam padrão compatível com...", "há associação provável entre...", "observa-se convergência".
+    - É TERMINANTEMENTE PROIBIDO afirmar causalidade forte (ex: "A tática X causou a rendição"). Diga "A tática X está associada à rendição em Y% dos casos".
+    - Se perguntado sobre melhorias ou padrões de desempenho, relacione o `Score_Desempenho` com o `Tempo de Negociação Real` e a `Mod_Limpa`, mas evite julgamentos de valor absolutos. Explique os números friamente sob a ótica da doutrina de crise.
+    - Não recomende técnicas que não estão presentes nos dados avaliados.
+    """
 
-        if negociador:
-            filtro = filtro[filtro["Neg_Limpo"] == negociador]
+    # Instanciando o modelo (Recomenda-se gpt-4o para geração de código Pandas preciso)
+    llm = ChatOpenAI(
+        temperature=0.0,
+        model="gpt-4o", 
+        api_key=st.secrets["OPENAI_API_KEY"]
+    )
 
-        return len(filtro)
-
-    def media_tempo(df, negociador=None):
-        filtro = df.copy()
-
-        if negociador:
-            filtro = filtro[filtro["Neg_Limpo"] == negociador]
-
-        if filtro.empty:
-            return None
-
-        return round(filtro["Tempo de Negociação Real"].mean(), 2)
-
-    def ranking_desempenho(df):
-        return (
-            df.groupby("Neg_Limpo")["Score_Desempenho"]
-            .mean()
-            .sort_values(ascending=False)
-            .head(5)
-        )
-
-    # =========================================
-    # 4. CLASSIFICAÇÃO DE INTENÇÃO
-    # =========================================
-    def interpretar_pergunta(pergunta):
-        p = pergunta.lower()
-
-        if "quantas" in p or "quantidade" in p:
-            return "contagem"
-
-        if "média" in p or "tempo médio" in p:
-            return "media"
-
-        if "ranking" in p or "melhor" in p:
-            return "ranking"
-
-        return "desconhecido"
+    # Criação do Agente Pandas
+    # allow_dangerous_code=True é exigido pelas versões recentes do LangChain para permitir a execução de código Python gerado pela IA.
+    agent_executor = create_pandas_dataframe_agent(
+        llm,
+        df_chat,
+        verbose=True, # Útil para ver no terminal os passos que a IA está tomando
+        agent_type="openai-tools",
+        prefix=PREFIX,
+        allow_dangerous_code=True 
+    )
 
     # =========================================
-    # 5. CHAT
+    # 3. INTERFACE DO CHAT
     # =========================================
     if "mensagens_chat" not in st.session_state:
         st.session_state.mensagens_chat = [
-            {"role": "assistant", "content": "Base de dados carregada. Faça sua pergunta."}
+            {"role": "assistant", "content": "Base de dados operacional conectada e ferramentas estatísticas ativas. O que você gostaria de analisar nas ocorrências?"}
         ]
 
+    # Renderiza histórico
     for msg in st.session_state.mensagens_chat:
         with st.chat_message(msg["role"]):
             st.markdown(msg["content"])
 
-    pergunta = st.chat_input("Ex: Quantas ocorrências o Silva atendeu?")
+    pergunta = st.chat_input("Ex: Qual o tempo médio de negociação nas ocorrências com Resolução Tática?")
 
     if pergunta:
+        # Exibe pergunta do usuário
         with st.chat_message("user"):
             st.markdown(pergunta)
-
         st.session_state.mensagens_chat.append({"role": "user", "content": pergunta})
 
-        with st.spinner("Consultando base de dados..."):
-
+        # Processamento do Agente
+        with st.spinner("Construindo query, analisando variáveis e executando código..."):
             try:
-                intencao = interpretar_pergunta(pergunta)
-                negociador = extrair_negociador(pergunta, df_chat)
-
-                # =========================================
-                # EXECUÇÃO REAL (SEM LLM)
-                # =========================================
-
-                if intencao == "contagem":
-                    resultado = contar_ocorrencias(df_chat, negociador)
-
-                    if negociador:
-                        contexto = f"O negociador {negociador} possui {resultado} ocorrências registradas."
-                    else:
-                        contexto = f"Total de ocorrências registradas: {resultado}"
-
-                elif intencao == "media":
-                    resultado = media_tempo(df_chat, negociador)
-
-                    if resultado is None:
-                        contexto = "Não há dados suficientes para cálculo."
-                    else:
-                        if negociador:
-                            contexto = f"O tempo médio de negociação de {negociador} é {resultado} minutos."
-                        else:
-                            contexto = f"O tempo médio geral de negociação é {resultado} minutos."
-
-                elif intencao == "ranking":
-                    ranking = ranking_desempenho(df_chat)
-                    contexto = f"Ranking dos negociadores:\n{ranking.to_string()}"
-
-                else:
-                    contexto = "A pergunta não pôde ser interpretada. Reformule de forma mais direta."
-
-                # =========================================
-                # LLM SOMENTE PARA EXPLICAÇÃO (SEM PODER)
-                # =========================================
-                from langchain_openai import ChatOpenAI
-
-                llm = ChatOpenAI(
-                    temperature=0.0,
-                    model="gpt-4o-mini",
-                    api_key=st.secrets["OPENAI_API_KEY"]
-                )
-
-                prompt = f"""
-                Você deve apenas explicar o resultado abaixo.
-
-                REGRAS:
-                - NÃO invente dados
-                - NÃO altere números
-                - NÃO extrapole
-                - Se houver limitação, diga claramente
-
-                RESULTADO:
-                {contexto}
-
-                PERGUNTA:
-                {pergunta}
-                """
-
-                resposta = llm.invoke(prompt).content
-
+                # O agent.invoke passa a pergunta para a IA. 
+                # A IA vai decidir qual código Pandas rodar, executá-lo no df_chat, ler a resposta e gerar o texto final.
+                resposta_bruta = agent_executor.invoke({"input": pergunta})
+                resposta = resposta_bruta.get("output", "Desculpe, não consegui formular uma resposta baseada nos dados.")
+                
             except Exception as e:
-                resposta = f"Erro ao processar: {str(e)}"
+                # Caso a IA gere um código Python inválido ou haja erro na consulta
+                resposta = f"⚠️ **Erro na execução analítica:** A combinação de variáveis solicitada gerou um conflito no cruzamento de dados. Tente reformular a pergunta de forma mais direta.\n\n*Detalhe técnico: {str(e)}*"
 
+        # Exibe resposta do assistente
         with st.chat_message("assistant"):
             st.markdown(resposta)
-
         st.session_state.mensagens_chat.append({"role": "assistant", "content": resposta})
 
     # =========================================
-    # 6. TEXTO EXPLICATIVO
+    # 4. TEXTO EXPLICATIVO (RODAPÉ)
     # =========================================
     st.markdown("""
     <div style='margin-top: 30px; margin-bottom: 100px; padding: 15px; background-color: #111; border-radius: 8px;'>
         <p style='color: #bbb; font-size: 14px;'>
-        <b>Sobre o Assistente Analítico:</b><br><br>
-        Este sistema foi projetado para responder perguntas com base exclusivamente nos dados reais das ocorrências.
-        Nenhuma resposta é gerada por suposição ou inferência livre.
+        <b>Sobre a Nova Arquitetura do Assistente Analítico:</b><br><br>
+        Este sistema foi atualizado para uma arquitetura <i>Agentic</i>. O modelo de IA atua como um programador e analista autônomo: ele traduz sua pergunta do idioma natural para código (Pandas), executa as contas diretamente na base de dados carregada, e só então utiliza a doutrina de Negociação de Crises (Harvard, Cialdini, FBI) para explicar os números encontrados.
         <br><br>
-        Todas as respostas são resultado de consultas diretas na base de dados e cálculos matemáticos controlados.
-        O modelo de IA atua apenas como explicador dos resultados, sem capacidade de alterar ou inventar informações.
-        <br><br>
-        <b>Exemplos de perguntas:</b><br>
-        • Quantas ocorrências o Silva atendeu?<br>
-        • Qual o tempo médio de negociação da Vanessa?<br>
-        • Qual o ranking de desempenho dos negociadores?<br>
+        <b>Exemplos de perguntas avançadas que agora são possíveis:</b><br>
+        • Existe alguma correlação entre a tipologia da ocorrência e o tempo de negociação do Silva?<br>
+        • Qual a modalidade mais utilizada nas ocorrências que terminaram em rendição pacífica no último trimestre?<br>
+        • Liste os 3 negociadores com maior desvio padrão no tempo de negociação (os que têm durações mais imprevisíveis).<br>
         </p>
     </div>
     """, unsafe_allow_html=True)
