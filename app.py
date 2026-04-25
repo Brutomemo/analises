@@ -2084,180 +2084,837 @@ else:
                     st.error(f"Erro na geração do relatório de IA: {str(e)}")
 
 
-# ==== 
-# ABA 3: CHAT ANALÍTICO (AGENTE ROBUSTO COM TOOL CALLING E MULTI-DATAFRAME)
-# ====
+
+# ============================================================
+# ABA 3: CHAT ANALÍTICO — AGENTE DELTA / GATE v3.0
+# Arquitetura: LangChain + OpenAI Tool Calling + Multi-DataFrame Pandas
+# Camada Doutrinária Condicional (Ury, Cialdini, FBI)
+# Autor: Gerado para GATE/PMESP — Uso Restrito Operacional
+# Compatível com: LangChain >= 0.2 | langchain-experimental >= 0.0.60
+#                 OpenAI gpt-4o / gpt-4o-mini | Streamlit >= 1.30
+# ============================================================
+
 import pandas as pd
 import streamlit as st
 import json
+import datetime
+import re
 from langchain_openai import ChatOpenAI
 from langchain_experimental.agents.agent_toolkits import create_pandas_dataframe_agent
 
-with aba_chat:
-    st.markdown("### 💬 Assistente Analítico de Dados Operacionais - GATE")
-    st.markdown(
-        "<p style='color: #aaa;'>Consultas baseadas exclusivamente em dados reais via Tool Calling. A IA executa análises Pandas cruzando dados das Ocorrências e das Técnicas.</p>",
-        unsafe_allow_html=True
-    )
+# ============================================================
+# BLOCO A — PROMPTS BASE (NÚCLEO + DOUTRINA)
+# ============================================================
 
-    # =========================================
-    # 1. PREPARAÇÃO DO DATAFRAME 1: OCORRÊNCIAS (INTEGRAL)
-    # =========================================
-    # Usamos o .copy() direto do df_quali inteiro para preservar TODAS as colunas 
+SYSTEM_PROMPT_NUCLEO = """
+Você é o DELTA — Agente Analítico Sênior de Negociação de Crises do GATE/PMESP.
+
+Sua identidade é a de um Cientista de Dados com especialização dupla:
+(1) Modelagem estatística aplicada à segurança pública.
+(2) Doutrina de negociação de crises: Método Harvard (William Ury), Ciência da Persuasão
+    (Robert Cialdini), Manual de Persuasão do FBI e doutrina operacional do GATE/PMESP.
+
+Você opera dentro de um sistema de análise pós-ação (APA) de ocorrências reais de negociação
+policial. Seu ambiente contém múltiplos dataframes do Pandas e contextos estatísticos
+pré-processados pela aplicação.
+
+════════════════════════════════════════════
+SEÇÃO 1 — ARQUITETURA DE DADOS DISPONÍVEIS
+════════════════════════════════════════════
+
+Você recebe SEMPRE os seguintes recursos:
+
+[df1] — BASE DE OCORRÊNCIAS (df_chat)
+Colunas relevantes incluem, mas não se limitam a:
+  • Data da ocorrência
+  • Negociador Principal (col. limpa: Neg_Limpo)
+  • Negociador Secundário / Negociador Líder
+  • Modalidade (ex: "Pessoa armada com propósito suicida", "Sequestro", "Cárcere Privado")
+  • Tipologia (ex: "Emocionalmente perturbado", "Criminoso comum", "Fanático religioso")
+  • Motivação
+  • Resolução (ex: "Negociação", "Intervenção Tática", "Rendição Pacífica")
+  • Forma de Transição / Sexo do Causador / Uniforme Usado
+  • Tempo de Negociação Real → col. Tempo_Minutos (convertido para minutos decimais)
+  • Tempo de Negociação Tática
+  • Score de Desempenho → col. Score_Desempenho (10=resolução pacífica, 5=tática, 0=outros)
+  • Percepção de Agressividade e Receptividade (início e encerramento) — escala Likert 1–5
+  • Transcrição da negociação (quando disponível)
+
+[df2] — BASE DE TÉCNICAS (df_tec_chat)
+Colunas relevantes incluem:
+  • Nome_Tecnica — nome da técnica de negociação aplicada
+  • Negociador_Tecnica — negociador que aplicou a técnica
+  • IDs de vinculação com as ocorrências de df1
+  • Frequências absolutas e relativas por técnica naquela APA
+
+[CONTEXTO ESTATÍSTICO / NLP] — contexto_str
+Dados pré-processados pelo sistema contendo resultados de:
+  • Análise Semântica: N-Grams, temas dominantes, score ponderado, polaridade, evidências
+  • Análise de Similitude Lexical: grau de espelhamento, núcleos semânticos compartilhados
+  • Spearman: Rho, p-value, validade estatística
+  • Qui-Quadrado (χ²): estatística, p-value, resíduos padronizados
+  • GEE: coeficientes, p-values por variável preditora
+  • Modelagem de viés: distribuição por negociador, modalidade, tipologia
+  • Padrões de fala recorrentes (n-grams de alta frequência)
+
+════════════════════════════════════════════
+SEÇÃO 2 — REGRAS INVIOLÁVEIS DE OPERAÇÃO
+════════════════════════════════════════════
+
+REGRA 1 — FIDELIDADE ABSOLUTA AOS DADOS (ANTI-ALUCINAÇÃO)
+  • Você NUNCA responde baseando-se em suposições, doutrina genérica ou memória do modelo.
+  • ANTES de qualquer resposta factual, você DEVE executar código Python/Pandas visível.
+  • A resposta final DEVE ser baseada explicitamente no output do código executado.
+  • Respostas sem execução de código para perguntas factuais são INVÁLIDAS.
+  • Se após execução o dado não existir, declare:
+    "Não há registros sobre isso na base de dados atual."
+  • NUNCA invente valores, datas, nomes, técnicas ou resultados estatísticos.
+
+REGRA 2 — PROIBIÇÃO DE CAUSALIDADE FORTE
+  • É TERMINANTEMENTE PROIBIDO afirmar que uma técnica "causou" um resultado.
+  • Use EXCLUSIVAMENTE formulações probabilísticas e associativas:
+    ✅ "os dados apresentam padrão compatível com..."
+    ✅ "há associação estatística provável entre..."
+    ✅ "observou-se correlação entre..."
+    ✅ "a técnica está associada, nesta amostra, a..."
+    ❌ "a técnica X causou a rendição"
+    ❌ "o negociador foi bem-sucedido por usar X"
+    ❌ "ficou evidente que..."
+
+REGRA 3 — CRUZAMENTO OBRIGATÓRIO VIA PANDAS
+  • Perguntas com múltiplas variáveis DEVEM gerar merge ou groupby entre df1 e df2.
+  • Nunca responda cruzamentos de memória.
+
+REGRA 4 — HIERARQUIA DE EVIDÊNCIA
+  Ao interpretar qualquer dado, siga esta ordem:
+  1. Dados brutos dos dataframes (df1 e df2) — PRIORIDADE MÁXIMA
+  2. Contexto estatístico pré-processado (N-Grams, Spearman, GEE, χ²)
+  3. Transcrição literal da ocorrência
+  4. Metadados da APA
+  5. Base doutrinária (Ury, Cialdini, FBI) — APENAS como referência interpretativa secundária
+
+REGRA 5 — USO CONTROLADO DA BASE TEÓRICA
+  • A doutrina de Ury, Cialdini e FBI é referência interpretativa SECUNDÁRIA.
+  • É PROIBIDO afirmar que uma técnica pertence diretamente a um modelo teórico.
+  • É PROIBIDO afirmar aplicação de metodologia sem evidência nos dados.
+    ❌ "foi aplicado o método Harvard"
+    ❌ "houve uso de escuta ativa do FBI"
+    ❌ "o negociador aplicou prova social de Cialdini"
+    ✅ "os dados são compatíveis com abordagens descritas na literatura"
+    ✅ "observa-se padrão compatível com progressão relacional"
+    ✅ "há convergência com modelos de negociação baseados em interesses"
+  • A análise deve SEMPRE partir dos dados, nunca da teoria.
+
+REGRA 6 — SEGURANÇA EPISTÊMICA
+  • Quando houver dúvida entre afirmar algo ou reconhecer limitação, prefira a limitação.
+  • Declare sample size quando relevante: "Esta análise é baseada em N=X ocorrências."
+  • Nunca generalize achados de amostras pequenas (N < 10) sem ressalva explícita.
+
+REGRA 7 — CONFIDENCIALIDADE OPERACIONAL
+  • Não revele nomes de causadores, vítimas ou terceiros das transcrições.
+  • Cite apenas excertos analiticamente relevantes e anonimizados.
+  • Não reproduza transcrições integrais.
+
+════════════════════════════════════════════
+SEÇÃO 3 — CAPACIDADES ANALÍTICAS ATIVAS
+════════════════════════════════════════════
+
+3.1 — CONSULTA DESCRITIVA (OCORRÊNCIA INDIVIDUAL)
+  • Recuperar qualquer metadado por ID, data ou negociador
+  • Descrever o perfil completo da APA
+  • Comparar percepção de agressividade/receptividade início vs. encerramento (Delta Δ)
+  • Listar técnicas registradas e suas frequências absolutas e relativas
+  • Interpretar o Laudo Frio (Spearman por ocorrência) em linguagem técnica
+
+3.2 — ANÁLISE DE FREQUÊNCIA DE TÉCNICAS
+  • Rankear técnicas por negociador, modalidade ou tipologia
+  • Calcular proporção de uso de cada técnica no total de interações
+  • Identificar técnicas ausentes em ocorrências com desfechos negativos
+  • Cruzar frequência com Score de Desempenho (groupby + merge)
+  • Detectar repertório limitado (2–3 técnicas repetidas sistematicamente)
+
+3.3 — ANÁLISE DE PERCEPÇÃO (AGRESSIVIDADE E RECEPTIVIDADE)
+  • Calcular Delta (Δ) de agressividade e receptividade por ocorrência
+  • Comparar percepções entre Negociador Principal, Secundário e Líder
+  • Identificar convergência ou divergência entre negociadores da equipe
+  • Calcular médias por modalidade ou tipologia
+  • Interpretar escala Likert: 1=Não agressivo/Não receptivo → 5=Muito agressivo/Muito receptivo
+
+3.4 — ANÁLISE DE SIMILITUDE LEXICAL
+  • Explicar o índice de espelhamento léxico (grau de mirroring)
+  • Interpretar o Grafo de Espelhamento (núcleos semânticos compartilhados)
+  • Contextualizar o conceito de Sincronia Lexical na doutrina de negociação
+  • Relacionar baixo espelhamento com distanciamento conceitual e necessidade de rapport
+
+3.5 — ANÁLISE SEMÂNTICA E N-GRAMS
+  • Descrever temas dominantes (score ponderado, polaridade, evidências)
+  • Interpretar padrões de fala recorrentes (n-grams de alta frequência)
+  • Relacionar polaridade dos temas (proteção vs. risco vs. contexto) com desfecho
+  • Diferenciar temas instrumentais (demandas) de temas emocionais (vínculo, rendição)
+
+3.6 — ANÁLISE DA SÉRIE HISTÓRICA (QUANTITATIVA AGREGADA)
+  • Calcular totais, médias e distribuições sobre toda a base
+  • Filtrar e sumarizar por negociador, modalidade, tipologia ou intervalo de datas
+  • Comparar desempenho relativo entre negociadores (ranking por Score_Desempenho médio)
+  • Calcular tempo médio por modalidade/tipologia
+  • Identificar padrões históricos de resolução
+
+3.7 — MODELOS ESTATÍSTICOS AVANÇADOS (INTERPRETAÇÃO)
+
+  [Spearman]
+  • Explicar o coeficiente Rho e seu significado direcional
+  • Interpretar p-value (<0.05 = estatisticamente significante)
+  • Relacionar correlação com variáveis de tempo vs. percepção emocional
+  • Alertar sobre limitações: tamanho amostral, não-linearidade, não-causalidade
+
+  [Qui-Quadrado — χ²]
+  • Explicar a hipótese nula (independência entre variáveis categóricas)
+  • Interpretar χ² e p-value
+  • Analisar resíduos padronizados (células de maior contribuição)
+
+  [GEE — Generalized Estimating Equations]
+  • Explicar o uso do GEE para dados correlacionados/longitudinais
+  • Interpretar coeficientes e p-values por variável independente
+  • Alertar sobre limitações de N pequeno em modelos GEE
+
+  [Modelagem de Viés]
+  • Identificar concentração desproporcional de modalidades/tipologias por negociador
+  • Diferenciar especialização planejada de viés de alocação
+  • Cruzar distribuição com desfechos
+
+3.8 — PERFIL DO NEGOCIADOR E SUGESTÃO DE TREINAMENTO
+  • Traçar perfil técnico: repertório, modalidades, tipologias, desfechos históricos
+  • Identificar pontos fortes: técnicas mais frequentes em bons desfechos
+  • Identificar gaps: técnicas ausentes em desfechos negativos
+  • Sugerir treinamentos EXCLUSIVAMENTE baseados em lacunas observadas nos dados
+  • Comparar perfil com média da equipe (benchmarking interno)
+  • NUNCA sugerir treinamento em técnica não registrada no banco de dados
+
+3.9 — INTERPRETAÇÃO DOUTRINÁRIA (CAMADA QUALITATIVA)
+  Quando a pergunta exige interpretação do comportamento na interação negocial:
+  • Relacionar padrões observados nos dados com literatura de negociação de crises
+  • Descrever trajetória comunicacional (progressão, regressão, estabilização)
+  • Interpretar variação semântica e lexical sob a ótica doutrinária
+  • Formular diagnóstico integrado cruzando: técnicas + percepção + similitude + temas
+  • Usar linguagem técnica de redação avançada
+
+════════════════════════════════════════════
+SEÇÃO 4 — FORMATO E ESTILO DE RESPOSTA
+════════════════════════════════════════════
+
+Para consultas SIMPLES (uma variável, resposta direta):
+  → 2–4 parágrafos. Dado → Interpretação → Limitação (se houver).
+
+Para consultas COMPLEXAS (cruzamento de múltiplas variáveis):
+  → Estrutura:
+  📊 Execução Analítica    [o que foi calculado e como]
+  🔍 Resultado             [tabela ou lista com dados encontrados]
+  📌 Interpretação Operacional [o que significa na prática da negociação]
+  ⚠️ Limitações e Ressalvas [N, confundidores, ausência de causalidade]
+
+Para consultas sobre MODELOS ESTATÍSTICOS:
+  → Modelo → Hipótese testada → Resultado na base → Interpretação → Limitações
+
+Para consultas de INTERPRETAÇÃO DOUTRINÁRIA:
+  → Padrão observado nos dados → Relação com literatura → Formulação cautelosa → Limitação
+
+REGRAS DE FORMATAÇÃO:
+  • Tabelas Markdown para rankings e comparações com 3+ itens
+  • Negrito para valores estatísticos chave (Rho, p-value, N, %)
+  • Parágrafos de no máximo 5 linhas para leitura operacional
+
+════════════════════════════════════════════
+SEÇÃO 5 — LÉXICO TÉCNICO OBRIGATÓRIO
+════════════════════════════════════════════
+
+Ao comentar FREQUÊNCIA:
+  "predominância", "maior recorrência", "incidência pontual", "distribuição observada"
+
+Ao comentar SIMILITUDE:
+  "aproximação lexical", "convergência semântica", "compatibilidade com maior espelhamento verbal"
+
+Ao comentar PERCEPÇÃO DOS NEGOCIADORES:
+  "trajetória percebida", "variação observada", "mudança de percepção ao longo da ocorrência"
+
+Ao integrar MÚLTIPLOS INDICADORES:
+  "os dados sugerem", "há compatibilidade entre", "há associação provável",
+  "o conjunto dos indicadores aponta", "não há base suficiente para afirmar de forma categórica"
+
+Ao referenciar BASE TEÓRICA:
+  "os dados são compatíveis com abordagens descritas na literatura"
+  "há convergência com modelos de negociação baseados em interesses"
+  "observa-se padrão compatível com progressão relacional"
+  "há compatibilidade com comportamentos descritos na literatura de influência"
+
+EXPRESSÕES PROIBIDAS em qualquer contexto:
+  ❌ "ficou comprovado"  ❌ "foi determinante"  ❌ "foi decisivo"
+  ❌ "causou diretamente"  ❌ "foi bem-sucedido" (sem sustentação explícita)
+  ❌ "houve rapport"  ❌ "demonstrou empatia"  (sem evidência observável)
+  ❌ "foi aplicado o método Harvard / técnica do FBI / Cialdini"
+
+════════════════════════════════════════════
+SEÇÃO 6 — TRATAMENTO DE ERROS E EDGE CASES
+════════════════════════════════════════════
+
+SE o dado não existir nos dataframes:
+→ "Após consulta nos dataframes, não há registros sobre [X] na base atual."
+
+SE o modelo estatístico não foi calculado nesta sessão:
+→ "O resultado de [modelo] não está disponível no contexto estatístico desta sessão.
+   Processe a APA correspondente na Etapa 2 da aplicação."
+
+SE a amostra é insuficiente (N < mínimo recomendado):
+→ Informe o N disponível, o mínimo recomendado e ressalva de fragilidade estatística.
+
+SE a pergunta solicita dado identificável de causador/vítima:
+→ Responda apenas com dados analíticos agregados ou anonimizados.
+
+SE a pergunta está fora do escopo:
+→ "Esta pergunta requer dados não disponíveis. Posso ajudar com [capacidades disponíveis]."
+"""
+
+BASE_DOUTRINARIA = """
+════════════════════════════════════════════
+BASE TEÓRICA INTERPRETATIVA CONTROLADA
+════════════════════════════════════════════
+
+Esta base teórica é EXCLUSIVAMENTE referência interpretativa secundária.
+A análise deve SEMPRE partir dos dados. A teoria auxilia a linguagem, não a conclusão.
+
+─────────────────────────────────────────────
+[URY / MÉTODO HARVARD] — Princípios e Aplicação Analítica
+─────────────────────────────────────────────
+
+SEPARAÇÃO PESSOAS-PROBLEMA:
+  • Comportamentos emocionais são variáveis do sistema, não falhas.
+  • Legitima análise de trajetória emocional sem julgamento de intenção.
+  • Uso: "observa-se variação emocional ao longo da interação"
+
+INTERESSES vs. POSIÇÕES:
+  • Posição = o que a pessoa declara. Interesse = o que motiva a declaração.
+  • Permite trabalhar com indícios sem inferência causal forte.
+  • Uso: "os dados são compatíveis com resistência associada a interesses não explicitados"
+
+ESCUTA E REFORMULAÇÃO:
+  • Comunicação regula o estado da interação, não apenas transmite conteúdo.
+  • Base para usar similitude lexical como indicador auxiliar de alinhamento.
+  • Uso: "observa-se aproximação lexical compatível com construção de alinhamento"
+
+PROGRESSÃO NÃO LINEAR:
+  • Avanços e regressões coexistem. Sinais são ambíguos.
+  • Fundamenta aceitação de resultados inconclusivos ou contraditórios.
+  • Uso: "dados mistos", "não há base suficiente para afirmar progressão linear"
+
+BATNA (Melhor alternativa ao não acordo):
+  • Resistência pode refletir alternativas percebidas pelo causador.
+  • Evitar inferir diretamente quais são essas alternativas.
+  • Uso: "persistência observada pode ser compatível com percepção de alternativas externas"
+
+─────────────────────────────────────────────
+[CIALDINI] — Princípios e Aplicação Analítica
+─────────────────────────────────────────────
+
+RECIPROCIDADE:
+  • Resposta proporcional a atenção, respeito ou concessões percebidas.
+  • Uso: "observa-se encadeamento interacional compatível com ciclo de reciprocidade"
+
+COERÊNCIA E COMPROMISSO:
+  • Manutenção de consistência com declarações anteriores.
+  • Base para interpretar repetição discursiva e persistência de posição.
+  • Uso: "a manutenção do padrão discursivo é compatível com comportamento de coerência"
+
+AFINIDADE (Liking):
+  • Similaridade de linguagem e validação aumentam receptividade.
+  • Fundamenta uso da similitude lexical como indicador auxiliar.
+  • Uso: "há convergência lexical compatível com construção de aproximação"
+
+CONTRASTE:
+  • Percepções são influenciadas por comparação sequencial.
+  • Uso: "observa-se possível efeito de contraste na sequência comunicacional"
+
+PORTA NA CARA / PÉ NA PORTA:
+  • Redução progressiva de demandas (Porta na Cara) ou escalada incremental (Pé na Porta).
+  • Uso: "padrão compatível com redução sequencial de demanda" /
+         "há compatibilidade com progressão incremental de aceitação"
+
+REATÂNCIA PSICOLÓGICA:
+  • Aumento de resistência quando há percepção de imposição ou perda de liberdade.
+  • Uso: "os dados são compatíveis com aumento de resistência frente à pressão"
+
+ROTULAGEM (Labeling):
+  • Atribuição de identidade pode influenciar comportamento subsequente.
+  • Uso: "há indício de atribuição identitária na interação"
+
+─────────────────────────────────────────────
+[MODELO FBI / BCSMM] — Princípios e Aplicação Analítica
+─────────────────────────────────────────────
+
+PROGRESSÃO RELACIONAL (Behavioral Change Stairway Model):
+  Escuta ativa → Empatia → Rapport → Influência → Mudança comportamental
+  • A progressão NÃO é automática nem garantida.
+  • Uso: "trajetória compatível com progressão relacional descrita na literatura"
+  • NUNCA afirmar que "houve rapport" sem evidência observável.
+
+REGULAÇÃO EMOCIONAL:
+  • Alta ativação emocional reduz processamento racional.
+  • Comunicação visa modular intensidade, não apenas transmitir conteúdo.
+  • Uso: "há variação observada na trajetória emocional ao longo da ocorrência"
+
+INFLUÊNCIA INDIRETA (não coercitiva):
+  • Construção progressiva de aceitação, redução de resistência.
+  • Uso: "há associação provável com aumento gradual de receptividade"
+
+TEMPO COMO VARIÁVEL TÁTICA:
+  • Tempo permite redução de ativação emocional e aumento do espaço de processamento.
+  • Uso: "os dados sugerem variação ao longo da progressão temporal"
+
+CONTENÇÃO DE ESCALADA:
+  • Estabilidade comunicacional, previsibilidade, ausência de confronto direto.
+  • Uso: "padrão compatível com contenção da escalada"
+
+IMPREVISIBILIDADE E NÃO LINEARIDADE:
+  • Fatores externos influenciam fortemente. Resultados são incertos.
+  • Uso: "dados mistos", "não há base suficiente para afirmar"
+
+─────────────────────────────────────────────
+REGRAS DE USO DA BASE TEÓRICA (INVIOLÁVEIS)
+─────────────────────────────────────────────
+
+1. É PROIBIDO afirmar que uma técnica pertence diretamente a um modelo teórico.
+2. É PROIBIDO afirmar aplicação de metodologia sem evidência direta nos dados.
+3. É PERMITIDO apenas dizer que padrões observados são "compatíveis com abordagens
+   descritas na literatura".
+4. A análise deve SEMPRE partir dos dados da ocorrência, NUNCA da teoria.
+5. A teoria serve para QUALIFICAR a linguagem da resposta, não para SUBSTITUIR evidência.
+"""
+
+# ============================================================
+# BLOCO B — CLASSIFICADOR DE INTENÇÃO (ROTEADOR DE CAMADAS)
+# ============================================================
+
+PALAVRAS_DOUTRINARIAS = [
+    "perfil", "interpretar", "interpretação", "diagnóstico",
+    "comportamento", "comportamental", "trajetória",
+    "emocional", "emoção", "escalada", "desescalada",
+    "rapport", "vínculo", "empatia", "escuta", "persuasão",
+    "resistência", "receptividade", "agressividade",
+    "progressão", "relacional", "comunicação",
+    "semantica", "semântica", "similitude", "lexical",
+    "espelhamento", "n-gram", "ngram", "tema", "temas",
+    "dominante", "polaridade",
+    "treinamento", "treino", "desenvolvimento", "melhoria",
+    "oportunidade", "ponto forte", "lacuna", "gap",
+    "integrar", "cruzar com", "relação entre", "associação",
+    "o que isso significa", "como interpretar", "explique",
+    "o que indica", "o que revela", "analise", "análise",
+    "padrão", "tendência", "comparar", "comparação",
+]
+
+PALAVRAS_EXCLUSIVAMENTE_FACTUAIS = [
+    "uniforme", "data", "quando", "qual era", "quantas",
+    "total de", "lista", "nome", "quem atendeu",
+    "duração", "tempo total", "quanto tempo",
+]
+
+def classificar_query(pergunta: str) -> str:
+    """
+    Retorna:
+      'factual'     — consulta de dados brutos, sem necessidade de doutrina
+      'doutrinaria' — interpretação qualitativa, ativa a Camada 2
+
+    MELHORIA v3.0: qualquer sinal doutrinário ativa a camada 2.
+    Elimina falsos negativos em perguntas híbridas.
+    """
+    pergunta_lower = pergunta.lower()
+    hits_doutrinarios = sum(1 for p in PALAVRAS_DOUTRINARIAS if p in pergunta_lower)
+    if hits_doutrinarios > 0:
+        return "doutrinaria"
+    return "factual"
+
+def selecionar_modelo(tipo_query: str) -> str:
+    """
+    MELHORIA v3.0: modelo mais leve para queries factuais simples.
+    Reduz custo e latência sem perda de qualidade.
+    """
+    if tipo_query == "factual":
+        return "gpt-4o-mini"
+    return "gpt-4o"
+
+def selecionar_temperatura(tipo_query: str) -> float:
+    """
+    MELHORIA v3.0: leve criatividade controlada para interpretação doutrinária.
+    Melhora qualidade narrativa sem comprometer fidelidade.
+    """
+    if tipo_query == "factual":
+        return 0.0
+    return 0.15
+
+# ============================================================
+# BLOCO C — MONTAGEM DINÂMICA DO PREFIX
+# ============================================================
+
+def montar_prefix(pergunta: str, df_chat: pd.DataFrame, df_tec_chat: pd.DataFrame, contexto_str: str) -> str:
+    """
+    Monta o PREFIX dinamicamente com ou sem a Camada Doutrinária.
+
+    MELHORIA v3.0:
+    - Camada doutrinária injetada apenas quando necessário
+    - Enforcement explícito de execução de código Pandas
+    - Schema dos dataframes gerado dinamicamente
+    """
+    tipo_query = classificar_query(pergunta)
+
+    camada_doutrinaria = ""
+    if tipo_query == "doutrinaria":
+        camada_doutrinaria = f"""
+════════════════════════════════════════════
+CAMADA DOUTRINÁRIA ATIVA (Query interpretativa detectada)
+════════════════════════════════════════════
+{BASE_DOUTRINARIA}
+"""
+
+    enforcement_pandas = """
+════════════════════════════════════════════
+ENFORCEMENT DE EXECUÇÃO (INVIOLÁVEL)
+════════════════════════════════════════════
+ANTES de qualquer resposta factual:
+  1. Você DEVE executar código Python/Pandas visível no ambiente de ferramentas.
+  2. A resposta final DEVE referenciar explicitamente o output do código executado.
+  3. Respostas sem execução de código para perguntas factuais são INVÁLIDAS e serão rejeitadas.
+  4. Para cruzamentos entre df1 e df2, use pd.merge() ou groupby com as colunas de vínculo disponíveis.
+  5. Declare sempre o N da amostra consultada.
+"""
+
+    prefix = f"""
+{SYSTEM_PROMPT_NUCLEO}
+
+{enforcement_pandas}
+
+════════════════════════════════════════════
+CONTEXTO ESTATÍSTICO DESTA SESSÃO:
+════════════════════════════════════════════
+{contexto_str}
+
+════════════════════════════════════════════
+DATAFRAMES DISPONÍVEIS:
+════════════════════════════════════════════
+- df1: Base de Ocorrências ({len(df_chat)} registros)
+  Colunas disponíveis: {list(df_chat.columns)}
+
+- df2: Base de Técnicas ({len(df_tec_chat)} registros)
+  Colunas disponíveis: {list(df_tec_chat.columns)}
+
+{camada_doutrinaria}
+"""
+    return prefix
+
+# ============================================================
+# BLOCO D — AUDITORIA OPERACIONAL
+# ============================================================
+
+def registrar_interacao(pergunta: str, tipo_query: str, modelo_usado: str, tamanho_resposta: int):
+    """
+    Registra metadados de cada interação para auditoria interna.
+    NUNCA loga conteúdo sensível ou identificável.
+    """
+    entrada = {
+        "timestamp": datetime.datetime.now().isoformat(),
+        "tipo_query": tipo_query,
+        "modelo_usado": modelo_usado,
+        "camada_doutrinaria_ativa": tipo_query == "doutrinaria",
+        "tamanho_resposta_chars": tamanho_resposta,
+    }
+    if "log_interacoes" not in st.session_state:
+        st.session_state["log_interacoes"] = []
+    st.session_state["log_interacoes"].append(entrada)
+
+# ============================================================
+# BLOCO E — PREPARAÇÃO DOS DATAFRAMES
+# ============================================================
+
+def preparar_df_ocorrencias(df_quali: pd.DataFrame) -> pd.DataFrame:
+    """
+    Prepara o dataframe de ocorrências com colunas derivadas necessárias.
+    """
     df_chat = df_quali.copy()
 
-    # Tratamento de Tempo para cálculos matemáticos
+    # Conversão de tempo (Airtable envia em segundos → minutos decimais)
     def normalizar_tempo_minutos(val):
         try:
-            if isinstance(val, list): val = val[0]
-            if pd.isna(val) or val == "N/D" or val == "": return None
-            # O Airtable envia em segundos. Convertendo para minutos decimais.
+            if isinstance(val, list):
+                val = val[0]
+            if pd.isna(val) or str(val).strip() in ["N/D", "nan", "None", ""]:
+                return None
             return round(float(val) / 60, 2)
-        except:
+        except Exception:
             return None
 
-    if 'Tempo de Negociação Real' in df_chat.columns:
-        df_chat['Tempo_Minutos'] = df_chat['Tempo de Negociação Real'].apply(normalizar_tempo_minutos)
+    if "Tempo de Negociação Real" in df_chat.columns:
+        df_chat["Tempo_Minutos"] = df_chat["Tempo de Negociação Real"].apply(normalizar_tempo_minutos)
 
-    # Adição de Score de Desempenho para correlações
+    if "Tempo de Negociação Tática" in df_chat.columns:
+        df_chat["Tempo_Tatico_Minutos"] = df_chat["Tempo de Negociação Tática"].apply(normalizar_tempo_minutos)
+
+    # Score de desempenho para correlações
     def calcular_score_sucesso(resolucao):
         res_str = str(resolucao).lower()
-        if "pacífica" in res_str or "rendição" in res_str: return 10
-        elif "tática" in res_str: return 5
+        if any(p in res_str for p in ["pacífica", "rendição", "rendição pacífica"]):
+            return 10
+        elif "tática" in res_str or "tatica" in res_str:
+            return 5
         return 0
 
-    if 'Resolução' in df_chat.columns:
-        df_chat['Score_Desempenho'] = df_chat['Resolução'].apply(calcular_score_sucesso)
+    if "Resolução" in df_chat.columns:
+        df_chat["Score_Desempenho"] = df_chat["Resolução"].apply(calcular_score_sucesso)
 
-    # Limpeza básica para facilitar a busca do LLM
-    if 'Negociador Principal' in df_chat.columns:
-        df_chat['Neg_Limpo'] = df_chat['Negociador Principal'].apply(lambda x: str(x[0]) if isinstance(x, list) else str(x))
+    # Limpeza de nomes de negociadores para facilitar filtros do LLM
+    for col_neg in ["Negociador Principal", "Negociador Secundário", "Negociador Líder"]:
+        col_limpa = col_neg.replace(" ", "_").replace("á", "a").replace("á", "a") + "_Limpo"
+        if col_neg in df_chat.columns:
+            df_chat[col_limpa] = df_chat[col_neg].apply(
+                lambda x: str(x[0]).strip() if isinstance(x, list) and len(x) > 0 else str(x).strip()
+            )
 
-    # =========================================
-    # 2. PREPARAÇÃO DO DATAFRAME 2: TÉCNICAS (INTEGRAL)
-    # =========================================
-    df_tec_chat = pd.DataFrame()
-    if not df_tec.empty:
-        df_tec_chat = df_tec.copy()
-        
-        # Encontra a coluna correta de técnicas
-        col_t = next((col for col in ['TÉCNICAS', 'TECNICAS', 'TÉCNICA', 'TECNICA'] if col in df_tec_chat.columns), None)
-        if col_t:
-            df_tec_chat['Nome_Tecnica'] = df_tec_chat[col_t].astype(str).str.replace(r"[\[\]'\"]", "", regex=True).str.strip()
-            df_tec_chat['Nome_Tecnica'] = df_tec_chat['Nome_Tecnica'].replace(['N/D', 'nan', 'None', ''], pd.NA)
-            
-            # Puxa o nome do negociador para permitir cruzamento direto por nome
-            if 'Negociador Principal do incidente crítico' in df_tec_chat.columns:
-                df_tec_chat['Negociador_Tecnica'] = df_tec_chat['Negociador Principal do incidente crítico'].apply(lambda x: str(x[0]) if isinstance(x, list) else str(x))
-            
-            df_tec_chat = df_tec_chat.dropna(subset=['Nome_Tecnica'])
+    # Alias principal para compatibilidade com o agente
+    if "Negociador_Principal_Limpo" in df_chat.columns:
+        df_chat["Neg_Limpo"] = df_chat["Negociador_Principal_Limpo"]
+    elif "Negociador Principal" in df_chat.columns:
+        df_chat["Neg_Limpo"] = df_chat["Negociador Principal"].apply(
+            lambda x: str(x[0]).strip() if isinstance(x, list) and len(x) > 0 else str(x).strip()
+        )
 
-    # =========================================
-    # 3. EXTRAÇÃO DE CONTEXTO ESTATÍSTICO DAS ABAS ANTERIORES
-    # =========================================
-    contexto_estatistico = st.session_state.get('stats_calculados', "Nenhuma análise de N-Grams ou modelagem avançada foi processada nesta sessão ainda.")
-    
-    try:
-        if isinstance(contexto_estatistico, dict):
-            # Filtra apenas dados textuais ou numéricos (evita quebrar com imagens/gráficos salvos)
-            contexto_filtrado = {k: v for k, v in contexto_estatistico.items() if isinstance(v, (str, list, int, float))}
-            contexto_str = json.dumps(contexto_filtrado, ensure_ascii=False)
-        else:
-            contexto_str = str(contexto_estatistico)
-    except:
-        contexto_str = "Dados estatísticos em formato não legível."
+    return df_chat
 
-    # 🔥 CORREÇÃO CRÍTICA DO KEYERROR: 
-    # Duplicamos as chaves para que o LangChain não confunda o JSON com variáveis de formatação.
-    contexto_str = contexto_str.replace("{", "{{").replace("}", "}}")
 
-    # =========================================
-    # 4. CONFIGURAÇÃO DO AGENTE DE IA (O CÉREBRO)
-    # =========================================
-    PREFIX = f"""
-    Você é um Cientista de Dados Sênior e Especialista em Negociação Policial do GATE.
-
-    Você recebeu uma lista com DOIS dataframes do Pandas (`df1` e `df2`) e um contexto estatístico:
-    - `df1`: Base de Ocorrências (Contém colunas como Data da ocorrência, Uniforme Usado, Motivação, Resolução, Tipologia, Modalidade, Tempo de Negociação Real, Neg_Limpo).
-    - `df2`: Base de Técnicas (Contém a técnica aplicada em `Nome_Tecnica` e o negociador que a aplicou em `Negociador_Tecnica`).
-    - Contexto Estatístico/NLP gerado previamente pelo sistema: {contexto_str}
-
-    REGRAS INQUEBRÁVEIS (ANTI-ALUCINAÇÃO E CRUZAMENTO):
-    1. Você SEMPRE deve executar código Pandas para consultar dados. NUNCA responda baseando-se em suposições.
-    2. Se perguntarem sobre detalhes específicos de uma ocorrência (Ex: "Qual uniforme a Vanessa usou no dia 29/07/2025?"), filtre o `df1` pelas colunas correspondentes (Data e Negociador) e retorne o valor exato.
-    3. Para cruzar ocorrências com técnicas (Ex: "Quais técnicas a equipe usa mais na modalidade X?"), você deve fazer um agrupamento lógico ou um `pd.merge()` entre `df1` e `df2` usando IDs ou nomes em comum.
-    4. Se a informação não existir nos dados após a execução do Pandas, declare explicitamente: "Não temos dados registrados sobre isso na base atual". NUNCA INVENTE UM DADO.
-
-    BASE TEÓRICA E REDAÇÃO TÁTICA (Modelo FBI, William Ury e Cialdini):
-    - A comunicação modula a intensidade emocional.
-    - É TERMINANTEMENTE PROIBIDO afirmar causalidade forte (ex: "A tática X causou a rendição"). Use expressões como "os dados apresentam padrão compatível com...", "há associação provável...", "a técnica está associada a...".
-    - Ao analisar resultados estatísticos ou tempos, explique os números friamente sob a ótica da doutrina de negociação de crises.
-    - Responda de forma direta e profissional, adequada para operadores de segurança pública.
+def preparar_df_tecnicas(df_tec: pd.DataFrame) -> pd.DataFrame:
     """
+    Prepara o dataframe de técnicas com colunas normalizadas.
+    """
+    if df_tec.empty:
+        return pd.DataFrame()
 
-    llm = ChatOpenAI(
-        temperature=0.0,
-        model="gpt-4o", 
-        api_key=st.secrets["OPENAI_API_KEY"]
+    df_tec_chat = df_tec.copy()
+
+    # Detecta coluna de técnicas (tolerante a variações de nome)
+    col_t = next(
+        (col for col in ["TÉCNICAS", "TECNICAS", "TÉCNICA", "TECNICA", "Técnica", "Tecnica"]
+         if col in df_tec_chat.columns),
+        None
+    )
+    if col_t:
+        df_tec_chat["Nome_Tecnica"] = (
+            df_tec_chat[col_t]
+            .astype(str)
+            .str.replace(r"[\[\]'\"\(\)]", "", regex=True)
+            .str.strip()
+        )
+        df_tec_chat["Nome_Tecnica"] = df_tec_chat["Nome_Tecnica"].replace(
+            ["N/D", "nan", "None", ""], pd.NA
+        )
+
+    # Detecta coluna de negociador nas técnicas
+    col_neg_tec = next(
+        (col for col in df_tec_chat.columns if "negociador" in col.lower() and "incidente" in col.lower()),
+        next((col for col in df_tec_chat.columns if "negociador" in col.lower()), None)
+    )
+    if col_neg_tec:
+        df_tec_chat["Negociador_Tecnica"] = df_tec_chat[col_neg_tec].apply(
+            lambda x: str(x[0]).strip() if isinstance(x, list) and len(x) > 0 else str(x).strip()
+        )
+
+    df_tec_chat = df_tec_chat.dropna(subset=["Nome_Tecnica"]) if "Nome_Tecnica" in df_tec_chat.columns else df_tec_chat
+
+    return df_tec_chat
+
+
+def preparar_contexto_str(stats_calculados) -> str:
+    """
+    Serializa o contexto estatístico de forma segura para injeção no prefix.
+    Escapa chaves para evitar KeyError no LangChain.
+    """
+    try:
+        if isinstance(stats_calculados, dict):
+            contexto_filtrado = {
+                k: v for k, v in stats_calculados.items()
+                if isinstance(v, (str, list, int, float, dict))
+            }
+            contexto_str = json.dumps(contexto_filtrado, ensure_ascii=False, indent=2)
+        else:
+            contexto_str = str(stats_calculados)
+    except Exception:
+        contexto_str = "Dados estatísticos em formato não legível nesta sessão."
+
+    # CRÍTICO: escapa chaves para evitar KeyError no LangChain f-string
+    contexto_str = contexto_str.replace("{", "{{").replace("}", "}}")
+    return contexto_str
+
+# ============================================================
+# BLOCO F — INTERFACE DO CHAT (ABA 3)
+# ============================================================
+
+with aba_chat:
+
+    # ── Cabeçalho ──────────────────────────────────────────
+    st.markdown("### 💬 DELTA — Assistente Analítico Operacional | GATE/PMESP")
+    st.markdown(
+        "<p style='color:#aaa; font-size:13px;'>"
+        "Consultas baseadas exclusivamente em dados reais via Tool Calling. "
+        "O agente executa análises Pandas cruzando Ocorrências e Técnicas, "
+        "interpreta modelos estatísticos e traça perfis operacionais de negociadores."
+        "</p>",
+        unsafe_allow_html=True,
     )
 
-    agent_executor = create_pandas_dataframe_agent(
-        llm,
-        [df_chat, df_tec_chat], 
-        verbose=True, 
-        agent_type="openai-tools",
-        prefix=PREFIX,
-        allow_dangerous_code=True 
-    )
+    # ── Preparação dos dados ────────────────────────────────
+    df_chat = preparar_df_ocorrencias(df_quali)
+    df_tec_chat = preparar_df_tecnicas(df_tec)
 
-    # =========================================
-    # 5. INTERFACE DO CHAT
-    # =========================================
+    stats_calculados = st.session_state.get(
+        "stats_calculados",
+        "Nenhuma análise estatística avançada foi processada nesta sessão ainda. "
+        "Processe uma APA na Etapa 2 para habilitar Spearman, GEE, χ² e N-Grams."
+    )
+    contexto_str = preparar_contexto_str(stats_calculados)
+
+    # ── Inicialização do histórico de chat ──────────────────
     if "mensagens_chat" not in st.session_state:
         st.session_state.mensagens_chat = [
-            {"role": "assistant", "content": "Base operacional integral conectada. Posso cruzar dados de uniformes, datas, resoluções, técnicas, tempos e modelos estatísticos. Qual é a sua dúvida?"}
+            {
+                "role": "assistant",
+                "content": (
+                    "🟢 **DELTA operacional.** Base de ocorrências e banco de técnicas conectados.\n\n"
+                    "Posso responder consultas descritivas, cruzar dados entre ocorrências e técnicas, "
+                    "interpretar modelos estatísticos (Spearman, χ², GEE), traçar perfis de negociadores "
+                    "e sugerir treinamentos com base nos dados.\n\n"
+                    "**Exemplos de perguntas:**\n"
+                    "- *Qual o uniforme usado pelo negociador X na ocorrência de DD/MM/AAAA?*\n"
+                    "- *Quais as 5 técnicas mais usadas em ocorrências com resolução pacífica?*\n"
+                    "- *Trace o perfil operacional completo do negociador [nome].*\n"
+                    "- *O que o resultado de Spearman desta APA indica sobre a trajetória emocional?*\n"
+                    "- *Há viés de alocação de modalidades por negociador na série histórica?*"
+                ),
+            }
         ]
 
+    # ── Renderização do histórico ───────────────────────────
     for msg in st.session_state.mensagens_chat:
         with st.chat_message(msg["role"]):
             st.markdown(msg["content"])
 
-    pergunta = st.chat_input("Ex: Qual era o uniforme usado pela Vanessa na ocorrência de 29/07/2025?")
+    # ── Input do usuário ────────────────────────────────────
+    pergunta = st.chat_input(
+        "Ex: Quais técnicas o negociador X mais usou em ocorrências com resolução tática?"
+    )
 
     if pergunta:
         with st.chat_message("user"):
             st.markdown(pergunta)
         st.session_state.mensagens_chat.append({"role": "user", "content": pergunta})
 
-        with st.spinner("Construindo query Python, analisando variáveis e cruzando dados..."):
+        # ── Classificação e seleção de recursos ────────────
+        tipo_query = classificar_query(pergunta)
+        modelo_selecionado = selecionar_modelo(tipo_query)
+        temperatura_selecionada = selecionar_temperatura(tipo_query)
+
+        # ── Indicador visual de camada ativa ───────────────
+        camada_label = "🧠 Camada Doutrinária ativa" if tipo_query == "doutrinaria" else "📊 Consulta factual"
+        with st.spinner(f"[{camada_label}] Analisando dados e construindo resposta..."):
             try:
-                resposta_bruta = agent_executor.invoke({"input": pergunta})
-                resposta = resposta_bruta.get("output", "Desculpe, não consegui formular uma resposta baseada nos dados.")
-                
+                # PREFIX reconstruído a cada query (com ou sem camada doutrinária)
+                prefix_dinamico = montar_prefix(pergunta, df_chat, df_tec_chat, contexto_str)
+
+                llm = ChatOpenAI(
+                    model=modelo_selecionado,
+                    temperature=temperatura_selecionada,
+                    api_key=st.secrets["OPENAI_API_KEY"],
+                    max_tokens=4096,
+                    timeout=120,
+                )
+
+                agent_executor = create_pandas_dataframe_agent(
+                    llm=llm,
+                    df=[df_chat, df_tec_chat],
+                    verbose=True,
+                    agent_type="openai-tools",
+                    prefix=prefix_dinamico,
+                    allow_dangerous_code=True,
+                    max_iterations=15,
+                    max_execution_time=90,
+                    handle_parsing_errors=True,
+                    return_intermediate_steps=True,  # MELHORIA: auditoria de execução
+                )
+
+                resultado = agent_executor.invoke({"input": pergunta})
+                resposta = resultado.get(
+                    "output",
+                    "Não foi possível formular uma resposta baseada nos dados disponíveis."
+                )
+
+                # Auditoria interna (sem logar conteúdo sensível)
+                registrar_interacao(
+                    pergunta=pergunta,
+                    tipo_query=tipo_query,
+                    modelo_usado=modelo_selecionado,
+                    tamanho_resposta=len(resposta),
+                )
+
             except Exception as e:
-                resposta = f"⚠️ **Erro na consulta analítica:** A combinação solicitada gerou um conflito no cruzamento de variáveis no Pandas. Tente especificar um pouco mais a pergunta. *Erro técnico: {str(e)}*"
+                erro_msg = str(e)
+                # Mensagem de erro operacional sem expor stack trace completo
+                if "context_length" in erro_msg.lower() or "token" in erro_msg.lower():
+                    resposta = (
+                        "⚠️ **Limite de contexto atingido.** "
+                        "A base de dados desta sessão excede o limite de tokens do modelo. "
+                        "Tente uma pergunta mais específica ou filtre por negociador/data."
+                    )
+                elif "timeout" in erro_msg.lower():
+                    resposta = (
+                        "⚠️ **Timeout na análise.** "
+                        "A consulta excedeu o tempo limite. "
+                        "Tente simplificar a pergunta ou reduzir o escopo do cruzamento."
+                    )
+                else:
+                    resposta = (
+                        f"⚠️ **Erro na consulta analítica:** {erro_msg}\n\n"
+                        "Verifique se a APA foi processada corretamente na Etapa 2 "
+                        "ou tente especificar melhor a pergunta."
+                    )
 
         with st.chat_message("assistant"):
             st.markdown(resposta)
         st.session_state.mensagens_chat.append({"role": "assistant", "content": resposta})
 
-    # =========================================
-    # 6. TEXTO EXPLICATIVO (RODAPÉ)
-    # =========================================
+    # ── Painel de auditoria (expansível, apenas para admin) ─
+    with st.expander("🔍 Log de Interações (Auditoria Operacional)", expanded=False):
+        log = st.session_state.get("log_interacoes", [])
+        if log:
+            df_log = pd.DataFrame(log)
+            st.dataframe(df_log, use_container_width=True)
+        else:
+            st.info("Nenhuma interação registrada nesta sessão.")
+
+    # ── Rodapé informativo ──────────────────────────────────
     st.markdown("""
-    <div style='margin-top: 30px; margin-bottom: 100px; padding: 15px; background-color: #111; border-radius: 8px;'>
-        <p style='color: #bbb; font-size: 14px;'>
-        <b>Sobre o Assistente Analítico:</b><br><br>
-        Este sistema foi projetado para responder perguntas com base exclusivamente nos dados reais das ocorrências.
-        Nenhuma resposta é gerada por suposição ou inferência livre.
-        <br><br>
-        Todas as respostas são resultado de consultas diretas na base de dados (cruzando <b>Metadados da Ocorrência</b> com o <b>Banco de Técnicas</b>) e cálculos matemáticos controlados.
-        O modelo de IA atua como cientista de dados, escrevendo e rodando scripts internos para encontrar associações, tempos médios, rankings e dificuldades operacionais.
-        <br><br>
-        <b>Exemplos de perguntas avançadas:</b><br>
-        • Qual era o uniforme usado pela Vanessa na ocorrência de 29/07/2025?<br>
-        • Qual a modalidade de ocorrência que o negociador Silva teve mais dificuldade de atender com base no tempo?<br>
-        • Quais são as 3 técnicas mais empregadas quando a resolução termina em rendição pacífica?<br>
+    <div style='margin-top:30px; margin-bottom:100px; padding:15px;
+                background-color:#111; border-radius:8px;'>
+        <p style='color:#bbb; font-size:13px;'>
+        <b>Sobre o DELTA — Assistente Analítico GATE/PMESP:</b><br><br>
+        Todas as respostas são geradas exclusivamente a partir dos dados reais das ocorrências.
+        Nenhuma resposta é produzida por suposição, inferência livre ou memória do modelo.<br><br>
+        O agente executa código Python/Pandas internamente para cada consulta,
+        cruzando a <b>Base de Ocorrências</b> com o <b>Banco de Técnicas</b> e
+        interpretando os resultados dos modelos estatísticos avançados (Spearman, χ², GEE).<br><br>
+        <b>Capacidades disponíveis:</b><br>
+        • Consultas descritivas por ocorrência, data, negociador ou modalidade<br>
+        • Análise de frequência e repertório de técnicas<br>
+        • Interpretação de percepção de agressividade e receptividade (Δ Likert)<br>
+        • Análise de similitude lexical e N-Grams da transcrição<br>
+        • Interpretação de Spearman, χ² e GEE<br>
+        • Perfil operacional e sugestão de treinamento por negociador<br>
+        • Detecção de viés de alocação na série histórica<br><br>
+        <span style='color:#666; font-size:11px;'>
+        DELTA v3.0 | LangChain + OpenAI Tool Calling | GATE/PMESP — Uso Restrito Operacional
+        </span>
         </p>
     </div>
     """, unsafe_allow_html=True)
