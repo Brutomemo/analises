@@ -2104,7 +2104,6 @@ with aba_chat:
     # 1. PREPARAÇÃO DO DATAFRAME 1: OCORRÊNCIAS (INTEGRAL)
     # =========================================
     # Usamos o .copy() direto do df_quali inteiro para preservar TODAS as colunas 
-    # (Data da ocorrência, Uniforme Usado, Motivação, Resolução, etc.)
     df_chat = df_quali.copy()
 
     # Tratamento de Tempo para cálculos matemáticos
@@ -2157,15 +2156,20 @@ with aba_chat:
     # 3. EXTRAÇÃO DE CONTEXTO ESTATÍSTICO DAS ABAS ANTERIORES
     # =========================================
     contexto_estatistico = st.session_state.get('stats_calculados', "Nenhuma análise de N-Grams ou modelagem avançada foi processada nesta sessão ainda.")
-    # Converte o dicionário em string para o prompt, ignorando objetos complexos (como imagens de wordcloud)
+    
     try:
         if isinstance(contexto_estatistico, dict):
+            # Filtra apenas dados textuais ou numéricos (evita quebrar com imagens/gráficos salvos)
             contexto_filtrado = {k: v for k, v in contexto_estatistico.items() if isinstance(v, (str, list, int, float))}
             contexto_str = json.dumps(contexto_filtrado, ensure_ascii=False)
         else:
             contexto_str = str(contexto_estatistico)
     except:
         contexto_str = "Dados estatísticos em formato não legível."
+
+    # 🔥 CORREÇÃO CRÍTICA DO KEYERROR: 
+    # Duplicamos as chaves para que o LangChain não confunda o JSON com variáveis de formatação.
+    contexto_str = contexto_str.replace("{", "{{").replace("}", "}}")
 
     # =========================================
     # 4. CONFIGURAÇÃO DO AGENTE DE IA (O CÉREBRO)
@@ -2180,8 +2184,8 @@ with aba_chat:
 
     REGRAS INQUEBRÁVEIS (ANTI-ALUCINAÇÃO E CRUZAMENTO):
     1. Você SEMPRE deve executar código Pandas para consultar dados. NUNCA responda baseando-se em suposições.
-    2. Se perguntarem sobre detalhes específicos de uma ocorrência (Ex: "Qual uniforme a Vanessa usou no dia 29/07/2025?"), filtre o `df1` pelas colunas correspondentes (Data e Negociador) e retorne o valor da coluna (ex: Uniforme Usado).
-    3. Para cruzar ocorrências com técnicas (Ex: "Quais técnicas a equipe usa mais na modalidade X?"), você deve fazer um agrupamento lógico ou um `pd.merge()` entre `df1` e `df2` usando os nomes dos negociadores ou IDs em comum, ou filtrar as condições separadamente.
+    2. Se perguntarem sobre detalhes específicos de uma ocorrência (Ex: "Qual uniforme a Vanessa usou no dia 29/07/2025?"), filtre o `df1` pelas colunas correspondentes (Data e Negociador) e retorne o valor exato.
+    3. Para cruzar ocorrências com técnicas (Ex: "Quais técnicas a equipe usa mais na modalidade X?"), você deve fazer um agrupamento lógico ou um `pd.merge()` entre `df1` e `df2` usando IDs ou nomes em comum.
     4. Se a informação não existir nos dados após a execução do Pandas, declare explicitamente: "Não temos dados registrados sobre isso na base atual". NUNCA INVENTE UM DADO.
 
     BASE TEÓRICA E REDAÇÃO TÁTICA (Modelo FBI, William Ury e Cialdini):
@@ -2193,7 +2197,7 @@ with aba_chat:
 
     llm = ChatOpenAI(
         temperature=0.0,
-        model="gpt-4o", # Modelos menores não conseguem gerar o código de Join/Merge correto
+        model="gpt-4o", 
         api_key=st.secrets["OPENAI_API_KEY"]
     )
 
@@ -2227,7 +2231,6 @@ with aba_chat:
 
         with st.spinner("Construindo query Python, analisando variáveis e cruzando dados..."):
             try:
-                # O Agente vai escrever o código para relacionar o df1 e df2 dependendo da sua pergunta
                 resposta_bruta = agent_executor.invoke({"input": pergunta})
                 resposta = resposta_bruta.get("output", "Desculpe, não consegui formular uma resposta baseada nos dados.")
                 
