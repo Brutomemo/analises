@@ -2084,117 +2084,190 @@ else:
                     st.error(f"Erro na geração do relatório de IA: {str(e)}")
 
                     # ====
-    # ABA 3: CHAT ANALÍTICO (Agente de Dados)
-    # ====
-    with aba_chat:
-        st.markdown("### 💬 Assistente Analítico de Dados Operacionais")
-        st.markdown("<p style='color: #aaa;'>Faça perguntas diretas sobre os dados históricos. O assistente cruza as planilhas matematicamente para evitar alucinações.</p>", unsafe_allow_html=True)
+    # ==== 
+# ABA 3: CHAT ANALÍTICO (Agente de Dados - Versão Robusta)
+# ====
+with aba_chat:
+    st.markdown("### 💬 Assistente Analítico de Dados Operacionais")
+    st.markdown(
+        "<p style='color: #aaa;'>Sistema de consulta estruturada com base em dados reais. As respostas são geradas a partir de cálculos determinísticos, sem inferência livre.</p>",
+        unsafe_allow_html=True
+    )
 
-        # 1. PREPARAÇÃO DOS DADOS (O Segredo Anti-Alucinação)
-        # Criamos um DataFrame limpo e focado apenas com o que a IA precisa saber
-        df_chat = df_quali[['ID_Busca', 'Neg_Limpo', 'Tip_Limpa', 'Mod_Limpa', 'Resolução', 'Tempo de Negociação Real']].copy()
-        
-        # Criando o "Score de Desempenho" matemático para a IA não ter que "adivinhar" o que é bom
-        # Exemplo: Se a resolução foi "Rendição Pacífica", ganha 10 pontos. Se não, 0.
-        def calcular_score_sucesso(resolucao):
-            res_str = str(resolucao).lower()
-            if "pacífica" in res_str or "rendição" in res_str:
-                return 10
-            elif "tática" in res_str:
-                return 5
-            return 0
-            
-        df_chat['Score_Desempenho'] = df_chat['Resolução'].apply(calcular_score_sucesso)
+    # =========================================
+    # 1. PREPARAÇÃO DOS DADOS (FONTE DE VERDADE)
+    # =========================================
+    df_chat = df_quali[['ID_Busca', 'Neg_Limpo', 'Tip_Limpa', 'Mod_Limpa', 'Resolução', 'Tempo de Negociação Real']].copy()
 
-        # 2. INTERFACE DO CHAT
-        if "mensagens_chat" not in st.session_state:
-            st.session_state.mensagens_chat = [
-                {"role": "assistant", "content": "Senhor, base de dados sincronizada. O que deseja saber sobre as ocorrências, negociadores ou modalidades?"}
-            ]
+    def calcular_score_sucesso(resolucao):
+        res_str = str(resolucao).lower()
+        if "pacífica" in res_str or "rendição" in res_str:
+            return 10
+        elif "tática" in res_str:
+            return 5
+        return 0
 
-        # Exibe o histórico na tela
-        for msg in st.session_state.mensagens_chat:
-            with st.chat_message(msg["role"]):
-                st.markdown(msg["content"])
+    df_chat['Score_Desempenho'] = df_chat['Resolução'].apply(calcular_score_sucesso)
 
-        # Campo de entrada do usuário
-        pergunta = st.chat_input("Ex: Quantas ocorrências do tipo Suicida Armado o Cap PM Pavão atendeu?")
-        
-        if pergunta:
-            # Mostra a pergunta
-            with st.chat_message("user"):
-                st.markdown(pergunta)
-            st.session_state.mensagens_chat.append({"role": "user", "content": pergunta})
+    # =========================================
+    # 2. FUNÇÕES DETERMINÍSTICAS (ANTI-ALUCINAÇÃO)
+    # =========================================
 
-            with st.spinner("Consultando matriz de dados..."):
-                try:
-                    # 3. INTEGRAÇÃO COM O AGENTE (LangChain + Pandas)
-                    # NOTA: Você precisará importar: 
-                    # from langchain_experimental.agents import create_pandas_dataframe_agent
-                    # from langchain_openai import ChatOpenAI
-                    
-                    from langchain_experimental.agents import create_pandas_dataframe_agent
-                    from langchain_openai import ChatOpenAI
-                    
-                    # Inicializa o motor da IA (Ajuste a chave de API conforme seu secrets)
-                    llm = ChatOpenAI(temperature=0.0, model="gpt-4o-mini", api_key=st.secrets["OPENAI_API_KEY"])
-                    
-                    # Cria o Agente que lê o DataFrame
-                    agente_pandas = create_pandas_dataframe_agent(
-                        llm, 
-                        df_chat, 
-                        verbose=True, 
-                        agent_type="openai-tools",
-                        allow_dangerous_code=True # Necessário para o agente rodar o Pandas
-                    )
-                    
-                    # Instrução de Sistema (Guardrail de Segurança)
-                    prompt_seguro = f"""
-                    Você atua como Cientista de Dados Sênior e Assessor de Inteligência Estatística para a Equipe de Negociação do GATE (PMESP).
-                    O usuário já possui conhecimentos básicos sobre os modelos. Sua função é entregar respostas com rigor metodológico, foco em evidências empíricas e utilidade tática.
+    def contar_ocorrencias(df, negociador=None, tipologia=None):
+        filtro = df.copy()
 
-                    ### DIRETRIZES DE EXECUÇÃO DE CÓDIGO E DADOS (ANTI-ALUCINAÇÃO)
-                    1. ZERO DEDUÇÃO: Para qualquer pergunta quantitativa (ex: quantas ocorrências, qual modalidade, frequência, médias), você DEVE obrigatoriamente escrever e executar o código Pandas correspondente no DataFrame atual.
-                    2. RESULTADOS VAZIOS: Se o filtro aplicado resultar em 0 ou um DataFrame vazio, responda: "De acordo com a matriz de dados atual, não há registros operacionais que satisfaçam esta condição."
-                    3. EFICÁCIA/DESEMPENHO: A máquina não tem opinião. Se perguntarem sobre "melhor desempenho", classifique os dados utilizando a coluna 'Score_Desempenho' em ordem decrescente.
+        if negociador:
+            filtro = filtro[filtro["Neg_Limpo"].str.contains(negociador, case=False, na=False)]
+        if tipologia:
+            filtro = filtro[filtro["Tip_Limpa"].str.contains(tipologia, case=False, na=False)]
 
-                    ### DIRETRIZES DE INTERPRETAÇÃO ESTATÍSTICA (NÍVEL ACADÊMICO)
-                    Quando questionado sobre a teoria, interpretação ou escolha dos modelos matemáticos utilizados no sistema, baseie-se estritamente nas seguintes premissas metodológicas:
+        return len(filtro)
 
-                    * A. Correlação de Spearman (Tempo vs. Desescalada):
-                    - Por que usamos: Os dados de agressividade/receptividade (Escala Likert) são qualitativos ordinais e não seguem distribuição normal, inviabilizando testes paramétricos como Pearson.
-                    - Como interpretar: Se o coeficiente 'Rho' for negativo (ex: -0.65) e o p-valor < 0.05, comprova-se empiricamente que o aumento do tempo de negociação reduz a agressividade do causador (validando a doutrina do tempo como tática). 
+    def media_tempo(df, negociador=None):
+        filtro = df.copy()
 
-                    * B. Qui-Quadrado de Pearson e Análise de Resíduos:
-                    - Aplicação Tática: Usado para testar a independência entre o Negociador e a Resolução, ou entre Tipologia e Técnica.
-                    - Como interpretar: Um p-valor < 0.05 rejeita a hipótese nula. A análise de resíduos padronizados ajuda a identificar onde está o viés (ex: se um negociador específico concentra mais resoluções do que o estatisticamente esperado).
+        if negociador:
+            filtro = filtro[filtro["Neg_Limpo"].str.contains(negociador, case=False, na=False)]
 
-                    * C. Regressão Ordinal (Odds Ratio):
-                    - Por que usamos: A variável resposta (Evolução da Crise) é categórica ordenada (Negativa -> Neutra -> Positiva). 
-                    - Como interpretar: Isolamos o peso de variáveis de confusão. O Odds Ratio (OR) quantifica a chance multiplicativa. Um OR = 2.0 para a técnica de 'Escuta Ativa' significa que sua aplicação dobra a probabilidade de transição para um nível superior de receptividade, mantendo outros fatores constantes.
+        if filtro.empty:
+            return None
 
-                    * D. GEE (Equações de Estimação Generalizadas):
-                    - A Fronteira da Doutrina: Modelos clássicos assumem independência das observações, o que é falso em negociações (um mesmo negociador atende múltiplas APAs, gerando correlação intra-sujeito). O GEE controla esse efeito de agrupamento (cluster).
-                    - Como interpretar: Se uma técnica se mantém estatisticamente significativa no GEE, ela é uma evidência robusta para a Doutrina de Negociação da Tropa, provando que o sucesso advém do método, e não do viés de quem o aplicou.
+        return filtro["Tempo de Negociação Real"].mean()
 
-                    * E. Similitude de Cosseno (TF-IDF) e Sincronia Lexical:
-                    - Mecanismo: Vetoriza os textos retirando stopwords. Mede o ângulo entre os vetores do Causador e Negociador no espaço multidimensional.
-                    - Interpretação: Índices acima de 25% indicam alto espelhamento estrutural (Rapport consolidado). Não é apenas repetir palavras, mas alinhar os núcleos semânticos de interesse.
+    def ranking_desempenho(df):
+        return (
+            df.groupby("Neg_Limpo")["Score_Desempenho"]
+            .mean()
+            .sort_values(ascending=False)
+            .head(5)
+        )
 
-                    ### TOM DE RESPOSTA
-                    Mantenha um tom técnico, assertivo, formal e direto, adequado para relatórios de comando ou documentação acadêmica sob normas ABNT. Resuma a estatística em inteligência acionável.
+    # =========================================
+    # 3. PARSER DE INTENÇÃO (CONTROLADO)
+    # =========================================
 
-                    Pergunta do Usuário: {pergunta}
-                    """
-                    
-                    # Executa a busca matemática
-                    resposta_bruta = agente_pandas.invoke(prompt_seguro)
-                    resposta_final = resposta_bruta["output"]
-                    
-                except Exception as e:
-                    resposta_final = f"⚠️ Erro ao processar os dados matemáticos. Verifique se a chave da API está configurada. Detalhe: {str(e)}"
+    def interpretar_pergunta(pergunta):
+        p = pergunta.lower()
 
-                # Mostra a resposta
-                with st.chat_message("assistant"):
-                    st.markdown(resposta_final)
-                st.session_state.mensagens_chat.append({"role": "assistant", "content": resposta_final})
+        if "quantas" in p or "quantidade" in p:
+            return "contagem"
+
+        if "média" in p or "tempo médio" in p:
+            return "media_tempo"
+
+        if "melhor" in p or "desempenho" in p or "ranking" in p:
+            return "ranking"
+
+        return "desconhecido"
+
+    # =========================================
+    # 4. CHAT (INTERFACE)
+    # =========================================
+
+    if "mensagens_chat" not in st.session_state:
+        st.session_state.mensagens_chat = [
+            {"role": "assistant", "content": "Base de dados carregada. Faça uma pergunta sobre ocorrências, negociadores ou padrões estatísticos."}
+        ]
+
+    for msg in st.session_state.mensagens_chat:
+        with st.chat_message(msg["role"]):
+            st.markdown(msg["content"])
+
+    pergunta = st.chat_input("Ex: Quantas ocorrências o negociador X atendeu?")
+
+    if pergunta:
+        with st.chat_message("user"):
+            st.markdown(pergunta)
+        st.session_state.mensagens_chat.append({"role": "user", "content": pergunta})
+
+        with st.spinner("Processando consulta estruturada..."):
+
+            try:
+                intencao = interpretar_pergunta(pergunta)
+
+                # ============================
+                # EXECUÇÃO SEM LLM
+                # ============================
+
+                if intencao == "contagem":
+                    resultado = contar_ocorrencias(df_chat)
+
+                    contexto = f"Total de ocorrências encontradas: {resultado}"
+
+                elif intencao == "media_tempo":
+                    resultado = media_tempo(df_chat)
+
+                    if resultado is None:
+                        contexto = "Não há dados suficientes para cálculo."
+                    else:
+                        contexto = f"Tempo médio de negociação: {round(resultado, 2)} minutos"
+
+                elif intencao == "ranking":
+                    resultado = ranking_desempenho(df_chat)
+
+                    contexto = f"Ranking dos negociadores:\n{resultado.to_string()}"
+
+                else:
+                    contexto = "A pergunta não pôde ser interpretada de forma estruturada."
+
+                # ============================
+                # 5. LLM COMO EXPLICADOR
+                # ============================
+
+                from langchain_openai import ChatOpenAI
+
+                llm = ChatOpenAI(
+                    temperature=0.0,
+                    model="gpt-4o-mini",
+                    api_key=st.secrets["OPENAI_API_KEY"]
+                )
+
+                prompt_explicacao = f"""
+                Você é um assistente analítico.
+
+                REGRAS:
+                - Explique APENAS com base no resultado abaixo
+                - NÃO invente dados
+                - NÃO extrapole
+                - Se o dado for limitado, deixe isso claro
+                - Use linguagem clara, acessível e técnica
+
+                RESULTADO:
+                {contexto}
+
+                PERGUNTA ORIGINAL:
+                {pergunta}
+                """
+
+                resposta_llm = llm.invoke(prompt_explicacao).content
+
+            except Exception as e:
+                resposta_llm = f"Erro ao processar a consulta: {str(e)}"
+
+        with st.chat_message("assistant"):
+            st.markdown(resposta_llm)
+
+        st.session_state.mensagens_chat.append({"role": "assistant", "content": resposta_llm})
+
+    # =========================================
+    # 6. TEXTO EXPLICATIVO (COM MARGEM INFERIOR)
+    # =========================================
+
+    st.markdown("""
+    <div style='margin-top: 30px; margin-bottom: 80px; padding: 15px; background-color: #111; border-radius: 8px;'>
+        <p style='color: #bbb; font-size: 14px;'>
+        <b>Sobre este assistente:</b><br><br>
+        Este agente foi desenvolvido para responder perguntas com base exclusivamente nos dados reais das ocorrências registradas.
+        Ele não utiliza suposições, não interpreta fora dos dados e não gera respostas baseadas em opinião.
+        <br><br>
+        As respostas são construídas a partir de cálculos matemáticos diretos e modelos estatísticos previamente definidos.
+        O sistema é projetado para fornecer explicações claras, mesmo para usuários sem conhecimento técnico em estatística.
+        <br><br>
+        <b>Exemplos de perguntas:</b><br>
+        • Quantas ocorrências determinado negociador atendeu?<br>
+        • Qual o tempo médio de negociação?<br>
+        • Quem apresenta maior desempenho com base nos dados?<br>
+        • Quais padrões podem ser observados nos registros?<br>
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
