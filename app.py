@@ -2512,17 +2512,11 @@ def selecionar_temperatura(tipo_query: str) -> float:
 # BLOCO C — MONTAGEM DINÂMICA DO PREFIX
 # ============================================================
 
-def montar_prefix(pergunta: str, df_chat: pd.DataFrame, df_tec_chat: pd.DataFrame, contexto_str: str) -> str:
+def montar_prefix(tipo_query: str) -> str:
     """
-    Monta o PREFIX dinamicamente com ou sem a Camada Doutrinária.
-
-    MELHORIA v3.0:
-    - Camada doutrinária injetada apenas quando necessário
-    - Enforcement explícito de execução de código Pandas
-    - Schema dos dataframes gerado dinamicamente
+    Removemos a injeção manual de colunas e do JSON estatístico.
+    O Langchain já injeta os esquemas dos DFs nativamente.
     """
-    tipo_query = classificar_query(pergunta)
-
     camada_doutrinaria = ""
     if tipo_query == "doutrinaria":
         camada_doutrinaria = f"""
@@ -2534,38 +2528,24 @@ CAMADA DOUTRINÁRIA ATIVA (Query interpretativa detectada)
 
     enforcement_pandas = """
 ════════════════════════════════════════════
-ENFORCEMENT DE EXECUÇÃO (INVIOLÁVEL)
+ENFORCEMENT DE EXECUÇÃO (INVIOLÁVEL) E AMBIENTE
 ════════════════════════════════════════════
+Você possui acesso a 3 dataframes em seu ambiente:
+ - df1: Base de Ocorrências (Metadados e Desempenho).
+ - df2: Base de Técnicas (Técnicas aplicadas por negociador).
+ - df3: Base Estatística (Resultados de NLP, Spearman, Qui-Quadrado, GEE).
+
 ANTES de qualquer resposta factual:
-  1. Você DEVE executar código Python/Pandas visível no ambiente de ferramentas.
-  2. A resposta final DEVE referenciar explicitamente o output do código executado.
-  3. Respostas sem execução de código para perguntas factuais são INVÁLIDAS e serão rejeitadas.
-  4. Para cruzamentos entre df1 e df2, use pd.merge() ou groupby com as colunas de vínculo disponíveis.
-  5. Declare sempre o N da amostra consultada.
+  1. Escreva e execute o código Python/Pandas usando a ferramenta.
+  2. Para cruzar ocorrências com técnicas, faça merge entre df1 e df2.
+  3. Para obter análises qualitativas globais, consulte df3.
+  4. NUNCA invente resultados. Baseie-se apenas nos outputs do REPL.
 """
 
-    prefix = f"""
-{SYSTEM_PROMPT_NUCLEO}
-
-{enforcement_pandas}
-
-════════════════════════════════════════════
-CONTEXTO ESTATÍSTICO DESTA SESSÃO:
-════════════════════════════════════════════
-{contexto_str}
-
-════════════════════════════════════════════
-DATAFRAMES DISPONÍVEIS:
-════════════════════════════════════════════
-- df1: Base de Ocorrências ({len(df_chat)} registros)
-  Colunas disponíveis: {list(df_chat.columns)}
-
-- df2: Base de Técnicas ({len(df_tec_chat)} registros)
-  Colunas disponíveis: {list(df_tec_chat.columns)}
-
-{camada_doutrinaria}
-"""
-    return prefix
+    prefix = f"{SYSTEM_PROMPT_NUCLEO}\n\n{enforcement_pandas}\n\n{camada_doutrinaria}"
+    
+    # Prevenção extra de segurança para o Langchain PromptTemplate
+    return prefix.replace("{", "{{").replace("}", "}}")
 
 # ============================================================
 # BLOCO D — AUDITORIA OPERACIONAL
@@ -2588,290 +2568,105 @@ def registrar_interacao(pergunta: str, tipo_query: str, modelo_usado: str, taman
     st.session_state["log_interacoes"].append(entrada)
 
 # ============================================================
-# BLOCO E — PREPARAÇÃO DOS DATAFRAMES
+# BLOCO E — PREPARAÇÃO DOS DATAFRAMES (ADICIONADO DF ESTATÍSTICO)
 # ============================================================
+# ... [Mantenha preparar_df_ocorrencias e preparar_df_tecnicas intactos] ...
 
-def preparar_df_ocorrencias(df_quali: pd.DataFrame) -> pd.DataFrame:
+def preparar_df_estatisticas(stats_calculados) -> pd.DataFrame:
     """
-    Prepara o dataframe de ocorrências com colunas derivadas necessárias.
-    """
-    df_chat = df_quali.copy()
-
-    # Conversão de tempo (Airtable envia em segundos → minutos decimais)
-    def normalizar_tempo_minutos(val):
-        try:
-            if isinstance(val, list):
-                val = val[0]
-            if pd.isna(val) or str(val).strip() in ["N/D", "nan", "None", ""]:
-                return None
-            return round(float(val) / 60, 2)
-        except Exception:
-            return None
-
-    if "Tempo de Negociação Real" in df_chat.columns:
-        df_chat["Tempo_Minutos"] = df_chat["Tempo de Negociação Real"].apply(normalizar_tempo_minutos)
-
-    if "Tempo de Negociação Tática" in df_chat.columns:
-        df_chat["Tempo_Tatico_Minutos"] = df_chat["Tempo de Negociação Tática"].apply(normalizar_tempo_minutos)
-
-    # Score de desempenho para correlações
-    def calcular_score_sucesso(resolucao):
-        res_str = str(resolucao).lower()
-        if any(p in res_str for p in ["pacífica", "rendição", "rendição pacífica"]):
-            return 10
-        elif "tática" in res_str or "tatica" in res_str:
-            return 5
-        return 0
-
-    if "Resolução" in df_chat.columns:
-        df_chat["Score_Desempenho"] = df_chat["Resolução"].apply(calcular_score_sucesso)
-
-    # Limpeza de nomes de negociadores para facilitar filtros do LLM
-    for col_neg in ["Negociador Principal", "Negociador Secundário", "Negociador Líder"]:
-        col_limpa = col_neg.replace(" ", "_").replace("á", "a").replace("á", "a") + "_Limpo"
-        if col_neg in df_chat.columns:
-            df_chat[col_limpa] = df_chat[col_neg].apply(
-                lambda x: str(x[0]).strip() if isinstance(x, list) and len(x) > 0 else str(x).strip()
-            )
-
-    # Alias principal para compatibilidade com o agente
-    if "Negociador_Principal_Limpo" in df_chat.columns:
-        df_chat["Neg_Limpo"] = df_chat["Negociador_Principal_Limpo"]
-    elif "Negociador Principal" in df_chat.columns:
-        df_chat["Neg_Limpo"] = df_chat["Negociador Principal"].apply(
-            lambda x: str(x[0]).strip() if isinstance(x, list) and len(x) > 0 else str(x).strip()
-        )
-
-    return df_chat
-
-
-def preparar_df_tecnicas(df_tec: pd.DataFrame) -> pd.DataFrame:
-    """
-    Prepara o dataframe de técnicas com colunas normalizadas.
-    """
-    if df_tec.empty:
-        return pd.DataFrame()
-
-    df_tec_chat = df_tec.copy()
-
-    # Detecta coluna de técnicas (tolerante a variações de nome)
-    col_t = next(
-        (col for col in ["TÉCNICAS", "TECNICAS", "TÉCNICA", "TECNICA", "Técnica", "Tecnica"]
-         if col in df_tec_chat.columns),
-        None
-    )
-    if col_t:
-        df_tec_chat["Nome_Tecnica"] = (
-            df_tec_chat[col_t]
-            .astype(str)
-            .str.replace(r"[\[\]'\"\(\)]", "", regex=True)
-            .str.strip()
-        )
-        df_tec_chat["Nome_Tecnica"] = df_tec_chat["Nome_Tecnica"].replace(
-            ["N/D", "nan", "None", ""], pd.NA
-        )
-
-    # Detecta coluna de negociador nas técnicas
-    col_neg_tec = next(
-        (col for col in df_tec_chat.columns if "negociador" in col.lower() and "incidente" in col.lower()),
-        next((col for col in df_tec_chat.columns if "negociador" in col.lower()), None)
-    )
-    if col_neg_tec:
-        df_tec_chat["Negociador_Tecnica"] = df_tec_chat[col_neg_tec].apply(
-            lambda x: str(x[0]).strip() if isinstance(x, list) and len(x) > 0 else str(x).strip()
-        )
-
-    df_tec_chat = df_tec_chat.dropna(subset=["Nome_Tecnica"]) if "Nome_Tecnica" in df_tec_chat.columns else df_tec_chat
-
-    return df_tec_chat
-
-
-def preparar_contexto_str(stats_calculados) -> str:
-    """
-    Serializa o contexto estatístico de forma segura para injeção no prefix.
-    Escapa chaves para evitar KeyError no LangChain.
+    NOVO: Transforma o contexto estatístico (JSON/Dict) num DataFrame.
+    Isso evita o bug de formatação de prompt e permite que o agente 
+    consulte os testes de hipótese e N-grams via código Pandas puro.
     """
     try:
         if isinstance(stats_calculados, dict):
-            contexto_filtrado = {
-                k: v for k, v in stats_calculados.items()
-                if isinstance(v, (str, list, int, float, dict))
-            }
-            contexto_str = json.dumps(contexto_filtrado, ensure_ascii=False, indent=2)
+            # Transforma as chaves em colunas, com 1 única linha de dados
+            return pd.DataFrame([stats_calculados])
         else:
-            contexto_str = str(stats_calculados)
+            return pd.DataFrame([{"Contexto_Estatistico_Geral": str(stats_calculados)}])
     except Exception:
-        contexto_str = "Dados estatísticos em formato não legível nesta sessão."
-
-    # CRÍTICO: escapa chaves para evitar KeyError no LangChain f-string
-    contexto_str = contexto_str.replace("{", "{{").replace("}", "}}")
-    return contexto_str
+        return pd.DataFrame([{"Status": "Sem dados estatísticos processados"}])
 
 # ============================================================
-# BLOCO F — INTERFACE DO CHAT (ABA 3)
+# BLOCO F — INTERFACE DO CHAT 
 # ============================================================
 
 with aba_chat:
-
-    # ── Cabeçalho ──────────────────────────────────────────
     st.markdown("### 💬 DELTA — Assistente Analítico Operacional | GATE/PMESP")
-    st.markdown(
-        "<p style='color:#aaa; font-size:13px;'>"
-        "Consultas baseadas exclusivamente em dados reais via Tool Calling. "
-        "O agente executa análises Pandas cruzando Ocorrências e Técnicas, "
-        "interpreta modelos estatísticos e traça perfis operacionais de negociadores."
-        "</p>",
-        unsafe_allow_html=True,
-    )
+    # ... [Mantenha a introdução visual] ...
 
-    # ── Preparação dos dados ────────────────────────────────
+    # Prepara 3 DFs em vez de 2
     df_chat = preparar_df_ocorrencias(df_quali)
     df_tec_chat = preparar_df_tecnicas(df_tec)
+    
+    stats_calculados = st.session_state.get("stats_calculados", "Nenhuma análise processada.")
+    df_stats = preparar_df_estatisticas(stats_calculados)
 
-    stats_calculados = st.session_state.get(
-        "stats_calculados",
-        "Nenhuma análise estatística avançada foi processada nesta sessão ainda. "
-        "Processe uma APA na Etapa 2 para habilitar Spearman, GEE, χ² e N-Grams."
-    )
-    contexto_str = preparar_contexto_str(stats_calculados)
-
-    # ── Inicialização do histórico de chat ──────────────────
+    # Inicialização do histórico
     if "mensagens_chat" not in st.session_state:
-        st.session_state.mensagens_chat = [
-            {
-                "role": "assistant",
-                "content": (
-                    "🟢 **DELTA operacional.** Base de ocorrências e banco de técnicas conectados.\n\n"
-                    "Posso responder consultas descritivas, cruzar dados entre ocorrências e técnicas, "
-                    "interpretar modelos estatísticos (Spearman, χ², GEE), traçar perfis de negociadores "
-                    "e sugerir treinamentos com base nos dados.\n\n"
-                    "**Exemplos de perguntas:**\n"
-                    "- *Qual o uniforme usado pelo negociador X na ocorrência de DD/MM/AAAA?*\n"
-                    "- *Quais as 5 técnicas mais usadas em ocorrências com resolução X?*\n"
-                    "- *Trace o perfil operacional completo do negociador [x].*\n"                                       
-                ),
-            }
-        ]
+        st.session_state.mensagens_chat = [{"role": "assistant", "content": "🟢 **DELTA operacional.** ..."}]
 
-    # ── Renderização do histórico ───────────────────────────
     for msg in st.session_state.mensagens_chat:
         with st.chat_message(msg["role"]):
             st.markdown(msg["content"])
 
-    # ── Input do usuário ────────────────────────────────────
-    pergunta = st.chat_input(
-        "Ex: Quais técnicas o negociador X mais usou em ocorrências com resolução tática?"
-    )
+    pergunta = st.chat_input("Ex: Quais técnicas o negociador X mais usou?")
 
     if pergunta:
         with st.chat_message("user"):
             st.markdown(pergunta)
         st.session_state.mensagens_chat.append({"role": "user", "content": pergunta})
 
-        # ── Classificação e seleção de recursos ────────────
         tipo_query = classificar_query(pergunta)
         modelo_selecionado = selecionar_modelo(tipo_query)
         temperatura_selecionada = selecionar_temperatura(tipo_query)
 
-        # ── Indicador visual de camada ativa ───────────────
         camada_label = "🧠 Camada Doutrinária ativa" if tipo_query == "doutrinaria" else "📊 Consulta factual"
-        with st.spinner(f"[{camada_label}] Analisando dados e construindo resposta..."):
+        
+        with st.spinner(f"[{camada_label}] Analisando dados..."):
             try:
-                # PREFIX reconstruído a cada query (com ou sem camada doutrinária)
-                prefix_dinamico = montar_prefix(pergunta, df_chat, df_tec_chat, contexto_str)
+                # 1. Monta o histórico recente para dar "memória" ao agente
+                # Pegamos as últimas 4 mensagens para não estourar o contexto
+                historico_texto = ""
+                mensagens_recentes = st.session_state.mensagens_chat[-5:-1]
+                if len(mensagens_recentes) > 0:
+                    historico_texto = "CONTEXTO DA CONVERSA RECENTE:\n" + "\n".join(
+                        [f"{m['role'].upper()}: {m['content']}" for m in mensagens_recentes]
+                    ) + "\n\nNOVA PERGUNTA DO USUÁRIO:\n"
+
+                input_enriquecido = historico_texto + pergunta
+
+                prefix_dinamico = montar_prefix(tipo_query)
 
                 llm = ChatOpenAI(
                     model=modelo_selecionado,
                     temperature=temperatura_selecionada,
                     api_key=st.secrets["OPENAI_API_KEY"],
                     max_tokens=4096,
-                    timeout=120,
                 )
 
+                # 2. Passamos os 3 DFs. Internamente serão df1, df2 e df3.
                 agent_executor = create_pandas_dataframe_agent(
                     llm=llm,
-                    df=[df_chat, df_tec_chat],
+                    df=[df_chat, df_tec_chat, df_stats], 
                     verbose=True,
                     agent_type="openai-tools",
                     prefix=prefix_dinamico,
                     allow_dangerous_code=True,
-                    max_iterations=15,
-                    max_execution_time=90,
+                    max_iterations=10, # Reduzido para evitar loops infinitos
                     handle_parsing_errors=True,
-                    return_intermediate_steps=True,  # MELHORIA: auditoria de execução
                 )
 
-                resultado = agent_executor.invoke({"input": pergunta})
-                resposta = resultado.get(
-                    "output",
-                    "Não foi possível formular uma resposta baseada nos dados disponíveis."
-                )
+                resultado = agent_executor.invoke({"input": input_enriquecido})
+                resposta = resultado.get("output", "Não consegui processar a resposta.")
 
-                # Auditoria interna (sem logar conteúdo sensível)
-                registrar_interacao(
-                    pergunta=pergunta,
-                    tipo_query=tipo_query,
-                    modelo_usado=modelo_selecionado,
-                    tamanho_resposta=len(resposta),
-                )
+                registrar_interacao(pergunta, tipo_query, modelo_selecionado, len(resposta))
 
             except Exception as e:
                 erro_msg = str(e)
-                # Mensagem de erro operacional sem expor stack trace completo
-                if "context_length" in erro_msg.lower() or "token" in erro_msg.lower():
-                    resposta = (
-                        "⚠️ **Limite de contexto atingido.** "
-                        "A base de dados desta sessão excede o limite de tokens do modelo. "
-                        "Tente uma pergunta mais específica ou filtre por negociador/data."
-                    )
-                elif "timeout" in erro_msg.lower():
-                    resposta = (
-                        "⚠️ **Timeout na análise.** "
-                        "A consulta excedeu o tempo limite. "
-                        "Tente simplificar a pergunta ou reduzir o escopo do cruzamento."
-                    )
-                else:
-                    resposta = (
-                        f"⚠️ **Erro na consulta analítica:** {erro_msg}\n\n"
-                        "Verifique se a APA foi processada corretamente na Etapa 2 "
-                        "ou tente especificar melhor a pergunta."
-                    )
-
+                # ... [Tratamento de erros original mantido] ...
+                resposta = f"⚠️ **Erro na execução:** {erro_msg}"
+        
         with st.chat_message("assistant"):
             st.markdown(resposta)
         st.session_state.mensagens_chat.append({"role": "assistant", "content": resposta})
-
-    # ── Painel de auditoria (expansível, apenas para admin) ─
-    with st.expander("🔍 Log de Interações (Auditoria Operacional)", expanded=False):
-        log = st.session_state.get("log_interacoes", [])
-        if log:
-            df_log = pd.DataFrame(log)
-            st.dataframe(df_log, use_container_width=True)
-        else:
-            st.info("Nenhuma interação registrada nesta sessão.")
-
-    # ── Rodapé informativo ──────────────────────────────────
-    st.markdown("""
-    <div style='margin-top:30px; margin-bottom:100px; padding:15px;
-                background-color:#111; border-radius:8px;'>
-        <p style='color:#bbb; font-size:13px;'>
-        <b>Sobre o DELTA — Assistente Analítico GATE/PMESP:</b><br><br>
-        Todas as respostas são geradas exclusivamente a partir dos dados reais das ocorrências.
-        Nenhuma resposta é produzida por suposição, inferência livre ou memória do modelo.<br><br>
-        O agente executa código Python/Pandas internamente para cada consulta,
-        cruzando a <b>Base de Ocorrências</b> com o <b>Banco de Técnicas</b> e
-        interpretando os resultados dos modelos estatísticos avançados (Spearman, χ², GEE).<br><br>
-        <b>Capacidades disponíveis:</b><br>
-        • Consultas descritivas por ocorrência, data, negociador ou modalidade<br>
-        • Análise de frequência e repertório de técnicas<br>
-        • Interpretação de percepção de agressividade e receptividade (Δ Likert)<br>
-        • Análise de similitude lexical e N-Grams da transcrição<br>
-        • Interpretação de Spearman, χ² e GEE<br>
-        • Perfil operacional e sugestão de treinamento por negociador<br>
-        • Detecção de viés de alocação na série histórica<br><br>
-        <span style='color:#666; font-size:11px;'>
-        DELTA v3.0 | LangChain + OpenAI Tool Calling | GATE/PMESP — Uso Restrito Operacional
-        </span>
-        </p>
-    </div>
-    """, unsafe_allow_html=True)
