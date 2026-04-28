@@ -2613,30 +2613,21 @@ def preparar_df_estatisticas(stats_calculados) -> pd.DataFrame:
 
 with aba_chat:
     st.markdown("### 💬 DELTA — Assistente Analítico Operacional | GATE/PMESP")
-    # ... [Mantenha a introdução visual] ...
 
-    # ── Preparação dos dados ────────────────────────────────
+    # ── Preparação dos dados (BLINDADA E LIMPA) ──────────────────
     
-    # 1. Trava de segurança: impede que o app quebre se os dados não estiverem na memória
-    if "df_quali" not in st.session_state or "df_tec" not in st.session_state:
-        st.warning("⚠️ Base de ocorrências não encontrada na memória. Por favor, processe os dados na Etapa anterior antes de iniciar o Chat Analítico.")
-        st.stop() # Interrompe a renderização desta aba silenciosamente
-
-    # 2. Resgate das variáveis armazenadas na sessão
-    df_quali_atual = st.session_state["df_quali"]
-    df_tec_atual = st.session_state["df_tec"]
-
-    # ── Preparação dos dados (BLINDADA CONTRA NAMEERROR) ─────────────
-    
-    # 1. Se por algum motivo o dado sumiu da memória, forçamos o download agora mesmo
+    # 1. Garante que os dados existem na memória. Se não, baixa do Airtable silenciosamente.
     if "df_quali" not in st.session_state or "df_tec" not in st.session_state:
         with st.spinner("Sincronizando banco de dados com o Airtable..."):
+            import airtable_link
             df_q, _ = airtable_link.buscar_dados_apa()
             df_t, _ = airtable_link.buscar_todas_tecnicas()
             st.session_state["df_quali"] = df_q
             st.session_state["df_tec"] = df_t
 
-    # 2. Injeta os dados no Agente DIRETAMENTE do cofre (isso elimina o NameError)
+    # 2. Injeta os dados no Agente DIRETAMENTE do cofre.
+    # ⚠️ ATENÇÃO: As funções 'preparar_df_ocorrencias' e 'preparar_df_tecnicas' 
+    # DEVEM existir no seu código, no Bloco E, logo acima deste Bloco F.
     df_chat = preparar_df_ocorrencias(st.session_state["df_quali"])
     df_tec_chat = preparar_df_tecnicas(st.session_state["df_tec"])
     
@@ -2645,11 +2636,19 @@ with aba_chat:
         "stats_calculados", 
         "Nenhuma análise estatística processada."
     )
-    df_stats = preparar_df_estatisticas(stats_calculados)
+    
+    # Proteção extra caso a função preparar_df_estatisticas tenha sido apagada
+    if 'preparar_df_estatisticas' in globals():
+        df_stats = preparar_df_estatisticas(stats_calculados)
+    else:
+        import pandas as pd
+        df_stats = pd.DataFrame([{"Contexto": str(stats_calculados)}])
 
-    # Inicialização do histórico
+    # ── Inicialização do histórico de chat ───────────────────────
     if "mensagens_chat" not in st.session_state:
-        st.session_state.mensagens_chat = [{"role": "assistant", "content": "🟢 **DELTA operacional.** ..."}]
+        st.session_state.mensagens_chat = [
+            {"role": "assistant", "content": "🟢 **DELTA operacional.** Base de ocorrências e banco de técnicas conectados.\n\nPosso responder consultas descritivas, cruzar dados e analisar a série histórica."}
+        ]
 
     for msg in st.session_state.mensagens_chat:
         with st.chat_message(msg["role"]):
@@ -2668,10 +2667,9 @@ with aba_chat:
 
         camada_label = "🧠 Camada Doutrinária ativa" if tipo_query == "doutrinaria" else "📊 Consulta factual"
         
-        with st.spinner(f"[{camada_label}] Analisando dados..."):
+        with st.spinner(f"[{camada_label}] Analisando dados e construindo resposta..."):
             try:
                 # 1. Monta o histórico recente para dar "memória" ao agente
-                # Pegamos as últimas 4 mensagens para não estourar o contexto
                 historico_texto = ""
                 mensagens_recentes = st.session_state.mensagens_chat[-5:-1]
                 if len(mensagens_recentes) > 0:
@@ -2690,7 +2688,7 @@ with aba_chat:
                     max_tokens=4096,
                 )
 
-                # 2. Passamos os 3 DFs. Internamente serão df1, df2 e df3.
+                # 2. Passamos os 3 DFs estruturados de forma blindada
                 agent_executor = create_pandas_dataframe_agent(
                     llm=llm,
                     df=[df_chat, df_tec_chat, df_stats], 
@@ -2698,7 +2696,7 @@ with aba_chat:
                     agent_type="openai-tools",
                     prefix=prefix_dinamico,
                     allow_dangerous_code=True,
-                    max_iterations=10, # Reduzido para evitar loops infinitos
+                    max_iterations=10, 
                     handle_parsing_errors=True,
                 )
 
@@ -2709,8 +2707,7 @@ with aba_chat:
 
             except Exception as e:
                 erro_msg = str(e)
-                # ... [Tratamento de erros original mantido] ...
-                resposta = f"⚠️ **Erro na execução:** {erro_msg}"
+                resposta = f"⚠️ **Erro na execução:** {erro_msg}\n\n*Verifique se as colunas estão corretas ou simplifique a pergunta.*"
         
         with st.chat_message("assistant"):
             st.markdown(resposta)
