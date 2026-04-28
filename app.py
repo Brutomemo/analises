@@ -2627,10 +2627,10 @@ with aba_chat:
     df_tec_atual = st.session_state["df_tec"]
 
     # 3. Preparação dos DataFrames para o Agente Delta
-    df_chat = preparar_df_ocorrencias(df_quali_atual)
-    df_tec_chat = preparar_df_tecnicas(df_tec_atual)
+    df_chat = preparar_df_ocorrencias(df_quali)
+    df_tec_chat = preparar_df_tecnicas(df_tec)
     
-    # 4. Preparação do Dataframe Estatístico (A refatoração que elimina alucinações)
+    # Busca o resumo estatístico para o Agente Delta
     stats_calculados = st.session_state.get(
         "stats_calculados", 
         "Nenhuma análise estatística processada."
