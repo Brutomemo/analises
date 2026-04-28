@@ -2701,7 +2701,7 @@ def preparar_df_estatisticas(stats_calculados) -> pd.DataFrame:
 # ============================================================
 
 with aba_chat:
-    st.markdown("### 💬 DELTA — Assistente Analítico Operacional | GATE/PMESP")
+    st.markdown("### 💬 DELTA NEGOCIAÇÃO — Assistente Analítico Operacional | GATE")
     st.markdown(
         "<p style='color:#aaa; font-size:13px;'>"
         "Consultas baseadas exclusivamente em dados reais via Tool Calling. "
