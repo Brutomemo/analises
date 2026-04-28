@@ -2697,6 +2697,14 @@ def preparar_df_estatisticas(stats_calculados) -> pd.DataFrame:
 
 with aba_chat:
     st.markdown("### 💬 DELTA — Assistente Analítico Operacional | GATE/PMESP")
+    st.markdown(
+        "<p style='color:#aaa; font-size:13px;'>"
+        "Consultas baseadas exclusivamente em dados reais via Tool Calling. "
+        "O agente executa análises Pandas cruzando Ocorrências e Técnicas, "
+        "interpreta modelos estatísticos e traça perfis operacionais de negociadores."
+        "</p>",
+        unsafe_allow_html=True,
+    )
 
     # ── Preparação dos dados (BLINDADA E LIMPA) ──────────────────
     
@@ -2723,7 +2731,19 @@ with aba_chat:
     # ── Inicialização do histórico de chat ───────────────────────
     if "mensagens_chat" not in st.session_state:
         st.session_state.mensagens_chat = [
-            {"role": "assistant", "content": "🟢 **DELTA operacional.** Base de ocorrências e banco de técnicas conectados.\n\nPosso responder consultas descritivas, cruzar dados e analisar a série histórica."}
+            {
+                "role": "assistant", 
+                "content": (
+                    "🟢 **DELTA operacional.** Base de ocorrências e banco de técnicas conectados.\n\n"
+                    "Posso responder consultas descritivas, cruzar dados entre ocorrências e técnicas, "
+                    "interpretar modelos estatísticos (Spearman, χ², GEE), traçar perfis de negociadores "
+                    "e sugerir treinamentos com base nos dados.\n\n"
+                    "**Exemplos de perguntas:**\n"
+                    "- *Qual o uniforme usado pelo negociador X na ocorrência de DD/MM/AAAA?*\n"
+                    "- *Quais as 5 técnicas mais usadas em ocorrências com resolução X?*\n"
+                    "- *Trace o perfil operacional completo do negociador [x].*"
+                )
+            }
         ]
 
     for msg in st.session_state.mensagens_chat:
@@ -2754,9 +2774,9 @@ with aba_chat:
                     ) + "\n\nNOVA PERGUNTA DO USUÁRIO:\n"
 
                 input_enriquecido = historico_texto + pergunta
-
                 prefix_dinamico = montar_prefix(tipo_query)
 
+                from langchain_openai import ChatOpenAI
                 llm = ChatOpenAI(
                     model=modelo_selecionado,
                     temperature=temperatura_selecionada,
@@ -2764,7 +2784,7 @@ with aba_chat:
                     max_tokens=4096,
                 )
 
-                # 2. Passamos os 3 DFs estruturados de forma blindada
+                from langchain_experimental.agents.agent_toolkits import create_pandas_dataframe_agent
                 agent_executor = create_pandas_dataframe_agent(
                     llm=llm,
                     df=[df_chat, df_tec_chat, df_stats], 
@@ -2778,13 +2798,37 @@ with aba_chat:
 
                 resultado = agent_executor.invoke({"input": input_enriquecido})
                 resposta = resultado.get("output", "Não consegui processar a resposta.")
-
                 registrar_interacao(pergunta, tipo_query, modelo_selecionado, len(resposta))
 
             except Exception as e:
-                erro_msg = str(e)
-                resposta = f"⚠️ **Erro na execução:** {erro_msg}\n\n*Verifique se as colunas estão corretas ou simplifique a pergunta.*"
+                resposta = f"⚠️ **Erro na execução:** {str(e)}"
         
         with st.chat_message("assistant"):
             st.markdown(resposta)
         st.session_state.mensagens_chat.append({"role": "assistant", "content": resposta})
+
+    # ── RODAPÉ INFORMATIVO RESTAURADO ──────────────────────────────
+    st.markdown("""
+    <div style='margin-top:30px; margin-bottom:100px; padding:15px; 
+                background-color:#111; border-radius:8px;'>
+        <p style='color:#bbb; font-size:13px;'>
+        <b>Sobre o DELTA — Assistente Analítico GATE/PMESP:</b><br><br>
+        Todas as respostas são geradas exclusivamente a partir dos dados reais das ocorrências. 
+        Nenhuma resposta é produzida por suposição, inferência livre ou memória do modelo.<br><br>
+        O agente executa código Python/Pandas internamente para cada consulta, 
+        cruzando a <b>Base de Ocorrências</b> com o <b>Banco de Técnicas</b> e 
+        interpretando os resultados dos modelos estatísticos avançados (Spearman, χ², GEE).<br><br>
+        <b>Capacidades disponíveis:</b><br>
+        • Consultas descritivas por ocorrência, data, negociador ou modalidade<br>
+        • Análise de frequência e repertório de técnicas<br>
+        • Interpretação de percepção de agressividade e receptividade (Δ Likert)<br>
+        • Análise de similitude lexical e N-Grams da transcrição<br>
+        • Interpretação de Spearman, χ² e GEE<br>
+        • Perfil operacional e sugestão de treinamento por negociador<br>
+        • Detecção de viés de alocação na série histórica<br><br>
+        <span style='color:#666; font-size:11px;'>
+        DELTA v3.0 | LangChain + OpenAI Tool Calling | GATE/PMESP — Uso Restrito Operacional
+        </span>
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
