@@ -2717,20 +2717,17 @@ with aba_chat:
 
     # ── Preparação dos dados (BLINDADA E LIMPA) ──────────────────
     
-    # 1. Garante que os dados existem na memória. Se não, baixa do Airtable silenciosamente.
     if "df_quali" not in st.session_state or "df_tec" not in st.session_state:
-        with st.spinner("Sincronizando banco de dados com o Airtable..."):
+        with st.spinner("A sincronizar a base de dados com o Airtable..."):
             import airtable_link
             df_q, _ = airtable_link.buscar_dados_apa()
             df_t, _ = airtable_link.buscar_todas_tecnicas()
             st.session_state["df_quali"] = df_q
             st.session_state["df_tec"] = df_t
 
-    # 2. Injeta os dados no Agente DIRETAMENTE do cofre.
     df_chat = preparar_df_ocorrencias(st.session_state["df_quali"])
     df_tec_chat = preparar_df_tecnicas(st.session_state["df_tec"])
     
-    # 3. Busca o resumo estatístico para o Agente Delta
     stats_calculados = st.session_state.get(
         "stats_calculados", 
         "Nenhuma análise estatística processada."
@@ -2744,9 +2741,9 @@ with aba_chat:
                 "role": "assistant", 
                 "content": (
                     "🟢 **DELTA operacional.** Base de ocorrências e banco de técnicas conectados.\n\n"
-                    "Posso responder consultas descritivas, cruzar dados entre ocorrências e técnicas, "
+                    "Posso responder a consultas descritivas, cruzar dados entre ocorrências e técnicas, "
                     "interpretar modelos estatísticos (Spearman, χ², GEE), traçar perfis de negociadores "
-                    "e sugerir treinamentos com base nos dados.\n\n"
+                    "e sugerir treinos com base nos dados.\n\n"
                     "**Exemplos de perguntas:**\n"
                     "- *Qual o uniforme usado pelo negociador X na ocorrência de DD/MM/AAAA?*\n"
                     "- *Quais as 5 técnicas mais usadas em ocorrências com resolução X?*\n"
@@ -2772,9 +2769,8 @@ with aba_chat:
 
         camada_label = "🧠 Camada Doutrinária ativa" if tipo_query == "doutrinaria" else "📊 Consulta factual"
         
-        with st.spinner(f"[{camada_label}] Analisando dados e construindo resposta..."):
+        with st.spinner(f"[{camada_label}] A analisar os dados e a construir a resposta..."):
             try:
-                # 1. Monta o histórico recente para dar "memória" ao agente
                 historico_texto = ""
                 mensagens_recentes = st.session_state.mensagens_chat[-5:-1]
                 if len(mensagens_recentes) > 0:
@@ -2794,6 +2790,8 @@ with aba_chat:
                 )
 
                 from langchain_experimental.agents.agent_toolkits import create_pandas_dataframe_agent
+                
+                # ---> NOVO: Parâmetro 'number_of_head_rows=1' adicionado abaixo <---
                 agent_executor = create_pandas_dataframe_agent(
                     llm=llm,
                     df=[df_chat, df_tec_chat, df_stats], 
@@ -2803,6 +2801,7 @@ with aba_chat:
                     allow_dangerous_code=True,
                     max_iterations=10, 
                     handle_parsing_errors=True,
+                    number_of_head_rows=1, # Reduz drasticamente os tokens enviados à OpenAI!
                 )
 
                 resultado = agent_executor.invoke({"input": input_enriquecido})
@@ -2816,7 +2815,7 @@ with aba_chat:
             st.markdown(resposta)
         st.session_state.mensagens_chat.append({"role": "assistant", "content": resposta})
 
-    # ── RODAPÉ INFORMATIVO RESTAURADO ──────────────────────────────
+    # ── RODAPÉ INFORMATIVO ──────────────────────────────
     st.markdown("""
     <div style='margin-top:30px; margin-bottom:100px; padding:15px; 
                 background-color:#111; border-radius:8px;'>
@@ -2830,11 +2829,11 @@ with aba_chat:
         <b>Capacidades disponíveis:</b><br>
         • Consultas descritivas por ocorrência, data, negociador ou modalidade<br>
         • Análise de frequência e repertório de técnicas<br>
-        • Interpretação de percepção de agressividade e receptividade (Δ Likert)<br>
+        • Interpretação de perceção de agressividade e recetividade (Δ Likert)<br>
         • Análise de similitude lexical e N-Grams da transcrição<br>
         • Interpretação de Spearman, χ² e GEE<br>
-        • Perfil operacional e sugestão de treinamento por negociador<br>
-        • Detecção de viés de alocação na série histórica<br><br>
+        • Perfil operacional e sugestão de treino por negociador<br>
+        • Deteção de viés de alocação na série histórica<br><br>
         <span style='color:#666; font-size:11px;'>
         DELTA v3.0 | LangChain + OpenAI Tool Calling | GATE/PMESP — Uso Restrito Operacional
         </span>
