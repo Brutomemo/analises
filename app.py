@@ -129,6 +129,26 @@ if not check_password():
 # --- TUDO A PARTIR DAQUI ESTÁ PROTEGIDO PELA SENHA ---
 
 st.sidebar.success("Autenticação validada.")
+# =====================================================================
+# 🚨 INSERIR O CÓDIGO DE CARREGAMENTO GLOBAL AQUI (O "PORTEIRO")
+# =====================================================================
+# 1. Tenta recuperar os dados do cofre (Session State)
+if "df_quali" in st.session_state and "df_tec" in st.session_state:
+    df_quali = st.session_state["df_quali"]
+    df_tec = st.session_state["df_tec"]
+
+# 2. Se não estiverem no cofre (ex: acabou de logar), busca no Airtable
+else:
+    with st.spinner("Carregando bases operacionais do Airtable..."):
+        # Como você já fez o 'import airtable_link' lá em cima, usamos direto:
+        df_quali, status_q = airtable_link.buscar_dados_apa()
+        df_tec, status_t = airtable_link.buscar_todas_tecnicas()
+        
+        # Se falhar o carregamento, paralisa o app com aviso
+        if df_quali.empty or df_tec.empty:
+            st.error("Falha ao carregar os dados. Verifique a conexão com o Airtable.")
+            st.stop()
+# =====================================================================
 #st.title("Série Histórica - Negociações GATE")
 
 # ====
@@ -2595,11 +2615,26 @@ with aba_chat:
     st.markdown("### 💬 DELTA — Assistente Analítico Operacional | GATE/PMESP")
     # ... [Mantenha a introdução visual] ...
 
-    # Prepara 3 DFs em vez de 2
-    df_chat = preparar_df_ocorrencias(df_quali)
-    df_tec_chat = preparar_df_tecnicas(df_tec)
+    # ── Preparação dos dados ────────────────────────────────
     
-    stats_calculados = st.session_state.get("stats_calculados", "Nenhuma análise processada.")
+    # 1. Trava de segurança: impede que o app quebre se os dados não estiverem na memória
+    if "df_quali" not in st.session_state or "df_tec" not in st.session_state:
+        st.warning("⚠️ Base de ocorrências não encontrada na memória. Por favor, processe os dados na Etapa anterior antes de iniciar o Chat Analítico.")
+        st.stop() # Interrompe a renderização desta aba silenciosamente
+
+    # 2. Resgate das variáveis armazenadas na sessão
+    df_quali_atual = st.session_state["df_quali"]
+    df_tec_atual = st.session_state["df_tec"]
+
+    # 3. Preparação dos DataFrames para o Agente Delta
+    df_chat = preparar_df_ocorrencias(df_quali_atual)
+    df_tec_chat = preparar_df_tecnicas(df_tec_atual)
+    
+    # 4. Preparação do Dataframe Estatístico (A refatoração que elimina alucinações)
+    stats_calculados = st.session_state.get(
+        "stats_calculados", 
+        "Nenhuma análise estatística processada."
+    )
     df_stats = preparar_df_estatisticas(stats_calculados)
 
     # Inicialização do histórico
