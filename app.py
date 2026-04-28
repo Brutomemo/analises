@@ -2588,7 +2588,7 @@ def registrar_interacao(pergunta: str, tipo_query: str, modelo_usado: str, taman
     st.session_state["log_interacoes"].append(entrada)
 
 # ============================================================
-# BLOCO E — PREPARAÇÃO DOS DATAFRAMES (RESTAURADO E COMPLETO)
+# BLOCO E — PREPARAÇÃO DOS DATAFRAMES 
 # ============================================================
 
 def preparar_df_ocorrencias(df_quali: pd.DataFrame) -> pd.DataFrame:
@@ -2639,6 +2639,15 @@ def preparar_df_ocorrencias(df_quali: pd.DataFrame) -> pd.DataFrame:
         df_chat["Neg_Limpo"] = df_chat["Negociador Principal"].apply(
             lambda x: str(x[0]).strip() if isinstance(x, list) and len(x) > 0 else str(x).strip()
         )
+
+    # ---> NOVO: "DIETA" DO DATAFRAME <---
+    # Removemos colunas pesadas de texto para não ultrapassar os limites da API.
+    # O agente fará perfis e estatísticas apenas com os metadados.
+    colunas_pesadas = [
+        col for col in df_chat.columns 
+        if any(palavra in col.lower() for palavra in ["transcrição", "transcricao", "laudo", "resumo", "texto", "historico", "histórico"])
+    ]
+    df_chat = df_chat.drop(columns=colunas_pesadas, errors="ignore")
 
     return df_chat
 
