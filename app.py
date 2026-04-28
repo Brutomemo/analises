@@ -2533,10 +2533,6 @@ def selecionar_temperatura(tipo_query: str) -> float:
 # ============================================================
 
 def montar_prefix(tipo_query: str) -> str:
-    """
-    Removemos a injeção manual de colunas e do JSON estatístico.
-    O Langchain já injeta os esquemas dos DFs nativamente.
-    """
     camada_doutrinaria = ""
     if tipo_query == "doutrinaria":
         camada_doutrinaria = f"""
@@ -2548,23 +2544,23 @@ CAMADA DOUTRINÁRIA ATIVA (Query interpretativa detectada)
 
     enforcement_pandas = """
 ════════════════════════════════════════════
-ENFORCEMENT DE EXECUÇÃO (INVIOLÁVEL) E AMBIENTE
+ENFORCEMENT DE EXECUÇÃO E PESQUISA (INVIOLÁVEL)
 ════════════════════════════════════════════
-Você possui acesso a 3 dataframes em seu ambiente:
- - df1: Base de Ocorrências (Metadados e Desempenho).
- - df2: Base de Técnicas (Técnicas aplicadas por negociador).
- - df3: Base Estatística (Resultados de NLP, Spearman, Qui-Quadrado, GEE).
+Você tem 3 dataframes no ambiente:
+ - df1: Ocorrências (Metadados como Uniforme Usado, Modalidade, etc).
+ - df2: Técnicas (Técnicas aplicadas por negociador).
+ - df3: Estatísticas.
 
-ANTES de qualquer resposta factual:
-  1. Escreva e execute o código Python/Pandas usando a ferramenta.
-  2. Para cruzar ocorrências com técnicas, faça merge entre df1 e df2.
-  3. Para obter análises qualitativas globais, consulte df3.
-  4. NUNCA invente resultados. Baseie-se apenas nos outputs do REPL.
+REGRAS RÍGIDAS PARA CÓDIGO PYTHON:
+  1. Para filtrar o negociador em df1, USE EXCLUSIVAMENTE a coluna `Neg_Limpo` (pois contém o texto limpo). NUNCA use `Negociador Principal` (pode conter listas do Airtable e quebrar a busca).
+  2. A busca por nome DEVE ser feita assim: `df1[df1['Neg_Limpo'].str.contains('NomeDoNegociador', case=False, na=False)]`
+  3. Para uniforme, procure pela coluna `Uniforme Usado`.
+  4. Se o resultado retornar vazio, ANTES de responder que não há registros, faça um `print(df1.columns)` para verificar os nomes exatos das colunas e tente novamente.
+  5. A sua resposta final DEVE basear-se no resultado do código.
 """
 
     prefix = f"{SYSTEM_PROMPT_NUCLEO}\n\n{enforcement_pandas}\n\n{camada_doutrinaria}"
     
-    # Prevenção extra de segurança para o Langchain PromptTemplate
     return prefix.replace("{", "{{").replace("}", "}}")
 
 # ============================================================
