@@ -2626,11 +2626,21 @@ with aba_chat:
     df_quali_atual = st.session_state["df_quali"]
     df_tec_atual = st.session_state["df_tec"]
 
-    # 3. Preparação dos DataFrames para o Agente Delta
-    df_chat = preparar_df_ocorrencias(df_quali)
-    df_tec_chat = preparar_df_tecnicas(df_tec)
+    # ── Preparação dos dados (BLINDADA CONTRA NAMEERROR) ─────────────
     
-    # Busca o resumo estatístico para o Agente Delta
+    # 1. Se por algum motivo o dado sumiu da memória, forçamos o download agora mesmo
+    if "df_quali" not in st.session_state or "df_tec" not in st.session_state:
+        with st.spinner("Sincronizando banco de dados com o Airtable..."):
+            df_q, _ = airtable_link.buscar_dados_apa()
+            df_t, _ = airtable_link.buscar_todas_tecnicas()
+            st.session_state["df_quali"] = df_q
+            st.session_state["df_tec"] = df_t
+
+    # 2. Injeta os dados no Agente DIRETAMENTE do cofre (isso elimina o NameError)
+    df_chat = preparar_df_ocorrencias(st.session_state["df_quali"])
+    df_tec_chat = preparar_df_tecnicas(st.session_state["df_tec"])
+    
+    # 3. Busca o resumo estatístico para o Agente Delta
     stats_calculados = st.session_state.get(
         "stats_calculados", 
         "Nenhuma análise estatística processada."
