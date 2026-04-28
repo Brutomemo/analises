@@ -2588,24 +2588,108 @@ def registrar_interacao(pergunta: str, tipo_query: str, modelo_usado: str, taman
     st.session_state["log_interacoes"].append(entrada)
 
 # ============================================================
-# BLOCO E — PREPARAÇÃO DOS DATAFRAMES (ADICIONADO DF ESTATÍSTICO)
+# BLOCO E — PREPARAÇÃO DOS DATAFRAMES (RESTAURADO E COMPLETO)
 # ============================================================
-# ... [Mantenha preparar_df_ocorrencias e preparar_df_tecnicas intactos] ...
+
+def preparar_df_ocorrencias(df_quali: pd.DataFrame) -> pd.DataFrame:
+    """Prepara o dataframe de ocorrências com colunas derivadas necessárias."""
+    df_chat = df_quali.copy()
+
+    # Conversão de tempo (Airtable envia em segundos → minutos decimais)
+    def normalizar_tempo_minutos(val):
+        try:
+            if isinstance(val, list):
+                val = val[0]
+            if pd.isna(val) or str(val).strip() in ["N/D", "nan", "None", ""]:
+                return None
+            return round(float(val) / 60, 2)
+        except Exception:
+            return None
+
+    if "Tempo de Negociação Real" in df_chat.columns:
+        df_chat["Tempo_Minutos"] = df_chat["Tempo de Negociação Real"].apply(normalizar_tempo_minutos)
+
+    if "Tempo de Negociação Tática" in df_chat.columns:
+        df_chat["Tempo_Tatico_Minutos"] = df_chat["Tempo de Negociação Tática"].apply(normalizar_tempo_minutos)
+
+    # Score de desempenho para correlações
+    def calcular_score_sucesso(resolucao):
+        res_str = str(resolucao).lower()
+        if any(p in res_str for p in ["pacífica", "rendição", "rendição pacífica"]):
+            return 10
+        elif "tática" in res_str or "tatica" in res_str:
+            return 5
+        return 0
+
+    if "Resolução" in df_chat.columns:
+        df_chat["Score_Desempenho"] = df_chat["Resolução"].apply(calcular_score_sucesso)
+
+    # Limpeza de nomes de negociadores para facilitar filtros do LLM
+    for col_neg in ["Negociador Principal", "Negociador Secundário", "Negociador Líder"]:
+        col_limpa = col_neg.replace(" ", "_").replace("á", "a").replace("á", "a") + "_Limpo"
+        if col_neg in df_chat.columns:
+            df_chat[col_limpa] = df_chat[col_neg].apply(
+                lambda x: str(x[0]).strip() if isinstance(x, list) and len(x) > 0 else str(x).strip()
+            )
+
+    # Alias principal para compatibilidade com o agente
+    if "Negociador_Principal_Limpo" in df_chat.columns:
+        df_chat["Neg_Limpo"] = df_chat["Negociador_Principal_Limpo"]
+    elif "Negociador Principal" in df_chat.columns:
+        df_chat["Neg_Limpo"] = df_chat["Negociador Principal"].apply(
+            lambda x: str(x[0]).strip() if isinstance(x, list) and len(x) > 0 else str(x).strip()
+        )
+
+    return df_chat
+
+def preparar_df_tecnicas(df_tec: pd.DataFrame) -> pd.DataFrame:
+    """Prepara o dataframe de técnicas com colunas normalizadas."""
+    if df_tec.empty:
+        return pd.DataFrame()
+
+    df_tec_chat = df_tec.copy()
+
+    # Detecta coluna de técnicas (tolerante a variações de nome)
+    col_t = next(
+        (col for col in ["TÉCNICAS", "TECNICAS", "TÉCNICA", "TECNICA", "Técnica", "Tecnica"]
+         if col in df_tec_chat.columns),
+        None
+    )
+    if col_t:
+        df_tec_chat["Nome_Tecnica"] = (
+            df_tec_chat[col_t]
+            .astype(str)
+            .str.replace(r"[\[\]'\"\(\)]", "", regex=True)
+            .str.strip()
+        )
+        df_tec_chat["Nome_Tecnica"] = df_tec_chat["Nome_Tecnica"].replace(
+            ["N/D", "nan", "None", ""], pd.NA
+        )
+
+    # Detecta coluna de negociador nas técnicas
+    col_neg_tec = next(
+        (col for col in df_tec_chat.columns if "negociador" in col.lower() and "incidente" in col.lower()),
+        next((col for col in df_tec_chat.columns if "negociador" in col.lower()), None)
+    )
+    if col_neg_tec:
+        df_tec_chat["Negociador_Tecnica"] = df_tec_chat[col_neg_tec].apply(
+            lambda x: str(x[0]).strip() if isinstance(x, list) and len(x) > 0 else str(x).strip()
+        )
+
+    df_tec_chat = df_tec_chat.dropna(subset=["Nome_Tecnica"]) if "Nome_Tecnica" in df_tec_chat.columns else df_tec_chat
+
+    return df_tec_chat
 
 def preparar_df_estatisticas(stats_calculados) -> pd.DataFrame:
-    """
-    NOVO: Transforma o contexto estatístico (JSON/Dict) num DataFrame.
-    Isso evita o bug de formatação de prompt e permite que o agente 
-    consulte os testes de hipótese e N-grams via código Pandas puro.
-    """
+    """Transforma o contexto estatístico num DataFrame para o Agente Delta."""
     try:
         if isinstance(stats_calculados, dict):
-            # Transforma as chaves em colunas, com 1 única linha de dados
             return pd.DataFrame([stats_calculados])
         else:
             return pd.DataFrame([{"Contexto_Estatistico_Geral": str(stats_calculados)}])
     except Exception:
         return pd.DataFrame([{"Status": "Sem dados estatísticos processados"}])
+
 
 # ============================================================
 # BLOCO F — INTERFACE DO CHAT 
@@ -2626,8 +2710,6 @@ with aba_chat:
             st.session_state["df_tec"] = df_t
 
     # 2. Injeta os dados no Agente DIRETAMENTE do cofre.
-    # ⚠️ ATENÇÃO: As funções 'preparar_df_ocorrencias' e 'preparar_df_tecnicas' 
-    # DEVEM existir no seu código, no Bloco E, logo acima deste Bloco F.
     df_chat = preparar_df_ocorrencias(st.session_state["df_quali"])
     df_tec_chat = preparar_df_tecnicas(st.session_state["df_tec"])
     
@@ -2636,13 +2718,7 @@ with aba_chat:
         "stats_calculados", 
         "Nenhuma análise estatística processada."
     )
-    
-    # Proteção extra caso a função preparar_df_estatisticas tenha sido apagada
-    if 'preparar_df_estatisticas' in globals():
-        df_stats = preparar_df_estatisticas(stats_calculados)
-    else:
-        import pandas as pd
-        df_stats = pd.DataFrame([{"Contexto": str(stats_calculados)}])
+    df_stats = preparar_df_estatisticas(stats_calculados)
 
     # ── Inicialização do histórico de chat ───────────────────────
     if "mensagens_chat" not in st.session_state:
