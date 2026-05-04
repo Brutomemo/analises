@@ -2199,6 +2199,16 @@ REGRA 7 — CONFIDENCIALIDADE OPERACIONAL
   • Cite apenas excertos analiticamente relevantes e anonimizados.
   • Não reproduza transcrições integrais.
 
+REGRA 8 — PROIBIÇÃO DE INFERÊNCIA EM VARIÁVEIS CATEGÓRICAS
+  • As colunas "Resolução", "Modalidade", "Tipologia", "Motivação", "Forma de Transição",
+    "Sexo do Causador" e "Uniforme Usado" são variáveis categóricas textuais em df1.
+  • É TERMINANTEMENTE PROIBIDO inferir, deduzir ou substituir qualquer uma dessas variáveis
+    por valores numéricos derivados (como Score_Desempenho) ou por memória do modelo.
+  • Toda resposta que envolva desfecho ou resultado DEVE incluir o valor textual real
+    da coluna "Resolução" lido diretamente do dataframe.
+  • Score_Desempenho é variável auxiliar para correlações numéricas — NUNCA é substituto
+    da coluna "Resolução".
+
 ════════════════════════════════════════════
 SEÇÃO 3 — CAPACIDADES ANALÍTICAS ATIVAS
 ════════════════════════════════════════════
@@ -2565,13 +2575,10 @@ REGRAS RÍGIDAS PARA CÓDIGO PYTHON:
   5. A sua resposta final DEVE basear-se no resultado do código.
   6. A coluna "Resolução" DEVE ser sempre utilizada diretamente quando a pergunta envolver desfecho, eficiência, resultado ou tipo de encerramento.
   7. É PROIBIDO inferir resolução a partir de "Score_Desempenho".
-  8. A resolução deve ser obtida EXCLUSIVAMENTE via:
-   df1["Resolução"]
-   9. Ao realizar groupby, você DEVE preservar a coluna "Resolução" usando:
-   .agg({
-       "Resolução": "first",
-       ...
-   })
+  8. Ao realizar groupby que envolva `Resolução`, use `.agg()` com `"first"` para preservar o valor textual. Exemplo correto:
+     `df1.groupby('Modalidade').agg(Resolucao=('Resolução', 'first'), Score_Desempenho=('Score_Desempenho', 'mean'), Tempo_Minutos=('Tempo_Minutos', 'mean'))`
+  9. Quando a pergunta envolver eficiência, desempenho ou resultado, a tabela de resposta DEVE incluir a coluna `Resolução` com o valor textual real, além do `Score_Desempenho`.
+  10. As variáveis categóricas `Modalidade`, `Tipologia`, `Motivação`, `Forma de Transição`, `Sexo do Causador` e `Uniforme Usado` também NUNCA devem ser inferidas — sempre lidas diretamente de df1.
 """
 
     prefix = f"{SYSTEM_PROMPT_NUCLEO}\n\n{enforcement_pandas}\n\n{camada_doutrinaria}"
@@ -2623,8 +2630,28 @@ def preparar_df_ocorrencias(df_quali: pd.DataFrame) -> pd.DataFrame:
     if "Tempo de Negociação Tática" in df_chat.columns:
         df_chat["Tempo_Tatico_Minutos"] = df_chat["Tempo de Negociação Tática"].apply(normalizar_tempo_minutos)
 
-    # Score de desempenho para correlações
+    # ---> CORREÇÃO: Limpeza da coluna Resolução (Single Select do Airtable pode vir como lista ou índice numérico)
+    def limpar_resolucao(val):
+        # Se vier como lista, extrai o primeiro elemento de texto
+        if isinstance(val, list):
+            val = val[0] if len(val) > 0 else None
+        if val is None:
+            return None
+        val_str = str(val).strip()
+        # Se for número puro (ex: "1", "2") → Airtable enviou índice da opção → descarta
+        if val_str.isdigit():
+            return None
+        if val_str in ["nan", "None", "N/D", ""]:
+            return None
+        return val_str
+
+    if "Resolução" in df_chat.columns:
+        df_chat["Resolução"] = df_chat["Resolução"].apply(limpar_resolucao)
+
+    # Score de desempenho para correlações (derivado APÓS limpeza da Resolução)
     def calcular_score_sucesso(resolucao):
+        if resolucao is None:
+            return 0
         res_str = str(resolucao).lower()
         if any(p in res_str for p in ["pacífica", "rendição", "rendição pacífica"]):
             return 10
