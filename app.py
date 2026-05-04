@@ -2550,6 +2550,13 @@ Você tem 3 dataframes no ambiente:
  - df1: Ocorrências (Metadados como Uniforme Usado, Modalidade, etc).
  - df2: Técnicas (Técnicas aplicadas por negociador).
  - df3: Estatísticas.
+ 
+REGRAS DE EXECUÇÃO
+    1. Para filtrar negociador: df1[df1['Neg_Limpo'].str.contains('Nome', case=False, na=False)]
+    2. Se o nome não existir em df1['Neg_Limpo'].unique(), responda apenas:
+   "O negociador '[nome]' não consta na base de dados."
+    3. NUNCA responda sem executar código Python primeiro.
+    4. Para uniforme: coluna 'Uniforme Usado'. Para cruzamentos: merge df1+df2.
 
 REGRAS RÍGIDAS PARA CÓDIGO PYTHON:
   1. Para filtrar o negociador em df1, USE EXCLUSIVAMENTE a coluna `Neg_Limpo` (pois contém o texto limpo). NUNCA use `Negociador Principal` (pode conter listas do Airtable e quebrar a busca).
@@ -2557,17 +2564,7 @@ REGRAS RÍGIDAS PARA CÓDIGO PYTHON:
   3. Para uniforme, procure pela coluna `Uniforme Usado`.
   4. Se o resultado retornar vazio, ANTES de responder que não há registros, faça um `print(df1.columns)` para verificar os nomes exatos das colunas e tente novamente.
   5. A sua resposta final DEVE basear-se no resultado do código.
-"""
-    """
-    REGRA CRÍTICA DE VALIDAÇÃO DE NOMES:
-    Antes de qualquer consulta por negociador, SEMPRE execute:
-  nomes_validos = df1['Neg_Limpo'].dropna().unique().tolist()
-  print(nomes_validos)
-    Se o nome da pergunta NÃO aparecer em nomes_validos (mesmo parcialmente),
-    responda IMEDIATAMENTE:
-  "O negociador '[nome]' não existe na base de dados.
-   Negociadores registrados: [lista de nomes_validos]"
-NÃO prossiga com nenhuma análise.
+  
 """
     prefix = f"{SYSTEM_PROMPT_NUCLEO}\n\n{enforcement_pandas}\n\n{camada_doutrinaria}"
     
