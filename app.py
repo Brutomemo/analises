@@ -539,7 +539,7 @@ setTimeout(() => {
 </html>
 """
 
-components.html(header, height=520) 
+components.html(header, height=250, scrolling=False)
 
 st.markdown('<p class="sub-title">Delta Negociação - GATE / PMESP</p>', unsafe_allow_html=True)
 st.markdown('<p style="color: #999; margin-top: 5px;">Desenvolvido por Cb PM Marcos - Supervisão: Cap PM Pavão</p>', unsafe_allow_html=True)
