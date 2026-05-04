@@ -2567,9 +2567,8 @@ REGRAS RÍGIDAS PARA CÓDIGO PYTHON:
     responda IMEDIATAMENTE:
   "O negociador '[nome]' não existe na base de dados.
    Negociadores registrados: [lista de nomes_validos]"
-    NÃO prossiga com nenhuma análise.
-    """
-
+NÃO prossiga com nenhuma análise.
+"""
     prefix = f"{SYSTEM_PROMPT_NUCLEO}\n\n{enforcement_pandas}\n\n{camada_doutrinaria}"
     
     return prefix.replace("{", "{{").replace("}", "}}")
