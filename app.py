@@ -262,9 +262,9 @@ st.markdown("""
     
     /* Efeito Vidro (Glassmorphism) e Animação de Luz (Sweep) nas Caixas */
     .info-card { 
-        background: rgba(10, 10, 10, 0.72);
+        background: rgba(20, 20, 20, 0.85);
         backdrop-filter: blur(16px) saturate(180%);
-        -webkit-backdrop-filter: blur(16px) saturate(180%);
+        -webkit-backdrop-filter: blur(15px) saturate(180%);
         border-top: 1px solid rgba(255, 255, 255, 0.15);
         border-left: 1px solid rgba(255, 255, 255, 0.08);
         border-right: 1px solid rgba(255, 255, 255, 0.08);
