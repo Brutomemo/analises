@@ -2558,6 +2558,17 @@ REGRAS RÍGIDAS PARA CÓDIGO PYTHON:
   4. Se o resultado retornar vazio, ANTES de responder que não há registros, faça um `print(df1.columns)` para verificar os nomes exatos das colunas e tente novamente.
   5. A sua resposta final DEVE basear-se no resultado do código.
 """
+    """
+    REGRA CRÍTICA DE VALIDAÇÃO DE NOMES:
+    Antes de qualquer consulta por negociador, SEMPRE execute:
+  nomes_validos = df1['Neg_Limpo'].dropna().unique().tolist()
+  print(nomes_validos)
+    Se o nome da pergunta NÃO aparecer em nomes_validos (mesmo parcialmente),
+    responda IMEDIATAMENTE:
+  "O negociador '[nome]' não existe na base de dados.
+   Negociadores registrados: [lista de nomes_validos]"
+    NÃO prossiga com nenhuma análise.
+    """
 
     prefix = f"{SYSTEM_PROMPT_NUCLEO}\n\n{enforcement_pandas}\n\n{camada_doutrinaria}"
     
