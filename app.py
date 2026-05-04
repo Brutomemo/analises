@@ -2150,6 +2150,9 @@ REGRA 1 — FIDELIDADE ABSOLUTA AOS DADOS (ANTI-ALUCINAÇÃO)
   • Se após execução o dado não existir, declare:
     "Não há registros sobre isso na base de dados atual."
   • NUNCA invente valores, datas, nomes, técnicas ou resultados estatísticos.
+  • Variáveis categóricas como "Resolução", "Modalidade" e "Tipologia" NUNCA devem ser inferidas.
+  • Elas DEVEM ser sempre lidas diretamente do dataframe.
+  • É PROIBIDO deduzir resolução a partir de Score_Desempenho ou qualquer outra variável derivada.
 
 REGRA 2 — PROIBIÇÃO DE CAUSALIDADE FORTE
   • É TERMINANTEMENTE PROIBIDO afirmar que uma técnica "causou" um resultado.
@@ -2549,16 +2552,10 @@ CAMADA DOUTRINÁRIA ATIVA (Query interpretativa detectada)
 ENFORCEMENT DE EXECUÇÃO E PESQUISA (INVIOLÁVEL)
 ════════════════════════════════════════════
 Você tem 3 dataframes no ambiente:
- - df1: Ocorrências (Metadados como Uniforme Usado, Modalidade, etc).
- - df2: Técnicas (Técnicas aplicadas por negociador).
- - df3: Estatísticas.
- 
-REGRAS DE EXECUÇÃO
-    1. Para filtrar negociador: df1[df1['Neg_Limpo'].str.contains('Nome', case=False, na=False)]
-    2. Se o nome não existir em df1['Neg_Limpo'].unique(), responda apenas:
-   "O negociador '[nome]' não consta na base de dados."
-    3. NUNCA responda sem executar código Python primeiro.
-    4. Para uniforme: coluna 'Uniforme Usado'. Para cruzamentos: merge df1+df2.
+ - df1: Ocorrências (Metadados como Uniforme Usado, Modalidade, Tipologia, Negociador Principal, Forma de Transição, Tempo de negociação real, Tempo de negociação tática, Resolução, Uniforme Usado, Sexo do Causador).
+ - df2: Percepção dos negociadores sobre a receptividade e agressividade do causador no início e encerramento da ocorrência
+ - df3: Técnicas (Técnicas aplicadas por negociador).
+ - df4: Estatísticas (Teste de Spearman: Tempo vs. Desescalada, Teste Qui-Quadrado Dinâmico, Modelagem Avançada: Viés do Negociador e Eficácia das Técnicas empregadas).
 
 REGRAS RÍGIDAS PARA CÓDIGO PYTHON:
   1. Para filtrar o negociador em df1, USE EXCLUSIVAMENTE a coluna `Neg_Limpo` (pois contém o texto limpo). NUNCA use `Negociador Principal` (pode conter listas do Airtable e quebrar a busca).
@@ -2566,8 +2563,17 @@ REGRAS RÍGIDAS PARA CÓDIGO PYTHON:
   3. Para uniforme, procure pela coluna `Uniforme Usado`.
   4. Se o resultado retornar vazio, ANTES de responder que não há registros, faça um `print(df1.columns)` para verificar os nomes exatos das colunas e tente novamente.
   5. A sua resposta final DEVE basear-se no resultado do código.
-  
+  6. A coluna "Resolução" DEVE ser sempre utilizada diretamente quando a pergunta envolver desfecho, eficiência, resultado ou tipo de encerramento.
+  7. É PROIBIDO inferir resolução a partir de "Score_Desempenho".
+  8. A resolução deve ser obtida EXCLUSIVAMENTE via:
+   df1["Resolução"]
+   9. Ao realizar groupby, você DEVE preservar a coluna "Resolução" usando:
+   .agg({
+       "Resolução": "first",
+       ...
+   })
 """
+
     prefix = f"{SYSTEM_PROMPT_NUCLEO}\n\n{enforcement_pandas}\n\n{camada_doutrinaria}"
     
     return prefix.replace("{", "{{").replace("}", "}}")
