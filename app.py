@@ -1626,7 +1626,19 @@ else:
                     except Exception as e:
                         st.error(f"Erro na análise da IA ou geração do PDF: {str(e)}")
 
-            st.markdown("<div style='margin-bottom: 20px;'></div>", unsafe_allow_html=True)
+            st.markdown("<div style='margin-bottom: 40px;'></div>", unsafe_allow_html=True)
+            st.markdown("""
+    <div style='margin-top:30px; margin-bottom:100px; padding:15px; 
+                background-color:#111; border-radius:8px;'>
+        <p style='color:#bbb; font-size:13px;'>
+        <b>DELTA NEGOCIAÇÃO — GATE/PMESP:</b><br><br>
+        " O maior inimigo do conhecimento não é a ignorancia, mas a ilusão do conhecimento" - Stephen Hawking.<br><br>
+        <span style='color:#666; font-size:11px;'>
+        “Sem dados, você é apenas mais uma pessoa com opinião.” — W. Edwards Deming
+        </span>
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
 
     # ====
     # ABA 2: PAINEL (HISTÓRICO)
