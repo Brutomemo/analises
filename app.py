@@ -786,832 +786,834 @@ else:
 
             if st.button("📊 Calcular Frequência de Técnicas"):
                 if not df_tec.empty:
-                    col_vinculo = next((c for c in df_tec.columns if 'VINCULO' in c.upper() or 'VÍNCULO' in c.upper()), None)
+                    with st.spinner("Processando frequências..."):
+                        col_vinculo = next((c for c in df_tec.columns if 'VINCULO' in c.upper() or 'VÍNCULO' in c.upper()), None)
+                        
+                        if col_vinculo:
+                            id_visivel = str(apa_selecionada).strip()
+                            df_tec['Vinculo_Str'] = df_tec[col_vinculo].astype(str).str.replace(r"[\[\]'\"]", "", regex=True).str.strip()
+                            df_tec_filtrado = df_tec[df_tec['Vinculo_Str'] == id_visivel]
+                            
+                            if df_tec_filtrado.empty and 'Airtable_Record_ID' in df_apa:
+                                id_interno = str(df_apa['Airtable_Record_ID']).strip()
+                                df_tec_filtrado = df_tec[df_tec[col_vinculo].astype(str).str.contains(id_interno, na=False, regex=False)]
+                            
+                            if not df_tec_filtrado.empty:
+                                col_tecnica = next((col for col in ['TÉCNICAS', 'TECNICAS', 'TÉCNICA', 'TECNICA'] if col in df_tec_filtrado.columns), None)
+                                if col_tecnica:
+                                    freq_abs = df_tec_filtrado[col_tecnica].value_counts()
+                                    freq_rel = (df_tec_filtrado[col_tecnica].value_counts(normalize=True) * 100).round(1)
+                                    df_freq = pd.DataFrame({'Frequência Absoluta': freq_abs, 'Frequência Relativa (%)': freq_rel}).reset_index().rename(columns={col_tecnica: 'Técnica Empregada'})
+                                    
+                                    st.dataframe(df_freq, use_container_width=True, hide_index=True)
+                                    
+                                    st.markdown("<h4 style='text-align:center; color: #FFFF; margin-top: 20px;'>Frequencias das Técnicas Aplicadas (Treemap)</h5>", unsafe_allow_html=True)
+                                    fig_tree = px.treemap(df_freq, path=['Técnica Empregada'], values='Frequência Absoluta', color='Frequência Absoluta', color_continuous_scale='Oranges')
+                                    fig_tree.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font_color="#FFF", margin=dict(t=10, l=10, r=10, b=10))
+                                    st.plotly_chart(fig_tree, use_container_width=True)
+                                else:
+                                    st.warning("Técnicas encontradas, mas a coluna 'TÉCNICAS' não foi identificada no Airtable.")
+                            else:
+                                st.info(f"Nenhuma técnica cruzou com a APA atual.")
+                        else:
+                            st.warning("A coluna de vínculo (ex: 'Vinculo_APA') não foi encontrada na aba de técnicas.")
+            else:
+                            st.warning("Tabela de técnicas vazia no Airtable.")
+                            st.markdown("<div style='margin-bottom: 50px;'></div>", unsafe_allow_html=True)
                     
-                    if col_vinculo:
-                        id_visivel = str(apa_selecionada).strip()
-                        df_tec['Vinculo_Str'] = df_tec[col_vinculo].astype(str).str.replace(r"[\[\]'\"]", "", regex=True).str.strip()
-                        df_tec_filtrado = df_tec[df_tec['Vinculo_Str'] == id_visivel]
-                        
-                        if df_tec_filtrado.empty and 'Airtable_Record_ID' in df_apa:
-                            id_interno = str(df_apa['Airtable_Record_ID']).strip()
-                            df_tec_filtrado = df_tec[df_tec[col_vinculo].astype(str).str.contains(id_interno, na=False, regex=False)]
-                        
-                        if not df_tec_filtrado.empty:
-                            col_tecnica = next((col for col in ['TÉCNICAS', 'TECNICAS', 'TÉCNICA', 'TECNICA'] if col in df_tec_filtrado.columns), None)
-                            if col_tecnica:
-                                freq_abs = df_tec_filtrado[col_tecnica].value_counts()
-                                freq_rel = (df_tec_filtrado[col_tecnica].value_counts(normalize=True) * 100).round(1)
-                                df_freq = pd.DataFrame({'Frequência Absoluta': freq_abs, 'Frequência Relativa (%)': freq_rel}).reset_index().rename(columns={col_tecnica: 'Técnica Empregada'})
-                                
-                                st.dataframe(df_freq, use_container_width=True, hide_index=True)
-                                
-                                st.markdown("<h4 style='text-align:center; color: #FFFF; margin-top: 20px;'>Frequencias das Técnicas Aplicadas (Treemap)</h5>", unsafe_allow_html=True)
-                                fig_tree = px.treemap(df_freq, path=['Técnica Empregada'], values='Frequência Absoluta', color='Frequência Absoluta', color_continuous_scale='Oranges')
-                                fig_tree.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font_color="#FFF", margin=dict(t=10, l=10, r=10, b=10))
-                                st.plotly_chart(fig_tree, use_container_width=True)
-                            else:
-                                st.warning("Técnicas encontradas, mas a coluna 'TÉCNICAS' não foi identificada no Airtable.")
-                        else:
-                            st.info(f"Nenhuma técnica cruzou com a APA atual.")
-                    else:
-                        st.warning("A coluna de vínculo (ex: 'Vinculo_APA') não foi encontrada na aba de técnicas.")
-                else:
-                    st.warning("Tabela de técnicas vazia no Airtable.")
-                
-                st.markdown("---")
+                            st.markdown("---")
 
-                #ANALISE DE SIMILITUDE
-                st.markdown("### 🗣️ Índice de Similitude e Grafo de Espelhamento Léxico")
-                st.markdown("<div class='info-card'>", unsafe_allow_html=True)
-                st.markdown("<span style='font-size: 0.85rem; color: #aaa;'><strong>O que significa:</strong> Compara matematicamente as palavras utilizadas pelo Negociador Principal e pelo Causador, mensurando o espelhamento. Índices mais altos indicam 'espelhamento' na estrutura da linguagem (mirroring). Em negociações bem-sucedidas, o negociador e o causador passam a apresentar núcleos semânticos em comum, criando uma 'Sincronia Lexical'. O grafo ilustra os núcleos semânticos que conectaram as duas partes.</span><br><br>", unsafe_allow_html=True)
+                            #ANALISE DE SIMILITUDE
+                            st.markdown("### 🗣️ Índice de Similitude e Grafo de Espelhamento Léxico")
+                            st.markdown("<div class='info-card'>", unsafe_allow_html=True)
+                            st.markdown("<span style='font-size: 0.85rem; color: #aaa;'><strong>O que significa:</strong> Compara matematicamente as palavras utilizadas pelo Negociador Principal e pelo Causador, mensurando o espelhamento. Índices mais altos indicam 'espelhamento' na estrutura da linguagem (mirroring). Em negociações bem-sucedidas, o negociador e o causador passam a apresentar núcleos semânticos em comum, criando uma 'Sincronia Lexical'. O grafo ilustra os núcleos semânticos que conectaram as duas partes.</span><br><br>", unsafe_allow_html=True)
 
-                            # 2. O Botão (Margem principal)
-                if st.button("🔍 Gerar Análise de Similitude"):
-                    col_causador = "TRANSCRIÇÃO DO CAUSADOR"
-                    col_negociador = "TRANSCRIÇÃO DO NEGOCIADOR PRINCIPAL"
+                                        # 2. O Botão (Margem principal)
+                            if st.button("🔍 Gerar Análise de Similitude"):
+                                col_causador = "TRANSCRIÇÃO DO CAUSADOR"
+                                col_negociador = "TRANSCRIÇÃO DO NEGOCIADOR PRINCIPAL"
 
-                    if col_causador in df_apa and col_negociador in df_apa:
-                        txt_caus = str(df_apa[col_causador]).strip()
-                        txt_neg = str(df_apa[col_negociador]).strip()
-                        
-                        if txt_caus.lower() in ['nan', 'none', '', 'inaudível', 'n/d'] or txt_neg.lower() in ['nan', 'none', '', 'inaudível', 'n/d']:
-                            st.warning("⚠️ **Diálogo unilateral ou ausente.** Não foi possível mensurar o espelhamento pois uma das partes não produziu volume verbal audível/registrado. Isso geralmente indica ausência de rapport verbal estruturado na fase registrada.")
-                        elif len(txt_caus.split()) < 5 or len(txt_neg.split()) < 5:
-                            st.warning("⚠️ **Volume Verbal Insuficiente:** O diálogo registrado possui menos de 5 palavras válidas por parte, impossibilitando a análise matemática de similitude.")
-                        else:
-                            try:
-                                from sklearn.feature_extraction.text import TfidfVectorizer
-                                from sklearn.metrics.pairwise import cosine_similarity
-                                import re
-
-                                def limpar_texto(t):
-                                    return re.sub(r'[^\w\s]', '', t.lower())
-
-                                txt_caus_limpo = limpar_texto(txt_caus)
-                                txt_neg_limpo = limpar_texto(txt_neg)
-
-                                stopwords_pt = [
-                                'o', 'a', 'os', 'as', 'um', 'uma', 'de', 'do', 'da', 'em', 'no', 'na', 'para', 'com', 
-                                'que', 'é', 'e', 'se', 'por', 'como', 'pra', 'ta', 'tá', 'eu', 'vc', 'você', 'me', 
-                                'meu', 'minha', 'aqui', 'vou', 'isso', 'mas', 'não', 'nao', 'sim', 'só', 'ele', 'ela', 
-                                'eles', 'elas', 'vai', 'foi', 'fui', 'tudo', 'bem', 'tem', 'têm', 'bom', 'pode', 'então', 
-                                'gente', 'muito', 'mais', 'já', 'agora', 'quando', 'onde', 'quem', 'qual', 'ser', 'fazer', 
-                                'ter', 'estar', 'dizer', 'falar', 'quer', 'quero', 'sei', 'sabe', 'ver', 'lá', 'aí', 
-                                'pro', 'pra', 'dos', 'das', 'nas', 'nos', 'ou', 'nem', 'até', 'mesmo', 'porque', 'pq', 'mim', 'assim', 'falou', 'dele', 'comigo', 'faz', 'ficar'
-                                ]
-                                vectorizer = TfidfVectorizer(stop_words=stopwords_pt)
-                                
-                                tfidf_matrix = vectorizer.fit_transform([txt_neg_limpo, txt_caus_limpo])
-                                similaridade = cosine_similarity(tfidf_matrix[0:1], tfidf_matrix[1:2])[0][0]
-                                sintonia_pct = similaridade * 100
-
-                                col_sin1, col_sin2 = st.columns([1, 3])
-                                
-                                with col_sin1:
-                                    st.metric(label="Grau de Espelhamento", value=f"{sintonia_pct:.1f}%")
-                                
-                                with col_sin2:
-                                    cor_barra = "#28a745" if sintonia_pct > 25 else "#ffc107" if sintonia_pct > 10 else "#dc3545"
-                                    st.markdown(f"""
-                                    <div style='background-color: #333; border-radius: 5px; width: 100%; height: 25px; margin-top: 15px;'>
-                                    <div style='background-color: {cor_barra}; width: {sintonia_pct}%; height: 100%; border-radius: 5px;'></div>
-                                    </div>
-                                    """, unsafe_allow_html=True)
-                                
-                                if sintonia_pct >= 25:
-                                    st.success("✅ **Forte Vínculo (Espelhamento Tático):** Alto nível de ancoragem. O negociador adequou-se ao código linguístico do causador (espelhamento) e validou seus pontos de interesse.")
-                                elif sintonia_pct >= 10:
-                                    st.info("ℹ️ **Vínculo Moderado:** Há pontos de ancoragem semântica, mas os discursos ainda guardam distanciamento conceitual.")
-                                else:
-                                    st.error("🚨 **Divergência de Discurso:** Vocabulários quase completamente distintos. Indica ruptura ou negociação puramente transacional.")
-
-                                if sintonia_pct > 0:
-                                    st.markdown("#### 🕸️ Grafo de Espelhamento Léxico (Núcleos Semânticos Compartilhados)")
-                                    st.write("<span style='font-size: 0.85rem; color: #aaa;'>Visualização interativa dos termos que serviram de ponte para o estabelecimento do Rapport.</span>", unsafe_allow_html=True)
+                                if col_causador in df_apa and col_negociador in df_apa:
+                                    txt_caus = str(df_apa[col_causador]).strip()
+                                    txt_neg = str(df_apa[col_negociador]).strip()
                                     
-                                    try:
-                                        import plotly.graph_objects as go
-                                        from collections import Counter
+                                    if txt_caus.lower() in ['nan', 'none', '', 'inaudível', 'n/d'] or txt_neg.lower() in ['nan', 'none', '', 'inaudível', 'n/d']:
+                                        st.warning("⚠️ **Diálogo unilateral ou ausente.** Não foi possível mensurar o espelhamento pois uma das partes não produziu volume verbal audível/registrado. Isso geralmente indica ausência de rapport verbal estruturado na fase registrada.")
+                                    elif len(txt_caus.split()) < 5 or len(txt_neg.split()) < 5:
+                                        st.warning("⚠️ **Volume Verbal Insuficiente:** O diálogo registrado possui menos de 5 palavras válidas por parte, impossibilitando a análise matemática de similitude.")
+                                    else:
+                                        try:
+                                            from sklearn.feature_extraction.text import TfidfVectorizer
+                                            from sklearn.metrics.pairwise import cosine_similarity
+                                            import re
 
-                                        palavras_neg = [w for w in txt_neg_limpo.split() if w not in stopwords_pt and len(w) > 2]
-                                        palavras_caus = [w for w in txt_caus_limpo.split() if w not in stopwords_pt and len(w) > 2]
-                                        
-                                        set_comuns = set(palavras_neg).intersection(set(palavras_caus))
-                                        
-                                        if set_comuns:
-                                            contagem_comuns = Counter({w: palavras_neg.count(w) + palavras_caus.count(w) for w in set_comuns})
-                                            top_comuns = dict(contagem_comuns.most_common(12))
+                                            def limpar_texto(t):
+                                                return re.sub(r'[^\w\s]', '', t.lower())
+
+                                            txt_caus_limpo = limpar_texto(txt_caus)
+                                            txt_neg_limpo = limpar_texto(txt_neg)
+
+                                            stopwords_pt = [
+                                            'o', 'a', 'os', 'as', 'um', 'uma', 'de', 'do', 'da', 'em', 'no', 'na', 'para', 'com', 
+                                            'que', 'é', 'e', 'se', 'por', 'como', 'pra', 'ta', 'tá', 'eu', 'vc', 'você', 'me', 
+                                            'meu', 'minha', 'aqui', 'vou', 'isso', 'mas', 'não', 'nao', 'sim', 'só', 'ele', 'ela', 
+                                            'eles', 'elas', 'vai', 'foi', 'fui', 'tudo', 'bem', 'tem', 'têm', 'bom', 'pode', 'então', 
+                                            'gente', 'muito', 'mais', 'já', 'agora', 'quando', 'onde', 'quem', 'qual', 'ser', 'fazer', 
+                                            'ter', 'estar', 'dizer', 'falar', 'quer', 'quero', 'sei', 'sabe', 'ver', 'lá', 'aí', 
+                                            'pro', 'pra', 'dos', 'das', 'nas', 'nos', 'ou', 'nem', 'até', 'mesmo', 'porque', 'pq', 'mim', 'assim', 'falou', 'dele', 'comigo', 'faz', 'ficar'
+                                            ]
+                                            vectorizer = TfidfVectorizer(stop_words=stopwords_pt)
                                             
-                                            node_x = []
-                                            node_y = []
-                                            node_text = []
-                                            node_color = []
-                                            node_size = []
+                                            tfidf_matrix = vectorizer.fit_transform([txt_neg_limpo, txt_caus_limpo])
+                                            similaridade = cosine_similarity(tfidf_matrix[0:1], tfidf_matrix[1:2])[0][0]
+                                            sintonia_pct = similaridade * 100
 
-                                            node_x.append(-2)
-                                            node_y.append(0)
-                                            node_text.append("<b>NEGOCIADOR</b>")
-                                            node_color.append("#2196F3") 
-                                            node_size.append(40)
-
-                                            node_x.append(2)
-                                            node_y.append(0)
-                                            node_text.append("<b>CAUSADOR</b>")
-                                            node_color.append("#F44336") 
-                                            node_size.append(40)
-
-                                            edge_x = []
-                                            edge_y = []
+                                            col_sin1, col_sin2 = st.columns([1, 3])
                                             
-                                            y_pos = 1.5 
-                                            passo_y = 3 / max(len(top_comuns), 1) 
+                                            with col_sin1:
+                                                st.metric(label="Grau de Espelhamento", value=f"{sintonia_pct:.1f}%")
                                             
-                                            for palavra, peso in top_comuns.items():
-                                                node_x.append(0)
-                                                node_y.append(y_pos)
-                                                node_text.append(palavra)
-                                                node_color.append("#FFC107") 
-                                                tamanho_calc = min(max(peso * 3, 15), 35) 
-                                                node_size.append(tamanho_calc)
+                                            with col_sin2:
+                                                cor_barra = "#28a745" if sintonia_pct > 25 else "#ffc107" if sintonia_pct > 10 else "#dc3545"
+                                                st.markdown(f"""
+                                                <div style='background-color: #333; border-radius: 5px; width: 100%; height: 25px; margin-top: 15px;'>
+                                                <div style='background-color: {cor_barra}; width: {sintonia_pct}%; height: 100%; border-radius: 5px;'></div>
+                                                </div>
+                                                """, unsafe_allow_html=True)
+                                            
+                                            if sintonia_pct >= 25:
+                                                st.success("✅ **Forte Vínculo (Espelhamento Tático):** Alto nível de ancoragem. O negociador adequou-se ao código linguístico do causador (espelhamento) e validou seus pontos de interesse.")
+                                            elif sintonia_pct >= 10:
+                                                st.info("ℹ️ **Vínculo Moderado:** Há pontos de ancoragem semântica, mas os discursos ainda guardam distanciamento conceitual.")
+                                            else:
+                                                st.error("🚨 **Divergência de Discurso:** Vocabulários quase completamente distintos. Indica ruptura ou negociação puramente transacional.")
+
+                                            if sintonia_pct > 0:
+                                                st.markdown("#### 🕸️ Grafo de Espelhamento Léxico (Núcleos Semânticos Compartilhados)")
+                                                st.write("<span style='font-size: 0.85rem; color: #aaa;'>Visualização interativa dos termos que serviram de ponte para o estabelecimento do Rapport.</span>", unsafe_allow_html=True)
                                                 
-                                                edge_x.extend([-2, 0, None])
-                                                edge_y.extend([0, y_pos, None])
+                                                try:
+                                                    import plotly.graph_objects as go
+                                                    from collections import Counter
+
+                                                    palavras_neg = [w for w in txt_neg_limpo.split() if w not in stopwords_pt and len(w) > 2]
+                                                    palavras_caus = [w for w in txt_caus_limpo.split() if w not in stopwords_pt and len(w) > 2]
+                                                    
+                                                    set_comuns = set(palavras_neg).intersection(set(palavras_caus))
+                                                    
+                                                    if set_comuns:
+                                                        contagem_comuns = Counter({w: palavras_neg.count(w) + palavras_caus.count(w) for w in set_comuns})
+                                                        top_comuns = dict(contagem_comuns.most_common(12))
+                                                        
+                                                        node_x = []
+                                                        node_y = []
+                                                        node_text = []
+                                                        node_color = []
+                                                        node_size = []
+
+                                                        node_x.append(-2)
+                                                        node_y.append(0)
+                                                        node_text.append("<b>NEGOCIADOR</b>")
+                                                        node_color.append("#2196F3") 
+                                                        node_size.append(40)
+
+                                                        node_x.append(2)
+                                                        node_y.append(0)
+                                                        node_text.append("<b>CAUSADOR</b>")
+                                                        node_color.append("#F44336") 
+                                                        node_size.append(40)
+
+                                                        edge_x = []
+                                                        edge_y = []
+                                                        
+                                                        y_pos = 1.5 
+                                                        passo_y = 3 / max(len(top_comuns), 1) 
+                                                        
+                                                        for palavra, peso in top_comuns.items():
+                                                            node_x.append(0)
+                                                            node_y.append(y_pos)
+                                                            node_text.append(palavra)
+                                                            node_color.append("#FFC107") 
+                                                            tamanho_calc = min(max(peso * 3, 15), 35) 
+                                                            node_size.append(tamanho_calc)
+                                                            
+                                                            edge_x.extend([-2, 0, None])
+                                                            edge_y.extend([0, y_pos, None])
+                                                            
+                                                            edge_x.extend([0, 2, None])
+                                                            edge_y.extend([y_pos, 0, None])
+                                                            
+                                                            y_pos -= passo_y
+
+                                                        edge_trace = go.Scatter(
+                                                        x=edge_x, y=edge_y,
+                                                        line=dict(width=1, color='#555'),
+                                                        hoverinfo='none',
+                                                        mode='lines')
+
+                                                        node_trace = go.Scatter(
+                                                        x=node_x, y=node_y,
+                                                        mode='markers+text',
+                                                        text=node_text,
+                                                        textposition="bottom center",
+                                                        hoverinfo='text',
+                                                        marker=dict(
+                                                        color=node_color,
+                                                        size=node_size,
+                                                        line=dict(width=2, color='white')
+                                                        ),
+                                                        textfont=dict(color='white', size=12)
+                                                        )
+
+                                                        fig_grafo = go.Figure(data=[edge_trace, node_trace],
+                                                        layout=go.Layout(
+                                                        showlegend=False,
+                                                        hovermode='closest',
+                                                        margin=dict(b=20,l=5,r=5,t=40),
+                                                        paper_bgcolor="rgba(0,0,0,0)", 
+                                                        plot_bgcolor="rgba(0,0,0,0)",
+                                                        xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
+                                                        yaxis=dict(showgrid=False, zeroline=False, showticklabels=False)
+                                                        ))
+                                                        
+                                                        fig_grafo.update_layout(height=400)
+                                                        
+                                                        st.plotly_chart(fig_grafo, use_container_width=True)
+                                                        
+                                                    else:
+                                                        st.info("ℹ️ Não há intersecção semântica suficiente para gerar um grafo estrutural (Discursos completamente isolados).")
+
+                                                except Exception as e:
+                                                    st.error(f"Erro ao desenhar o grafo estrutural: {e}")
                                                 
-                                                edge_x.extend([0, 2, None])
-                                                edge_y.extend([y_pos, 0, None])
-                                                
-                                                y_pos -= passo_y
-
-                                            edge_trace = go.Scatter(
-                                            x=edge_x, y=edge_y,
-                                            line=dict(width=1, color='#555'),
-                                            hoverinfo='none',
-                                            mode='lines')
-
-                                            node_trace = go.Scatter(
-                                            x=node_x, y=node_y,
-                                            mode='markers+text',
-                                            text=node_text,
-                                            textposition="bottom center",
-                                            hoverinfo='text',
-                                            marker=dict(
-                                            color=node_color,
-                                            size=node_size,
-                                            line=dict(width=2, color='white')
-                                            ),
-                                            textfont=dict(color='white', size=12)
-                                            )
-
-                                            fig_grafo = go.Figure(data=[edge_trace, node_trace],
-                                            layout=go.Layout(
-                                            showlegend=False,
-                                            hovermode='closest',
-                                            margin=dict(b=20,l=5,r=5,t=40),
-                                            paper_bgcolor="rgba(0,0,0,0)", 
-                                            plot_bgcolor="rgba(0,0,0,0)",
-                                            xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
-                                            yaxis=dict(showgrid=False, zeroline=False, showticklabels=False)
-                                            ))
-                                            
-                                            fig_grafo.update_layout(height=400)
-                                            
-                                            st.plotly_chart(fig_grafo, use_container_width=True)
-                                            
-                                        else:
-                                            st.info("ℹ️ Não há intersecção semântica suficiente para gerar um grafo estrutural (Discursos completamente isolados).")
-
-                                    except Exception as e:
-                                        st.error(f"Erro ao desenhar o grafo estrutural: {e}")
+                                        except Exception as e:
+                                            st.error(f"Erro no cálculo base de similaridade: {e}")
+                                else:
+                                    st.info("Colunas de transcrição não encontradas para o cálculo de Sintonia Léxica.")
                                     
-                            except Exception as e:
-                                st.error(f"Erro no cálculo base de similaridade: {e}")
-                    else:
-                        st.info("Colunas de transcrição não encontradas para o cálculo de Sintonia Léxica.")
-                        
-                    st.markdown("</div>", unsafe_allow_html=True)
+                                st.markdown("</div>", unsafe_allow_html=True)
 
-                    #ETAPA 2
+                                #ETAPA 2
 
-                    st.markdown("### 📊 Etapa 2: Análise Semântica (Machine Learning e Context-Aware NLP)")
+                                st.markdown("### 📊 Etapa 2: Análise Semântica (Machine Learning e Context-Aware NLP)")
 
-                    # --- INÍCIO DO BLOCO DE EXPLICAÇÃO (EXPANDER) ---
-                    with st.expander("📖 Entenda a Análise Semântica Avançada e o Termômetro do Incidente", expanded=False):
+                                # --- INÍCIO DO BLOCO DE EXPLICAÇÃO (EXPANDER) ---
+                                with st.expander("📖 Entenda a Análise Semântica Avançada e o Termômetro do Incidente", expanded=False):
 
-                        tab_metodo, tab_convergencia, tab_ngramas, tab_limitacoes = st.tabs([
-                            "🧠 Método",
-                            "📊 Convergência",
-                            "🔁 N-Gramas",
-                            "⚠️ Limitações"
-                        ])
+                                    tab_metodo, tab_convergencia, tab_ngramas, tab_limitacoes = st.tabs([
+                                        "🧠 Método",
+                                        "📊 Convergência",
+                                        "🔁 N-Gramas",
+                                        "⚠️ Limitações"
+                                    ])
 
-                        with tab_metodo:
-                            st.markdown(
-                            """
-                            <div class='info-card' style='margin-top: 0px;'>
-
-                            <h5 style='color: #FFD700; margin-top: 0;'>🧠 Como o sistema lê o diálogo?</h5>
-                            <p style='font-size: 0.92rem; color: #ddd; line-height: 1.6;'>
-                            O sistema não conta palavras — ele <strong>interpreta intenções</strong>.<br>
-                            Cada fala é analisada em contexto: o que foi dito, como foi dito, e o que estava ao redor da frase.
-                            </p>
-
-                            <hr style='border-color: #444; margin: 12px 0;'>
-
-                            <h5 style='color: #FFD700; margin-top: 10px;'>⚖️ 1. Pesos e Gravidade das Palavras</h5>
-                            <p style='font-size: 0.92rem; color: #ddd; line-height: 1.6;'>
-                            Nem toda palavra tem o mesmo peso. O sistema atribui uma <strong>pontuação de gravidade</strong> a cada termo:<br>
-                            • <em>"dor"</em> → peso baixo (sinal de sofrimento, mas não de ação imediata)<br>
-                            • <em>"vou me matar"</em> → peso muito alto (ação declarada, risco imediato)<br><br>
-                            Isso evita que palavras comuns inflem artificialmente o resultado.
-                            </p>
-
-                            <h5 style='color: #FFD700; margin-top: 15px;'>🔄 2. O Contexto Muda Tudo (Modificadores de Valência)</h5>
-                            <p style='font-size: 0.92rem; color: #ddd; line-height: 1.6;'>
-                            O sistema varre as palavras ao redor de cada termo para entender a intenção real:<br><br>
-                            • <strong>Negação:</strong> <em>"<u>não</u> quero morrer"</em> → o risco da palavra <em>morrer</em> é reduzido. A frase sinaliza ambivalência, não intenção.<br>
-                            • <strong>Intensificador:</strong> <em>"estou <u>fortemente</u> armado"</em> → o risco aumenta. A ênfase eleva a gravidade.<br>
-                            • <strong>Atenuador:</strong> <em>"<u>talvez</u> eu faça isso"</em> → o peso é reduzido. Há hesitação.<br>
-                            • <strong>Urgência:</strong> <em>"quero isso <u>agora</u>"</em> → sinaliza pressão temporal, aumenta o risco instrumental.
-                            </p>
-
-                            <hr style='border-color: #444; margin: 12px 0;'>
-
-                            <h5 style='color: #FFD700; margin-top: 10px;'>🧭 3. Os Três Vetores do Incidente Crítico</h5>
-                            <p style='font-size: 0.92rem; color: #ddd; line-height: 1.6;'>
-                            O sistema separa o diálogo em <strong>três forças opostas</strong>, como um cabo de guerra:<br><br>
-                            🔴 <strong>Vetor de Risco:</strong> linguagem de ameaça, hostilidade, ideação suicida, exigências sob pressão.<br>
-                            &nbsp;&nbsp;&nbsp;&nbsp;<em>Exemplo: "vou matar", "ninguém entra", "quero morrer"</em><br><br>
-                            🟢 <strong>Vetor de Proteção / Desescalada:</strong> rendição, cooperação, vínculo afetivo, pedido de ajuda.<br>
-                            &nbsp;&nbsp;&nbsp;&nbsp;<em>Exemplo: "me entrego", "fala comigo", "minha filha"</em><br><br>
-                            🟡 <strong>Vetor Contextual:</strong> gatilhos de fundo — frustração, dívida, traição — que explicam a crise, mas não necessariamente apresentam risco direto.<br>
-                            &nbsp;&nbsp;&nbsp;&nbsp;<em>Exemplo: "perdi tudo", "fui traído", "estou desempregado"</em>
-                            </p>
-
-                            </div>
-                            """,
-                            unsafe_allow_html=True
-                            )
-
-                        with tab_convergencia:
-                            st.markdown(
-                            """
-                            <div class='info-card' style='margin-top: 0px;'>
-
-                            <h5 style='color: #FFD700; margin-top: 0;'>📊 Como entender a pontuação da Convergência</h5>
-                            <p style='font-size: 0.92rem; color: #ddd; line-height: 1.6;'>
-                            Este bloco não mede apenas repetição de palavras. Ele mede a <strong>relação do ponto de vista técnico e semântico</strong> entre os interlocutores.<br>
-                            Por isso, a leitura correta pode ser diferente da análise de similitude lexical. São análises complementares.
-                            </p>
-
-                            <hr style='border-color: #444; margin: 12px 0;'>
-
-                            <div style='display:flex; flex-wrap:wrap; gap:10px; margin-top:8px;'>
-
-                            <div style='flex:1 1 30%; min-width:200px; padding:10px; border-radius:8px; background:rgba(255,255,255,0.02);'>
-                                <strong>Risco</strong><br>
-                                Indicador de linguagem ameaçadora, hostil ou que expressa intenção de dano (ex.: ameaças, exigências, ideação suicida). Valores maiores mostram maior carga de risco no interlocutor.
-                            </div>
-
-                            <div style='flex:1 1 30%; min-width:200px; padding:10px; border-radius:8px; background:rgba(255,255,255,0.02);'>
-                                <strong>Proteção</strong><br>
-                                Mede sinais de acolhimento, rendição, pedido de ajuda ou estratégias de desescalada. Valores maiores indicam maior contenção e tentativa de reduzir tensão.
-                            </div>
-
-                            <div style='flex:1 1 30%; min-width:200px; padding:10px; border-radius:8px; background:rgba(255,255,255,0.02);'>
-                                <strong>Contexto</strong><br>
-                                Refere-se a gatilhos e motivos subjacentes (ex.: perda, dívida, traição) que explicam a crise porém não implicam, por si só, intenção de ação imediata.
-                            </div>
-
-                            <div style='flex:1 1 30%; min-width:200px; padding:10px; border-radius:8px; background:rgba(255,255,255,0.02);'>
-                                <strong>Intensidade</strong><br>
-                                Reflete a força emocional e a ênfase (intensificadores/atenuadores) nas falas. Aumentos mostram maior probabilidade de comportamento extremo ou escalada rápida.
-                            </div>
-
-                            <div style='flex:1 1 30%; min-width:200px; padding:10px; border-radius:8px; background:rgba(255,255,255,0.02);'>
-                                <strong>Volatilidade</strong><br>
-                                Mede a oscilação e imprevisibilidade do discurso (mudanças rápidas de tom ou tema). Alta volatilidade implica risco de decisões impulsivas.
-                            </div>
-
-                            <div style='flex:1 1 30%; min-width:200px; padding:10px; border-radius:8px; background:rgba(255,255,255,0.02);'>
-                                <strong>Leitura final</strong><br>
-                                Síntese interpretativa do radar: combina os eixos para indicar o estado geral do caso (ex.: Alto Risco + Baixa Proteção = Prioridade de intervenção imediata).
-                            </div>
-
-                            </div>
-
-                            <div style='margin-top: 12px; padding: 12px; border-radius: 10px; background: rgba(255, 215, 0, 0.06); border: 1px solid rgba(255, 215, 0, 0.15);'>
-                            <p style='font-size: 0.9rem; color: #ddd; margin: 0; line-height: 1.6;'>
-                            <strong>Nota prática:</strong> Interprete cada eixo em conjunto — por exemplo, Risco alto com Proteção alta pode indicar tensão controlada; Risco alto com Proteção baixa sinaliza necessidade de ação imediata.
-                            </p>
-                            </div>
-
-
-                            <hr style='border-color: #444; margin: 12px 0;'>
-
-                            <h5 style='color: #FFD700; margin-top: 10px;'>🔴 Δ Risco (Causador - Negociador Principal)</h5>
-                            <p style='font-size: 0.92rem; color: #ddd; line-height: 1.6;'>
-                            Mostra a diferença entre a carga de risco do causador e a do Negociador Principal.<br><br>
-                            • <strong>Valor positivo</strong> → o causador está mais carregado em linguagem de risco do que o NP.<br>
-                            • <strong>Valor negativo</strong> → o NP está usando mais linguagem de risco do que o causador.<br>
-                            • <strong>Próximo de zero</strong> → há equilíbrio entre os dois em termos de risco.
-                            </p>
-
-                            <h5 style='color: #FFD700; margin-top: 15px;'>🟢 Δ Proteção (Negociador Principal - Causador)</h5>
-                            <p style='font-size: 0.92rem; color: #ddd; line-height: 1.6;'>
-                            Mostra a diferença entre a linguagem protetiva/desescaladora do Negociador Principal e a do causador.<br><br>
-                            • <strong>Valor positivo</strong> → o NP está mais protetivo, mais acolhedor e mais orientado à desescalada.<br>
-                            • <strong>Valor negativo</strong> → o causador está mais protetivo que o NP, ou o NP está pouco desescalador.<br>
-                            • <strong>Próximo de zero</strong> → ambos estão em patamar semelhante de proteção.
-                            </p>
-
-                            <h5 style='color: #FFD700; margin-top: 15px;'>📎 Índice de Convergência</h5>
-                            <p style='font-size: 0.92rem; color: #ddd; line-height: 1.6;'>
-                            Este índice mostra o quanto os interlocutores estão <strong>semanticamente alinhados</strong>.<br>
-                            Ele <strong>não é espelhamento léxico literal</strong>. Ele mede a sobreposição de padrões temáticos, não apenas palavras iguais.<br><br>
-                            • <strong>Valor alto</strong> → maior convergência entre os vetores do causador e do NP.<br>
-                            • <strong>Valor médio</strong> → existe alguma aproximação, mas ainda com diferenças relevantes.<br>
-                            • <strong>Valor baixo</strong> → os interlocutores estão operando em registros semânticos mais distantes.
-                            </p>
-
-                            <hr style='border-color: #444; margin: 12px 0;'>
-
-                            <h5 style='color: #FFD700; margin-top: 10px;'>🧩 Importante: por que isso não é igual ao espelhamento léxico?</h5>
-                            <p style='font-size: 0.92rem; color: #ddd; line-height: 1.6;'>
-                            O radar de convergência compara <strong>categorias semânticas e temáticas</strong>.<br>
-                            Já o bloco de similitude compara <strong>palavras efetivamente compartilhadas</strong>.<br><br>
-                            Por isso, é normal o radar apontar um percentual maior e o grafo lexical mostrar um valor menor.
-                            </p>
-
-                            <div style='margin-top: 12px; padding: 12px; border-radius: 10px; background: rgba(255, 215, 0, 0.06); border: 1px solid rgba(255, 215, 0, 0.15);'>
-                            <p style='font-size: 0.9rem; color: #ddd; margin: 0; line-height: 1.6;'>
-                            <strong>Leitura prática:</strong> se o <em>Espelhamento Léxico</em> estiver maior que o radar temático, isso pode indicar que houve <strong>bom alinhamento do temas abordados</strong> sem repetição literal de palavras.
-                            </p>
-                            </div>
-
-                            </div>
-                            """,
-                            unsafe_allow_html=True
-                            )
-
-                        with tab_ngramas:
-                            st.markdown(
-                            """
-                            <div class='info-card' style='margin-top: 0px;'>
-
-                            <h5 style='color: #FFD700; margin-top: 0;'>🔁 4. N-Gramas — Identificando o Loop Psicológico</h5>
-                            <p style='font-size: 0.92rem; color: #ddd; line-height: 1.6;'>
-                            O sistema mapeia <strong>frases curtas repetidas</strong> (2 a 3 palavras) ao longo de toda a transcrição.<br>
-                            Pessoas sob estresse agudo tendem a repetir as mesmas expressões — isso é chamado de <strong>loop cognitivo</strong>.<br><br>
-                            O que a repetição revela:<br>
-                            • <em>"não aguento mais"</em> repetido → exaustão emocional severa, risco de ruptura<br>
-                            • <em>"cadê a imprensa"</em> repetido → foco racional e instrumental, não emocional<br>
-                            • <em>"fica calmo"</em> repetido pelo negociador → pode indicar escassez de recursos verbais ou quebra de rapport<br><br>
-                            <strong>Atenção:</strong> a repetição em si não é risco — é um sinal de fixação cognitiva que precisa ser interpretado junto com o tema dominante.
-                            </p>
-
-                            </div>
-                            """,
-                            unsafe_allow_html=True
-                            )
-
-                        with tab_limitacoes:
-                            st.markdown(
-                            """
-                            <div class='info-card' style='margin-top: 0px;'>
-
-                            <h5 style='color: #FFD700; margin-top: 0;'>⚠️ Limitações importantes</h5>
-                            <p style='font-size: 0.92rem; color: #ddd; line-height: 1.6;'>
-                            Este sistema é uma <strong>ferramenta de apoio à decisão</strong>, não um substituto ao julgamento do negociador.<br>
-                            • Transcrições incompletas ou com erros de digitação reduzem a precisão.<br>
-                            • Gírias regionais, ironia e sarcasmo podem não ser capturados corretamente.<br>
-                            • Os índices numéricos são relativos ao volume do texto — transcrições muito curtas geram resultados menos confiáveis.<br><br>
-                            <em>Sempre interprete os dados em conjunto com o contexto operacional, a timeline do incidente e o perfil do causador.</em>
-                            </p>
-
-                            </div>
-                            """,
-                            unsafe_allow_html=True
-                        )
-                # --- FIM DO BLOCO DE EXPLICAÇÃO ---
-
-                    ##N-GRAMAS
-                    if st.button("⚙️ 2. GERAR NUVEM DE PALAVRAS E N-GRAMS"):
-                        with st.spinner("Processando N-Grams e plotando gráficos..."):
-                            texto_c = limpar_valor(df_apa.get('TRANSCRIÇÃO DO CAUSADOR'))
-                            texto_np = limpar_valor(df_apa.get('TRANSCRIÇÃO DO NEGOCIADOR PRINCIPAL'))
-                            texto_ns = limpar_valor(df_apa.get('TRANSCRIÇÃO DO NEGOCIADOR SECUNDÁRIO'))
-                            texto_total = f"{texto_c} {texto_np} {texto_ns}"
-
-                            resolucao_raw = limpar_valor(
-                                df_apa.get('Resolução', df_apa.get('RESOLUÇÃO', df_apa.get('resolucao', '')))
-                            ).strip()
-
-                            resolucao_norm = resolucao_raw.lower()
-
-                            if not resolucao_norm:
-                                resolucao_tipo = "desconhecida"
-                            elif "negocia" in resolucao_norm:
-                                resolucao_tipo = "negociacao"
-                            else:
-                                resolucao_tipo = "nao_negociacao"
-
-                            st.session_state['stats_calculados'] = {
-                                "topicos": analise.extrair_topicos_ngrams(texto_total, resolucao_tipo=resolucao_tipo) if len(texto_total) > 10 else ["Texto insuficiente"],
-                                "topicos_c": analise.extrair_topicos_ngrams(texto_c, resolucao_tipo=resolucao_tipo) if len(texto_c) > 10 else ["Texto insuficiente"],
-                                "topicos_np": analise.extrair_topicos_ngrams(texto_np, resolucao_tipo=resolucao_tipo) if len(texto_np) > 10 else ["Texto insuficiente"],
-                                "topicos_ns": analise.extrair_topicos_ngrams(texto_ns, resolucao_tipo=resolucao_tipo) if len(texto_ns) > 10 else ["Texto insuficiente"],
-                                "wc_c": analise.gerar_wordcloud(texto_c) if len(texto_c) > 5 else None,
-                                "wc_np": analise.gerar_wordcloud(texto_np) if len(texto_np) > 5 else None,
-                                "wc_ns": analise.gerar_wordcloud(texto_ns) if len(texto_ns) > 5 else None,
-                                "texto_c_raw": texto_c,
-                                "texto_np_raw": texto_np,
-                                "texto_ns_raw": texto_ns
-                            }
-
-                    if st.session_state.get('stats_calculados'):
-                        stats = st.session_state['stats_calculados']
-
-                        # Recupera metadados de resolução (definidos quando montamos stats_calculados)
-                        resolucao_tipo = stats.get('resolucao_tipo', 'desconhecida')
-                        resolucao_raw  = stats.get('resolucao_raw', '')
-
-                        topicos_globais = stats.get('topicos',    ["Sem dados"])
-                        topicos_c  = stats.get('topicos_c',  ["Análise individual ainda não gerada."])
-                        topicos_np = stats.get('topicos_np', ["Análise individual ainda não gerada."])
-                        topicos_ns = stats.get('topicos_ns', ["Análise individual ainda não gerada."])
-
-                        wc_c  = stats.get('wc_c')
-                        wc_np = stats.get('wc_np')
-                        wc_ns = stats.get('wc_ns')
-
-                        texto_c_raw  = stats.get('texto_c_raw',  limpar_valor(df_apa.get('TRANSCRIÇÃO DO CAUSADOR', '')))
-                        texto_np_raw = stats.get('texto_np_raw', limpar_valor(df_apa.get('TRANSCRIÇÃO DO NEGOCIADOR PRINCIPAL', '')))
-                        texto_ns_raw = stats.get('texto_ns_raw', limpar_valor(df_apa.get('TRANSCRIÇÃO DO NEGOCIADOR SECUNDÁRIO', '')))
-
-                        tab_ng1, tab_ng2, tab_ng3, tab_ng4, tab_ng5 = st.tabs([
-                            "Causador",
-                            "Negociador Principal",
-                            "Negociador Secundário",
-                            "Visão Global",
-                            "⚡ Convergência"
-                        ])
-
-                        with tab_ng1:
-                            st.markdown('<div class="info-card"><h4 style="color: #f97316; margin-top: 0;">🧠 Temas Dominantes - Causador</h4>', unsafe_allow_html=True)
-                            for t in topicos_c:
-                                st.markdown(t)
-                            st.markdown('</div>', unsafe_allow_html=True)
-                            if wc_c:
-                                st.pyplot(wc_c)
-
-                        with tab_ng2:
-                            st.markdown('<div class="info-card"><h4 style="color: #f97316; margin-top: 0;">🧠 Temas Dominantes - Negociador Principal</h4>', unsafe_allow_html=True)
-                            for t in topicos_np:
-                                st.markdown(t)
-                            st.markdown('</div>', unsafe_allow_html=True)
-                            if wc_np:
-                                st.pyplot(wc_np)
-
-                        with tab_ng3:
-                            st.markdown('<div class="info-card"><h4 style="color: #f97316; margin-top: 0;">🧠 Temas Dominantes - Negociador Secundário</h4>', unsafe_allow_html=True)
-                            for t in topicos_ns:
-                                st.markdown(t)
-                            st.markdown('</div>', unsafe_allow_html=True)
-                            if wc_ns:
-                                st.pyplot(wc_ns)
-
-                        with tab_ng4:
-                            st.markdown('<div class="info-card"><h4 style="color: #f97316; margin-top: 0;">🌐 Temas Dominantes Gerais</h4>', unsafe_allow_html=True)
-
-                            for t in topicos_globais:
-                                st.markdown(t)
-
-                            st.markdown("<​hr style='border-color: rgba(255,255,255,0.12); margin: 16px 0;'>", unsafe_allow_html=True)
-                            st.markdown("#### 🖼️ Mapas de palavras por interlocutor", unsafe_allow_html=True)
-                            st.markdown(
-                                "<p style='color:#aaa; font-size:0.9rem; margin-top:-5px;'>Os mesmos mapas exibidos nas abas individuais também são mostrados aqui para facilitar a comparação visual no contexto global da ocorrência.</p>",
-                                unsafe_allow_html=True
-                            )
-
-                            col_wc_g1, col_wc_g2, col_wc_g3 = st.columns(3)
-
-                            with col_wc_g1:
-                                st.markdown("**Causador**")
-                                if wc_c:
-                                    st.pyplot(wc_c, clear_figure=True)
-                                else:
-                                    st.info("Sem mapa de palavras do Causador para esta ocorrência.")
-
-                            with col_wc_g2:
-                                st.markdown("**Negociador Principal**")
-                                if wc_np:
-                                    st.pyplot(wc_np, clear_figure=True)
-                                else:
-                                    st.info("Sem mapa de palavras do Negociador Principal para esta ocorrência.")
-
-                            with col_wc_g3:
-                                st.markdown("**Negociador Secundário**")
-                                if wc_ns:
-                                    st.pyplot(wc_ns, clear_figure=True)
-                                else:
-                                    st.info("Sem mapa de palavras do Negociador Secundário para esta ocorrência.")
-
-                            st.markdown('</div>', unsafe_allow_html=True)
-
-                        with tab_ng5:
-                            st.markdown(
-                                '<div class="info-card">'
-                                '<h4 style="color:#FFD700; margin-top:0;">⚡ Radar Comparativo & Índice de Convergência Temática</h4>'
-                                '<p style="color:#ccc; font-size:0.9rem; margin-bottom:1rem;">'
-                                'Comparação direta dos vetores semânticos entre os interlocutores. '
-                                'Quanto mais sobrepostos os polígonos, maior o espelhamento temático.</p>',
-                                unsafe_allow_html=True
-                            )
-
-                            if not texto_c_raw or not texto_np_raw:
-                                st.warning("⚠️ Transcrições insuficientes para gerar o radar comparativo.")
-                            else:
-                                try:
-                                    fig_radar, conv = analise.gerar_radar_comparativo(
-                                        texto_c_raw,
-                                        texto_np_raw,
-                                        texto_ns_raw if texto_ns_raw else None
-                                    )
-                                    st.plotly_chart(fig_radar, use_container_width=True)
-
-                                    if conv:
-                                        st.markdown("---")
+                                    with tab_metodo:
                                         st.markdown(
-                                            '<h5 style="color:#FFD700;">📐 Índice de Convergência Temática</h5>',
+                                        """
+                                        <div class='info-card' style='margin-top: 0px;'>
+
+                                        <h5 style='color: #FFD700; margin-top: 0;'>🧠 Como o sistema lê o diálogo?</h5>
+                                        <p style='font-size: 0.92rem; color: #ddd; line-height: 1.6;'>
+                                        O sistema não conta palavras — ele <strong>interpreta intenções</strong>.<br>
+                                        Cada fala é analisada em contexto: o que foi dito, como foi dito, e o que estava ao redor da frase.
+                                        </p>
+
+                                        <hr style='border-color: #444; margin: 12px 0;'>
+
+                                        <h5 style='color: #FFD700; margin-top: 10px;'>⚖️ 1. Pesos e Gravidade das Palavras</h5>
+                                        <p style='font-size: 0.92rem; color: #ddd; line-height: 1.6;'>
+                                        Nem toda palavra tem o mesmo peso. O sistema atribui uma <strong>pontuação de gravidade</strong> a cada termo:<br>
+                                        • <em>"dor"</em> → peso baixo (sinal de sofrimento, mas não de ação imediata)<br>
+                                        • <em>"vou me matar"</em> → peso muito alto (ação declarada, risco imediato)<br><br>
+                                        Isso evita que palavras comuns inflem artificialmente o resultado.
+                                        </p>
+
+                                        <h5 style='color: #FFD700; margin-top: 15px;'>🔄 2. O Contexto Muda Tudo (Modificadores de Valência)</h5>
+                                        <p style='font-size: 0.92rem; color: #ddd; line-height: 1.6;'>
+                                        O sistema varre as palavras ao redor de cada termo para entender a intenção real:<br><br>
+                                        • <strong>Negação:</strong> <em>"<u>não</u> quero morrer"</em> → o risco da palavra <em>morrer</em> é reduzido. A frase sinaliza ambivalência, não intenção.<br>
+                                        • <strong>Intensificador:</strong> <em>"estou <u>fortemente</u> armado"</em> → o risco aumenta. A ênfase eleva a gravidade.<br>
+                                        • <strong>Atenuador:</strong> <em>"<u>talvez</u> eu faça isso"</em> → o peso é reduzido. Há hesitação.<br>
+                                        • <strong>Urgência:</strong> <em>"quero isso <u>agora</u>"</em> → sinaliza pressão temporal, aumenta o risco instrumental.
+                                        </p>
+
+                                        <hr style='border-color: #444; margin: 12px 0;'>
+
+                                        <h5 style='color: #FFD700; margin-top: 10px;'>🧭 3. Os Três Vetores do Incidente Crítico</h5>
+                                        <p style='font-size: 0.92rem; color: #ddd; line-height: 1.6;'>
+                                        O sistema separa o diálogo em <strong>três forças opostas</strong>, como um cabo de guerra:<br><br>
+                                        🔴 <strong>Vetor de Risco:</strong> linguagem de ameaça, hostilidade, ideação suicida, exigências sob pressão.<br>
+                                        &nbsp;&nbsp;&nbsp;&nbsp;<em>Exemplo: "vou matar", "ninguém entra", "quero morrer"</em><br><br>
+                                        🟢 <strong>Vetor de Proteção / Desescalada:</strong> rendição, cooperação, vínculo afetivo, pedido de ajuda.<br>
+                                        &nbsp;&nbsp;&nbsp;&nbsp;<em>Exemplo: "me entrego", "fala comigo", "minha filha"</em><br><br>
+                                        🟡 <strong>Vetor Contextual:</strong> gatilhos de fundo — frustração, dívida, traição — que explicam a crise, mas não necessariamente apresentam risco direto.<br>
+                                        &nbsp;&nbsp;&nbsp;&nbsp;<em>Exemplo: "perdi tudo", "fui traído", "estou desempregado"</em>
+                                        </p>
+
+                                        </div>
+                                        """,
+                                        unsafe_allow_html=True
+                                        )
+
+                                    with tab_convergencia:
+                                        st.markdown(
+                                        """
+                                        <div class='info-card' style='margin-top: 0px;'>
+
+                                        <h5 style='color: #FFD700; margin-top: 0;'>📊 Como entender a pontuação da Convergência</h5>
+                                        <p style='font-size: 0.92rem; color: #ddd; line-height: 1.6;'>
+                                        Este bloco não mede apenas repetição de palavras. Ele mede a <strong>relação do ponto de vista técnico e semântico</strong> entre os interlocutores.<br>
+                                        Por isso, a leitura correta pode ser diferente da análise de similitude lexical. São análises complementares.
+                                        </p>
+
+                                        <hr style='border-color: #444; margin: 12px 0;'>
+
+                                        <div style='display:flex; flex-wrap:wrap; gap:10px; margin-top:8px;'>
+
+                                        <div style='flex:1 1 30%; min-width:200px; padding:10px; border-radius:8px; background:rgba(255,255,255,0.02);'>
+                                            <strong>Risco</strong><br>
+                                            Indicador de linguagem ameaçadora, hostil ou que expressa intenção de dano (ex.: ameaças, exigências, ideação suicida). Valores maiores mostram maior carga de risco no interlocutor.
+                                        </div>
+
+                                        <div style='flex:1 1 30%; min-width:200px; padding:10px; border-radius:8px; background:rgba(255,255,255,0.02);'>
+                                            <strong>Proteção</strong><br>
+                                            Mede sinais de acolhimento, rendição, pedido de ajuda ou estratégias de desescalada. Valores maiores indicam maior contenção e tentativa de reduzir tensão.
+                                        </div>
+
+                                        <div style='flex:1 1 30%; min-width:200px; padding:10px; border-radius:8px; background:rgba(255,255,255,0.02);'>
+                                            <strong>Contexto</strong><br>
+                                            Refere-se a gatilhos e motivos subjacentes (ex.: perda, dívida, traição) que explicam a crise porém não implicam, por si só, intenção de ação imediata.
+                                        </div>
+
+                                        <div style='flex:1 1 30%; min-width:200px; padding:10px; border-radius:8px; background:rgba(255,255,255,0.02);'>
+                                            <strong>Intensidade</strong><br>
+                                            Reflete a força emocional e a ênfase (intensificadores/atenuadores) nas falas. Aumentos mostram maior probabilidade de comportamento extremo ou escalada rápida.
+                                        </div>
+
+                                        <div style='flex:1 1 30%; min-width:200px; padding:10px; border-radius:8px; background:rgba(255,255,255,0.02);'>
+                                            <strong>Volatilidade</strong><br>
+                                            Mede a oscilação e imprevisibilidade do discurso (mudanças rápidas de tom ou tema). Alta volatilidade implica risco de decisões impulsivas.
+                                        </div>
+
+                                        <div style='flex:1 1 30%; min-width:200px; padding:10px; border-radius:8px; background:rgba(255,255,255,0.02);'>
+                                            <strong>Leitura final</strong><br>
+                                            Síntese interpretativa do radar: combina os eixos para indicar o estado geral do caso (ex.: Alto Risco + Baixa Proteção = Prioridade de intervenção imediata).
+                                        </div>
+
+                                        </div>
+
+                                        <div style='margin-top: 12px; padding: 12px; border-radius: 10px; background: rgba(255, 215, 0, 0.06); border: 1px solid rgba(255, 215, 0, 0.15);'>
+                                        <p style='font-size: 0.9rem; color: #ddd; margin: 0; line-height: 1.6;'>
+                                        <strong>Nota prática:</strong> Interprete cada eixo em conjunto — por exemplo, Risco alto com Proteção alta pode indicar tensão controlada; Risco alto com Proteção baixa sinaliza necessidade de ação imediata.
+                                        </p>
+                                        </div>
+
+
+                                        <hr style='border-color: #444; margin: 12px 0;'>
+
+                                        <h5 style='color: #FFD700; margin-top: 10px;'>🔴 Δ Risco (Causador - Negociador Principal)</h5>
+                                        <p style='font-size: 0.92rem; color: #ddd; line-height: 1.6;'>
+                                        Mostra a diferença entre a carga de risco do causador e a do Negociador Principal.<br><br>
+                                        • <strong>Valor positivo</strong> → o causador está mais carregado em linguagem de risco do que o NP.<br>
+                                        • <strong>Valor negativo</strong> → o NP está usando mais linguagem de risco do que o causador.<br>
+                                        • <strong>Próximo de zero</strong> → há equilíbrio entre os dois em termos de risco.
+                                        </p>
+
+                                        <h5 style='color: #FFD700; margin-top: 15px;'>🟢 Δ Proteção (Negociador Principal - Causador)</h5>
+                                        <p style='font-size: 0.92rem; color: #ddd; line-height: 1.6;'>
+                                        Mostra a diferença entre a linguagem protetiva/desescaladora do Negociador Principal e a do causador.<br><br>
+                                        • <strong>Valor positivo</strong> → o NP está mais protetivo, mais acolhedor e mais orientado à desescalada.<br>
+                                        • <strong>Valor negativo</strong> → o causador está mais protetivo que o NP, ou o NP está pouco desescalador.<br>
+                                        • <strong>Próximo de zero</strong> → ambos estão em patamar semelhante de proteção.
+                                        </p>
+
+                                        <h5 style='color: #FFD700; margin-top: 15px;'>📎 Índice de Convergência</h5>
+                                        <p style='font-size: 0.92rem; color: #ddd; line-height: 1.6;'>
+                                        Este índice mostra o quanto os interlocutores estão <strong>semanticamente alinhados</strong>.<br>
+                                        Ele <strong>não é espelhamento léxico literal</strong>. Ele mede a sobreposição de padrões temáticos, não apenas palavras iguais.<br><br>
+                                        • <strong>Valor alto</strong> → maior convergência entre os vetores do causador e do NP.<br>
+                                        • <strong>Valor médio</strong> → existe alguma aproximação, mas ainda com diferenças relevantes.<br>
+                                        • <strong>Valor baixo</strong> → os interlocutores estão operando em registros semânticos mais distantes.
+                                        </p>
+
+                                        <hr style='border-color: #444; margin: 12px 0;'>
+
+                                        <h5 style='color: #FFD700; margin-top: 10px;'>🧩 Importante: por que isso não é igual ao espelhamento léxico?</h5>
+                                        <p style='font-size: 0.92rem; color: #ddd; line-height: 1.6;'>
+                                        O radar de convergência compara <strong>categorias semânticas e temáticas</strong>.<br>
+                                        Já o bloco de similitude compara <strong>palavras efetivamente compartilhadas</strong>.<br><br>
+                                        Por isso, é normal o radar apontar um percentual maior e o grafo lexical mostrar um valor menor.
+                                        </p>
+
+                                        <div style='margin-top: 12px; padding: 12px; border-radius: 10px; background: rgba(255, 215, 0, 0.06); border: 1px solid rgba(255, 215, 0, 0.15);'>
+                                        <p style='font-size: 0.9rem; color: #ddd; margin: 0; line-height: 1.6;'>
+                                        <strong>Leitura prática:</strong> se o <em>Espelhamento Léxico</em> estiver maior que o radar temático, isso pode indicar que houve <strong>bom alinhamento do temas abordados</strong> sem repetição literal de palavras.
+                                        </p>
+                                        </div>
+
+                                        </div>
+                                        """,
+                                        unsafe_allow_html=True
+                                        )
+
+                                    with tab_ngramas:
+                                        st.markdown(
+                                        """
+                                        <div class='info-card' style='margin-top: 0px;'>
+
+                                        <h5 style='color: #FFD700; margin-top: 0;'>🔁 4. N-Gramas — Identificando o Loop Psicológico</h5>
+                                        <p style='font-size: 0.92rem; color: #ddd; line-height: 1.6;'>
+                                        O sistema mapeia <strong>frases curtas repetidas</strong> (2 a 3 palavras) ao longo de toda a transcrição.<br>
+                                        Pessoas sob estresse agudo tendem a repetir as mesmas expressões — isso é chamado de <strong>loop cognitivo</strong>.<br><br>
+                                        O que a repetição revela:<br>
+                                        • <em>"não aguento mais"</em> repetido → exaustão emocional severa, risco de ruptura<br>
+                                        • <em>"cadê a imprensa"</em> repetido → foco racional e instrumental, não emocional<br>
+                                        • <em>"fica calmo"</em> repetido pelo negociador → pode indicar escassez de recursos verbais ou quebra de rapport<br><br>
+                                        <strong>Atenção:</strong> a repetição em si não é risco — é um sinal de fixação cognitiva que precisa ser interpretado junto com o tema dominante.
+                                        </p>
+
+                                        </div>
+                                        """,
+                                        unsafe_allow_html=True
+                                        )
+
+                                    with tab_limitacoes:
+                                        st.markdown(
+                                        """
+                                        <div class='info-card' style='margin-top: 0px;'>
+
+                                        <h5 style='color: #FFD700; margin-top: 0;'>⚠️ Limitações importantes</h5>
+                                        <p style='font-size: 0.92rem; color: #ddd; line-height: 1.6;'>
+                                        Este sistema é uma <strong>ferramenta de apoio à decisão</strong>, não um substituto ao julgamento do negociador.<br>
+                                        • Transcrições incompletas ou com erros de digitação reduzem a precisão.<br>
+                                        • Gírias regionais, ironia e sarcasmo podem não ser capturados corretamente.<br>
+                                        • Os índices numéricos são relativos ao volume do texto — transcrições muito curtas geram resultados menos confiáveis.<br><br>
+                                        <em>Sempre interprete os dados em conjunto com o contexto operacional, a timeline do incidente e o perfil do causador.</em>
+                                        </p>
+
+                                        </div>
+                                        """,
+                                        unsafe_allow_html=True
+                                    )
+                            # --- FIM DO BLOCO DE EXPLICAÇÃO ---
+
+                                ##N-GRAMAS
+                                if st.button("⚙️ 2. GERAR NUVEM DE PALAVRAS E N-GRAMS"):
+                                    with st.spinner("Processando N-Grams e plotando gráficos..."):
+                                        texto_c = limpar_valor(df_apa.get('TRANSCRIÇÃO DO CAUSADOR'))
+                                        texto_np = limpar_valor(df_apa.get('TRANSCRIÇÃO DO NEGOCIADOR PRINCIPAL'))
+                                        texto_ns = limpar_valor(df_apa.get('TRANSCRIÇÃO DO NEGOCIADOR SECUNDÁRIO'))
+                                        texto_total = f"{texto_c} {texto_np} {texto_ns}"
+
+                                        resolucao_raw = limpar_valor(
+                                            df_apa.get('Resolução', df_apa.get('RESOLUÇÃO', df_apa.get('resolucao', '')))
+                                        ).strip()
+
+                                        resolucao_norm = resolucao_raw.lower()
+
+                                        if not resolucao_norm:
+                                            resolucao_tipo = "desconhecida"
+                                        elif "negocia" in resolucao_norm:
+                                            resolucao_tipo = "negociacao"
+                                        else:
+                                            resolucao_tipo = "nao_negociacao"
+
+                                        st.session_state['stats_calculados'] = {
+                                            "topicos": analise.extrair_topicos_ngrams(texto_total, resolucao_tipo=resolucao_tipo) if len(texto_total) > 10 else ["Texto insuficiente"],
+                                            "topicos_c": analise.extrair_topicos_ngrams(texto_c, resolucao_tipo=resolucao_tipo) if len(texto_c) > 10 else ["Texto insuficiente"],
+                                            "topicos_np": analise.extrair_topicos_ngrams(texto_np, resolucao_tipo=resolucao_tipo) if len(texto_np) > 10 else ["Texto insuficiente"],
+                                            "topicos_ns": analise.extrair_topicos_ngrams(texto_ns, resolucao_tipo=resolucao_tipo) if len(texto_ns) > 10 else ["Texto insuficiente"],
+                                            "wc_c": analise.gerar_wordcloud(texto_c) if len(texto_c) > 5 else None,
+                                            "wc_np": analise.gerar_wordcloud(texto_np) if len(texto_np) > 5 else None,
+                                            "wc_ns": analise.gerar_wordcloud(texto_ns) if len(texto_ns) > 5 else None,
+                                            "texto_c_raw": texto_c,
+                                            "texto_np_raw": texto_np,
+                                            "texto_ns_raw": texto_ns
+                                        }
+
+                                if st.session_state.get('stats_calculados'):
+                                    stats = st.session_state['stats_calculados']
+
+                                    # Recupera metadados de resolução (definidos quando montamos stats_calculados)
+                                    resolucao_tipo = stats.get('resolucao_tipo', 'desconhecida')
+                                    resolucao_raw  = stats.get('resolucao_raw', '')
+
+                                    topicos_globais = stats.get('topicos',    ["Sem dados"])
+                                    topicos_c  = stats.get('topicos_c',  ["Análise individual ainda não gerada."])
+                                    topicos_np = stats.get('topicos_np', ["Análise individual ainda não gerada."])
+                                    topicos_ns = stats.get('topicos_ns', ["Análise individual ainda não gerada."])
+
+                                    wc_c  = stats.get('wc_c')
+                                    wc_np = stats.get('wc_np')
+                                    wc_ns = stats.get('wc_ns')
+
+                                    texto_c_raw  = stats.get('texto_c_raw',  limpar_valor(df_apa.get('TRANSCRIÇÃO DO CAUSADOR', '')))
+                                    texto_np_raw = stats.get('texto_np_raw', limpar_valor(df_apa.get('TRANSCRIÇÃO DO NEGOCIADOR PRINCIPAL', '')))
+                                    texto_ns_raw = stats.get('texto_ns_raw', limpar_valor(df_apa.get('TRANSCRIÇÃO DO NEGOCIADOR SECUNDÁRIO', '')))
+
+                                    tab_ng1, tab_ng2, tab_ng3, tab_ng4, tab_ng5 = st.tabs([
+                                        "Causador",
+                                        "Negociador Principal",
+                                        "Negociador Secundário",
+                                        "Visão Global",
+                                        "⚡ Convergência"
+                                    ])
+
+                                    with tab_ng1:
+                                        st.markdown('<div class="info-card"><h4 style="color: #f97316; margin-top: 0;">🧠 Temas Dominantes - Causador</h4>', unsafe_allow_html=True)
+                                        for t in topicos_c:
+                                            st.markdown(t)
+                                        st.markdown('</div>', unsafe_allow_html=True)
+                                        if wc_c:
+                                            st.pyplot(wc_c)
+
+                                    with tab_ng2:
+                                        st.markdown('<div class="info-card"><h4 style="color: #f97316; margin-top: 0;">🧠 Temas Dominantes - Negociador Principal</h4>', unsafe_allow_html=True)
+                                        for t in topicos_np:
+                                            st.markdown(t)
+                                        st.markdown('</div>', unsafe_allow_html=True)
+                                        if wc_np:
+                                            st.pyplot(wc_np)
+
+                                    with tab_ng3:
+                                        st.markdown('<div class="info-card"><h4 style="color: #f97316; margin-top: 0;">🧠 Temas Dominantes - Negociador Secundário</h4>', unsafe_allow_html=True)
+                                        for t in topicos_ns:
+                                            st.markdown(t)
+                                        st.markdown('</div>', unsafe_allow_html=True)
+                                        if wc_ns:
+                                            st.pyplot(wc_ns)
+
+                                    with tab_ng4:
+                                        st.markdown('<div class="info-card"><h4 style="color: #f97316; margin-top: 0;">🌐 Temas Dominantes Gerais</h4>', unsafe_allow_html=True)
+
+                                        for t in topicos_globais:
+                                            st.markdown(t)
+
+                                        st.markdown("<​hr style='border-color: rgba(255,255,255,0.12); margin: 16px 0;'>", unsafe_allow_html=True)
+                                        st.markdown("#### 🖼️ Mapas de palavras por interlocutor", unsafe_allow_html=True)
+                                        st.markdown(
+                                            "<p style='color:#aaa; font-size:0.9rem; margin-top:-5px;'>Os mesmos mapas exibidos nas abas individuais também são mostrados aqui para facilitar a comparação visual no contexto global da ocorrência.</p>",
                                             unsafe_allow_html=True
                                         )
-                                        col_cv1, col_cv2, col_cv3 = st.columns(3)
 
-                                        with col_cv1:
-                                            st.metric(
-                                                label="Δ Risco (Causador − Negociador Principal)",
-                                                value=f"{conv['delta_risco']:+.2f}",
-                                                help="Positivo = o causador está mais carregado em linguagem de risco do que o negociador principal. Negativo = o negociador principal está usando mais linguagem de risco do que o causador. Próximo de zero: equilíbrio de carga de risco entre os dois"
-                                            )
-                                            st.caption(conv["leitura_risco"])
+                                        col_wc_g1, col_wc_g2, col_wc_g3 = st.columns(3)
 
-                                        with col_cv2:
-                                            st.metric(
-                                                label="Δ Proteção (Negociador Principal − Causador)",
-                                                value=f"{conv['delta_protecao']:+.2f}",
-                                                help="Positivo = negociador puxando para desescalada. Próximo de zero: pouca diferença entre os dois"
-                                            )
-                                            st.caption(conv["leitura_protecao"])
+                                        with col_wc_g1:
+                                            st.markdown("**Causador**")
+                                            if wc_c:
+                                                st.pyplot(wc_c, clear_figure=True)
+                                            else:
+                                                st.info("Sem mapa de palavras do Causador para esta ocorrência.")
 
-                                        with col_cv3:
-                                            st.metric(
-                                                label="índice de convergência temática",
-                                                value=f"{conv['espelhamento']:.0%}",
-                                                help="Quanto mais próximo de 100%, maior a sincronia dos temas abordados entre Negociador e Causador. Ele representa o quanto os dois interlocutores se aproximam semanticamente, não o quanto repetem as mesmas palavras. Este índice mede a convergência temática — não o vocabulário compartilhado. Para o espelhamento léxico literal, veja o Grafo de Similitude."
-                                            )
-                                            st.caption(conv["leitura_espelhamento"])
+                                        with col_wc_g2:
+                                            st.markdown("**Negociador Principal**")
+                                            if wc_np:
+                                                st.pyplot(wc_np, clear_figure=True)
+                                            else:
+                                                st.info("Sem mapa de palavras do Negociador Principal para esta ocorrência.")
 
-                                except Exception as e:
-                                    st.error(f"Erro ao gerar radar comparativo: {str(e)}")
+                                        with col_wc_g3:
+                                            st.markdown("**Negociador Secundário**")
+                                            if wc_ns:
+                                                st.pyplot(wc_ns, clear_figure=True)
+                                            else:
+                                                st.info("Sem mapa de palavras do Negociador Secundário para esta ocorrência.")
 
-                            st.markdown('</div>', unsafe_allow_html=True)
-                    
-                            
-                    if st.button("📡 3. GERAR ANALYTICS E EXPORTAR ANÁLISE (PDF)"):
-                        with st.spinner("Compilando dados técnicos, consultando IA e desenhando PDF..."):
-                            try:
-                                t_causador = limpar_valor(df_apa.get('TRANSCRIÇÃO DO CAUSADOR'))
-                                t_principal = limpar_valor(df_apa.get('TRANSCRIÇÃO DO NEGOCIADOR PRINCIPAL'))
-                                t_secundario = limpar_valor(df_apa.get('TRANSCRIÇÃO DO NEGOCIADOR SECUNDÁRIO'))
+                                        st.markdown('</div>', unsafe_allow_html=True)
 
-                                df_transcricoes = pd.DataFrame([{
-                                    "Causador": t_causador,
-                                    "Neg_Principal": t_principal,
-                                    "Neg_Secundario": t_secundario
-                                }])
+                                    with tab_ng5:
+                                        st.markdown(
+                                            '<div class="info-card">'
+                                            '<h4 style="color:#FFD700; margin-top:0;">⚡ Radar Comparativo & Índice de Convergência Temática</h4>'
+                                            '<p style="color:#ccc; font-size:0.9rem; margin-bottom:1rem;">'
+                                            'Comparação direta dos vetores semânticos entre os interlocutores. '
+                                            'Quanto mais sobrepostos os polígonos, maior o espelhamento temático.</p>',
+                                            unsafe_allow_html=True
+                                        )
 
-                                stats_calculados = st.session_state.get('stats_calculados', {}) or {}
-
-                                temas_extraidos = stats_calculados.get('topicos') if stats_calculados else ["Etapa 2 não executada"]
-                                if not isinstance(temas_extraidos, (list, tuple)):
-                                    temas_extraidos = [str(temas_extraidos)]
-
-                                meta_dict = df_apa.to_dict()
-                                meta_dict["temas_dominantes_scikit_learn"] = " | ".join([str(t) for t in temas_extraidos])
-
-                                # Envia para a IA as análises textuais já calculadas:
-                                # - similitude lexical
-                                # - n-grams / modelagem de tópicos
-                                # - convergência
-                                # - qualquer outro dado já existente em stats_calculados
-                                meta_dict["analises_calculadas"] = {
-                                    "similitude_lexical": stats_calculados.get(
-                                        "similitude_lexical",
-                                        stats_calculados.get("similitude", "Não executada")
-                                    ),
-                                    "ngrams": stats_calculados.get(
-                                        "ngrams",
-                                        stats_calculados.get("n_grams", "Não executada")
-                                    ),
-                                    "convergencia": stats_calculados.get(
-                                        "convergencia",
-                                        stats_calculados.get("convergencia_lexical", "Não executada")
-                                    ),
-                                    "topicos": temas_extraidos,
-                                }
-
-                                df_meta = pd.DataFrame([meta_dict])
-
-                                dados_extraidos = {
-                                    "transcricao": df_transcricoes,
-                                    "metadados": df_meta
-                                }
-
-                                # ====
-                                # MONTA AS TÉCNICAS DA APA E A FREQUÊNCIA PARA ENVIAR À IA
-                                # ====
-                                tecnicas_da_apa = []
-                                freq_tecnicas_dict = {}
-                                estatisticas_ocorrencia = {}
-
-                                try:
-                                    if not df_tec.empty:
-                                        col_vinculo = next((c for c in df_tec.columns if 'VINCULO' in c.upper() or 'VÍNCULO' in c.upper()), None)
-
-                                        if col_vinculo:
-                                            id_visivel = str(apa_selecionada).strip()
-
-                                            df_tec_tmp = df_tec.copy()
-                                            df_tec_tmp['Vinculo_Str'] = (
-                                                df_tec_tmp[col_vinculo]
-                                                .astype(str)
-                                                .str.replace(r"[\[\]'\"]", "", regex=True)
-                                                .str.strip()
-                                            )
-
-                                            df_tec_filtrado_pdf = df_tec_tmp[df_tec_tmp['Vinculo_Str'] == id_visivel].copy()
-
-                                            if df_tec_filtrado_pdf.empty and 'Airtable_Record_ID' in df_apa:
-                                                id_interno = str(df_apa['Airtable_Record_ID']).strip()
-                                                df_tec_filtrado_pdf = df_tec_tmp[
-                                                    df_tec_tmp[col_vinculo].astype(str).str.contains(id_interno, na=False, regex=False)
-                                                ].copy()
-
-                                            if not df_tec_filtrado_pdf.empty:
-                                                col_tecnica = next(
-                                                    (col for col in ['TÉCNICAS', 'TECNICAS', 'TÉCNICA', 'TECNICA'] if col in df_tec_filtrado_pdf.columns),
-                                                    None
+                                        if not texto_c_raw or not texto_np_raw:
+                                            st.warning("⚠️ Transcrições insuficientes para gerar o radar comparativo.")
+                                        else:
+                                            try:
+                                                fig_radar, conv = analise.gerar_radar_comparativo(
+                                                    texto_c_raw,
+                                                    texto_np_raw,
+                                                    texto_ns_raw if texto_ns_raw else None
                                                 )
+                                                st.plotly_chart(fig_radar, use_container_width=True)
 
-                                                if col_tecnica:
-                                                    freq_abs = df_tec_filtrado_pdf[col_tecnica].value_counts()
-                                                    freq_rel = (df_tec_filtrado_pdf[col_tecnica].value_counts(normalize=True) * 100).round(1)
-
-                                                    df_freq_pdf = pd.DataFrame({
-                                                        'Técnica Empregada': freq_abs.index,
-                                                        'Frequência Absoluta': freq_abs.values,
-                                                        'Frequência Relativa (%)': freq_rel.values
-                                                    })
-
-                                                    tecnicas_da_apa = df_freq_pdf['Técnica Empregada'].dropna().astype(str).tolist()
-
-                                                    frequencia_tecnicas_ocorrencia = []
-                                                    for _, row in df_freq_pdf.iterrows():
-                                                        frequencia_tecnicas_ocorrencia.append({
-                                                            "tecnica": str(row["Técnica Empregada"]),
-                                                            "frequencia_absoluta": int(row["Frequência Absoluta"]),
-                                                            "frequencia_relativa": float(row["Frequência Relativa (%)"])
-                                                        })
-
-                                                    freq_tecnicas_dict = dict(
-                                                        zip(
-                                                            df_freq_pdf['Técnica Empregada'].astype(str),
-                                                            df_freq_pdf['Frequência Absoluta'].astype(int)
-                                                        )
+                                                if conv:
+                                                    st.markdown("---")
+                                                    st.markdown(
+                                                        '<h5 style="color:#FFD700;">📐 Índice de Convergência Temática</h5>',
+                                                        unsafe_allow_html=True
                                                     )
+                                                    col_cv1, col_cv2, col_cv3 = st.columns(3)
 
-                                                    estatisticas_ocorrencia = {
-                                                        "frequencia_tecnicas_ocorrencia": frequencia_tecnicas_ocorrencia,
-                                                        "frequencia_absoluta_por_tecnica": freq_tecnicas_dict
-                                                    }
+                                                    with col_cv1:
+                                                        st.metric(
+                                                            label="Δ Risco (Causador − Negociador Principal)",
+                                                            value=f"{conv['delta_risco']:+.2f}",
+                                                            help="Positivo = o causador está mais carregado em linguagem de risco do que o negociador principal. Negativo = o negociador principal está usando mais linguagem de risco do que o causador. Próximo de zero: equilíbrio de carga de risco entre os dois"
+                                                        )
+                                                        st.caption(conv["leitura_risco"])
 
-                                except Exception as e:
-                                    st.warning(f"Falha ao montar frequências para a IA: {e}")
+                                                    with col_cv2:
+                                                        st.metric(
+                                                            label="Δ Proteção (Negociador Principal − Causador)",
+                                                            value=f"{conv['delta_protecao']:+.2f}",
+                                                            help="Positivo = negociador puxando para desescalada. Próximo de zero: pouca diferença entre os dois"
+                                                        )
+                                                        st.caption(conv["leitura_protecao"])
 
-                                resultado_ia = ia_link.analisar_ocorrencia_gate(
-                                    dados_extraidos,
-                                    estatisticas_ocorrencia=estatisticas_ocorrencia,
-                                    tecnicas_ocorrencia=tecnicas_da_apa
-                                )
+                                                    with col_cv3:
+                                                        st.metric(
+                                                            label="índice de convergência temática",
+                                                            value=f"{conv['espelhamento']:.0%}",
+                                                            help="Quanto mais próximo de 100%, maior a sincronia dos temas abordados entre Negociador e Causador. Ele representa o quanto os dois interlocutores se aproximam semanticamente, não o quanto repetem as mesmas palavras. Este índice mede a convergência temática — não o vocabulário compartilhado. Para o espelhamento léxico literal, veja o Grafo de Similitude."
+                                                        )
+                                                        st.caption(conv["leitura_espelhamento"])
 
-                                if isinstance(resultado_ia, dict):
-                                    parecer_ia = resultado_ia.get("parecer", "")
-                                    sugestoes_treinamento = resultado_ia.get("sugestoes_treinamento", "")
-                                else:
-                                    parecer_ia = str(resultado_ia)
-                                    sugestoes_treinamento = ""
+                                            except Exception as e:
+                                                st.error(f"Erro ao gerar radar comparativo: {str(e)}")
 
-                                def calcular_media_equipe(*valores):
-                                    validos = [v for v in valores if v > 0]
-                                    return sum(validos) / len(validos) if validos else 0
+                                        st.markdown('</div>', unsafe_allow_html=True)
+                                
+                                        
+                                if st.button("📡 3. GERAR ANALYTICS E EXPORTAR ANÁLISE (PDF)"):
+                                    with st.spinner("Compilando dados técnicos, consultando IA e desenhando PDF..."):
+                                        try:
+                                            t_causador = limpar_valor(df_apa.get('TRANSCRIÇÃO DO CAUSADOR'))
+                                            t_principal = limpar_valor(df_apa.get('TRANSCRIÇÃO DO NEGOCIADOR PRINCIPAL'))
+                                            t_secundario = limpar_valor(df_apa.get('TRANSCRIÇÃO DO NEGOCIADOR SECUNDÁRIO'))
 
-                                likert_inicio = {
-                                    'agressividade_media': calcular_media_equipe(p_agr_c_num, s_agr_c_num, l_agr_c_num),
-                                    'receptividade_media': calcular_media_equipe(p_rec_c_num, s_rec_c_num, l_rec_c_num)
-                                }
-                                likert_fim = {
-                                    'agressividade_media': calcular_media_equipe(p_agr_e_num, s_agr_e_num, l_agr_e_num),
-                                    'receptividade_media': calcular_media_equipe(p_rec_e_num, s_rec_e_num, l_rec_e_num)
-                                }
-                                stats_spearman = {'valido': False, 'p_value': 0.0, 'rho': 0.0}
-                                laudo_frio = ia_link.gerar_laudo_frio(likert_inicio, likert_fim, stats_spearman)
+                                            df_transcricoes = pd.DataFrame([{
+                                                "Causador": t_causador,
+                                                "Neg_Principal": t_principal,
+                                                "Neg_Secundario": t_secundario
+                                            }])
 
-                                st.markdown(f"""
-                                <div class="info-card" style="border-left: 4px solid #FFD700;">
-                                <h4 style="color: #FFD700; margin-top: 0;">Inferência Estatística (Motor Frio)</h4>
-                                <p style="font-size: 1.05rem; line-height: 1.6;">{laudo_frio}</p>
-                                <hr style="border-color: rgba(255,255,255,0.1); margin: 15px 0;">
-                                <h4 style="color: #06C755; margin-top: 0;">Leitura Analítica (Interpretação descritiva dos resultados)</h4>
-                                <p style="font-size: 1.05rem; line-height: 1.6;">{parecer_ia}</p>
-                                <hr style="border-color: rgba(255,255,255,0.1); margin: 15px 0;">
-                                <h4 style="color: #FFA500; margin-top: 0;">Sugestões para treinamentos</h4>
-                                <p style="font-size: 1.05rem; line-height: 1.6;">{sugestoes_treinamento or 'Sem base suficiente para sugerir treinamento específico.'}</p>
-                                </div>
-                                """, unsafe_allow_html=True)
+                                            stats_calculados = st.session_state.get('stats_calculados', {}) or {}
 
-                                texto_str = f"""INFERENCIA ESTATISTICA (MOTOR FRIO)
+                                            temas_extraidos = stats_calculados.get('topicos') if stats_calculados else ["Etapa 2 não executada"]
+                                            if not isinstance(temas_extraidos, (list, tuple)):
+                                                temas_extraidos = [str(temas_extraidos)]
 
-                    {laudo_frio}
+                                            meta_dict = df_apa.to_dict()
+                                            meta_dict["temas_dominantes_scikit_learn"] = " | ".join([str(t) for t in temas_extraidos])
 
-                    LEITURA ANALITICA
+                                            # Envia para a IA as análises textuais já calculadas:
+                                            # - similitude lexical
+                                            # - n-grams / modelagem de tópicos
+                                            # - convergência
+                                            # - qualquer outro dado já existente em stats_calculados
+                                            meta_dict["analises_calculadas"] = {
+                                                "similitude_lexical": stats_calculados.get(
+                                                    "similitude_lexical",
+                                                    stats_calculados.get("similitude", "Não executada")
+                                                ),
+                                                "ngrams": stats_calculados.get(
+                                                    "ngrams",
+                                                    stats_calculados.get("n_grams", "Não executada")
+                                                ),
+                                                "convergencia": stats_calculados.get(
+                                                    "convergencia",
+                                                    stats_calculados.get("convergencia_lexical", "Não executada")
+                                                ),
+                                                "topicos": temas_extraidos,
+                                            }
 
-                    {parecer_ia}
+                                            df_meta = pd.DataFrame([meta_dict])
 
-                    SUGESTOES PARA TREINAMENTOS
+                                            dados_extraidos = {
+                                                "transcricao": df_transcricoes,
+                                                "metadados": df_meta
+                                            }
 
-                    {sugestoes_treinamento if sugestoes_treinamento else 'Sem base suficiente para sugerir treinamento específico.'}
-                    """
+                                            # ====
+                                            # MONTA AS TÉCNICAS DA APA E A FREQUÊNCIA PARA ENVIAR À IA
+                                            # ====
+                                            tecnicas_da_apa = []
+                                            freq_tecnicas_dict = {}
+                                            estatisticas_ocorrencia = {}
 
-                                texto_str = texto_str.replace("**", "").replace("### ", "")
-                                texto_final_pdf = unicodedata.normalize('NFKD', texto_str).encode('ASCII', 'ignore').decode('ASCII')
+                                            try:
+                                                if not df_tec.empty:
+                                                    col_vinculo = next((c for c in df_tec.columns if 'VINCULO' in c.upper() or 'VÍNCULO' in c.upper()), None)
 
-                                pdf = FPDF()
-                                pdf.add_page()
+                                                    if col_vinculo:
+                                                        id_visivel = str(apa_selecionada).strip()
 
-                                pdf.set_fill_color(249, 115, 22)
-                                pdf.rect(0, 0, 210, 40, 'F')
-                                pdf.set_font("Arial", "B", 18)
-                                pdf.set_text_color(255, 255, 255)
-                                pdf.cell(0, 15, "LAUDO DE ANALISE POS-ACAO (APA)", ln=True, align="C")
-                                pdf.set_font("Arial", "I", 12)
-                                pdf.cell(0, 5, f"Unidade: GATE | ID: {apa_selecionada}", ln=True, align="C")
+                                                        df_tec_tmp = df_tec.copy()
+                                                        df_tec_tmp['Vinculo_Str'] = (
+                                                            df_tec_tmp[col_vinculo]
+                                                            .astype(str)
+                                                            .str.replace(r"[\[\]'\"]", "", regex=True)
+                                                            .str.strip()
+                                                        )
 
-                                pdf.ln(20)
-                                pdf.set_text_color(0, 0, 0)
-                                pdf.set_font("Arial", "B", 14)
-                                pdf.set_fill_color(240, 240, 240)
-                                pdf.cell(0, 10, " 1. INFORMACOES DO INCIDENTE", ln=True, fill=True)
-                                pdf.set_font("Arial", "", 11)
+                                                        df_tec_filtrado_pdf = df_tec_tmp[df_tec_tmp['Vinculo_Str'] == id_visivel].copy()
 
-                                dt_oc = limpar_valor(df_apa.get('Data da ocorrência'))
-                                tip = limpar_valor(df_apa.get('Tipologia'))
-                                neg = limpar_valor(df_apa.get('Negociador Principal'))
-                                info_str = f"Data: {dt_oc} | Tipologia: {tip} | Negociador: {neg}"
+                                                        if df_tec_filtrado_pdf.empty and 'Airtable_Record_ID' in df_apa:
+                                                            id_interno = str(df_apa['Airtable_Record_ID']).strip()
+                                                            df_tec_filtrado_pdf = df_tec_tmp[
+                                                                df_tec_tmp[col_vinculo].astype(str).str.contains(id_interno, na=False, regex=False)
+                                                            ].copy()
 
-                                pdf.multi_cell(
-                                    0,
-                                    8,
-                                    txt=unicodedata.normalize('NFKD', info_str).encode('ASCII', 'ignore').decode('ASCII'),
-                                    border='L'
-                                )
+                                                        if not df_tec_filtrado_pdf.empty:
+                                                            col_tecnica = next(
+                                                                (col for col in ['TÉCNICAS', 'TECNICAS', 'TÉCNICA', 'TECNICA'] if col in df_tec_filtrado_pdf.columns),
+                                                                None
+                                                            )
 
-                                pdf.ln(10)
-                                pdf.set_font("Arial", "B", 14)
-                                pdf.set_fill_color(249, 115, 22)
-                                pdf.set_text_color(255, 255, 255)
-                                pdf.cell(0, 10, " 2. INTELIGENCIA DE APOIO A DECISAO (IA)", ln=True, fill=True)
-                                pdf.ln(5)
-                                pdf.set_text_color(0, 0, 0)
-                                pdf.set_font("Arial", "", 11)
+                                                            if col_tecnica:
+                                                                freq_abs = df_tec_filtrado_pdf[col_tecnica].value_counts()
+                                                                freq_rel = (df_tec_filtrado_pdf[col_tecnica].value_counts(normalize=True) * 100).round(1)
 
-                                pdf.multi_cell(0, 7, txt=texto_final_pdf)
+                                                                df_freq_pdf = pd.DataFrame({
+                                                                    'Técnica Empregada': freq_abs.index,
+                                                                    'Frequência Absoluta': freq_abs.values,
+                                                                    'Frequência Relativa (%)': freq_rel.values
+                                                                })
 
-                                pdf_saida = pdf.output(dest="S")
-                                if isinstance(pdf_saida, str):
-                                    pdf_bytes = pdf_saida.encode('latin-1', errors='replace')
-                                else:
-                                    pdf_bytes = bytes(pdf_saida)
+                                                                tecnicas_da_apa = df_freq_pdf['Técnica Empregada'].dropna().astype(str).tolist()
 
-                                st.download_button(
-                                    label="📥 BAIXAR ANÁLISE COMPLETA (PDF)",
-                                    data=pdf_bytes,
-                                    file_name=f"Laudo_GATE_{apa_selecionada}.pdf",
-                                    mime="application/pdf"
-                                )
+                                                                frequencia_tecnicas_ocorrencia = []
+                                                                for _, row in df_freq_pdf.iterrows():
+                                                                    frequencia_tecnicas_ocorrencia.append({
+                                                                        "tecnica": str(row["Técnica Empregada"]),
+                                                                        "frequencia_absoluta": int(row["Frequência Absoluta"]),
+                                                                        "frequencia_relativa": float(row["Frequência Relativa (%)"])
+                                                                    })
 
-                            except Exception as e:
-                                st.error(f"Erro na análise da IA ou geração do PDF: {str(e)}")
+                                                                freq_tecnicas_dict = dict(
+                                                                    zip(
+                                                                        df_freq_pdf['Técnica Empregada'].astype(str),
+                                                                        df_freq_pdf['Frequência Absoluta'].astype(int)
+                                                                    )
+                                                                )
+
+                                                                estatisticas_ocorrencia = {
+                                                                    "frequencia_tecnicas_ocorrencia": frequencia_tecnicas_ocorrencia,
+                                                                    "frequencia_absoluta_por_tecnica": freq_tecnicas_dict
+                                                                }
+
+                                            except Exception as e:
+                                                st.warning(f"Falha ao montar frequências para a IA: {e}")
+
+                                            resultado_ia = ia_link.analisar_ocorrencia_gate(
+                                                dados_extraidos,
+                                                estatisticas_ocorrencia=estatisticas_ocorrencia,
+                                                tecnicas_ocorrencia=tecnicas_da_apa
+                                            )
+
+                                            if isinstance(resultado_ia, dict):
+                                                parecer_ia = resultado_ia.get("parecer", "")
+                                                sugestoes_treinamento = resultado_ia.get("sugestoes_treinamento", "")
+                                            else:
+                                                parecer_ia = str(resultado_ia)
+                                                sugestoes_treinamento = ""
+
+                                            def calcular_media_equipe(*valores):
+                                                validos = [v for v in valores if v > 0]
+                                                return sum(validos) / len(validos) if validos else 0
+
+                                            likert_inicio = {
+                                                'agressividade_media': calcular_media_equipe(p_agr_c_num, s_agr_c_num, l_agr_c_num),
+                                                'receptividade_media': calcular_media_equipe(p_rec_c_num, s_rec_c_num, l_rec_c_num)
+                                            }
+                                            likert_fim = {
+                                                'agressividade_media': calcular_media_equipe(p_agr_e_num, s_agr_e_num, l_agr_e_num),
+                                                'receptividade_media': calcular_media_equipe(p_rec_e_num, s_rec_e_num, l_rec_e_num)
+                                            }
+                                            stats_spearman = {'valido': False, 'p_value': 0.0, 'rho': 0.0}
+                                            laudo_frio = ia_link.gerar_laudo_frio(likert_inicio, likert_fim, stats_spearman)
+
+                                            st.markdown(f"""
+                                            <div class="info-card" style="border-left: 4px solid #FFD700;">
+                                            <h4 style="color: #FFD700; margin-top: 0;">Inferência Estatística (Motor Frio)</h4>
+                                            <p style="font-size: 1.05rem; line-height: 1.6;">{laudo_frio}</p>
+                                            <hr style="border-color: rgba(255,255,255,0.1); margin: 15px 0;">
+                                            <h4 style="color: #06C755; margin-top: 0;">Leitura Analítica (Interpretação descritiva dos resultados)</h4>
+                                            <p style="font-size: 1.05rem; line-height: 1.6;">{parecer_ia}</p>
+                                            <hr style="border-color: rgba(255,255,255,0.1); margin: 15px 0;">
+                                            <h4 style="color: #FFA500; margin-top: 0;">Sugestões para treinamentos</h4>
+                                            <p style="font-size: 1.05rem; line-height: 1.6;">{sugestoes_treinamento or 'Sem base suficiente para sugerir treinamento específico.'}</p>
+                                            </div>
+                                            """, unsafe_allow_html=True)
+
+                                            texto_str = f"""INFERENCIA ESTATISTICA (MOTOR FRIO)
+
+                                {laudo_frio}
+
+                                LEITURA ANALITICA
+
+                                {parecer_ia}
+
+                                SUGESTOES PARA TREINAMENTOS
+
+                                {sugestoes_treinamento if sugestoes_treinamento else 'Sem base suficiente para sugerir treinamento específico.'}
+                                """
+
+                                            texto_str = texto_str.replace("**", "").replace("### ", "")
+                                            texto_final_pdf = unicodedata.normalize('NFKD', texto_str).encode('ASCII', 'ignore').decode('ASCII')
+
+                                            pdf = FPDF()
+                                            pdf.add_page()
+
+                                            pdf.set_fill_color(249, 115, 22)
+                                            pdf.rect(0, 0, 210, 40, 'F')
+                                            pdf.set_font("Arial", "B", 18)
+                                            pdf.set_text_color(255, 255, 255)
+                                            pdf.cell(0, 15, "LAUDO DE ANALISE POS-ACAO (APA)", ln=True, align="C")
+                                            pdf.set_font("Arial", "I", 12)
+                                            pdf.cell(0, 5, f"Unidade: GATE | ID: {apa_selecionada}", ln=True, align="C")
+
+                                            pdf.ln(20)
+                                            pdf.set_text_color(0, 0, 0)
+                                            pdf.set_font("Arial", "B", 14)
+                                            pdf.set_fill_color(240, 240, 240)
+                                            pdf.cell(0, 10, " 1. INFORMACOES DO INCIDENTE", ln=True, fill=True)
+                                            pdf.set_font("Arial", "", 11)
+
+                                            dt_oc = limpar_valor(df_apa.get('Data da ocorrência'))
+                                            tip = limpar_valor(df_apa.get('Tipologia'))
+                                            neg = limpar_valor(df_apa.get('Negociador Principal'))
+                                            info_str = f"Data: {dt_oc} | Tipologia: {tip} | Negociador: {neg}"
+
+                                            pdf.multi_cell(
+                                                0,
+                                                8,
+                                                txt=unicodedata.normalize('NFKD', info_str).encode('ASCII', 'ignore').decode('ASCII'),
+                                                border='L'
+                                            )
+
+                                            pdf.ln(10)
+                                            pdf.set_font("Arial", "B", 14)
+                                            pdf.set_fill_color(249, 115, 22)
+                                            pdf.set_text_color(255, 255, 255)
+                                            pdf.cell(0, 10, " 2. INTELIGENCIA DE APOIO A DECISAO (IA)", ln=True, fill=True)
+                                            pdf.ln(5)
+                                            pdf.set_text_color(0, 0, 0)
+                                            pdf.set_font("Arial", "", 11)
+
+                                            pdf.multi_cell(0, 7, txt=texto_final_pdf)
+
+                                            pdf_saida = pdf.output(dest="S")
+                                            if isinstance(pdf_saida, str):
+                                                pdf_bytes = pdf_saida.encode('latin-1', errors='replace')
+                                            else:
+                                                pdf_bytes = bytes(pdf_saida)
+
+                                            st.download_button(
+                                                label="📥 BAIXAR ANÁLISE COMPLETA (PDF)",
+                                                data=pdf_bytes,
+                                                file_name=f"Laudo_GATE_{apa_selecionada}.pdf",
+                                                mime="application/pdf"
+                                            )
+
+                                        except Exception as e:
+                                            st.error(f"Erro na análise da IA ou geração do PDF: {str(e)}")
 
     # ====
     # ABA 2: PAINEL (HISTÓRICO)
