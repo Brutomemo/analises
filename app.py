@@ -310,9 +310,9 @@ st.markdown("""
         padding: 0.7rem 2rem; border-radius: 9999px !important; font-weight: 600 !important; 
         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important; width: 100%; position: relative;
         box-shadow: 0 4 20px -5px rgba(249, 115, 22, 0.6) !important;
-        transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1), 
-        box-shadow 0.25s ease-out, 
-        filter 0.2s ease !important;
+        transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1), 
+        box-shadow 0.3s ease-out, 
+        filter 0.3s ease !important;
                 
         animation: fadeInUpBlur 1s cubic-bezier(0.2, 0.8, 0.2, 1) both;
     }
