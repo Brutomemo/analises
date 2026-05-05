@@ -1750,8 +1750,14 @@ else:
             else: st.info("Sem dados de Sexo para os filtros atuais.")
 
         st.markdown("---")
-        if st.button("📊 Abrir Ranking de Técnicas"):
-            st.markdown("#### Ranking de Técnicas Aplicadas")
+
+        if st.button("📊 Analisar Técnicas"):
+            st.session_state['ver_ranking'] = True
+
+        if st.session_state.get('ver_ranking', False):
+            # Todo o seu processamento pesado entra aqui com 1 tab de indentação
+            st.write("Processando ranking...") 
+            # [Seu código do Treemap aqui]
 
         if not df_tec.empty:
             df_tec['Neg_Limpo'] = df_tec['Negociador Principal do incidente crítico'].apply(limpar_valor) if 'Negociador Principal do incidente crítico' in df_tec.columns else 'N/D'
