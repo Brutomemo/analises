@@ -1759,39 +1759,28 @@ with c_g2:
         st.info("Sem dados de Sexo para os filtros atuais.")
 
 st.markdown("---")
-
-# Inicializa o estado do botão se não existir
-if 'abrir_ranking' not in st.session_state:
-    st.session_state.abrir_ranking = False
-
-# Botão para alternar a visualização
-if st.button("📊 Abrir/Fechar Ranking de Técnicas Aplicadas"):
-    st.session_state.abrir_ranking = not st.session_state.abrir_ranking
-
-# Se o estado for True, o código do ranking é executado
-if st.session_state.abrir_ranking:
+if st.button("GERAR RANKING DAS TÉCNICAS APLICADAS"):
     st.markdown("#### Ranking de Técnicas Aplicadas")
 
     if not df_tec.empty:
-        # Processamento e Limpeza dos Dados
         df_tec['Neg_Limpo'] = df_tec['Negociador Principal do incidente crítico'].apply(limpar_valor) if 'Negociador Principal do incidente crítico' in df_tec.columns else 'N/D'
         df_tec['Tip_Limpa'] = df_tec['Tipologia do incidente crítico'].apply(limpar_valor) if 'Tipologia do incidente crítico' in df_tec.columns else 'N/D'
         df_tec['Mod_Limpa'] = df_tec['Modalidade do incidente crítico'].apply(limpar_valor) if 'Modalidade do incidente crítico' in df_tec.columns else 'N/D'
         
         df_tec_filt = df_tec.copy()
-        if filtro_neg_g != "Todos": df_tec_filt = df_tec_filt[df_tec_filt['Neg_Limpo'] == filtro_neg_g]
-        if filtro_tip_g != "Todas": df_tec_filt = df_tec_filt[df_tec_filt['Tip_Limpa'] == filtro_tip_g]
-        if filtro_mod_g != "Todas": df_tec_filt = df_tec_filt[df_tec_filt['Mod_Limpa'] == filtro_mod_g]
+        if filtro_neg_g != "Todos": 
+            df_tec_filt = df_tec_filt[df_tec_filt['Neg_Limpo'] == filtro_neg_g]
+        if filtro_tip_g != "Todas": 
+            df_tec_filt = df_tec_filt[df_tec_filt['Tip_Limpa'] == filtro_tip_g]
+        if filtro_mod_g != "Todas": 
+            df_tec_filt = df_tec_filt[df_tec_filt['Mod_Limpa'] == filtro_mod_g]
         
         if not df_tec_filt.empty:
-            # Busca dinâmica da coluna de técnicas
             col_t = next((col for col in ['TÉCNICAS', 'TECNICAS', 'TÉCNICA', 'TECNICA'] if col in df_tec_filt.columns), None)
-            
             if col_t:
                 freq_global = df_tec_filt[col_t].value_counts().reset_index()
                 freq_global.columns = ['Técnica', 'Vezes Utilizada']
                 
-                # Layout das colunas dentro do botão aberto
                 c_tab, c_tree = st.columns([1, 2])
                 with c_tab: 
                     st.dataframe(freq_global, use_container_width=True, hide_index=True)
@@ -1811,14 +1800,12 @@ if st.session_state.abrir_ranking:
                     )
                     st.plotly_chart(fig_g, use_container_width=True)
             else: 
-                st.warning("Coluna 'TÉCNICAS' não encontrada na base de dados.")
+                st.warning("Coluna 'TÉCNICAS' não encontrada.")
         else: 
             st.info("Nenhuma técnica encontrada para os filtros selecionados.")
-    else:
-        st.error("O DataFrame de técnicas (df_tec) está vazio.")
-
-st.markdown("---")
-st.markdown("<h4 style='color: #FFD700;'>🔬 Análise Inferencial Básica</h4>", unsafe_allow_html=True)
+    
+    st.markdown("---")
+    st.markdown("<h4 style='color: #FFD700;'>🔬 Análise Inferencial Básica</h4>", unsafe_allow_html=True)
 
 def achar_coluna(df, papel, metrica, momento):
     import unicodedata
