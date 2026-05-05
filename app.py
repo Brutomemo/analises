@@ -322,9 +322,9 @@ st.markdown("""
         filter: brightness(1.05);
     }
         div.stButton > button:active {
-        transform: scale(0.97) translateY(1px) !important;
+        transform: scale(0.98) translateY(0.6px) !important;
         box-shadow: 0 3px 10px -5px rgba(249, 115, 22, 0.6) !important;
-        filter: brightness(0.98);
+        filter: brightness(0.99);
     }
     
     /* Efeito Ambient Blobs (Degradês Flutuantes no Fundo) */
