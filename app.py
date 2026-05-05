@@ -1750,360 +1750,360 @@ else:
             else: st.info("Sem dados de Sexo para os filtros atuais.")
 
         st.markdown("---")
-        with st.expander("📊 Abrir Ranking de Técnicas"):
+        if st.button("📊 Abrir Ranking de Técnicas"):
             st.markdown("#### Ranking de Técnicas Aplicadas")
 
-            if not df_tec.empty:
-                df_tec['Neg_Limpo'] = df_tec['Negociador Principal do incidente crítico'].apply(limpar_valor) if 'Negociador Principal do incidente crítico' in df_tec.columns else 'N/D'
-                df_tec['Tip_Limpa'] = df_tec['Tipologia do incidente crítico'].apply(limpar_valor) if 'Tipologia do incidente crítico' in df_tec.columns else 'N/D'
-                df_tec['Mod_Limpa'] = df_tec['Modalidade do incidente crítico'].apply(limpar_valor) if 'Modalidade do incidente crítico' in df_tec.columns else 'N/D'
-                
-                df_tec_filt = df_tec.copy()
-                if filtro_neg_g != "Todos": df_tec_filt = df_tec_filt[df_tec_filt['Neg_Limpo'] == filtro_neg_g]
-                if filtro_tip_g != "Todas": df_tec_filt = df_tec_filt[df_tec_filt['Tip_Limpa'] == filtro_tip_g]
-                if filtro_mod_g != "Todas": df_tec_filt = df_tec_filt[df_tec_filt['Mod_Limpa'] == filtro_mod_g]
-                
-                if not df_tec_filt.empty:
-                    col_t = next((col for col in ['TÉCNICAS', 'TECNICAS', 'TÉCNICA', 'TECNICA'] if col in df_tec_filt.columns), None)
-                    if col_t:
-                        freq_global = df_tec_filt[col_t].value_counts().reset_index()
-                        freq_global.columns = ['Técnica', 'Vezes Utilizada']
-                        
-                        c_tab, c_tree = st.columns([1, 2])
-                        with c_tab: st.dataframe(freq_global, use_container_width=True, hide_index=True)
-                        with c_tree:
-                            fig_g = px.treemap(freq_global, path=['Técnica'], values='Vezes Utilizada', color='Vezes Utilizada', color_continuous_scale='Oranges')
-                            fig_g.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font_color="#FFF", margin=dict(t=0, l=0, r=0, b=0))
-                            st.plotly_chart(fig_g, use_container_width=True)
-                    else: st.warning("Coluna 'TÉCNICAS' não encontrada.")
-                else: st.info("Nenhuma técnica encontrada para os filtros selecionados.")
-                
-            st.markdown("---")
-            st.markdown("<h4 style='color: #FFD700;'>🔬 Análise Inferencial Básica</h4>", unsafe_allow_html=True)
+        if not df_tec.empty:
+            df_tec['Neg_Limpo'] = df_tec['Negociador Principal do incidente crítico'].apply(limpar_valor) if 'Negociador Principal do incidente crítico' in df_tec.columns else 'N/D'
+            df_tec['Tip_Limpa'] = df_tec['Tipologia do incidente crítico'].apply(limpar_valor) if 'Tipologia do incidente crítico' in df_tec.columns else 'N/D'
+            df_tec['Mod_Limpa'] = df_tec['Modalidade do incidente crítico'].apply(limpar_valor) if 'Modalidade do incidente crítico' in df_tec.columns else 'N/D'
             
-            def achar_coluna(df, papel, metrica, momento):
-                import unicodedata
-                def norm(t): return unicodedata.normalize('NFKD', str(t)).encode('ASCII', 'ignore').decode('ASCII').lower()
-                for col in df.columns:
-                    col_norm = norm(col)
-                    if norm(papel) in col_norm and norm(metrica) in col_norm and norm(momento) in col_norm:
-                        return col
-                return None
-
-            col_agr_c = achar_coluna(df_quali_filt, 'Principal', 'Agressividade', 'Chegada')
-            col_agr_e = achar_coluna(df_quali_filt, 'Principal', 'Agressividade', 'Encerramento')
+            df_tec_filt = df_tec.copy()
+            if filtro_neg_g != "Todos": df_tec_filt = df_tec_filt[df_tec_filt['Neg_Limpo'] == filtro_neg_g]
+            if filtro_tip_g != "Todas": df_tec_filt = df_tec_filt[df_tec_filt['Tip_Limpa'] == filtro_tip_g]
+            if filtro_mod_g != "Todas": df_tec_filt = df_tec_filt[df_tec_filt['Mod_Limpa'] == filtro_mod_g]
             
-            id_col = next((c for c in df_tec_filt.columns if 'ID' in c.upper() or 'VINCULO' in c.upper()), None)
-            lixo = ['none', 'nan', 'n/d', '', 'null', '[]']
-            
-            if 'col_t' in locals() and col_t:
-                df_tec_limpo = df_tec_filt[~df_tec_filt[col_t].astype(str).str.strip().str.lower().isin(lixo)].copy()
-            else:
-                df_tec_limpo = df_tec_filt.copy()
-
-            total_apas_reais = df_tec_limpo[id_col].astype(str).nunique() if id_col else 0
-
-            df_sp = df_quali_filt.copy()
-            c_sp1, c_sp2 = st.columns(2)
-            
-            with c_sp1:
-                st.markdown("<div class='info-card'><strong>Teste de Spearman: Tempo vs. Desescalada</strong><br><span style='font-size: 0.85rem; color: #aaa;'>O que mede: Verifica se ocorrências mais longas resultam matematicamente em uma maior queda de agressividade do causador.</span>", unsafe_allow_html=True)
-                
-                if len(df_sp) < 5:
-                    st.warning(f"⚠️ **Aguardando dados (N={len(df_sp)}):** São necessárias mais ocorrências encerradas para calcular a correlação de tempo de forma confiável.")
-                elif col_agr_c and col_agr_e and 'Tempo de Negociação Real' in df_sp.columns:
-                    df_sp['Agr_Inicio'] = df_sp[col_agr_c].apply(converter_escala)
-                    df_sp['Agr_Fim'] = df_sp[col_agr_e].apply(converter_escala)
-                    df_sp['Delta_Agressividade'] = df_sp['Agr_Inicio'] - df_sp['Agr_Fim']
+            if not df_tec_filt.empty:
+                col_t = next((col for col in ['TÉCNICAS', 'TECNICAS', 'TÉCNICA', 'TECNICA'] if col in df_tec_filt.columns), None)
+                if col_t:
+                    freq_global = df_tec_filt[col_t].value_counts().reset_index()
+                    freq_global.columns = ['Técnica', 'Vezes Utilizada']
                     
-                    def tempo_para_minutos(val):
-                        try:
-                            if isinstance(val, list): val = val[0]
-                            if pd.isna(val) or val == "N/D" or val == "": return 0
-                            return int(float(val)) / 60
-                        except: return 0
-                    
-                    df_sp['Tempo_Minutos'] = df_sp['Tempo de Negociação Real'].apply(tempo_para_minutos)
-                    res_sp = analise.calcular_spearman(df_sp, 'Tempo_Minutos', 'Delta_Agressividade')
-                    
-                    if res_sp.get('valido', False):
-                        st.write(f"Coeficiente Rho: `{res_sp['rho']:.2f}`")
-                        st.write(f"P-Value: `{res_sp['p_value']:.4f}`")
-                        interprete = "Significativa" if res_sp['p_value'] < 0.05 else "Não Significativa"
-                        st.info(f"A correlação é estatisticamente **{interprete}**.")
-                    else:
-                        st.warning(res_sp.get('msg', 'Dados insuficientes para cálculo estatístico (N < 3).'))
-                else: 
-                    st.warning("Colunas de Agressividade ou Tempo ausentes.")
-                st.markdown("</div>", unsafe_allow_html=True)
-
-            with c_sp2:
-                st.markdown("<div class='info-card'><strong>Teste Qui-Quadrado Dinâmico</strong><br><span style='font-size: 0.85rem; color: #aaa;'>Analisa a dependência entre duas variáveis com o objetivo de identificar padrões de associação entre elas. Aqui, avaliamos a técnica vs a variável escolhida para observação.</span>", unsafe_allow_html=True)
-                
-                opcoes_variaveis = {
-                    "Tipologia": "Tip_Limpa",
-                    "Negociador": "Neg_Limpo",
-                    "Modalidade": "Modalidade", 
-                    "Atitude do Causador": "Resposta_Cat" 
-                }
-                
-                var_analise = st.selectbox("Selecione a Variável 1:", list(opcoes_variaveis.keys()), index=0)
-                col_v1 = opcoes_variaveis[var_analise]
-                
-                col_v2 = col_t 
-
-                if total_apas_reais < 10:
-                    st.warning(f"⚠️ **Análise em Maturação (N={total_apas_reais}):** O cruzamento de padrões exige no mínimo 10 APAs distintas para evitar que o talento (ou erro) de um único caso seja lido como regra.")
-                else:
-                    df_qui_clean = df_tec_filt.dropna(subset=[col_v1, col_v2]).copy()
-                    
-                    if not df_qui_clean.empty:
-                        res_chi = analise.calcular_qui_quadrado(df_qui_clean, col_v1, col_v2)
-                        
-                        if res_chi.get('valido', False):
-                            st.write(f"Estatística Qui-Quadrado: `{res_chi['chi2']:.2f}`")
-                            st.write(f"P-Valor: `{res_chi['p_value']:.4f}`")
-                            
-                            if res_chi['p_value'] < 0.05:
-                                st.success(f"✅ **Existe Padrão:** O uso de técnicas **depende** do(a) {var_analise}. Isso indica uma atuação padronizada/doutrinária.")
-                            else:
-                                st.info(f"ℹ️ **Sem Padrão:** O uso de técnicas é independente do(a) {var_analise}. A aplicação parece ser situacional ou improvisada.")
-                        else:
-                            st.warning("Variância insuficiente para este cruzamento específico.")
-                    else:
-                        st.warning("Sem dados suficientes após filtragem.")
-                st.markdown("</div>", unsafe_allow_html=True)
-
-            st.markdown("---")
-            st.markdown("<h4 style='color: #FFD700;'>📐 Modelagem Avançada: Viés do Negociador e Eficácia das Técnicas empregadas</h4>", unsafe_allow_html=True)
-            st.markdown("""
-            <p style='color: #bbb; font-size: 1rem; line-height: 1.6; margin-bottom: 20px;'>
-                Este módulo amplia a análise estatística ao empregar modelos inferenciais avançados, como Regressão Ordinal e Equações de Estimação Generalizadas (GEE), com o objetivo de avaliar a eficácia das técnicas aplicadas em diferentes contextos operacionais. A abordagem busca controlar variáveis de confusão — como diferenças individuais entre negociadores e características específicas dos cenários — permitindo uma análise mais precisa das associações observadas. O propósito é identificar padrões consistentes nos dados e subsidiar a construção de <strong>protocolos táticos orientados por evidências</strong>, reduzindo a influência de vieses e fortalecendo a avaliação da doutrina da Equipe de Negociação.
-            </p>
-            """, unsafe_allow_html=True)
+                    c_tab, c_tree = st.columns([1, 2])
+                    with c_tab: st.dataframe(freq_global, use_container_width=True, hide_index=True)
+                    with c_tree:
+                        fig_g = px.treemap(freq_global, path=['Técnica'], values='Vezes Utilizada', color='Vezes Utilizada', color_continuous_scale='Oranges')
+                        fig_g.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font_color="#FFF", margin=dict(t=0, l=0, r=0, b=0))
+                        st.plotly_chart(fig_g, use_container_width=True)
+                else: st.warning("Coluna 'TÉCNICAS' não encontrada.")
+            else: st.info("Nenhuma técnica encontrada para os filtros selecionados.")
             
-            if total_apas_reais < 15:
-                st.info(f"""
-                💡 **Por que estas estatísticas estão ocultas? (Modo de Segurança)**
-                
-                Modelos matemáticos avançados (Regressão e GEE) exigem um volume histórico de ocorrências distintas para não gerarem resultados distorcidos. Atualmente, o sistema detectou dados de apenas **{total_apas_reais} ocorrências**.
-                
-                * **Meta para desbloqueio:** 15 ocorrências únicas.
-                """)
-            else:
-                col_resposta = next((col for col in df_tec_filt.columns if 'ATITUDE' in col.upper()), None)
-                
-                if not col_resposta:
-                    st.warning("⚠️ **Ativação Necessária:** Crie a coluna 'Resposta da Técnica' no Airtable.")
-                else:
-                    try: 
-                        import statsmodels.api as sm
-                        import statsmodels.formula.api as smf
-                        from statsmodels.miscmodels.ordinal_model import OrderedModel
-                        from scipy.stats import chi2_contingency
-                        import numpy as np
+        st.markdown("---")
+        st.markdown("<h4 style='color: #FFD700;'>🔬 Análise Inferencial Básica</h4>", unsafe_allow_html=True)
+        
+        def achar_coluna(df, papel, metrica, momento):
+            import unicodedata
+            def norm(t): return unicodedata.normalize('NFKD', str(t)).encode('ASCII', 'ignore').decode('ASCII').lower()
+            for col in df.columns:
+                col_norm = norm(col)
+                if norm(papel) in col_norm and norm(metrica) in col_norm and norm(momento) in col_norm:
+                    return col
+            return None
 
-                        df_adv = df_tec_limpo.copy()
-                        mapa_resp = {'-1': 'Negativa', '-1.0': 'Negativa', -1: 'Negativa', '🔴 reação negativa': 'Negativa',
-                        '0': 'Neutra', '0.0': 'Neutra', 0: 'Neutra', '⚪ reação neutra': 'Neutra',
-                        '1': 'Positiva', '1.0': 'Positiva', 1: 'Positiva', '🟢 reação positiva': 'Positiva'}
-                        
-                        df_adv['Resposta_Cat'] = df_adv[col_resposta].astype(str).str.lower().str.strip().map(mapa_resp).fillna('Nao_Observado')
-                        df_adv_clean = df_adv[df_adv['Resposta_Cat'] != 'Nao_Observado'].copy()
-                        df_adv_clean = df_adv_clean.dropna(subset=['TÉCNICAS'])
-                        df_adv_clean['Resposta_Ord'] = pd.Categorical(df_adv_clean['Resposta_Cat'], categories=['Negativa', 'Neutra', 'Positiva'], ordered=True)
-                        
-                        st.markdown("<div class='info-card'>", unsafe_allow_html=True)
-                        st.markdown("#### 1. Teste de Viés por Negociador (Qui-Quadrado de Resíduos)")
-                        st.markdown("<span style='font-size: 0.85rem; color: #aaa;'><strong>O que significa:</strong> Verifica se os relatos de 'sucesso' estão concentrados em apenas alguns negociadores ou se são homogêneos.</span>", unsafe_allow_html=True)
-                        
-                        tab_vies = pd.crosstab(df_adv_clean['Neg_Limpo'], df_adv_clean['Resposta_Cat'])
-                        if tab_vies.shape[0] > 1 and tab_vies.shape[1] > 1:
-                            chi2, p, dof, exp = chi2_contingency(tab_vies)
-                            residuos = (tab_vies - exp) / np.sqrt(exp)
-                            st.write(f"**P-Valor global:** `{p:.4e}`")
-                            fig_heat = px.imshow(residuos, text_auto=".2f", color_continuous_scale="RdBu", title="Mapa de Calor do Viés")
-                            fig_heat.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font_color="#FFF")
-                            st.plotly_chart(fig_heat, use_container_width=True)
-                        else:
-                            st.write("Dados insuficientes para comparar múltiplos negociadores.")
-                        st.markdown("</div>", unsafe_allow_html=True)
-                        
-                        st.markdown("<div class='info-card'>", unsafe_allow_html=True)
-                        st.markdown("#### 2. Eficácia Isolada da Técnica (Regressão Ordinal)")
-                        st.markdown("<span style='font-size: 0.85rem; color: #aaa;'><strong>O que significa:</strong> Isola o peso da técnica, removendo a influência do negociador e da tipologia da crise.</span>", unsafe_allow_html=True)
-                        
-                        if 'col_t' in locals() and col_t:
-                            df_adv_clean['Tecnica_Patsy'] = df_adv_clean[col_t].astype(str).str.replace(' ', '_').str.replace('-', '_')
-                            df_adv_clean['Neg_Patsy'] = df_adv_clean['Neg_Limpo'].astype(str).str.replace(' ', '_')
-                            df_adv_clean['Tip_Patsy'] = df_adv_clean['Tip_Limpa'].astype(str).str.replace(' ', '_')
+        col_agr_c = achar_coluna(df_quali_filt, 'Principal', 'Agressividade', 'Chegada')
+        col_agr_e = achar_coluna(df_quali_filt, 'Principal', 'Agressividade', 'Encerramento')
+        
+        id_col = next((c for c in df_tec_filt.columns if 'ID' in c.upper() or 'VINCULO' in c.upper()), None)
+        lixo = ['none', 'nan', 'n/d', '', 'null', '[]']
+        
+        if 'col_t' in locals() and col_t:
+            df_tec_limpo = df_tec_filt[~df_tec_filt[col_t].astype(str).str.strip().str.lower().isin(lixo)].copy()
+        else:
+            df_tec_limpo = df_tec_filt.copy()
 
-                            try:
-                                mod_ord = OrderedModel.from_formula("Resposta_Ord ~ C(Tecnica_Patsy) + C(Neg_Patsy) + C(Tip_Patsy)", data=df_adv_clean, distr='logit')
-                                res_ord = mod_ord.fit(method='bfgs', disp=False)
-                                coefs = res_ord.params[res_ord.params.index.str.contains('Tecnica')]
-                                pvals = res_ord.pvalues[res_ord.params.index.str.contains('Tecnica')]
-                                df_or = pd.DataFrame({'Técnica': coefs.index.str.extract(r'\[T\.(.*?)\]')[0], 'Odds_Ratio': np.exp(coefs), 'P_Valor': pvals})
-                                df_or = df_or[df_or['P_Valor'] < 0.05].sort_values('Odds_Ratio', ascending=False)
-                                
-                                if not df_or.empty:
-                                    st.dataframe(df_or.style.format({'Odds_Ratio': '{:.2f}', 'P_Valor': '{:.4f}'}), use_container_width=True, hide_index=True)
-                                    st.success("💡 Um Odds Ratio de 2.0 indica que a técnica dobra a chance de uma resposta positiva.")
-                                else:
-                                    st.info("ℹ️ Nenhuma técnica isolada apresentou significância estatística neste cenário.")
-                            except:
-                                st.warning("O modelo Ordinal não convergiu para este subconjunto.")
-                        st.markdown("</div>", unsafe_allow_html=True)
-                        
-                        st.markdown("<div class='info-card'>", unsafe_allow_html=True)
-                        st.markdown("#### 3. Robustez Hierárquica (Equações de Estimação Generalizadas - GEE)")
-                        st.markdown("<span style='font-size: 0.85rem; color: #aaa;'><strong>O que significa:</strong> Valida se a técnica é eficaz para a Tropa inteira ou apenas resultado do talento individual.</span>", unsafe_allow_html=True)
-                        
-                        df_gee_real = df_adv_clean.copy()
-                        df_gee_real['Sucesso'] = np.where(df_gee_real['Resposta_Cat'] == 'Positiva', 1, 0)
-                        try:
-                            if 'Tecnica_Patsy' in df_gee_real.columns:
-                                modelo_gee = smf.gee("Sucesso ~ C(Tecnica_Patsy)", groups=df_gee_real['Neg_Patsy'], data=df_gee_real, family=sm.families.Binomial(), cov_struct=sm.cov_struct.Exchangeable())
-                                res_gee = modelo_gee.fit()
-                                gee_coefs = res_gee.params[res_gee.params.index.str.contains('Tecnica')]
-                                gee_pvals = res_gee.pvalues[res_gee.params.index.str.contains('Tecnica')]
-                                df_gee = pd.DataFrame({'Técnica': gee_coefs.index.str.extract(r'\[T\.(.*?)\]')[0], 'Coeficiente_GEE': gee_coefs, 'P_Valor': gee_pvals})
-                                
-                                if not df_gee.empty:
-                                    st.dataframe(df_gee.style.format({'Coeficiente_GEE': '{:.2f}', 'P_Valor': '{:.4f}'}), use_container_width=True, hide_index=True)
-                                    if (gee_pvals < 0.05).any(): st.success("✅ **Doutrina Validada:** Técnica sobreviveu ao controle de viés.")
-                                    else: st.info("ℹ️ Nenhuma técnica atingiu significância.")
-                        except:
-                            st.error("Erro no processamento GEE.")
-                        st.markdown("</div>", unsafe_allow_html=True)
-                        
-                    except ImportError:
-                        st.error("🚨 Biblioteca statsmodels não instalada.")
-                    except Exception as e:
-                        st.error(f"🚨 Erro geral: {str(e)}")
+        total_apas_reais = df_tec_limpo[id_col].astype(str).nunique() if id_col else 0
 
-            st.markdown("---")
-            st.markdown("<h4 style='color: #FFD700;'>📈 Volume e Tendência Temporal</h4>", unsafe_allow_html=True)
+        df_sp = df_quali_filt.copy()
+        c_sp1, c_sp2 = st.columns(2)
+        
+        with c_sp1:
+            st.markdown("<div class='info-card'><strong>Teste de Spearman: Tempo vs. Desescalada</strong><br><span style='font-size: 0.85rem; color: #aaa;'>O que mede: Verifica se ocorrências mais longas resultam matematicamente em uma maior queda de agressividade do causador.</span>", unsafe_allow_html=True)
             
-            col_data = next((col for col in ['Data da ocorrência', 'Data', 'DATA'] if col in df_quali_filt.columns), None)
-            if col_data:
-                df_quali_filt['Data_DT'] = pd.to_datetime(df_quali_filt[col_data], errors='coerce')
-                df_time = df_quali_filt.dropna(subset=['Data_DT']).sort_values('Data_DT')
-                if not df_time.empty:
-                    df_time['Mes_Ano'] = df_time['Data_DT'].dt.to_period('M').astype(str)
-                    df_trend = df_time['Mes_Ano'].value_counts().sort_index().reset_index()
-                    df_trend.columns = ['Mês', 'Qtd Ocorrências']
-                    fig_time = px.line(df_trend, x='Mês', y='Qtd Ocorrências', markers=True, color_discrete_sequence=['#FFD700'])
-                    fig_time.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font_color="#FFF")
-                    st.plotly_chart(fig_time, use_container_width=True)
-                else: st.info("Sem datas válidas.")
-            else: st.info("Coluna de Data não encontrada.")
-
-            st.markdown("---")
-            st.markdown("<h4 style='color: #06C755;'>🧠 Síntese Interpretativa Avançada (Interpretação descritiva dos resultados estatísticos assistida por modelo de linguagem (LLM – OpenAI GPT-4o-mini), com base em dados previamente processados por métodos estatísticos.)</h4>", unsafe_allow_html=True)
-            st.markdown("<p style='color: #bbb;'>Este módulo traduz a matriz matemática gerada acima em um relatório estratégico que visa o aperfeiçoamento técnico contínuo do Negociador.</p>", unsafe_allow_html=True)
-
-            if st.button("🤖 GERAR RELATÓRIO ESTATÍSTICO DESCRITIVO"):
-                with st.spinner("Estruturando matrizes e consultando Cientista de Dados IA..."):
+            if len(df_sp) < 5:
+                st.warning(f"⚠️ **Aguardando dados (N={len(df_sp)}):** São necessárias mais ocorrências encerradas para calcular a correlação de tempo de forma confiável.")
+            elif col_agr_c and col_agr_e and 'Tempo de Negociação Real' in df_sp.columns:
+                df_sp['Agr_Inicio'] = df_sp[col_agr_c].apply(converter_escala)
+                df_sp['Agr_Fim'] = df_sp[col_agr_e].apply(converter_escala)
+                df_sp['Delta_Agressividade'] = df_sp['Agr_Inicio'] - df_sp['Agr_Fim']
+                
+                def tempo_para_minutos(val):
                     try:
-                        import ia_estatistica 
-                        
-                        qui_data = {'p_valor_global': p} if 'p' in locals() else None
-                        
-                        ord_data = None
-                        if 'df_or' in locals() and not df_or.empty:
-                            ord_data = df_or.to_dict('records')
-                        
-                        gee_data = None
-                        if 'df_gee' in locals() and not df_gee.empty:
-                            gee_data = df_gee.to_dict('records')
+                        if isinstance(val, list): val = val[0]
+                        if pd.isna(val) or val == "N/D" or val == "": return 0
+                        return int(float(val)) / 60
+                    except: return 0
+                
+                df_sp['Tempo_Minutos'] = df_sp['Tempo de Negociação Real'].apply(tempo_para_minutos)
+                res_sp = analise.calcular_spearman(df_sp, 'Tempo_Minutos', 'Delta_Agressividade')
+                
+                if res_sp.get('valido', False):
+                    st.write(f"Coeficiente Rho: `{res_sp['rho']:.2f}`")
+                    st.write(f"P-Value: `{res_sp['p_value']:.4f}`")
+                    interprete = "Significativa" if res_sp['p_value'] < 0.05 else "Não Significativa"
+                    st.info(f"A correlação é estatisticamente **{interprete}**.")
+                else:
+                    st.warning(res_sp.get('msg', 'Dados insuficientes para cálculo estatístico (N < 3).'))
+            else: 
+                st.warning("Colunas de Agressividade ou Tempo ausentes.")
+            st.markdown("</div>", unsafe_allow_html=True)
 
-                        payload_ia = ia_estatistica.estruturar_resultado_para_ia(
-                            amostra_total=len(df_quali_filt),
-                            resultados_chi=qui_data,
-                            resultados_ordinal=ord_data,
-                            resultados_gee=gee_data
-                        )
+        with c_sp2:
+            st.markdown("<div class='info-card'><strong>Teste Qui-Quadrado Dinâmico</strong><br><span style='font-size: 0.85rem; color: #aaa;'>Analisa a dependência entre duas variáveis com o objetivo de identificar padrões de associação entre elas. Aqui, avaliamos a técnica vs a variável escolhida para observação.</span>", unsafe_allow_html=True)
+            
+            opcoes_variaveis = {
+                "Tipologia": "Tip_Limpa",
+                "Negociador": "Neg_Limpo",
+                "Modalidade": "Modalidade", 
+                "Atitude do Causador": "Resposta_Cat" 
+            }
+            
+            var_analise = st.selectbox("Selecione a Variável 1:", list(opcoes_variaveis.keys()), index=0)
+            col_v1 = opcoes_variaveis[var_analise]
+            
+            col_v2 = col_t 
 
-                        relatorio_json = ia_estatistica.gerar_relatorio_com_ia(payload_ia)
-
-                        if "erro" in relatorio_json:
-                            st.error(relatorio_json["erro"])
-                            with st.expander("Ver Payload Enviado"):
-                                st.json(payload_ia)
+            if total_apas_reais < 10:
+                st.warning(f"⚠️ **Análise em Maturação (N={total_apas_reais}):** O cruzamento de padrões exige no mínimo 10 APAs distintas para evitar que o talento (ou erro) de um único caso seja lido como regra.")
+            else:
+                df_qui_clean = df_tec_filt.dropna(subset=[col_v1, col_v2]).copy()
+                
+                if not df_qui_clean.empty:
+                    res_chi = analise.calcular_qui_quadrado(df_qui_clean, col_v1, col_v2)
+                    
+                    if res_chi.get('valido', False):
+                        st.write(f"Estatística Qui-Quadrado: `{res_chi['chi2']:.2f}`")
+                        st.write(f"P-Valor: `{res_chi['p_value']:.4f}`")
+                        
+                        if res_chi['p_value'] < 0.05:
+                            st.success(f"✅ **Existe Padrão:** O uso de técnicas **depende** do(a) {var_analise}. Isso indica uma atuação padronizada/doutrinária.")
                         else:
-                            def render_ia_card(titulo, texto, icone="📌"):
-                                return f"""
-                                <div class="info-card" style="border-left: 3px solid #06C755; padding: 15px; margin-bottom: 15px;">
-                                <h5 style="color: #06C755; margin-top: 0; font-size: 1.1rem;">{icone} {titulo}</h5>
-                                <p style="font-size: 1.05rem; line-height: 1.6; color: #FFF;">{texto}</p>
-                                </div>
-                                """
+                            st.info(f"ℹ️ **Sem Padrão:** O uso de técnicas é independente do(a) {var_analise}. A aplicação parece ser situacional ou improvisada.")
+                    else:
+                        st.warning("Variância insuficiente para este cruzamento específico.")
+                else:
+                    st.warning("Sem dados suficientes após filtragem.")
+            st.markdown("</div>", unsafe_allow_html=True)
 
-                            c_ia1, c_ia2 = st.columns(2)
-                            with c_ia1:
-                                st.markdown(render_ia_card("Objetivo Analítico", relatorio_json.get("objetivo", "N/D"), "🎯"), unsafe_allow_html=True)
-                                st.markdown(render_ia_card("Premissas e Limitações da Análise", relatorio_json.get("premissas", "N/D") + "<br><br><strong>Limitações Técnicas:</strong> " + relatorio_json.get("limitacoes", "N/D"), "⚖️"), unsafe_allow_html=True)
-                            with c_ia2:
-                                st.markdown(render_ia_card("Resultados Principais", relatorio_json.get("resultados_principais", "N/D"), "📊"), unsafe_allow_html=True)
-                                st.markdown(render_ia_card("Tamanho do Efeito", relatorio_json.get("tamanho_efeito", "N/D"), "📈"), unsafe_allow_html=True)
+        st.markdown("---")
+        st.markdown("<h4 style='color: #FFD700;'>📐 Modelagem Avançada: Viés do Negociador e Eficácia das Técnicas empregadas</h4>", unsafe_allow_html=True)
+        st.markdown("""
+        <p style='color: #bbb; font-size: 1rem; line-height: 1.6; margin-bottom: 20px;'>
+            Este módulo amplia a análise estatística ao empregar modelos inferenciais avançados, como Regressão Ordinal e Equações de Estimação Generalizadas (GEE), com o objetivo de avaliar a eficácia das técnicas aplicadas em diferentes contextos operacionais. A abordagem busca controlar variáveis de confusão — como diferenças individuais entre negociadores e características específicas dos cenários — permitindo uma análise mais precisa das associações observadas. O propósito é identificar padrões consistentes nos dados e subsidiar a construção de <strong>protocolos táticos orientados por evidências</strong>, reduzindo a influência de vieses e fortalecendo a avaliação da doutrina da Equipe de Negociação.
+        </p>
+        """, unsafe_allow_html=True)
+        
+        if total_apas_reais < 15:
+            st.info(f"""
+            💡 **Por que estas estatísticas estão ocultas? (Modo de Segurança)**
+            
+            Modelos matemáticos avançados (Regressão e GEE) exigem um volume histórico de ocorrências distintas para não gerarem resultados distorcidos. Atualmente, o sistema detectou dados de apenas **{total_apas_reais} ocorrências**.
+            
+            * **Meta para desbloqueio:** 15 ocorrências únicas.
+            """)
+        else:
+            col_resposta = next((col for col in df_tec_filt.columns if 'ATITUDE' in col.upper()), None)
+            
+            if not col_resposta:
+                st.warning("⚠️ **Ativação Necessária:** Crie a coluna 'Resposta da Técnica' no Airtable.")
+            else:
+                try: 
+                    import statsmodels.api as sm
+                    import statsmodels.formula.api as smf
+                    from statsmodels.miscmodels.ordinal_model import OrderedModel
+                    from scipy.stats import chi2_contingency
+                    import numpy as np
 
-                            st.markdown(render_ia_card("Implicações Analíticas para a Tomada de Decisão", relatorio_json.get("interpretacao", "N/D"), "🧠"), unsafe_allow_html=True)
-                            st.markdown(render_ia_card("Direcionamento Estratégico Baseado em Evidências", relatorio_json.get("conclusao", "N/D"), "🏆"), unsafe_allow_html=True)
+                    df_adv = df_tec_limpo.copy()
+                    mapa_resp = {'-1': 'Negativa', '-1.0': 'Negativa', -1: 'Negativa', '🔴 reação negativa': 'Negativa',
+                    '0': 'Neutra', '0.0': 'Neutra', 0: 'Neutra', '⚪ reação neutra': 'Neutra',
+                    '1': 'Positiva', '1.0': 'Positiva', 1: 'Positiva', '🟢 reação positiva': 'Positiva'}
+                    
+                    df_adv['Resposta_Cat'] = df_adv[col_resposta].astype(str).str.lower().str.strip().map(mapa_resp).fillna('Nao_Observado')
+                    df_adv_clean = df_adv[df_adv['Resposta_Cat'] != 'Nao_Observado'].copy()
+                    df_adv_clean = df_adv_clean.dropna(subset=['TÉCNICAS'])
+                    df_adv_clean['Resposta_Ord'] = pd.Categorical(df_adv_clean['Resposta_Cat'], categories=['Negativa', 'Neutra', 'Positiva'], ordered=True)
+                    
+                    st.markdown("<div class='info-card'>", unsafe_allow_html=True)
+                    st.markdown("#### 1. Teste de Viés por Negociador (Qui-Quadrado de Resíduos)")
+                    st.markdown("<span style='font-size: 0.85rem; color: #aaa;'><strong>O que significa:</strong> Verifica se os relatos de 'sucesso' estão concentrados em apenas alguns negociadores ou se são homogêneos.</span>", unsafe_allow_html=True)
+                    
+                    tab_vies = pd.crosstab(df_adv_clean['Neg_Limpo'], df_adv_clean['Resposta_Cat'])
+                    if tab_vies.shape[0] > 1 and tab_vies.shape[1] > 1:
+                        chi2, p, dof, exp = chi2_contingency(tab_vies)
+                        residuos = (tab_vies - exp) / np.sqrt(exp)
+                        st.write(f"**P-Valor global:** `{p:.4e}`")
+                        fig_heat = px.imshow(residuos, text_auto=".2f", color_continuous_scale="RdBu", title="Mapa de Calor do Viés")
+                        fig_heat.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font_color="#FFF")
+                        st.plotly_chart(fig_heat, use_container_width=True)
+                    else:
+                        st.write("Dados insuficientes para comparar múltiplos negociadores.")
+                    st.markdown("</div>", unsafe_allow_html=True)
+                    
+                    st.markdown("<div class='info-card'>", unsafe_allow_html=True)
+                    st.markdown("#### 2. Eficácia Isolada da Técnica (Regressão Ordinal)")
+                    st.markdown("<span style='font-size: 0.85rem; color: #aaa;'><strong>O que significa:</strong> Isola o peso da técnica, removendo a influência do negociador e da tipologia da crise.</span>", unsafe_allow_html=True)
+                    
+                    if 'col_t' in locals() and col_t:
+                        df_adv_clean['Tecnica_Patsy'] = df_adv_clean[col_t].astype(str).str.replace(' ', '_').str.replace('-', '_')
+                        df_adv_clean['Neg_Patsy'] = df_adv_clean['Neg_Limpo'].astype(str).str.replace(' ', '_')
+                        df_adv_clean['Tip_Patsy'] = df_adv_clean['Tip_Limpa'].astype(str).str.replace(' ', '_')
 
-                            with st.expander("🕵️ Ver Matriz Bruta de Dados (JSON Payload e Retorno)"):
-                                st.markdown("**Payload enviado para a IA (O que o Python calculou):**")
-                                st.json(payload_ia)
-                                st.markdown("**JSON Retornado pela IA:**")
-                                st.json(relatorio_json)
-
-                            st.markdown("---")
-                            st.markdown("### 🖨️ Exportar Relatório")
+                        try:
+                            mod_ord = OrderedModel.from_formula("Resposta_Ord ~ C(Tecnica_Patsy) + C(Neg_Patsy) + C(Tip_Patsy)", data=df_adv_clean, distr='logit')
+                            res_ord = mod_ord.fit(method='bfgs', disp=False)
+                            coefs = res_ord.params[res_ord.params.index.str.contains('Tecnica')]
+                            pvals = res_ord.pvalues[res_ord.params.index.str.contains('Tecnica')]
+                            df_or = pd.DataFrame({'Técnica': coefs.index.str.extract(r'\[T\.(.*?)\]')[0], 'Odds_Ratio': np.exp(coefs), 'P_Valor': pvals})
+                            df_or = df_or[df_or['P_Valor'] < 0.05].sort_values('Odds_Ratio', ascending=False)
                             
-                            try:
-                                pdf_hist = FPDF()
-                                pdf_hist.add_page()
-                                
-                                pdf_hist.set_fill_color(249, 115, 22)
-                                pdf_hist.rect(0, 0, 210, 40, 'F')
-                                pdf_hist.set_font("Arial", "B", 16)
-                                pdf_hist.set_text_color(255, 255, 255)
-                                pdf_hist.cell(0, 15, "RELATORIO DA ANÁLISE - SÉRIE HISTÓRICA", ln=True, align="C")
-                                pdf_hist.set_font("Arial", "I", 12)
-                                pdf_hist.cell(0, 5, "GATE - Inteligencia de Apoio ao Processo Decisório", ln=True, align="C")
-                                
-                                pdf_hist.ln(20)
-                                pdf_hist.set_text_color(0, 0, 0)
-                                pdf_hist.set_font("Arial", "B", 14)
-                                pdf_hist.set_fill_color(240, 240, 240)
-                                pdf_hist.cell(0, 10, " 1. SINTESE DAS TECNICAS APLICADAS", ln=True, fill=True)
-                                pdf_hist.ln(5)
-                                
-                                pdf_hist.set_font("Arial", "", 12)
-                                
-                                partes_hist = [f"{k.upper()}:\n{v}" for k, v in relatorio_json.items() if isinstance(v, str)]
-                                texto_hist_str = "\n\n".join(partes_hist).replace("**", "").replace("### ", "")
-                                texto_pdf_limpo_hist = unicodedata.normalize('NFKD', texto_hist_str).encode('ASCII', 'ignore').decode('ASCII')
-                                
-                                pdf_hist.multi_cell(0, 8, txt=texto_pdf_limpo_hist)
-                                
-                                pdf_saida_hist = pdf_hist.output(dest="S")
-                                if isinstance(pdf_saida_hist, str):
-                                    pdf_bytes_hist = pdf_saida_hist.encode('latin-1', errors='replace')
-                                else:
-                                    pdf_bytes_hist = bytes(pdf_saida_hist)
-                                
-                                st.download_button(
-                                    label="📥 BAIXAR RELATÓRIO (PDF)", 
-                                    data=pdf_bytes_hist, 
-                                    file_name="Relatorio_de_análise_GATE.pdf", 
-                                    mime="application/pdf"
-                                )
-                            except Exception as e:
-                                st.error(f"Erro na geração do PDF Série Histórica: {str(e)}")
+                            if not df_or.empty:
+                                st.dataframe(df_or.style.format({'Odds_Ratio': '{:.2f}', 'P_Valor': '{:.4f}'}), use_container_width=True, hide_index=True)
+                                st.success("💡 Um Odds Ratio de 2.0 indica que a técnica dobra a chance de uma resposta positiva.")
+                            else:
+                                st.info("ℹ️ Nenhuma técnica isolada apresentou significância estatística neste cenário.")
+                        except:
+                            st.warning("O modelo Ordinal não convergiu para este subconjunto.")
+                    st.markdown("</div>", unsafe_allow_html=True)
+                    
+                    st.markdown("<div class='info-card'>", unsafe_allow_html=True)
+                    st.markdown("#### 3. Robustez Hierárquica (Equações de Estimação Generalizadas - GEE)")
+                    st.markdown("<span style='font-size: 0.85rem; color: #aaa;'><strong>O que significa:</strong> Valida se a técnica é eficaz para a Tropa inteira ou apenas resultado do talento individual.</span>", unsafe_allow_html=True)
+                    
+                    df_gee_real = df_adv_clean.copy()
+                    df_gee_real['Sucesso'] = np.where(df_gee_real['Resposta_Cat'] == 'Positiva', 1, 0)
+                    try:
+                        if 'Tecnica_Patsy' in df_gee_real.columns:
+                            modelo_gee = smf.gee("Sucesso ~ C(Tecnica_Patsy)", groups=df_gee_real['Neg_Patsy'], data=df_gee_real, family=sm.families.Binomial(), cov_struct=sm.cov_struct.Exchangeable())
+                            res_gee = modelo_gee.fit()
+                            gee_coefs = res_gee.params[res_gee.params.index.str.contains('Tecnica')]
+                            gee_pvals = res_gee.pvalues[res_gee.params.index.str.contains('Tecnica')]
+                            df_gee = pd.DataFrame({'Técnica': gee_coefs.index.str.extract(r'\[T\.(.*?)\]')[0], 'Coeficiente_GEE': gee_coefs, 'P_Valor': gee_pvals})
+                            
+                            if not df_gee.empty:
+                                st.dataframe(df_gee.style.format({'Coeficiente_GEE': '{:.2f}', 'P_Valor': '{:.4f}'}), use_container_width=True, hide_index=True)
+                                if (gee_pvals < 0.05).any(): st.success("✅ **Doutrina Validada:** Técnica sobreviveu ao controle de viés.")
+                                else: st.info("ℹ️ Nenhuma técnica atingiu significância.")
+                    except:
+                        st.error("Erro no processamento GEE.")
+                    st.markdown("</div>", unsafe_allow_html=True)
+                    
+                except ImportError:
+                    st.error("🚨 Biblioteca statsmodels não instalada.")
+                except Exception as e:
+                    st.error(f"🚨 Erro geral: {str(e)}")
 
-                    except Exception as e:
-                        st.error(f"Erro na geração do relatório de IA: {str(e)}")
+        st.markdown("---")
+        st.markdown("<h4 style='color: #FFD700;'>📈 Volume e Tendência Temporal</h4>", unsafe_allow_html=True)
+        
+        col_data = next((col for col in ['Data da ocorrência', 'Data', 'DATA'] if col in df_quali_filt.columns), None)
+        if col_data:
+            df_quali_filt['Data_DT'] = pd.to_datetime(df_quali_filt[col_data], errors='coerce')
+            df_time = df_quali_filt.dropna(subset=['Data_DT']).sort_values('Data_DT')
+            if not df_time.empty:
+                df_time['Mes_Ano'] = df_time['Data_DT'].dt.to_period('M').astype(str)
+                df_trend = df_time['Mes_Ano'].value_counts().sort_index().reset_index()
+                df_trend.columns = ['Mês', 'Qtd Ocorrências']
+                fig_time = px.line(df_trend, x='Mês', y='Qtd Ocorrências', markers=True, color_discrete_sequence=['#FFD700'])
+                fig_time.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font_color="#FFF")
+                st.plotly_chart(fig_time, use_container_width=True)
+            else: st.info("Sem datas válidas.")
+        else: st.info("Coluna de Data não encontrada.")
+
+        st.markdown("---")
+        st.markdown("<h4 style='color: #06C755;'>🧠 Síntese Interpretativa Avançada (Interpretação descritiva dos resultados estatísticos assistida por modelo de linguagem (LLM – OpenAI GPT-4o-mini), com base em dados previamente processados por métodos estatísticos.)</h4>", unsafe_allow_html=True)
+        st.markdown("<p style='color: #bbb;'>Este módulo traduz a matriz matemática gerada acima em um relatório estratégico que visa o aperfeiçoamento técnico contínuo do Negociador.</p>", unsafe_allow_html=True)
+
+        if st.button("🤖 GERAR RELATÓRIO ESTATÍSTICO DESCRITIVO"):
+            with st.spinner("Estruturando matrizes e consultando Cientista de Dados IA..."):
+                try:
+                    import ia_estatistica 
+                    
+                    qui_data = {'p_valor_global': p} if 'p' in locals() else None
+                    
+                    ord_data = None
+                    if 'df_or' in locals() and not df_or.empty:
+                        ord_data = df_or.to_dict('records')
+                    
+                    gee_data = None
+                    if 'df_gee' in locals() and not df_gee.empty:
+                        gee_data = df_gee.to_dict('records')
+
+                    payload_ia = ia_estatistica.estruturar_resultado_para_ia(
+                        amostra_total=len(df_quali_filt),
+                        resultados_chi=qui_data,
+                        resultados_ordinal=ord_data,
+                        resultados_gee=gee_data
+                    )
+
+                    relatorio_json = ia_estatistica.gerar_relatorio_com_ia(payload_ia)
+
+                    if "erro" in relatorio_json:
+                        st.error(relatorio_json["erro"])
+                        with st.expander("Ver Payload Enviado"):
+                            st.json(payload_ia)
+                    else:
+                        def render_ia_card(titulo, texto, icone="📌"):
+                            return f"""
+                            <div class="info-card" style="border-left: 3px solid #06C755; padding: 15px; margin-bottom: 15px;">
+                            <h5 style="color: #06C755; margin-top: 0; font-size: 1.1rem;">{icone} {titulo}</h5>
+                            <p style="font-size: 1.05rem; line-height: 1.6; color: #FFF;">{texto}</p>
+                            </div>
+                            """
+
+                        c_ia1, c_ia2 = st.columns(2)
+                        with c_ia1:
+                            st.markdown(render_ia_card("Objetivo Analítico", relatorio_json.get("objetivo", "N/D"), "🎯"), unsafe_allow_html=True)
+                            st.markdown(render_ia_card("Premissas e Limitações da Análise", relatorio_json.get("premissas", "N/D") + "<br><br><strong>Limitações Técnicas:</strong> " + relatorio_json.get("limitacoes", "N/D"), "⚖️"), unsafe_allow_html=True)
+                        with c_ia2:
+                            st.markdown(render_ia_card("Resultados Principais", relatorio_json.get("resultados_principais", "N/D"), "📊"), unsafe_allow_html=True)
+                            st.markdown(render_ia_card("Tamanho do Efeito", relatorio_json.get("tamanho_efeito", "N/D"), "📈"), unsafe_allow_html=True)
+
+                        st.markdown(render_ia_card("Implicações Analíticas para a Tomada de Decisão", relatorio_json.get("interpretacao", "N/D"), "🧠"), unsafe_allow_html=True)
+                        st.markdown(render_ia_card("Direcionamento Estratégico Baseado em Evidências", relatorio_json.get("conclusao", "N/D"), "🏆"), unsafe_allow_html=True)
+
+                        with st.expander("🕵️ Ver Matriz Bruta de Dados (JSON Payload e Retorno)"):
+                            st.markdown("**Payload enviado para a IA (O que o Python calculou):**")
+                            st.json(payload_ia)
+                            st.markdown("**JSON Retornado pela IA:**")
+                            st.json(relatorio_json)
+
+                        st.markdown("---")
+                        st.markdown("### 🖨️ Exportar Relatório")
+                        
+                        try:
+                            pdf_hist = FPDF()
+                            pdf_hist.add_page()
+                            
+                            pdf_hist.set_fill_color(249, 115, 22)
+                            pdf_hist.rect(0, 0, 210, 40, 'F')
+                            pdf_hist.set_font("Arial", "B", 16)
+                            pdf_hist.set_text_color(255, 255, 255)
+                            pdf_hist.cell(0, 15, "RELATORIO DA ANÁLISE - SÉRIE HISTÓRICA", ln=True, align="C")
+                            pdf_hist.set_font("Arial", "I", 12)
+                            pdf_hist.cell(0, 5, "GATE - Inteligencia de Apoio ao Processo Decisório", ln=True, align="C")
+                            
+                            pdf_hist.ln(20)
+                            pdf_hist.set_text_color(0, 0, 0)
+                            pdf_hist.set_font("Arial", "B", 14)
+                            pdf_hist.set_fill_color(240, 240, 240)
+                            pdf_hist.cell(0, 10, " 1. SINTESE DAS TECNICAS APLICADAS", ln=True, fill=True)
+                            pdf_hist.ln(5)
+                            
+                            pdf_hist.set_font("Arial", "", 12)
+                            
+                            partes_hist = [f"{k.upper()}:\n{v}" for k, v in relatorio_json.items() if isinstance(v, str)]
+                            texto_hist_str = "\n\n".join(partes_hist).replace("**", "").replace("### ", "")
+                            texto_pdf_limpo_hist = unicodedata.normalize('NFKD', texto_hist_str).encode('ASCII', 'ignore').decode('ASCII')
+                            
+                            pdf_hist.multi_cell(0, 8, txt=texto_pdf_limpo_hist)
+                            
+                            pdf_saida_hist = pdf_hist.output(dest="S")
+                            if isinstance(pdf_saida_hist, str):
+                                pdf_bytes_hist = pdf_saida_hist.encode('latin-1', errors='replace')
+                            else:
+                                pdf_bytes_hist = bytes(pdf_saida_hist)
+                            
+                            st.download_button(
+                                label="📥 BAIXAR RELATÓRIO (PDF)", 
+                                data=pdf_bytes_hist, 
+                                file_name="Relatorio_de_análise_GATE.pdf", 
+                                mime="application/pdf"
+                            )
+                        except Exception as e:
+                            st.error(f"Erro na geração do PDF Série Histórica: {str(e)}")
+
+                except Exception as e:
+                    st.error(f"Erro na geração do relatório de IA: {str(e)}")
 
 
 
