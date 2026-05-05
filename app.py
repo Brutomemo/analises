@@ -2114,6 +2114,22 @@ else:
                     except Exception as e:
                         st.error(f"Erro na geração do relatório de IA: {str(e)}")
 
+                        st.markdown("<div style='margin-bottom: 20px;'></div>", unsafe_allow_html=True)
+            st.markdown("""
+    <div style='margin-top:20px; margin-bottom:100px; padding:15px; 
+                background-color:#111; border-radius:8px;'>
+        <p style='color:#bbb; font-size:13px;'>
+        <b>DELTA NEGOCIAÇÃO — GATE/PMESP:</b><br><br>
+        "O maior inimigo do conhecimento não é a ignorancia, mas a ilusão do conhecimento" - Stephen Hawking. <br>
+        “Sem dados, você é apenas mais uma pessoa com opinião.” — W. Edwards Deming. <br><br>
+        Empenhados no desenvolvimento de treinamentos e na avaliação dos Negociadores, alicerçados no pensamento técnico-científico e no valor humano, guiados por dados. NEGOCIAÇÃO! <br>                                
+        <span style='color:#666; font-size:11px;'>
+        Dados confidenciais, de uso exclusivo da equipe de Negociação do Grupo de Ações Táticas Especiais.
+        </span>
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
+
 
 
 # ============================================================
