@@ -1679,45 +1679,55 @@ else:
         st.markdown("<h4 style='color: #FFD700;'>📊 Visão Geral da Amostra</h4>", unsafe_allow_html=True)
         
         def gerar_grafico_resumo(df, coluna, titulo):
-            """Gera gráfico de colunas verticais padronizado com o Design System."""
-            if coluna not in df.columns: return None
-            
-            # Limpa listas vazias e formata strings
-            serie = df[coluna].apply(lambda x: x[0] if isinstance(x, list) and len(x)>0 else str(x))
-            serie = serie[~serie.isin(["N/D", "nan", "", "None"])]
-            
-            if serie.empty: return None
-            
-            contagem = serie.value_counts().reset_index()
-            contagem.columns = [coluna, 'Frequência']
-            # Para colunas verticais, ordenamos decrescente para a maior ficar à esquerda
-            contagem = contagem.sort_values('Frequência', ascending=False) 
-            
-            # 1. Inversão dos eixos X e Y para gerar colunas (vertical)
-            fig = px.bar(
-                contagem, 
-                x=coluna,          # Categorias no eixo horizontal (base)
-                y='Frequência',    # Valores no eixo vertical (altura)
-                title=titulo, 
-                text='Frequência',
-                color='Frequência',                 
-                color_continuous_scale='Oranges'    
+            """Gera gráfico de rosca com alto contraste entre as fatias."""
+        if coluna not in df.columns: return None
+        
+        serie = df[coluna].apply(lambda x: x[0] if isinstance(x, list) and len(x)>0 else str(x))
+        serie = serie[~serie.isin(["N/D", "nan", "", "None"])]
+        
+        if serie.empty: return None
+        
+        contagem = serie.value_counts().reset_index()
+        contagem.columns = [coluna, 'Frequência']
+        # Ordenamos para garantir que a maior fatia pegue a cor mais forte
+        contagem = contagem.sort_values('Frequência', ascending=False)
+
+        # Criamos uma paleta customizada de alto contraste (Laranja Vibrante vs Marrom Escuro)
+        cores_contraste = ['#FF8C00', '#8B4513', '#CD853F', '#DEB887']
+
+        fig = px.pie(
+            contagem, 
+            values='Frequência', 
+            names=coluna, 
+            title=titulo,
+            hole=0.5,
+            # Usamos uma sequência com saltos de cor para evitar tons parecidos
+            color_discrete_sequence=cores_contraste 
+        )
+        
+        fig.update_traces(
+            textinfo='value+percent',
+            textposition='outside',
+            # Adiciona uma linha branca fina entre as fatias para melhorar a separação
+            marker=dict(line=dict(color='#FFFFFF', width=1)) 
+        )
+        
+        fig.update_layout(
+            paper_bgcolor="rgba(0,0,0,0)", 
+            plot_bgcolor="rgba(0,0,0,0)", 
+            font_color="#FFF", 
+            margin=dict(t=50, b=80, l=10, r=10), # Aumentamos a margem inferior para a legenda
+            showlegend=True,
+            legend=dict(
+                orientation="h",
+                yanchor="bottom", 
+                y=-0.3, # Move a legenda mais para baixo para não encostar no gráfico
+                xanchor="center", 
+                x=0.5,
+                font=dict(size=10)
             )
-            
-            # 2. Mantém a largura fina e coloca o número no topo da coluna
-            fig.update_traces(textposition='outside', width=0.4)
-            
-            # 3. Oculta a régua do eixo Y, pois o número exato já está no topo de cada coluna
-            fig.update_layout(
-                paper_bgcolor="rgba(0,0,0,0)", 
-                plot_bgcolor="rgba(0,0,0,0)", 
-                font_color="#FFF", 
-                margin=dict(t=40, b=10, l=10, r=10), 
-                xaxis=dict(title=""),                    # Remove o título do eixo X para não poluir
-                yaxis=dict(showgrid=False, visible=False), # Esconde a régua e as linhas de grade do eixo Y
-                coloraxis_showscale=False 
-            )
-            return fig
+        )
+        return fig
 
         c_g1, c_g2 = st.columns(2)
         
