@@ -817,7 +817,7 @@ else:
                                 st.info(f"Nenhuma técnica cruzou com a APA atual.")
                         else:
                             st.warning("A coluna de vínculo (ex: 'Vinculo_APA') não foi encontrada na aba de técnicas.")
-                else:
+            else:
                             st.warning("Tabela de técnicas vazia no Airtable.")
                             st.markdown("<div style='margin-bottom: 50px;'></div>", unsafe_allow_html=True)
                     
