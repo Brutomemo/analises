@@ -1751,9 +1751,8 @@ else:
 
         st.markdown("---")
 
+        st.markdown("---")
         st.markdown("#### Ranking de Técnicas Aplicadas")
-
-    if st.button("📊 Gerar análise de Frequência de Técnicas - Geral"):
 
         if not df_tec.empty:
             df_tec['Neg_Limpo'] = df_tec['Negociador Principal do incidente crítico'].apply(limpar_valor) if 'Negociador Principal do incidente crítico' in df_tec.columns else 'N/D'
