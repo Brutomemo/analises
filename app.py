@@ -1750,7 +1750,16 @@ else:
             else: st.info("Sem dados de Sexo para os filtros atuais.")
 
         st.markdown("---")
-        st.markdown("#### Ranking de Técnicas Aplicadas")
+        # Botão para abrir o ranking
+        if st.button("📊 Abrir Ranking de Técnicas"):
+            st.session_state['exibir_ranking'] = True
+
+        # Margem de 20px abaixo do botão
+        st.markdown("<div style='margin-bottom: 20px;'></div>", unsafe_allow_html=True)
+
+        # Lógica do Ranking (dentro da condição do botão)
+        if st.session_state.get('exibir_ranking', False):
+            st.markdown("#### Ranking de Técnicas Aplicadas")
 
         if not df_tec.empty:
             df_tec['Neg_Limpo'] = df_tec['Negociador Principal do incidente crítico'].apply(limpar_valor) if 'Negociador Principal do incidente crítico' in df_tec.columns else 'N/D'
