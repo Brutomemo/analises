@@ -309,8 +309,12 @@ st.markdown("""
         border: 1px inset rgba(255, 255, 255, 0.4) !important;
         padding: 0.7rem 2rem; border-radius: 9999px !important; font-weight: 600 !important; 
         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important; width: 100%; position: relative;
-        box-shadow: 0 0 40px -5px rgba(249, 115, 22, 0.6) !important;
-        animation: fadeInUpBlur 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+        box-shadow: 0 4 20px -5px rgba(249, 115, 22, 0.6) !important;
+        transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), 
+        box-shadow 0.4s ease-out, 
+        filter 0.3s ease !important;
+                
+        animation: fadeInUpBlur 1s cubic-bezier(0.2, 0.8, 0.2, 1) both;
     }
     div.stButton > button:hover { 
         box-shadow: 0 0 60px -5px rgba(249, 115, 22, 0.8) !important; 
@@ -1726,7 +1730,7 @@ else:
         st.markdown("---")
 
         st.markdown("#### Ranking de Técnicas Aplicadas")
-        if st.button("📊 Gerar análise de Frequência de Técnicas Geral"):
+        if st.button("📊 Gerar análise de Frequência de Técnicas - Geral"):
 
             if not df_tec.empty:
                 df_tec['Neg_Limpo'] = df_tec['Negociador Principal do incidente crítico'].apply(limpar_valor) if 'Negociador Principal do incidente crítico' in df_tec.columns else 'N/D'
