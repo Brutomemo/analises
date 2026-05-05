@@ -2006,6 +2006,7 @@ else:
             st.markdown("<p style='color: #bbb;'>Este módulo traduz a matriz matemática gerada acima em um relatório estratégico que visa o aperfeiçoamento técnico contínuo do Negociador.</p>", unsafe_allow_html=True)
 
             if st.button("🤖 GERAR RELATÓRIO ESTATÍSTICO DESCRITIVO"):
+                st.markdown("<div style='margin-bottom: 20px;'></div>", unsafe_allow_html=True)
                 with st.spinner("Estruturando matrizes e consultando Cientista de Dados IA..."):
                     try:
                         import ia_estatistica 
