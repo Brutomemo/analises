@@ -1764,41 +1764,45 @@ st.markdown("---")
 if 'gerar_ranking' not in st.session_state:
     st.session_state.gerar_ranking = False
 
+# CORREÇÃO DE ESCOPO: Definindo df_tec_filt e col_t FORA do botão para evitar NameError abaixo
+if not df_tec.empty:
+    df_tec['Neg_Limpo'] = df_tec['Negociador Principal do incidente crítico'].apply(limpar_valor) if 'Negociador Principal do incidente crítico' in df_tec.columns else 'N/D'
+    df_tec['Tip_Limpa'] = df_tec['Tipologia do incidente crítico'].apply(limpar_valor) if 'Tipologia do incidente crítico' in df_tec.columns else 'N/D'
+    df_tec['Mod_Limpa'] = df_tec['Modalidade do incidente crítico'].apply(limpar_valor) if 'Modalidade do incidente crítico' in df_tec.columns else 'N/D'
+    
+    df_tec_filt = df_tec.copy()
+    if filtro_neg_g != "Todos": df_tec_filt = df_tec_filt[df_tec_filt['Neg_Limpo'] == filtro_neg_g]
+    if filtro_tip_g != "Todas": df_tec_filt = df_tec_filt[df_tec_filt['Tip_Limpa'] == filtro_tip_g]
+    if filtro_mod_g != "Todas": df_tec_filt = df_tec_filt[df_tec_filt['Mod_Limpa'] == filtro_mod_g]
+else:
+    df_tec_filt = pd.DataFrame()
+
+col_t = next((col for col in ['TÉCNICAS', 'TECNICAS', 'TÉCNICA', 'TECNICA'] if col in df_tec_filt.columns), None)
+
 if st.button("GERAR RANKING DAS TÉCNICAS APLICADAS"):
     st.session_state.gerar_ranking = True
 
 if st.session_state.gerar_ranking:
     st.markdown("#### Ranking de Técnicas Aplicadas")
 
-    if not df_tec.empty:
-        df_tec['Neg_Limpo'] = df_tec['Negociador Principal do incidente crítico'].apply(limpar_valor) if 'Negociador Principal do incidente crítico' in df_tec.columns else 'N/D'
-        df_tec['Tip_Limpa'] = df_tec['Tipologia do incidente crítico'].apply(limpar_valor) if 'Tipologia do incidente crítico' in df_tec.columns else 'N/D'
-        df_tec['Mod_Limpa'] = df_tec['Modalidade do incidente crítico'].apply(limpar_valor) if 'Modalidade do incidente crítico' in df_tec.columns else 'N/D'
-        
-        df_tec_filt = df_tec.copy()
-        if filtro_neg_g != "Todos": df_tec_filt = df_tec_filt[df_tec_filt['Neg_Limpo'] == filtro_neg_g]
-        if filtro_tip_g != "Todas": df_tec_filt = df_tec_filt[df_tec_filt['Tip_Limpa'] == filtro_tip_g]
-        if filtro_mod_g != "Todas": df_tec_filt = df_tec_filt[df_tec_filt['Mod_Limpa'] == filtro_mod_g]
-        
-        if not df_tec_filt.empty:
-            col_t = next((col for col in ['TÉCNICAS', 'TECNICAS', 'TÉCNICA', 'TECNICA'] if col in df_tec_filt.columns), None)
-            if col_t:
-                freq_global = df_tec_filt[col_t].value_counts().reset_index()
-                freq_global.columns = ['Técnica', 'Vezes Utilizada']
-                
-                c_tab, c_tree = st.columns([1, 2])
-                with c_tab: 
-                    st.dataframe(freq_global, use_container_width=True, hide_index=True)
-                with c_tree:
-                    fig_g = px.treemap(freq_global, path=['Técnica'], values='Vezes Utilizada', color='Vezes Utilizada', color_continuous_scale='Oranges')
-                    fig_g.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font_color="#FFF", margin=dict(t=0, l=0, r=0, b=0))
-                    st.plotly_chart(fig_g, use_container_width=True)
-            else: 
-                st.warning("Coluna 'TÉCNICAS' não encontrada.")
+    if not df_tec.empty and not df_tec_filt.empty:
+        if col_t:
+            freq_global = df_tec_filt[col_t].value_counts().reset_index()
+            freq_global.columns = ['Técnica', 'Vezes Utilizada']
+            
+            c_tab, c_tree = st.columns([1, 2])
+            with c_tab: 
+                st.dataframe(freq_global, use_container_width=True, hide_index=True)
+            with c_tree:
+                fig_g = px.treemap(freq_global, path=['Técnica'], values='Vezes Utilizada', color='Vezes Utilizada', color_continuous_scale='Oranges')
+                fig_g.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font_color="#FFF", margin=dict(t=0, l=0, r=0, b=0))
+                st.plotly_chart(fig_g, use_container_width=True)
         else: 
-            st.info("Nenhuma técnica encontrada para os filtros selecionados.")
-    else:
+            st.warning("Coluna 'TÉCNICAS' não encontrada.")
+    elif df_tec.empty:
         st.error("O DataFrame de técnicas (df_tec) está vazio.")
+    else: 
+        st.info("Nenhuma técnica encontrada para os filtros selecionados.")
 
 st.markdown("---")
 st.markdown("<h4 style='color: #FFD700;'>🔬 Análise Inferencial Básica</h4>", unsafe_allow_html=True)
@@ -1945,8 +1949,6 @@ else:
                 st.plotly_chart(fig_heat, use_container_width=True)
             st.markdown("</div>", unsafe_allow_html=True)
             
-            # ... Restante do código de Regressão e GEE seguindo a mesma indentação ...
-
         except Exception as e:
             st.error(f"🚨 Erro geral: {str(e)}")
 
