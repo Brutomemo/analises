@@ -1779,7 +1779,6 @@ else:
                     else: st.warning("Coluna 'TÉCNICAS' não encontrada.")
                 else: st.info("Nenhuma técnica encontrada para os filtros selecionados.")
                 
-            st.markdown("<div style='margin-bottom: 20px;'></div>", unsafe_allow_html=True)
             st.markdown("---")
             st.markdown("<h4 style='color: #FFD700;'>🔬 Análise Inferencial Básica</h4>", unsafe_allow_html=True)
             
