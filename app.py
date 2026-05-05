@@ -991,6 +991,7 @@ else:
                 else:
                     st.info("Colunas de transcrição não encontradas para o cálculo de Sintonia Léxica.")
                     
+                st.markdown("<div style='margin-bottom: 30px;'></div>", unsafe_allow_html=True)
                 st.markdown("</div>", unsafe_allow_html=True)
 
                 #ETAPA 2
