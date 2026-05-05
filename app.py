@@ -725,7 +725,7 @@ else:
                     ticktext=[
                     "1 - Não agressivo <br>não receptivo", 
                     "2 - Neutro", 
-                    "3 - Parcialmente agressivo <br>parcialmente receptivo", 
+                    "3 - Parc. agressivo <br>parc. receptivo", 
                     "4 - Agressivo <br>receptivo", 
                     "5 - Muito agressivo <br>muito receptivo"
                     ], 
