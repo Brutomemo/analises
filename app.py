@@ -1626,9 +1626,9 @@ else:
                     except Exception as e:
                         st.error(f"Erro na análise da IA ou geração do PDF: {str(e)}")
 
-            st.markdown("<div style='margin-bottom: 30px;'></div>", unsafe_allow_html=True)
+            st.markdown("<div style='margin-bottom: 20px;'></div>", unsafe_allow_html=True)
             st.markdown("""
-    <div style='margin-top:30px; margin-bottom:100px; padding:15px; 
+    <div style='margin-top:20px; margin-bottom:100px; padding:15px; 
                 background-color:#111; border-radius:8px;'>
         <p style='color:#bbb; font-size:13px;'>
         <b>DELTA NEGOCIAÇÃO — GATE/PMESP:</b><br><br>
