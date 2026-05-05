@@ -1752,6 +1752,7 @@ else:
         st.markdown("---")
 
         st.markdown("#### Ranking de Técnicas Aplicadas")
+
         if st.button("📊 Gerar análise de Frequência de Técnicas - Geral"):
 
             if not df_tec.empty:
@@ -2005,7 +2006,6 @@ else:
             st.markdown("<p style='color: #bbb;'>Este módulo traduz a matriz matemática gerada acima em um relatório estratégico que visa o aperfeiçoamento técnico contínuo do Negociador.</p>", unsafe_allow_html=True)
 
             if st.button("🤖 GERAR RELATÓRIO ESTATÍSTICO DESCRITIVO"):
-                
                 with st.spinner("Estruturando matrizes e consultando Cientista de Dados IA..."):
                     try:
                         import ia_estatistica 
@@ -2058,7 +2058,7 @@ else:
                                 st.json(payload_ia)
                                 st.markdown("**JSON Retornado pela IA:**")
                                 st.json(relatorio_json)
-                            
+
                             st.markdown("---")
                             st.markdown("### 🖨️ Exportar Relatório")
                             
