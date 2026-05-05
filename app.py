@@ -630,6 +630,7 @@ else:
 
             st.markdown("---")
 
+            # PERCEPÇÃO DE AGRESSIVIDADE/RECEPTIVIDADE LINHA DE TENDENCIA
             # Otimização: Normaliza e mapeia as colunas do Airtable apenas uma vez por APA
             colunas_norm = {col: unicodedata.normalize('NFKD', str(col)).encode('ASCII', 'ignore').decode('ASCII').lower() for col in df_apa.index}
             
@@ -723,11 +724,11 @@ else:
                     title="Nível Qualitativo", 
                     tickvals=[1, 2, 3, 4, 5], 
                     ticktext=[
-                    "1 - Não agressivo / não receptivo", 
+                    "1 - Não agressivo <br>não receptivo", 
                     "2 - Neutro", 
-                    "3 - Parcialmente agressivo / parcialmente receptivo", 
-                    "4 - Agressivo / receptivo", 
-                    "5 - Muito agressivo / muito receptivo"
+                    "3 - Parcialmente agressivo <br>parcialmente receptivo", 
+                    "4 - Agressivo <br>receptivo", 
+                    "5 - Muito agressivo <br>muito receptivo"
                     ], 
                     range=[0.5, 5.5] 
                 ),
