@@ -819,8 +819,8 @@ else:
                             st.warning("A coluna de vínculo (ex: 'Vinculo_APA') não foi encontrada na aba de técnicas.")
             else:
                             st.warning("Tabela de técnicas vazia no Airtable.")
-                            st.markdown("<div style='margin-bottom: 50px;'></div>", unsafe_allow_html=True)
                     
+                            st.markdown("<div style='margin-bottom: 50px;'></div>", unsafe_allow_html=True)
                             st.markdown("---")
 
                             #ANALISE DE SIMILITUDE
