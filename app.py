@@ -1750,7 +1750,7 @@ else:
             else: st.info("Sem dados de Sexo para os filtros atuais.")
 
         st.markdown("---")
-        if st.button("📊 Abrir Ranking de Técnicas"):
+        with st.expander("📊 Abrir Ranking de Técnicas"):
             st.markdown("#### Ranking de Técnicas Aplicadas")
 
             if not df_tec.empty:
