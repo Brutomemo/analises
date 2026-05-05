@@ -1664,6 +1664,9 @@ else:
             
             contagem = serie.value_counts().reset_index()
             contagem.columns = [coluna, 'Frequência']
+            # para garantir que a maior fatia pegue a cor mais forte
+            contagem = contagem.sort_values('Frequência', ascending=False)
+
             # Criação do Gráfico de Rosca
             fig = px.pie(
                 contagem, 
