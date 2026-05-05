@@ -2005,125 +2005,110 @@ else:
             st.markdown("<h4 style='color: #06C755;'>🧠 Síntese Interpretativa Avançada (Interpretação descritiva dos resultados estatísticos assistida por modelo de linguagem (LLM – OpenAI GPT-4o-mini), com base em dados previamente processados por métodos estatísticos.)</h4>", unsafe_allow_html=True)
             st.markdown("<p style='color: #bbb;'>Este módulo traduz a matriz matemática gerada acima em um relatório estratégico que visa o aperfeiçoamento técnico contínuo do Negociador.</p>", unsafe_allow_html=True)
 
-        if st.button("🤖 GERAR RELATÓRIO ESTATÍSTICO DESCRITIVO"):
-            st.markdown("<div style='margin-bottom: 25px;'></div>", unsafe_allow_html=True)
+            if st.button("🤖 GERAR RELATÓRIO ESTATÍSTICO DESCRITIVO"):
+                
+                st.markdown("<div style='margin-bottom: 25px;'></div>", unsafe_allow_html=True)
 
-            with st.spinner("Estruturando matrizes e consultando Cientista de Dados IA..."):
-                try:
-                    import ia_estatistica 
-                    
-                    qui_data = {'p_valor_global': p} if 'p' in locals() else None
-                    
-                    ord_data = None
-                    if 'df_or' in locals() and not df_or.empty:
-                        ord_data = df_or.to_dict('records')
-                    
-                    gee_data = None
-                    if 'df_gee' in locals() and not df_gee.empty:
-                        gee_data = df_gee.to_dict('records')
-
-                    payload_ia = ia_estatistica.estruturar_resultado_para_ia(
-                        amostra_total=len(df_quali_filt),
-                        resultados_chi=qui_data,
-                        resultados_ordinal=ord_data,
-                        resultados_gee=gee_data
-                    )
-
-                    relatorio_json = ia_estatistica.gerar_relatorio_com_ia(payload_ia)
-
-                    if "erro" in relatorio_json:
-                        st.error(relatorio_json["erro"])
-                        with st.expander("Ver Payload Enviado"):
-                            st.json(payload_ia)
-                    else:
-                        def render_ia_card(titulo, texto, icone="📌"):
-                            return f"""
-                            <div class="info-card" style="border-left: 3px solid #06C755; padding: 15px; margin-bottom: 15px;">
-                            <h5 style="color: #06C755; margin-top: 0; font-size: 1.1rem;">{icone} {titulo}</h5>
-                            <p style="font-size: 1.05rem; line-height: 1.6; color: #FFF;">{texto}</p>
-                            </div>
-                            """
-
-                        c_ia1, c_ia2 = st.columns(2)
-                        with c_ia1:
-                            st.markdown(render_ia_card("Objetivo Analítico", relatorio_json.get("objetivo", "N/D"), "🎯"), unsafe_allow_html=True)
-                            st.markdown(render_ia_card("Premissas e Limitações da Análise", relatorio_json.get("premissas", "N/D") + "<br><br><strong>Limitações Técnicas:</strong> " + relatorio_json.get("limitacoes", "N/D"), "⚖️"), unsafe_allow_html=True)
-                        with c_ia2:
-                            st.markdown(render_ia_card("Resultados Principais", relatorio_json.get("resultados_principais", "N/D"), "📊"), unsafe_allow_html=True)
-                            st.markdown(render_ia_card("Tamanho do Efeito", relatorio_json.get("tamanho_efeito", "N/D"), "📈"), unsafe_allow_html=True)
-
-                        st.markdown(render_ia_card("Implicações Analíticas para a Tomada de Decisão", relatorio_json.get("interpretacao", "N/D"), "🧠"), unsafe_allow_html=True)
-                        st.markdown(render_ia_card("Direcionamento Estratégico Baseado em Evidências", relatorio_json.get("conclusao", "N/D"), "🏆"), unsafe_allow_html=True)
-
-                        with st.expander("🕵️ Ver Matriz Bruta de Dados (JSON Payload e Retorno)"):
-                            st.markdown("**Payload enviado para a IA (O que o Python calculou):**")
-                            st.json(payload_ia)
-                            st.markdown("**JSON Retornado pela IA:**")
-                            st.json(relatorio_json)
+                with st.spinner("Estruturando matrizes e consultando Cientista de Dados IA..."):
+                    try:
+                        import ia_estatistica 
                         
-                        st.markdown("---")
-                        st.markdown("### 🖨️ Exportar Relatório")
+                        qui_data = {'p_valor_global': p} if 'p' in locals() else None
                         
-                        try:
-                            pdf_hist = FPDF()
-                            pdf_hist.add_page()
-                            
-                            pdf_hist.set_fill_color(249, 115, 22)
-                            pdf_hist.rect(0, 0, 210, 40, 'F')
-                            pdf_hist.set_font("Arial", "B", 16)
-                            pdf_hist.set_text_color(255, 255, 255)
-                            pdf_hist.cell(0, 15, "RELATORIO DA ANÁLISE - SÉRIE HISTÓRICA", ln=True, align="C")
-                            pdf_hist.set_font("Arial", "I", 12)
-                            pdf_hist.cell(0, 5, "GATE - Inteligencia de Apoio ao Processo Decisório", ln=True, align="C")
-                            
-                            pdf_hist.ln(20)
-                            pdf_hist.set_text_color(0, 0, 0)
-                            pdf_hist.set_font("Arial", "B", 14)
-                            pdf_hist.set_fill_color(240, 240, 240)
-                            pdf_hist.cell(0, 10, " 1. SINTESE DAS TECNICAS APLICADAS", ln=True, fill=True)
-                            pdf_hist.ln(5)
-                            
-                            pdf_hist.set_font("Arial", "", 12)
-                            
-                            partes_hist = [f"{k.upper()}:\n{v}" for k, v in relatorio_json.items() if isinstance(v, str)]
-                            texto_hist_str = "\n\n".join(partes_hist).replace("**", "").replace("### ", "")
-                            texto_pdf_limpo_hist = unicodedata.normalize('NFKD', texto_hist_str).encode('ASCII', 'ignore').decode('ASCII')
-                            
-                            pdf_hist.multi_cell(0, 8, txt=texto_pdf_limpo_hist)
-                            
-                            pdf_saida_hist = pdf_hist.output(dest="S")
-                            if isinstance(pdf_saida_hist, str):
-                                pdf_bytes_hist = pdf_saida_hist.encode('latin-1', errors='replace')
-                            else:
-                                pdf_bytes_hist = bytes(pdf_saida_hist)
-                            
-                            st.download_button(
-                                label="📥 BAIXAR RELATÓRIO (PDF)", 
-                                data=pdf_bytes_hist, 
-                                file_name="Relatorio_de_análise_GATE.pdf", 
-                                mime="application/pdf"
-                            )
-                        except Exception as e:
-                            st.error(f"Erro na geração do PDF Série Histórica: {str(e)}")
+                        ord_data = None
+                        if 'df_or' in locals() and not df_or.empty:
+                            ord_data = df_or.to_dict('records')
+                        
+                        gee_data = None
+                        if 'df_gee' in locals() and not df_gee.empty:
+                            gee_data = df_gee.to_dict('records')
 
-                except Exception as e:
-                    st.error(f"Erro na geração do relatório de IA: {str(e)}")
+                        payload_ia = ia_estatistica.estruturar_resultado_para_ia(
+                            amostra_total=len(df_quali_filt),
+                            resultados_chi=qui_data,
+                            resultados_ordinal=ord_data,
+                            resultados_gee=gee_data
+                        )
 
-            st.markdown("<div style='margin-bottom: 20px;'></div>", unsafe_allow_html=True)
-            st.markdown("""
-    <div style='margin-top:20px; margin-bottom:100px; padding:15px; 
-                background-color:#111; border-radius:8px;'>
-        <p style='color:#bbb; font-size:13px;'>
-        <b>DELTA NEGOCIAÇÃO — GATE/PMESP:</b><br><br>
-        "O maior inimigo do conhecimento não é a ignorancia, mas a ilusão do conhecimento" - Stephen Hawking. <br>
-        “Sem dados, você é apenas mais uma pessoa com opinião.” — W. Edwards Deming. <br><br>
-        Empenhados no desenvolvimento de treinamentos e na avaliação dos Negociadores, alicerçados no pensamento técnico-científico e no valor humano, guiados por dados. NEGOCIAÇÃO! <br>                                
-        <span style='color:#666; font-size:11px;'>
-        Dados confidenciais, de uso exclusivo da equipe de Negociação do Grupo de Ações Táticas Especiais.
-        </span>
-        </p>
-    </div>
-    """, unsafe_allow_html=True)
+                        relatorio_json = ia_estatistica.gerar_relatorio_com_ia(payload_ia)
+
+                        if "erro" in relatorio_json:
+                            st.error(relatorio_json["erro"])
+                            with st.expander("Ver Payload Enviado"):
+                                st.json(payload_ia)
+                        else:
+                            def render_ia_card(titulo, texto, icone="📌"):
+                                return f"""
+                                <div class="info-card" style="border-left: 3px solid #06C755; padding: 15px; margin-bottom: 15px;">
+                                <h5 style="color: #06C755; margin-top: 0; font-size: 1.1rem;">{icone} {titulo}</h5>
+                                <p style="font-size: 1.05rem; line-height: 1.6; color: #FFF;">{texto}</p>
+                                </div>
+                                """
+
+                            c_ia1, c_ia2 = st.columns(2)
+                            with c_ia1:
+                                st.markdown(render_ia_card("Objetivo Analítico", relatorio_json.get("objetivo", "N/D"), "🎯"), unsafe_allow_html=True)
+                                st.markdown(render_ia_card("Premissas e Limitações da Análise", relatorio_json.get("premissas", "N/D") + "<br><br><strong>Limitações Técnicas:</strong> " + relatorio_json.get("limitacoes", "N/D"), "⚖️"), unsafe_allow_html=True)
+                            with c_ia2:
+                                st.markdown(render_ia_card("Resultados Principais", relatorio_json.get("resultados_principais", "N/D"), "📊"), unsafe_allow_html=True)
+                                st.markdown(render_ia_card("Tamanho do Efeito", relatorio_json.get("tamanho_efeito", "N/D"), "📈"), unsafe_allow_html=True)
+
+                            st.markdown(render_ia_card("Implicações Analíticas para a Tomada de Decisão", relatorio_json.get("interpretacao", "N/D"), "🧠"), unsafe_allow_html=True)
+                            st.markdown(render_ia_card("Direcionamento Estratégico Baseado em Evidências", relatorio_json.get("conclusao", "N/D"), "🏆"), unsafe_allow_html=True)
+
+                            with st.expander("🕵️ Ver Matriz Bruta de Dados (JSON Payload e Retorno)"):
+                                st.markdown("**Payload enviado para a IA (O que o Python calculou):**")
+                                st.json(payload_ia)
+                                st.markdown("**JSON Retornado pela IA:**")
+                                st.json(relatorio_json)
+                            
+                            st.markdown("---")
+                            st.markdown("### 🖨️ Exportar Relatório")
+                            
+                            try:
+                                pdf_hist = FPDF()
+                                pdf_hist.add_page()
+                                
+                                pdf_hist.set_fill_color(249, 115, 22)
+                                pdf_hist.rect(0, 0, 210, 40, 'F')
+                                pdf_hist.set_font("Arial", "B", 16)
+                                pdf_hist.set_text_color(255, 255, 255)
+                                pdf_hist.cell(0, 15, "RELATORIO DA ANÁLISE - SÉRIE HISTÓRICA", ln=True, align="C")
+                                pdf_hist.set_font("Arial", "I", 12)
+                                pdf_hist.cell(0, 5, "GATE - Inteligencia de Apoio ao Processo Decisório", ln=True, align="C")
+                                
+                                pdf_hist.ln(20)
+                                pdf_hist.set_text_color(0, 0, 0)
+                                pdf_hist.set_font("Arial", "B", 14)
+                                pdf_hist.set_fill_color(240, 240, 240)
+                                pdf_hist.cell(0, 10, " 1. SINTESE DAS TECNICAS APLICADAS", ln=True, fill=True)
+                                pdf_hist.ln(5)
+                                
+                                pdf_hist.set_font("Arial", "", 12)
+                                
+                                partes_hist = [f"{k.upper()}:\n{v}" for k, v in relatorio_json.items() if isinstance(v, str)]
+                                texto_hist_str = "\n\n".join(partes_hist).replace("**", "").replace("### ", "")
+                                texto_pdf_limpo_hist = unicodedata.normalize('NFKD', texto_hist_str).encode('ASCII', 'ignore').decode('ASCII')
+                                
+                                pdf_hist.multi_cell(0, 8, txt=texto_pdf_limpo_hist)
+                                
+                                pdf_saida_hist = pdf_hist.output(dest="S")
+                                if isinstance(pdf_saida_hist, str):
+                                    pdf_bytes_hist = pdf_saida_hist.encode('latin-1', errors='replace')
+                                else:
+                                    pdf_bytes_hist = bytes(pdf_saida_hist)
+                                
+                                st.download_button(
+                                    label="📥 BAIXAR RELATÓRIO (PDF)", 
+                                    data=pdf_bytes_hist, 
+                                    file_name="Relatorio_de_análise_GATE.pdf", 
+                                    mime="application/pdf"
+                                )
+                            except Exception as e:
+                                st.error(f"Erro na geração do PDF Série Histórica: {str(e)}")
+
+                    except Exception as e:
+                        st.error(f"Erro na geração do relatório de IA: {str(e)}")
 
 
 
