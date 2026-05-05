@@ -1679,7 +1679,7 @@ else:
         st.markdown("<h4 style='color: #FFD700;'>📊 Visão Geral da Amostra</h4>", unsafe_allow_html=True)
         
         def gerar_grafico_resumo(df, coluna, titulo):
-            """Gera gráfico de colunas verticais padronizado com o Design System."""
+            """Gera gráfico de rosca (donut) padronizado com o Design System."""
             if coluna not in df.columns: return None
             
             # Limpa listas vazias e formata strings
@@ -1690,32 +1690,42 @@ else:
             
             contagem = serie.value_counts().reset_index()
             contagem.columns = [coluna, 'Frequência']
-            # Para colunas verticais, ordenamos decrescente para a maior ficar à esquerda
-            contagem = contagem.sort_values('Frequência', ascending=False) 
-            
-            # 1. Inversão dos eixos X e Y para gerar colunas (vertical)
-            fig = px.bar(
+            # para garantir que a maior fatia pegue a cor mais forte
+            contagem = contagem.sort_values('Frequência', ascending=False)
+
+            cores_contraste = ['#FF8C00', '#8B4513', '#CD853F', '#DEB887', "#EBE9E7" ]
+
+            # Criação do Gráfico de Rosca
+            fig = px.pie(
                 contagem, 
-                x=coluna,          # Categorias no eixo horizontal (base)
-                y='Frequência',    # Valores no eixo vertical (altura)
-                title=titulo, 
-                text='Frequência',
-                color='Frequência',                 
-                color_continuous_scale='Oranges'    
+                values='Frequência', 
+                names=coluna, 
+                title=titulo,
+                hole=0.5, # Define o buraco central para transformar em rosca
+                color_discrete_sequence=cores_contraste
             )
             
-            # 2. Mantém a largura fina e coloca o número no topo da coluna
-            fig.update_traces(textposition='outside', width=0.4)
+            # Configuração das legendas e rótulos
+            fig.update_traces(
+                textinfo='value+percent', # Mostra o número absoluto e a porcentagem
+                textposition='outside',   # Coloca os números para fora para não poluir
+                marker=dict(line=dict(color='#FFFFFF', width=1))
+            )
             
-            # 3. Oculta a régua do eixo Y, pois o número exato já está no topo de cada coluna
+            # Layout padronizado
             fig.update_layout(
                 paper_bgcolor="rgba(0,0,0,0)", 
                 plot_bgcolor="rgba(0,0,0,0)", 
                 font_color="#FFF", 
-                margin=dict(t=40, b=10, l=10, r=10), 
-                xaxis=dict(title=""),                    # Remove o título do eixo X para não poluir
-                yaxis=dict(showgrid=False, visible=False), # Esconde a régua e as linhas de grade do eixo Y
-                coloraxis_showscale=False 
+                margin=dict(t=50, b=10, l=10, r=10),
+                showlegend=True,
+                legend=dict(
+                    orientation="h",       # Legenda horizontal
+                    yanchor="bottom", 
+                    y=-0.3, 
+                    xanchor="center", 
+                    x=0.5
+                )
             )
             return fig
 
