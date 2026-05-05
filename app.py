@@ -1632,7 +1632,7 @@ else:
                 background-color:#111; border-radius:8px;'>
         <p style='color:#bbb; font-size:13px;'>
         <b>DELTA NEGOCIAÇÃO — GATE/PMESP:</b><br><br>
-        "O maior inimigo do conhecimento não é a ignorancia, mas a ilusão do conhecimento" - Stephen Hawking. <br><br>
+        "O maior inimigo do conhecimento não é a ignorancia, mas a ilusão do conhecimento" - Stephen Hawking. <br>
         “Sem dados, você é apenas mais uma pessoa com opinião.” — W. Edwards Deming. <br><br>                
         <span style='color:#666; font-size:11px;'>
         Empenho no desenvolvimento do pensamento técnico-científico, guiado por dados. Juntos somos mais forte! NEGOCIAÇÃO!
