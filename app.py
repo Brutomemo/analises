@@ -1679,7 +1679,7 @@ else:
         st.markdown("<h4 style='color: #FFD700;'>📊 Visão Geral da Amostra</h4>", unsafe_allow_html=True)
         
         def gerar_grafico_resumo(df, coluna, titulo):
-            """Gera gráfico de rosca (donut) padronizado com o Design System."""
+            """Gera gráfico de colunas verticais padronizado com o Design System."""
             if coluna not in df.columns: return None
             
             # Limpa listas vazias e formata strings
@@ -1690,75 +1690,56 @@ else:
             
             contagem = serie.value_counts().reset_index()
             contagem.columns = [coluna, 'Frequência']
-            # para garantir que a maior fatia pegue a cor mais forte
-            contagem = contagem.sort_values('Frequência', ascending=False)
-
-            cores_contraste = ['#FF8C00', '#8B4513', '#CD853F', '#DEB887', "#EBE9E7" ]
-
-            # Criação do Gráfico de Rosca
-            fig = px.pie(
+            # Para colunas verticais, ordenamos decrescente para a maior ficar à esquerda
+            contagem = contagem.sort_values('Frequência', ascending=False) 
+            
+            # 1. Inversão dos eixos X e Y para gerar colunas (vertical)
+            fig = px.bar(
                 contagem, 
-                values='Frequência', 
-                names=coluna, 
-                title=titulo,
-                hole=0.5, # Define o buraco central para transformar em rosca
-                color_discrete_sequence=cores_contraste
+                x=coluna,          # Categorias no eixo horizontal (base)
+                y='Frequência',    # Valores no eixo vertical (altura)
+                title=titulo, 
+                text='Frequência',
+                color='Frequência',                 
+                color_continuous_scale='Oranges'    
             )
             
-            # Configuração das legendas e rótulos
-            fig.update_traces(
-                textinfo='value+percent', # Mostra o número absoluto e a porcentagem
-                textposition='outside',   # Coloca os números para fora para não poluir
-                marker=dict(line=dict(color='#FFFFFF', width=1))
-            )
+            # 2. Mantém a largura fina e coloca o número no topo da coluna
+            fig.update_traces(textposition='outside', width=0.4)
             
-            # Layout padronizado
+            # 3. Oculta a régua do eixo Y, pois o número exato já está no topo de cada coluna
             fig.update_layout(
                 paper_bgcolor="rgba(0,0,0,0)", 
                 plot_bgcolor="rgba(0,0,0,0)", 
                 font_color="#FFF", 
-                margin=dict(t=50, b=10, l=10, r=10),
-                showlegend=True,
-                legend=dict(
-                    orientation="h",       # Legenda horizontal
-                    yanchor="bottom", 
-                    y=-0.3, 
-                    xanchor="center", 
-                    x=0.5
-                )
+                margin=dict(t=40, b=10, l=10, r=10), 
+                xaxis=dict(title=""),                    # Remove o título do eixo X para não poluir
+                yaxis=dict(showgrid=False, visible=False), # Esconde a régua e as linhas de grade do eixo Y
+                coloraxis_showscale=False 
             )
             return fig
 
         c_g1, c_g2 = st.columns(2)
         
-       # with c_g1:
-with c_g1:
-    fig_res = gerar_grafico_resumo(df_quali_filt, 'Resolução', 'Resolução do Incidente')
-    if fig_res: 
-        st.plotly_chart(fig_res, use_container_width=True)
-    else: 
-        st.info("Sem dados de Resolução para os filtros atuais.")
-    
-    fig_uni = gerar_grafico_resumo(df_quali_filt, 'Uniforme Usado', 'Uniforme Utilizado')
-    if fig_uni: 
-        st.plotly_chart(fig_uni, use_container_width=True)
-    else: 
-        st.info("Sem dados de Uniforme para os filtros atuais.")
+        with c_g1:
+            fig_res = gerar_grafico_resumo(df_quali_filt, 'Resolução', 'Resolução do Incidente')
+            if fig_res: st.plotly_chart(fig_res, use_container_width=True)
+            else: st.info("Sem dados de Resolução para os filtros atuais.")
+            
+            fig_uni = gerar_grafico_resumo(df_quali_filt, 'Uniforme Usado', 'Uniforme Utilizado')
+            if fig_uni: st.plotly_chart(fig_uni, use_container_width=True)
+            else: st.info("Sem dados de Uniforme para os filtros atuais.")
 
-with c_g2:
-    fig_trans = gerar_grafico_resumo(df_quali_filt, 'Forma de Transição', 'Forma de Transição')
-    if fig_trans: 
-        st.plotly_chart(fig_trans, use_container_width=True)
-    else: 
-        st.info("Sem dados de Transição para os filtros atuais.")
-    
-    fig_sexo = gerar_grafico_resumo(df_quali_filt, 'Sexo do Causador', 'Sexo do Causador')
-    if fig_sexo: 
-        st.plotly_chart(fig_sexo, use_container_width=True)
-    else: 
-        st.info("Sem dados de Sexo para os filtros atuais.")
+        with c_g2:
+            fig_trans = gerar_grafico_resumo(df_quali_filt, 'Forma de Transição', 'Forma de Transição')
+            if fig_trans: st.plotly_chart(fig_trans, use_container_width=True)
+            else: st.info("Sem dados de Transição para os filtros atuais.")
+            
+            fig_sexo = gerar_grafico_resumo(df_quali_filt, 'Sexo do Causador', 'Sexo do Causador')
+            if fig_sexo: st.plotly_chart(fig_sexo, use_container_width=True)
+            else: st.info("Sem dados de Sexo para os filtros atuais.")
 
-st.markdown("---")
+        st.markdown("---")
 
         # Botão para abrir o ranking
         if st.button("📊 Abrir Ranking de Técnicas"):
