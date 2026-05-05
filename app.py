@@ -1676,14 +1676,14 @@ else:
                 names=coluna, 
                 title=titulo,
                 hole=0.5, # Define o buraco central para transformar em rosca
-                color_discrete_sequence=px.colors.sequential.Oranges_r # Mantém a paleta Oranges
+                color_discrete_sequence=cores_contraste
             )
             
             # Configuração das legendas e rótulos
             fig.update_traces(
                 textinfo='value+percent', # Mostra o número absoluto e a porcentagem
                 textposition='outside',   # Coloca os números para fora para não poluir
-                marker=dict(line=dict(color='#1E1E1E', width=2)) # Borda fina para separar fatias
+                marker=dict(line=dict(color='#FFFFFF', width=1))
             )
             
             # Layout padronizado
@@ -1696,7 +1696,7 @@ else:
                 legend=dict(
                     orientation="h",       # Legenda horizontal
                     yanchor="bottom", 
-                    y=-0.2, 
+                    y=-0.3, 
                     xanchor="center", 
                     x=0.5
                 )
