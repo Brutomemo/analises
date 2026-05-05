@@ -2007,8 +2007,6 @@ else:
 
             if st.button("🤖 GERAR RELATÓRIO ESTATÍSTICO DESCRITIVO"):
                 
-                st.markdown("<div style='margin-bottom: 25px;'></div>", unsafe_allow_html=True)
-
                 with st.spinner("Estruturando matrizes e consultando Cientista de Dados IA..."):
                     try:
                         import ia_estatistica 
