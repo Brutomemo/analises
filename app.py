@@ -721,7 +721,6 @@ else:
                 plot_bgcolor="rgba(0,0,0,0)", 
                 font_color="#FFF",
                 yaxis=dict(
-                    title="Nível Qualitativo", 
                     tickvals=[1, 2, 3, 4, 5], 
                     ticktext=[
                     "1 - Não agressivo <br>não receptivo", 
