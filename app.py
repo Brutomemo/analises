@@ -725,7 +725,7 @@ else:
                     ticktext=[
                     "1 - Não agressivo <br>não receptivo", 
                     "2 - Neutro", 
-                    "3 - Parc. agressivo <br>parc. receptivo", 
+                    "3 - Parc. agressivo <br>parc. receptivo",
                     "4 - Agressivo <br>receptivo", 
                     "5 - Muito agressivo <br>muito receptivo"
                     ], 
@@ -1779,6 +1779,7 @@ else:
                     else: st.warning("Coluna 'TÉCNICAS' não encontrada.")
                 else: st.info("Nenhuma técnica encontrada para os filtros selecionados.")
                 
+            st.markdown("<div style='margin-bottom: 20px;'></div>", unsafe_allow_html=True)
             st.markdown("---")
             st.markdown("<h4 style='color: #FFD700;'>🔬 Análise Inferencial Básica</h4>", unsafe_allow_html=True)
             
