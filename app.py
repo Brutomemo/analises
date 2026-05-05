@@ -1750,9 +1750,7 @@ else:
             else: st.info("Sem dados de Sexo para os filtros atuais.")
 
         st.markdown("---")
-            
         st.markdown("#### Ranking de Técnicas Aplicadas")
-        if st.button("📊 Calcular Frequência de Técnicas"):
 
         if not df_tec.empty:
             df_tec['Neg_Limpo'] = df_tec['Negociador Principal do incidente crítico'].apply(limpar_valor) if 'Negociador Principal do incidente crítico' in df_tec.columns else 'N/D'
