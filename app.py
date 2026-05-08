@@ -241,6 +241,7 @@ st.markdown("""
         font-family: 'Share Tech Mono', monospace !important;
         letter-spacing: 0.02em;
     }
+</style>
     
     /* Fundo Estrelado - Luminous Design System */
     .stars-bg {
@@ -844,7 +845,7 @@ else:
                                 
                                 st.dataframe(df_freq, use_container_width=True, hide_index=True)
                                 
-                                st.markdown("<h4 style='text-align:center; color: #FFFF; margin-top: 20px;'>Frequencias das Técnicas Aplicadas (Treemap)</h5>", unsafe_allow_html=True)
+                                st.markdown("<h4 style='text-align:center; color: #FFFF; margin-top: 20px;'>Frequencias das Técnicas Aplicadas (Treemap)</h4>", unsafe_allow_html=True)
                                 fig_tree = px.treemap(df_freq, path=['Técnica Empregada'], values='Frequência Absoluta', color='Frequência Absoluta', color_continuous_scale='Oranges')
                                 fig_tree.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font_color="#FFF", margin=dict(t=10, l=10, r=10, b=10))
                                 st.plotly_chart(fig_tree, use_container_width=True)
