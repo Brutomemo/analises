@@ -212,6 +212,16 @@ st.markdown("""
     .orbitron, .orbitron * {
         font-family: 'Orbitron', monospace !important;
     }
+    <div class="card-container orbitron">
+      <div class="info-card">
+        <p style="text-align: center; font-size: 1.1rem; font-weight: 600;">
+        Sistema automatizado...
+        </p>
+        <p style="font-size: 0.9rem; color: #bbb;">
+        Os dados são geridos via <strong>Airtable</strong>...
+        </p>
+    </div>
+    </div>
 
     /* ==== TEMA TIPOGRAFICO - OVERRIDE AGRESSIVO ==== */
     /* O seletor * acima ja forcou Inter em tudo.
