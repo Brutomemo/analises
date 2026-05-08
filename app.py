@@ -229,7 +229,7 @@ st.markdown("""
         margin: 0;
         line-height: 1.1;
     }
-            /* Subtítulo / chamada — Inter 600 */
+    /* Subtítulo / chamada — Inter 600 */
     .sub-title {
         font-family: 'Inter', sans-serif;
         color: #FFD700;
@@ -238,7 +238,7 @@ st.markdown("""
         margin-top: 5px;
         margin-bottom: 0;
     }
-            /* Métricas, valores, IDs e códigos — Share Tech Mono (visual de console tático) */
+    /* Métricas, valores, IDs e códigos — Share Tech Mono (visual de console tático) */
     div[data-testid="stMetricValue"],
     code, pre,
     .stDataFrame [role="cell"]:first-child {
