@@ -140,14 +140,18 @@ if "df_quali" in st.session_state and "df_tec" in st.session_state:
 # 2. Se não estiverem no cofre (ex: acabou de logar), busca no Airtable
 else:
     with st.spinner("Carregando bases operacionais do Airtable..."):
-        # Como você já fez o 'import airtable_link' lá em cima, usamos direto:
         df_quali, status_q = airtable_link.buscar_dados_apa()
         df_tec, status_t = airtable_link.buscar_todas_tecnicas()
-        
-        # Se falhar o carregamento, paralisa o app com aviso
+
         if df_quali.empty or df_tec.empty:
             st.error("Falha ao carregar os dados. Verifique a conexão com o Airtable.")
             st.stop()
+
+        # Persiste em session_state para evitar buscar de novo a cada rerun
+        st.session_state["df_quali"] = df_quali
+        st.session_state["df_tec"]   = df_tec
+        st.session_state["status_q"] = status_q
+        st.session_state["status_t"] = status_t
 # =====================================================================
 #st.title("Série Histórica - Negociações GATE")
 
@@ -280,13 +284,7 @@ st.markdown("""
         z-index: 10; /* Garante que o conteúdo fique acima dos raios */
     }
 
-    /* Fontes e Títulos */
-    .main-title {
-        font-family: 'Bricolage Grotesque', sans-serif; font-size: 2.2rem; font-weight: 300; letter-spacing: -0.02em;
-        background: linear-gradient(180deg, #FFFF 0%, #BBBB 100%);
-        -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin: 0; line-height: 1.1;
-    }
-    .sub-title { color: #FFD700; font-weight: 600; font-size: 1.1rem; margin-top: 5px; margin-bottom: 0; }
+    /* (Bloco antigo .main-title/.sub-title removido — definicao unica fica acima com Orbitron + Inter) */
     
     /* Efeito Vidro (Glassmorphism) e Animação de Luz (Sweep) nas Caixas */
     .info-card { 
@@ -337,7 +335,7 @@ st.markdown("""
         border: 1px inset rgba(255, 255, 255, 0.4) !important;
         padding: 0.7rem 2rem; border-radius: 9999px !important; font-weight: 600 !important; 
         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important; width: 100%; position: relative;
-        box-shadow: 0 4 20px -5px rgba(249, 115, 22, 0.6) !important;
+        box-shadow: 0 4px 20px -5px rgba(249, 115, 22, 0.6) !important;
         transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1), 
         box-shadow 0.3s ease-out, 
         filter 0.3s ease !important;
@@ -550,7 +548,7 @@ header = """
 
   <div class="card-container">
       <div class="info-card">
-          <p style="text-align: center;": 1.1rem; font-weight: 600;">Sistema automatizado de análise qualitativa das Negociações em Incidentes Críticos atendidos pelo Grupo de Ações Táticas Especiais.</p>
+          <p style="text-align: center; font-size: 1.1rem; font-weight: 600;">Sistema automatizado de análise qualitativa das Negociações em Incidentes Críticos atendidos pelo Grupo de Ações Táticas Especiais.</p>
           <p style="font-size: 0.9rem; color: #bbb;">
     Os dados são geridos de forma automatizada em nuvem via <strong>Airtable</strong>, integrando um motor estatístico multifatorial. O sistema realiza análises inferenciais robustas, utilizando <strong>Equações de Estimativas Generalizadas (GEE)</strong> para controle de efeitos agrupados por avaliador e <strong>Correlação de Spearman com Quartis</strong> para métricas não-paramétricas. A arquitetura de inteligência linguística aplica <strong>análise de similitude (Similaridade de Cosseno via TF-IDF)</strong> e <strong>modelagem de N-Gramas</strong> para identificar a convergência operacional entre os Negociadores. Testes de associação categórica (<strong>Qui-quadrado</strong>) e <strong>análise de frequências</strong> validam a existência de vieses perceptivos. A <strong>Inteligência Artificial</strong> atua como camada interpretativa final, estruturando metadados qualitativos sob a <strong>Perspectiva Tripla</strong>.
 </p>
@@ -585,9 +583,10 @@ st.markdown('<p style="color: #999; margin-top: 5px;">Desenvolvido por Cb PM Mar
 # ====
 # 3. CONEXÃO E NAVEGAÇÃO PRINCIPAL (ABAS)
 # ====
-with st.spinner("Sincronizando com Banco de Dados Seguro (Airtable)..."):
-    df_quali, status_q = airtable_link.buscar_dados_apa()
-    df_tec, status_t = airtable_link.buscar_todas_tecnicas()
+# Os dados ja foram carregados acima no "porteiro" (lazy load com session_state).
+# Mantemos status_q/status_t aqui para compatibilidade com mensagens de erro abaixo.
+status_q = st.session_state.get("status_q", "OK")
+status_t = st.session_state.get("status_t", "OK")
 
 if df_quali.empty:
     st.error(f"Erro na conexão com Airtable: {status_q}")
@@ -1267,7 +1266,9 @@ else:
                         "wc_ns": analise.gerar_wordcloud(texto_ns) if len(texto_ns) > 5 else None,
                         "texto_c_raw": texto_c,
                         "texto_np_raw": texto_np,
-                        "texto_ns_raw": texto_ns
+                        "texto_ns_raw": texto_ns,
+                        "resolucao_tipo": resolucao_tipo,
+                        "resolucao_raw": resolucao_raw
                     }
 
             if st.session_state.get('stats_calculados'):
@@ -1328,7 +1329,7 @@ else:
                     for t in topicos_globais:
                         st.markdown(t)
 
-                    st.markdown("<​hr style='border-color: rgba(255,255,255,0.12); margin: 16px 0;'>", unsafe_allow_html=True)
+                    st.markdown("<hr style='border-color: rgba(255,255,255,0.12); margin: 16px 0;'>", unsafe_allow_html=True)
                     st.markdown("#### 🖼️ Mapas de palavras por interlocutor", unsafe_allow_html=True)
                     st.markdown(
                         "<p style='color:#aaa; font-size:0.9rem; margin-top:-5px;'>Os mesmos mapas exibidos nas abas individuais também são mostrados aqui para facilitar a comparação visual no contexto global da ocorrência.</p>",
@@ -1554,8 +1555,8 @@ else:
                             sugestoes_treinamento = ""
 
                         def calcular_media_equipe(*valores):
-                            validos = [v for v in valores if v > 0]
-                            return sum(validos) / len(validos) if validos else 0
+                            validos = [v for v in valores if v and v > 0]
+                            return sum(validos) / len(validos) if validos else None
 
                         likert_inicio = {
                             'agressividade_media': calcular_media_equipe(p_agr_c_num, s_agr_c_num, l_agr_c_num),
@@ -1565,7 +1566,20 @@ else:
                             'agressividade_media': calcular_media_equipe(p_agr_e_num, s_agr_e_num, l_agr_e_num),
                             'receptividade_media': calcular_media_equipe(p_rec_e_num, s_rec_e_num, l_rec_e_num)
                         }
-                        stats_spearman = {'valido': False, 'p_value': 0.0, 'rho': 0.0}
+                        # Spearman entre serie de agressividade no inicio e no fim (3 pares: P, S, L)
+                        try:
+                            import numpy as _np
+                            from scipy.stats import spearmanr as _spearmanr
+                            x_likert = [v for v in [p_agr_c_num, s_agr_c_num, l_agr_c_num] if v > 0]
+                            y_likert = [v for v in [p_agr_e_num, s_agr_e_num, l_agr_e_num] if v > 0]
+                            n_par = min(len(x_likert), len(y_likert))
+                            if n_par >= 3 and len(set(x_likert[:n_par])) > 1 and len(set(y_likert[:n_par])) > 1:
+                                rho_lk, p_lk = _spearmanr(x_likert[:n_par], y_likert[:n_par])
+                                stats_spearman = {'valido': True, 'p_value': float(p_lk), 'rho': float(rho_lk)}
+                            else:
+                                stats_spearman = {'valido': False, 'p_value': 1.0, 'rho': 0.0}
+                        except Exception:
+                            stats_spearman = {'valido': False, 'p_value': 1.0, 'rho': 0.0}
                         laudo_frio = ia_link.gerar_laudo_frio(likert_inicio, likert_fim, stats_spearman)
 
                         st.markdown(f"""
@@ -1849,8 +1863,10 @@ else:
                 if len(df_sp) < 5:
                     st.warning(f"⚠️ **Aguardando dados (N={len(df_sp)}):** São necessárias mais ocorrências encerradas para calcular a correlação de tempo de forma confiável.")
                 elif col_agr_c and col_agr_e and 'Tempo de Negociação Real' in df_sp.columns:
-                    df_sp['Agr_Inicio'] = df_sp[col_agr_c].apply(converter_escala)
-                    df_sp['Agr_Fim'] = df_sp[col_agr_e].apply(converter_escala)
+                    # 'Nao observado' (0) eh tratado como faltante para nao contaminar o coeficiente
+                    df_sp['Agr_Inicio'] = df_sp[col_agr_c].apply(converter_escala).replace(0, pd.NA)
+                    df_sp['Agr_Fim']    = df_sp[col_agr_e].apply(converter_escala).replace(0, pd.NA)
+                    df_sp = df_sp.dropna(subset=['Agr_Inicio', 'Agr_Fim'])
                     df_sp['Delta_Agressividade'] = df_sp['Agr_Inicio'] - df_sp['Agr_Fim']
                     
                     def tempo_para_minutos(val):
@@ -2045,7 +2061,11 @@ else:
                     try:
                         import ia_estatistica 
                         
-                        qui_data = {'p_valor_global': p} if 'p' in locals() else None
+                        qui_data = None
+                        if 'res_chi' in locals() and isinstance(res_chi, dict) and res_chi.get('valido'):
+                            qui_data = {'p_valor_global': res_chi['p_value']}
+                        elif 'p' in locals() and isinstance(p, (int, float)):
+                            qui_data = {'p_valor_global': float(p)}
                         
                         ord_data = None
                         if 'df_or' in locals() and not df_or.empty:
@@ -2142,7 +2162,7 @@ else:
                     except Exception as e:
                         st.error(f"Erro na geração do relatório de IA: {str(e)}")
 
-                        st.markdown("<div style='margin-bottom: 20px;'></div>", unsafe_allow_html=True)
+            st.markdown("<div style='margin-bottom: 20px;'></div>", unsafe_allow_html=True)
             st.markdown("""
     <div style='margin-top:20px; margin-bottom:100px; padding:15px; 
                 background-color:#111; border-radius:8px;'>
