@@ -279,15 +279,7 @@ st.markdown("""
         position: relative; 
         z-index: 10; /* Garante que o conteúdo fique acima dos raios */
     }
-
-    /* Fontes e Títulos */
-    .main-title {
-        font-family: 'Bricolage Grotesque', sans-serif; font-size: 2.2rem; font-weight: 300; letter-spacing: -0.02em;
-        background: linear-gradient(180deg, #FFFF 0%, #BBBB 100%);
-        -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin: 0; line-height: 1.1;
-    }
-    .sub-title { color: #FFD700; font-weight: 600; font-size: 1.1rem; margin-top: 5px; margin-bottom: 0; }
-    
+        
     /* Efeito Vidro (Glassmorphism) e Animação de Luz (Sweep) nas Caixas */
     .info-card { 
         background: rgba(30, 30, 30, 0.85);
