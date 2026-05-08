@@ -213,6 +213,34 @@ st.markdown("""
         overflow-x: hidden; 
         font-family: 'Inter', sans-serif;
     }
+            /* Títulos cinematográficos — Orbitron */
+    .main-title {
+        font-family: 'Orbitron', sans-serif;
+        font-size: 2.2rem;
+        font-weight: 700;          /* Orbitron 700 dá o peso "tech" da apresentação */
+        letter-spacing: 0.04em;     /* Orbitron pede um pouco de tracking */
+        background: linear-gradient(180deg, #FFFF 0%, #BBBB 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        margin: 0;
+        line-height: 1.1;
+    }
+            /* Subtítulo / chamada — Inter 600 */
+    .sub-title {
+        font-family: 'Inter', sans-serif;
+        color: #FFD700;
+        font-weight: 600;
+        font-size: 1.1rem;
+        margin-top: 5px;
+        margin-bottom: 0;
+    }
+            /* Métricas, valores, IDs e códigos — Share Tech Mono (visual de console tático) */
+    div[data-testid="stMetricValue"],
+    code, pre,
+    .stDataFrame [role="cell"]:first-child {
+        font-family: 'Share Tech Mono', monospace !important;
+        letter-spacing: 0.02em;
+    }
     
     /* Fundo Estrelado - Luminous Design System */
     .stars-bg {
