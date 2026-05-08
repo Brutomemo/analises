@@ -194,54 +194,48 @@ def converter_escala(val):
     v = str(val).lower().strip()
     return escala_likert.get(v, 0)
         
-    # ====
-    # 1. CONFIGURAÇÃO DA PÁGINA E CSS (UX e Design System)
-    # ====   
+# ====
+# 1. CONFIGURAÇÃO DA PÁGINA E CSS (UX e Design System)
+# ====
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;900&family=Share+Tech+Mono&family=Inter:wght@300;400;500;600&display=swap');
 
-    /* Configurações Globais - Forçando a Inter como base */
+    /* Configurações Globais */
     .block-container { padding-top: 0rem !important; padding-bottom: 1rem !important; z-index: 8; position: relative;}
     header {visibility: hidden;}
-    
+    /* Fundo Transparente para revelar o WebGL */
     body { background-color: #050505 !important; }
-    
-    /* Seletor universal para garantir que o Streamlit não sobrescreva a fonte padrão */
-    .stApp, [data-testid="stAppViewContainer"], [data-testid="stHeader"], .stMarkdown, p, span { 
+    .stApp, [data-testid="stAppViewContainer"], [data-testid="stHeader"] { 
         background: transparent !important;
         background-color: transparent !important; 
         color: #FFFF; 
         overflow-x: hidden; 
-        font-family: 'Inter', sans-serif !important;
+        font-family: 'Inter', sans-serif;
     }
-
-    /* Títulos cinematográficos — Orbitron */
+            /* Títulos cinematográficos — Orbitron */
     .main-title {
-        font-family: 'Orbitron', sans-serif !important;
+        font-family: 'Orbitron', sans-serif;
         font-size: 2.2rem;
-        font-weight: 700;
-        letter-spacing: 0.04em;
+        font-weight: 700;          /* Orbitron 700 dá o peso "tech" da apresentação */
+        letter-spacing: 0.04em;     /* Orbitron pede um pouco de tracking */
         background: linear-gradient(180deg, #FFFF 0%, #BBBB 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         margin: 0;
         line-height: 1.1;
     }
-
-    /* Subtítulo / chamada — Inter 600 */
+            /* Subtítulo / chamada — Inter 600 */
     .sub-title {
-        font-family: 'Inter', sans-serif !important;
+        font-family: 'Inter', sans-serif;
         color: #FFD700;
         font-weight: 600;
         font-size: 1.1rem;
         margin-top: 5px;
         margin-bottom: 0;
     }
-
-    /* Métricas, valores, IDs e códigos — Share Tech Mono */
-    div[data-testid="stMetricValue"], 
-    div[data-testid="stMetricLabel"] > div,
+            /* Métricas, valores, IDs e códigos — Share Tech Mono (visual de console tático) */
+    div[data-testid="stMetricValue"],
     code, pre,
     .stDataFrame [role="cell"]:first-child {
         font-family: 'Share Tech Mono', monospace !important;
@@ -259,23 +253,23 @@ st.markdown("""
             radial-gradient(2px 2px at 90px 40px, #ffff, rgba(0,0,0,0)),
             radial-gradient(1.5px 1.5px at 130px 80px, #ffff, rgba(0,0,0,0));
         background-size: 200px 200px;
-        opacity: 0.45;
-        z-index: 1;
+        opacity: 0.45; /* Aumentado para maior visibilidade */
+        z-index: 1; /* Acima do fundo preto */
         pointer-events: none;
     }
-
     /* Caixa de Título Especial */
     .header-box {
         margin: 0 auto !important;
         padding: 20px 30px !important;
-        width: 100%;
+        width: 100%; /* Ocupa a largura total da coluna definida */
         text-align: center;
     }
 
+    /* Reset de margens para os titles dentro da caixa gloss */
     .header-box .main-title { margin-bottom: 5px !important; }
     .header-box .sub-title { margin-top: 0 !important; }
     
-    /* Animação de Entrada Cinematográfica */
+    /* Animação de Entrada Cinematográfica (Opacidade + Blur) */
     @keyframes fadeInUpBlur {
         0% { opacity: 0; transform: translateY(30px); filter: blur(8px); }
         100% { opacity: 1; transform: translateY(0); filter: blur(0px); }
@@ -283,10 +277,18 @@ st.markdown("""
     .info-card, .stMarkdown, div[data-testid="stMetric"], .stDataFrame, .stPlotlyChart {
         animation: fadeInUpBlur 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) both;
         position: relative; 
-        z-index: 10;
+        z-index: 10; /* Garante que o conteúdo fique acima dos raios */
     }
-        
-    /* Efeito Vidro (Glassmorphism) */
+
+    /* Fontes e Títulos */
+    .main-title {
+        font-family: 'Bricolage Grotesque', sans-serif; font-size: 2.2rem; font-weight: 300; letter-spacing: -0.02em;
+        background: linear-gradient(180deg, #FFFF 0%, #BBBB 100%);
+        -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin: 0; line-height: 1.1;
+    }
+    .sub-title { color: #FFD700; font-weight: 600; font-size: 1.1rem; margin-top: 5px; margin-bottom: 0; }
+    
+    /* Efeito Vidro (Glassmorphism) e Animação de Luz (Sweep) nas Caixas */
     .info-card { 
         background: rgba(30, 30, 30, 0.85);
         backdrop-filter: blur(16px) saturate(180%);
@@ -298,11 +300,18 @@ st.markdown("""
         box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
         border-radius: 12px;
         padding: 10px;
+
         margin-top: 20px;
         margin-bottom: 10px;
+
         position: relative;
+        
+        /* MUDANÇA 1: Desce o card (ajuste este número para descer mais ou menos) */
         transform: translateY(60px); 
+        
+        /* MUDANÇA 2: Garante que o card de vidro fique por cima de qualquer iframe */       
         z-index: 9999 !important; 
+        
         overflow: hidden;
         transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
     }
@@ -321,23 +330,32 @@ st.markdown("""
         left: 100%; transition: 0.7s ease-in-out;
     }
 
-    /* Efeito Botões */
+    /* Efeito Design System nos Botões (Gradiente + Glow) */
     div.stButton > button { 
         background: linear-gradient(to top, #fef08a 0%, #fb923c 50%, #f97316 100%) !important;
-        color: #2c1306 !important;
+        color: #2c1306 !important; /* Cor escura para leitura perfeita sobre o laranja/amarelo */
         border: 1px inset rgba(255, 255, 255, 0.4) !important;
         padding: 0.7rem 2rem; border-radius: 9999px !important; font-weight: 600 !important; 
         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important; width: 100%; position: relative;
         box-shadow: 0 4 20px -5px rgba(249, 115, 22, 0.6) !important;
+        transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1), 
+        box-shadow 0.3s ease-out, 
+        filter 0.3s ease !important;
+                
         animation: fadeInUpBlur 1s cubic-bezier(0.2, 0.8, 0.2, 1) both;
     }
-    div.stButton > button:hover { 
+        div.stButton > button:hover { 
         box-shadow: 0 10px 40px -5px rgba(249, 115, 22, 0.9) !important; 
         transform: scale(1.03) translateY(-3px) !important;
         filter: brightness(1.05);
     }
+        div.stButton > button:active {
+        transform: scale(0.98) translateY(0.6px) !important;
+        box-shadow: 0 3px 10px -5px rgba(249, 115, 22, 0.6) !important;
+        filter: brightness(0.99);
+    }
     
-    /* Ambient Blobs */
+    /* Efeito Ambient Blobs (Degradês Flutuantes no Fundo) */
     .liquid-blob {
         position: fixed; border-radius: 60%; filter: blur(80px); opacity: 0.20; z-index: 1;
         animation: float 10s infinite alternate cubic-bezier(0.4, 0, 0.2, 1); pointer-events: none;
@@ -357,22 +375,28 @@ st.markdown("""
     div[data-testid="stTabs"] button { font-size: 1.2rem; font-weight: bold; transition: color 0.3s;}
     div[data-testid="stTabs"] button[data-baseweb="tab"]:hover { color: #FFD700; }
 
-    /* Cores Efeito Vidro */
+    /* Cores para o Efeito de Vidro (Agressividade e Receptividade) */
     .card-red { border-left: 4px solid #DDD !important; }
     .card-red:hover { box-shadow: 0 15px 40px rgba(239, 68, 68, 0.25) !important; border-color: rgba(239, 68, 68, 0.6) !important; }
+    .card-red::before { background: linear-gradient(90deg, transparent, rgba(239, 68, 68, 0.15), transparent) !important; }
+
     .card-green { border-left: 4px solid #22c55e !important; }
     .card-green:hover { box-shadow: 0 15px 40px rgba(34, 197, 94, 0.25) !important; border-color: rgba(34, 197, 94, 0.6) !important; }
+    .card-green::before { background: linear-gradient(90deg, transparent, rgba(34, 197, 94, 0.15), transparent) !important; }
 
-    /* Mobile */
+    /* Media Queries para Mobile Perfeito */
     @media (max-width: 768px) {
         .main-title { font-size: 2rem !important; }
         .sub-title { font-size: 0.95rem !important; }
         div.stButton > button { padding: 0.6rem 1.2rem !important; font-size: 0.95rem !important; }
+        .block-container { padding-left: 1rem !important; padding-right: 1rem !important; }
+        .info-card { padding: 12px; margin-top: 10px; margin-bottom: 10px; }
     }
-
-    /* Container efeito Unicorn */
+    /* Puxa o container do efeito Unicorn para cima, para trás do info-card */
     div[data-testid="stHtml"] {
         position: relative;
+        /* MUDANÇA 3: Puxa o iframe inteiro para cima. 
+           Ajuste esse valor (-150px, -200px, etc) até a marca d'água ficar exatamente debaixo do card */
         margin-top: -150px !important; 
         z-index: 1 !important;
     }
@@ -383,7 +407,9 @@ st.markdown("""
 <div class="liquid-blob blob3"></div>
 """, unsafe_allow_html=True)
 
+
 if 'stats_calculados' not in st.session_state: st.session_state['stats_calculados'] = None
+#if 'dados_n8n' not in st.session_state: st.session_state['dados_n8n'] = None
 
 # ====
 # 2. CABEÇALHO VISUAL E FUNDO DO CABEÇALHO
