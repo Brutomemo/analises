@@ -51,7 +51,7 @@ ATENUADORES = {
 
 DICIONARIO_OPERACIONAL = {
     "Sinalização de Rendição / Desescalada da agressividade": {
-        "tipo": "protecao",
+        "tipo": "progressão",
         "peso_base": 1.60,
         "termos": {
             "me entrego": 2.80,
@@ -190,7 +190,8 @@ DICIONARIO_OPERACIONAL = {
             "quero morrer": 3.00,
             "nao quero viver": 2.80,
             "vou pular": 3.10,
-            
+            "acabou pra mim": 3.10,
+            "chega, não da mais": 2.80,           
             "acabar com tudo": 2.70,
             "dar fim": 2.50,
             "me matar": 2.70,
@@ -437,14 +438,14 @@ def analisar_crise_direcional(texto, resolucao_tipo="desconhecida"):
 
                 # NOVA LÓGICA: ignorar ou reduzir sinais protetivos quando for vocativo/repetição
                 if eh_vocativo(tokens, idx_inicio, idx_fim):
-                    # trata como evidência contextual leve (não aumenta proteção)
+                    # trata como evidência contextual leve 
                     # ajusta os fatores para não induzir desescalada
-                    score_categoria += peso_final * 0.12   # muito menor que antes
+                    score_categoria += peso_final * 0.12   
                     contexto_bruto += peso_final * 0.10
-                    # opcional: continue  # se preferir não contar como evidência para ordenação/temas
+                    
                     continue
 
-                # comportamento pré-existente (com negado tratamentos)
+                # comportamento pré-existente 
                 if negado:
                     evidencias_negadas += 1
                     if tipo == "risco":
