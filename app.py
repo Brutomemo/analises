@@ -199,7 +199,7 @@ def converter_escala(val):
 # ====
 st.markdown("""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Bricolage+Grotesque:opsz,wght@12..96,300;12..96,400;12..96,600&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;900&family=Share+Tech+Mono&family=Inter:wght@300;400;500;600&display=swap');
 
     /* Configurações Globais */
     .block-container { padding-top: 0rem !important; padding-bottom: 1rem !important; z-index: 8; position: relative;}
@@ -2183,7 +2183,7 @@ Colunas relevantes incluem, mas não se limitam a:
   • Forma de Transição / Sexo do Causador / Uniforme Usado
   • Tempo de Negociação Real → col. Tempo_Minutos (convertido para minutos decimais)
   • Tempo de Negociação Tática
-  • Score de Desempenho → col. Score_Desempenho (10=resolução pacífica, 5=tática, 0=outros)
+  • Score de Desempenho → col. Score_Desempenho (1=Negociação Real, 0,6 Negociação Tática, 0=tática, 0=outros)
   • Percepção de Agressividade e Receptividade (início e encerramento) — escala Likert 1–5
   • Transcrição da negociação (quando disponível)
 
