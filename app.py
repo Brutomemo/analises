@@ -539,7 +539,7 @@ with col_logo:
 with col_titulo:
     st.markdown("""
         <div class="info-card header-box">
-            <h1 class="main-title" style="text-align: center;"></strong>Sistema de Análise Qualitativa das Negociações</strong></h1>
+            <h1 class="main-title" style="text-align: center;"></strong>Sistema de Análise</strong> Qualitativa das Negociações</strong></h1>
             <p class="sub-title" style="text-align: center;"></strong>Estudo das Técnicas Aplicadas</strong></p>
         </div>
     """, unsafe_allow_html=True)
