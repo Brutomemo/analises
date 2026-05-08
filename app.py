@@ -201,9 +201,89 @@ def converter_escala(val):
 # ====
 # 1. CONFIGURAÇÃO DA PÁGINA E CSS (UX e Design System)
 # ====
+# === FONTES OFICIAIS DO SISTEMA (carregamento rapido via <link>) ===
+st.markdown("""
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;900&family=Share+Tech+Mono&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+""", unsafe_allow_html=True)
+
 st.markdown("""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;900&family=Share+Tech+Mono&family=Inter:wght@300;400;500;600&display=swap');
+    /* ==== TEMA TIPOGRAFICO - OVERRIDE COM ALTA ESPECIFICIDADE ==== */
+    /* Streamlit injeta font-family proprio em headings e paragrafos.
+       Para sobrescrever, precisamos de !important e seletores especificos. */
+
+    /* Base do app */
+    html, body, [class*="css"], .stApp, [data-testid="stAppViewContainer"] {
+        font-family: 'Inter', sans-serif !important;
+    }
+
+    /* Todos os titulos -> Orbitron (fonte tech da apresentacao) */
+    h1, h2, h3, h4, h5, h6,
+    [data-testid="stMarkdownContainer"] h1,
+    [data-testid="stMarkdownContainer"] h2,
+    [data-testid="stMarkdownContainer"] h3,
+    [data-testid="stMarkdownContainer"] h4,
+    [data-testid="stMarkdownContainer"] h5,
+    [data-testid="stMarkdownContainer"] h6,
+    .main-title {
+        font-family: 'Orbitron', sans-serif !important;
+        letter-spacing: 0.02em;
+    }
+
+    /* Paragrafos, listas, captions, labels, sidebar, expanders -> Inter */
+    p, span, li, label, small,
+    [data-testid="stMarkdownContainer"] p,
+    [data-testid="stMarkdownContainer"] li,
+    [data-testid="stCaptionContainer"],
+    [data-testid="stSidebar"] *,
+    [data-testid="stExpander"] *,
+    .sub-title {
+        font-family: 'Inter', sans-serif !important;
+    }
+
+    /* Tabs (botoes das abas Visao seletiva / Serie historica / Chat) -> Orbitron */
+    div[data-testid="stTabs"] button,
+    div[data-testid="stTabs"] [role="tab"] {
+        font-family: 'Orbitron', sans-serif !important;
+        letter-spacing: 0.04em;
+    }
+
+    /* Botoes -> Orbitron com peso medio */
+    div.stButton > button,
+    button[kind="primary"], button[kind="secondary"] {
+        font-family: 'Orbitron', sans-serif !important;
+        letter-spacing: 0.03em;
+    }
+
+    /* Selectbox / inputs -> Inter */
+    div[data-baseweb="select"] *, input, textarea {
+        font-family: 'Inter', sans-serif !important;
+    }
+
+    /* Metricas (numeros) -> Share Tech Mono (visual de console tatico) */
+    div[data-testid="stMetricValue"],
+    div[data-testid="stMetricValue"] *,
+    code, pre, kbd {
+        font-family: 'Share Tech Mono', monospace !important;
+        letter-spacing: 0.02em;
+    }
+    /* O label da metrica fica em Inter */
+    div[data-testid="stMetricLabel"] * {
+        font-family: 'Inter', sans-serif !important;
+    }
+
+    /* DataFrame: cabecalho em Orbitron, celulas em Inter */
+    [data-testid="stDataFrame"] thead * {
+        font-family: 'Orbitron', sans-serif !important;
+    }
+    [data-testid="stDataFrame"] tbody * {
+        font-family: 'Inter', sans-serif !important;
+    }
+
+    /* === FIM DO TEMA TIPOGRAFICO === */
+
 
     /* Configurações Globais */
     .block-container { padding-top: 0rem !important; padding-bottom: 1rem !important; z-index: 8; position: relative;}
@@ -214,36 +294,27 @@ st.markdown("""
         background: transparent !important;
         background-color: transparent !important; 
         color: #FFFF; 
-        overflow-x: hidden; 
-        font-family: 'Inter', sans-serif;
+        overflow-x: hidden;
     }
-            /* Títulos cinematográficos — Orbitron */
+
+    /* Estilo visual do .main-title (cores e gradiente — fonte ja vem do bloco superior) */
     .main-title {
-        font-family: 'Orbitron', sans-serif;
         font-size: 2.2rem;
-        font-weight: 700;          /* Orbitron 700 dá o peso "tech" da apresentação */
-        letter-spacing: 0.04em;     /* Orbitron pede um pouco de tracking */
+        font-weight: 700;
         background: linear-gradient(180deg, #FFFF 0%, #BBBB 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         margin: 0;
         line-height: 1.1;
     }
-    /* Subtítulo / chamada — Inter 600 */
+
+    /* Estilo visual do .sub-title (cor — fonte ja vem do bloco superior) */
     .sub-title {
-        font-family: 'Inter', sans-serif;
         color: #FFD700;
         font-weight: 600;
         font-size: 1.1rem;
         margin-top: 5px;
         margin-bottom: 0;
-    }
-    /* Métricas, valores, IDs e códigos — Share Tech Mono (visual de console tático) */
-    div[data-testid="stMetricValue"],
-    code, pre,
-    .stDataFrame [role="cell"]:first-child {
-        font-family: 'Share Tech Mono', monospace !important;
-        letter-spacing: 0.02em;
     }
     
     /* Fundo Estrelado - Luminous Design System */
@@ -474,11 +545,19 @@ header = """
 <!DOCTYPE html>
 <html>
 <head>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;900&family=Share+Tech+Mono&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
     body {
         margin: 0;
         overflow: hidden;
         font-family: 'Inter', sans-serif;
+    }
+    /* Titulos dentro do banner -> Orbitron */
+    h1, h2, h3, h4, .info-card strong {
+        font-family: 'Orbitron', sans-serif !important;
+        letter-spacing: 0.02em;
     }
 
     .header {
