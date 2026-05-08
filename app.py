@@ -206,11 +206,11 @@ def converter_escala(val):
 # O seletor universal * forca a fonte em TODO elemento, com excecoes para Share Tech Mono.
 st.markdown("""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;900&family=Share+Tech+Mono&family=Inter:wght@300;400;500;600&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700&display=swap');
 
-    /* SELETOR UNIVERSAL: forca Inter em tudo por padrao (vence Streamlit) */
-    * {
-        font-family: 'Inter', sans-serif !important;
+    /* Uma classe reutilizável para todo HTML customizado */
+    .orbitron, .orbitron * {
+        font-family: 'Orbitron', monospace !important;
     }
 
     /* ==== TEMA TIPOGRAFICO - OVERRIDE AGRESSIVO ==== */
