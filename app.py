@@ -195,25 +195,23 @@ def converter_escala(val):
     return escala_likert.get(v, 0)
         
     # ====
-    # 1. CONFIGURAÇÃO DA PÁGINA E CSS (UX e Design System)
-    # ====   
+# 1. CONFIGURAÇÃO DA PÁGINA E CSS (UX e Design System)
+# ====
 st.markdown("""
 <style>
+    /* Importação das fontes */
     @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;900&family=Share+Tech+Mono&family=Inter:wght@300;400;500;600&display=swap');
 
-    /* Configurações Globais - Forçando a Inter como base */
+    /* Configurações Globais */
     .block-container { padding-top: 0rem !important; padding-bottom: 1rem !important; z-index: 8; position: relative;}
     header {visibility: hidden;}
-    
     body { background-color: #050505 !important; }
-    
-    /* Seletor universal para garantir que o Streamlit não sobrescreva a fonte padrão */
-    .stApp, [data-testid="stAppViewContainer"], [data-testid="stHeader"], .stMarkdown, p, span { 
-        background: transparent !important;
-        background-color: transparent !important; 
-        color: #FFFF; 
-        overflow-x: hidden; 
+
+    /* RESET DE FONTE GLOBAL: Força o Inter em praticamente tudo que o Streamlit gera */
+    .stApp, [data-testid="stAppViewContainer"], .stMarkdown, p, span, label, li { 
         font-family: 'Inter', sans-serif !important;
+        color: #FFFF; 
+        background: transparent !important;
     }
 
     /* Títulos cinematográficos — Orbitron */
@@ -221,7 +219,7 @@ st.markdown("""
         font-family: 'Orbitron', sans-serif !important;
         font-size: 2.2rem;
         font-weight: 700;
-        letter-spacing: 0.04em;
+        刻 letter-spacing: 0.04em;
         background: linear-gradient(180deg, #FFFF 0%, #BBBB 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
@@ -248,7 +246,7 @@ st.markdown("""
         letter-spacing: 0.02em;
     }
     
-    /* Fundo Estrelado - Luminous Design System */
+    /* Fundo Estrelado */
     .stars-bg {
         position: fixed;
         top: 0; left: 0; right: 0; bottom: 0;
@@ -275,7 +273,7 @@ st.markdown("""
     .header-box .main-title { margin-bottom: 5px !important; }
     .header-box .sub-title { margin-top: 0 !important; }
     
-    /* Animação de Entrada Cinematográfica */
+    /* Animação de Entrada */
     @keyframes fadeInUpBlur {
         0% { opacity: 0; transform: translateY(30px); filter: blur(8px); }
         100% { opacity: 1; transform: translateY(0); filter: blur(0px); }
@@ -327,6 +325,7 @@ st.markdown("""
         color: #2c1306 !important;
         border: 1px inset rgba(255, 255, 255, 0.4) !important;
         padding: 0.7rem 2rem; border-radius: 9999px !important; font-weight: 600 !important; 
+        font-family: 'Inter', sans-serif !important;
         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important; width: 100%; position: relative;
         box-shadow: 0 4 20px -5px rgba(249, 115, 22, 0.6) !important;
         animation: fadeInUpBlur 1s cubic-bezier(0.2, 0.8, 0.2, 1) both;
@@ -334,7 +333,6 @@ st.markdown("""
     div.stButton > button:hover { 
         box-shadow: 0 10px 40px -5px rgba(249, 115, 22, 0.9) !important; 
         transform: scale(1.03) translateY(-3px) !important;
-        filter: brightness(1.05);
     }
     
     /* Ambient Blobs */
@@ -363,14 +361,13 @@ st.markdown("""
     .card-green { border-left: 4px solid #22c55e !important; }
     .card-green:hover { box-shadow: 0 15px 40px rgba(34, 197, 94, 0.25) !important; border-color: rgba(34, 197, 94, 0.6) !important; }
 
-    /* Mobile */
+    /* Media Queries Mobile */
     @media (max-width: 768px) {
         .main-title { font-size: 2rem !important; }
         .sub-title { font-size: 0.95rem !important; }
-        div.stButton > button { padding: 0.6rem 1.2rem !important; font-size: 0.95rem !important; }
     }
 
-    /* Container efeito Unicorn */
+    /* Ajuste do container Unicorn */
     div[data-testid="stHtml"] {
         position: relative;
         margin-top: -150px !important; 
@@ -382,6 +379,7 @@ st.markdown("""
 <div class="liquid-blob blob2"></div>
 <div class="liquid-blob blob3"></div>
 """, unsafe_allow_html=True)
+
 
 if 'stats_calculados' not in st.session_state: st.session_state['stats_calculados'] = None
 
