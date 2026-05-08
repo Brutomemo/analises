@@ -201,23 +201,21 @@ def converter_escala(val):
 # ====
 # 1. CONFIGURAÇÃO DA PÁGINA E CSS (UX e Design System)
 # ====
-# === FONTES OFICIAIS DO SISTEMA (carregamento rapido via <link>) ===
-st.markdown("""
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;900&family=Share+Tech+Mono&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
-""", unsafe_allow_html=True)
-
+# === FONTES OFICIAIS DO SISTEMA ===
+# Usa @import dentro de <style> (compativel com sanitizador do Streamlit Cloud).
+# O seletor universal * forca a fonte em TODO elemento, com excecoes para Share Tech Mono.
 st.markdown("""
 <style>
-    /* ==== TEMA TIPOGRAFICO - OVERRIDE COM ALTA ESPECIFICIDADE ==== */
-    /* Streamlit injeta font-family proprio em headings e paragrafos.
-       Para sobrescrever, precisamos de !important e seletores especificos. */
+    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;900&family=Share+Tech+Mono&family=Inter:wght@300;400;500;600&display=swap');
 
-    /* Base do app */
-    html, body, [class*="css"], .stApp, [data-testid="stAppViewContainer"] {
+    /* SELETOR UNIVERSAL: forca Inter em tudo por padrao (vence Streamlit) */
+    * {
         font-family: 'Inter', sans-serif !important;
     }
+
+    /* ==== TEMA TIPOGRAFICO - OVERRIDE AGRESSIVO ==== */
+    /* O seletor * acima ja forcou Inter em tudo.
+       Aqui sobrescrevemos seletivamente onde queremos Orbitron / Share Tech Mono. */
 
     /* Todos os titulos -> Orbitron (fonte tech da apresentacao) */
     h1, h2, h3, h4, h5, h6,
