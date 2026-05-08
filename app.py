@@ -241,7 +241,6 @@ st.markdown("""
         font-family: 'Share Tech Mono', monospace !important;
         letter-spacing: 0.02em;
     }
-</style>
     
     /* Fundo Estrelado - Luminous Design System */
     .stars-bg {
