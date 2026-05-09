@@ -1822,7 +1822,7 @@ else:
             # para garantir que a maior fatia pegue a cor mais forte
             contagem = contagem.sort_values('Frequência', ascending=False)
 
-            cores_contraste = ['#FF8C15', "#AC4C1B", "#78522D", '#DEB887', "#EBE9E7" ]
+            cores_contraste = ['#FF8C15', "#AC4C1B", "#DEDDDC", '#DEB887', "#EBE9E7" ]
 
             # Criação do Gráfico de Rosca
             fig = px.pie(
