@@ -1879,7 +1879,7 @@ else:
             else: st.info("Sem dados de Sexo para os filtros atuais.")
 
         with col_wc_g3:
-            fig_mod = gerar_grafico_resumo(df_quali_filt, 'Modalidade', 'Modalidade')
+            fig_mod = gerar_grafico_resumo(df_quali_filt, 'Modalidade do incidente', 'Modalidade do incidente')
             if fig_mod: st.plotly_chart(fig_mod, use_container_width=True)
             else: st.info("Sem dados de Modalidade para os filtros atuais.")
             
