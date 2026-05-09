@@ -1822,7 +1822,7 @@ else:
             # para garantir que a maior fatia pegue a cor mais forte
             contagem = contagem.sort_values('Frequência', ascending=False)
 
-            cores_contraste = ['#FF8C00', '#8B4513', '#CD853F', '#DEB887', "#EBE9E7" ]
+            cores_contraste = ['#FF8C15', "#AC4C1B", "#78522D", '#DEB887', "#EBE9E7" ]
 
             # Criação do Gráfico de Rosca
             fig = px.pie(
@@ -1879,12 +1879,12 @@ else:
             else: st.info("Sem dados de Sexo para os filtros atuais.")
 
         with col_wc_g3:
-            fig_trans = gerar_grafico_resumo(df_quali_filt, 'Modalidade', 'Modalidade')
-            if fig_trans: st.plotly_chart(fig_trans, use_container_width=True)
+            fig_mod = gerar_grafico_resumo(df_quali_filt, 'Modalidade', 'Modalidade')
+            if fig_mod: st.plotly_chart(fig_mod, use_container_width=True)
             else: st.info("Sem dados de Modalidade para os filtros atuais.")
             
-            fig_sexo = gerar_grafico_resumo(df_quali_filt, 'Tipologia', 'Tipologia')
-            if fig_sexo: st.plotly_chart(fig_sexo, use_container_width=True)
+            fig_tip = gerar_grafico_resumo(df_quali_filt, 'Tipologia', 'Tipologia')
+            if fig_tip: st.plotly_chart(fig_tip, use_container_width=True)
             else: st.info("Sem dados de Tipologia para os filtros atuais.")
 
 
