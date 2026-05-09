@@ -1858,7 +1858,7 @@ else:
             )
             return fig
 
-        c_g1, c_g2 = st.columns(2)
+        c_g1, c_g2, col_wc_g3 = st.columns(3)
         
         with c_g1:
             fig_res = gerar_grafico_resumo(df_quali_filt, 'Resolução', 'Resolução do Incidente')
@@ -1877,6 +1877,17 @@ else:
             fig_sexo = gerar_grafico_resumo(df_quali_filt, 'Sexo do Causador', 'Sexo do Causador')
             if fig_sexo: st.plotly_chart(fig_sexo, use_container_width=True)
             else: st.info("Sem dados de Sexo para os filtros atuais.")
+
+        with col_wc_g3:
+            fig_trans = gerar_grafico_resumo(df_quali_filt, 'Modalidade', 'Modalidade')
+            if fig_trans: st.plotly_chart(fig_trans, use_container_width=True)
+            else: st.info("Sem dados de Modalidade para os filtros atuais.")
+            
+            fig_sexo = gerar_grafico_resumo(df_quali_filt, 'Tipologia', 'Tipologia')
+            if fig_sexo: st.plotly_chart(fig_sexo, use_container_width=True)
+            else: st.info("Sem dados de Tipologia para os filtros atuais.")
+
+
 
         st.markdown("---")
         st.markdown("#### Ranking de Técnicas Aplicadas")
