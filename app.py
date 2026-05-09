@@ -201,33 +201,14 @@ def converter_escala(val):
 # ====
 # 1. CONFIGURAÇÃO DA PÁGINA E CSS (UX e Design System)
 # ====
-# === FONTES OFICIAIS DO SISTEMA ===
-# Usa @import dentro de <style> (compativel com sanitizador do Streamlit Cloud).
-# O seletor universal * forca a fonte em TODO elemento, com excecoes para Share Tech Mono.
 st.markdown("""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700&display=swap');
+    /* 1. IMPORTAÇÃO DAS FONTES OFICIAIS */
+    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700&family=Inter:wght@300;400;500;600&display=swap');
 
-    /* Uma classe reutilizável para todo HTML customizado */
-    .orbitron, .orbitron * {
-        font-family: 'Orbitron', monospace !important;
-    }
-    <div class="card-container orbitron">
-      <div class="info-card">
-        <p style="text-align: center; font-size: 1.1rem; font-weight: 600;">
-        Sistema automatizado...
-        </p>
-        <p style="font-size: 0.9rem; color: #bbb;">
-        Os dados são geridos via <strong>Airtable</strong>...
-        </p>
-    </div>
-    </div>
-
-    /* ==== TEMA TIPOGRAFICO - OVERRIDE AGRESSIVO ==== */
-    /* O seletor * acima ja forcou Inter em tudo.
-       Aqui sobrescrevemos seletivamente onde queremos Orbitron / Share Tech Mono. */
-
-    /* Todos os titulos -> Orbitron (fonte tech da apresentacao) */
+    /* ==== TEMA TIPOGRÁFICO - OVERRIDE AGRESSIVO ==== */
+    
+    /* 2. Todos os títulos -> Orbitron (fonte tech da apresentação) */
     h1, h2, h3, h4, h5, h6,
     [data-testid="stMarkdownContainer"] h1,
     [data-testid="stMarkdownContainer"] h2,
@@ -240,7 +221,7 @@ st.markdown("""
         letter-spacing: 0.02em;
     }
 
-    /* Paragrafos, listas, captions, labels, sidebar, expanders -> Inter */
+    /* 3. Parágrafos, listas, captions, labels, sidebar, expanders -> Inter */
     p, span, li, label, small,
     [data-testid="stMarkdownContainer"] p,
     [data-testid="stMarkdownContainer"] li,
