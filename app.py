@@ -3492,7 +3492,7 @@ with aba_chat:
                     "interpretar modelos estatísticos (Spearman, χ², GEE), traçar perfis de negociadores "
                     "e sugerir treinos com base nos dados.\n\n"
                     "**Exemplos de perguntas:**\n"
-                    "- *Qual o uniforme usado pelo negociador X na ocorrência de DD/MM/AAAA?*\n"
+                    "- *Perguntas descritivas*\n"
                     "- *Quais as 5 técnicas mais usadas em ocorrências com resolução X?*\n"
                     "- *Trace o perfil operacional completo do negociador [x].*"
                 )
