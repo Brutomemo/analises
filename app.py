@@ -739,7 +739,7 @@ p, span, div, strong {
         <!-- TITULO PRINCIPAL -->
         <h2 style="
             text-align:center;
-            font-size:2rem;
+            font-size:1,3rem;
             font-weight:600;
             margin-bottom:10px;
             color:white;
