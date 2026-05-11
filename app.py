@@ -740,7 +740,7 @@ p, span, div, strong {
         <h1 style="
             text-align:center;
             font-size:2rem;
-            font-weight:700;
+            font-weight:400;
             margin-bottom:10px;
             color:white;
             letter-spacing:0.05em;
