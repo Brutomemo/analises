@@ -1962,7 +1962,7 @@ else:
     # ABA 2: PAINEL (HISTÓRICO)
     # ====
     with aba_geral:
-        st.markdown("### 🧠 Série Histórica - Negociações GATE")
+        st.markdown("### Série Histórica - Negociações GATE")
         st.markdown("<h5 style='color: #f97;'>Filtros por: Negociador, Tipologia e Modalidade do Incidente</h5>", unsafe_allow_html=True)
         
         col_f1, col_f2, col_f3 = st.columns(3)
@@ -1992,7 +1992,7 @@ else:
         # ====
         # NOVOS GRÁFICOS: VISÃO GERAL DA AMOSTRA
         # ====
-        st.markdown("<h4 style='color: #FFD700;'>📊 Visão Geral da Amostra</h4>", unsafe_allow_html=True)
+        st.markdown("<h4 style='color: #FFD700;'> Visão Geral da Amostra</h4>", unsafe_allow_html=True)
         
         def gerar_grafico_resumo(df, coluna, titulo):
             """Gera gráfico de rosca (donut) padronizado com o Design System."""
