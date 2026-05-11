@@ -769,7 +769,7 @@ p, span, div, strong {
             color:white;
             line-height:1.6;
         ">
-            Automação em análises das Negociações em Incidentes Críticos atendidos pelo Grupo de Ações Táticas Especiais.
+            Negociações em Incidentes Críticos atendidos pelo Grupo de Ações Táticas Especiais.
         </p>
 
         <p style="
