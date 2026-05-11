@@ -609,50 +609,7 @@ if img_topo_b64:
         </div>
     """, unsafe_allow_html=True)
 
-# =========================================================
-# CABEÇALHO
-# =========================================================
 
-col_logo, col_titulo, col_espaco = st.columns([1, 6, 1])
-
-with col_logo:
-
-    try:
-
-        with open(path_brasao_gate, "rb") as f:
-            brasao_b64 = base64.b64encode(f.read()).decode()
-
-        st.markdown(f"""
-            <div style="display:flex; justify-content:center; width:100%;">
-                <img src="data:image/webp;base64,{brasao_b64}"
-                     style="max-width:90px; height:auto; border:none;">
-            </div>
-        """, unsafe_allow_html=True)
-
-    except Exception:
-        pass
-
-with col_titulo:
-
-    titulo_html = """
-    <div class="info-card header-box">
-    
-        <h1 class="main-title">
-            Sistema de Análise Qualitativa das Negociações
-        </h1>
-
-        <p class="sub-title">
-            Estudo das Técnicas Aplicadas
-        </p>
-
-    </div>
-    """
-
-    st.components.v1.html(
-        titulo_html,
-        height=140,
-        scrolling=False
-    )
 # =========================================================
 # EFEITO UNICORN
 # =========================================================
@@ -754,25 +711,68 @@ p, span, div, strong {
 
     <div class="card-container">
 
-        <div class="info-card">
+    <div class="info-card">
 
-            <p style="
-                text-align:center;
-                font-size:1.1rem;
-                font-weight:600;
-            ">
-                Sistema automatizado de análise qualitativa das Negociações em Incidentes Críticos atendidos pelo Grupo de Ações Táticas Especiais.
-            </p>
-
-            <p style="
-                font-size:0.9rem;
-                color:#bbb;
-            ">
-                Os dados são geridos de forma automatizada em nuvem via <strong>Airtable</strong>,
-                integrando um motor estatístico multifatorial.
-            </p>
-
+        <!-- LOGO -->
+        <div style="
+            display:flex;
+            justify-content:center;
+            margin-bottom:18px;
+        ">
+            <img 
+                src="data:image/webp;base64,{brasao_b64}"
+                style="
+                    width:90px;
+                    height:auto;
+                "
+            >
         </div>
+
+        <!-- TITULO PRINCIPAL -->
+        <h1 style="
+            text-align:center;
+            font-size:2rem;
+            font-weight:700;
+            margin-bottom:10px;
+            color:white;
+            letter-spacing:0.05em;
+            font-family:'Orbitron', sans-serif;
+        ">
+            Sistema de Análise Qualitativa das Negociações
+        </h1>
+
+        <!-- SUBTITULO -->
+        <p style="
+            text-align:center;
+            font-size:1rem;
+            color:#d1d5db;
+            margin-bottom:24px;
+            letter-spacing:0.04em;
+            font-family:'Orbitron', sans-serif;
+        ">
+            Estudo das Técnicas Aplicadas
+        </p>
+
+        <!-- TEXTO DESCRITIVO -->
+        <p style="
+            text-align:center;
+            font-size:1.05rem;
+            font-weight:600;
+            color:white;
+            line-height:1.6;
+        ">
+            Sistema automatizado de análise qualitativa das Negociações em Incidentes Críticos atendidos pelo Grupo de Ações Táticas Especiais.
+        </p>
+
+        <p style="
+            font-size:0.9rem;
+            color:#bbb;
+            line-height:1.7;
+            margin-top:18px;
+        ">
+            Os dados são geridos de forma automatizada em nuvem via <strong>Airtable</strong>,
+            integrando um motor estatístico multifatorial.
+        </p>
 
     </div>
 
