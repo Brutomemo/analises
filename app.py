@@ -764,7 +764,7 @@ p, span, div, strong {
         <!-- TEXTO DESCRITIVO -->
         <p style="
             text-align:center;
-            font-size:1.05rem;
+            font-size:0,8rem;
             font-weight:500;
             color:white;
             line-height:1.6;
