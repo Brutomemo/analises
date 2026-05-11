@@ -2067,292 +2067,292 @@ else:
 
         st.markdown("---")
         # ============================================================
-        # BLOCO: Ranking de Técnicas + Padrões e Correlações
-        # Versão aprimorada — UX legível para leigos + lógica
-        # estatística corrigida
-        # ============================================================
+    # BLOCO: Ranking de Técnicas + Padrões e Correlações
+    # Versão aprimorada — UX legível para leigos + lógica
+    # estatística corrigida
+    # ============================================================
 
-        st.markdown("#### Ranking de Técnicas Aplicadas")
+    st.markdown("#### Ranking de Técnicas Aplicadas")
 
-        if st.button("📊 Abrir Ranking de Técnicas"):
-            st.session_state["exibir_ranking"] = True
+    if st.button("📊 Abrir Ranking de Técnicas"):
+        st.session_state["exibir_ranking"] = True
 
-        st.markdown("<div style='margin-bottom: 20px;'></div>", unsafe_allow_html=True)
+    st.markdown("<div style='margin-bottom: 20px;'></div>", unsafe_allow_html=True)
 
-        if st.session_state.get("exibir_ranking", False):
+    if st.session_state.get("exibir_ranking", False):
 
-            # ----------------------------------------------------------
-            # Pré-processamento de colunas limpas
-            # ----------------------------------------------------------
-            if not df_tec.empty:
-                df_tec["Neg_Limpo"] = (
-                    df_tec["Negociador Principal do incidente crítico"].apply(limpar_valor)
-                    if "Negociador Principal do incidente crítico" in df_tec.columns
-                    else "N/D"
-                )
-                df_tec["Tip_Limpa"] = (
-                    df_tec["Tipologia do incidente crítico"].apply(limpar_valor)
-                    if "Tipologia do incidente crítico" in df_tec.columns
-                    else "N/D"
-                )
-                df_tec["Mod_Limpa"] = (
-                    df_tec["Modalidade do incidente crítico"].apply(limpar_valor)
-                    if "Modalidade do incidente crítico" in df_tec.columns
-                    else "N/D"
-                )
+        # ----------------------------------------------------------
+        # Pré-processamento de colunas limpas
+        # ----------------------------------------------------------
+        if not df_tec.empty:
+            df_tec["Neg_Limpo"] = (
+                df_tec["Negociador Principal do incidente crítico"].apply(limpar_valor)
+                if "Negociador Principal do incidente crítico" in df_tec.columns
+                else "N/D"
+            )
+            df_tec["Tip_Limpa"] = (
+                df_tec["Tipologia do incidente crítico"].apply(limpar_valor)
+                if "Tipologia do incidente crítico" in df_tec.columns
+                else "N/D"
+            )
+            df_tec["Mod_Limpa"] = (
+                df_tec["Modalidade do incidente crítico"].apply(limpar_valor)
+                if "Modalidade do incidente crítico" in df_tec.columns
+                else "N/D"
+            )
 
-                df_tec_filt = df_tec.copy()
-                if filtro_neg_g != "Todos":
-                    df_tec_filt = df_tec_filt[df_tec_filt["Neg_Limpo"] == filtro_neg_g]
-                if filtro_tip_g != "Todas":
-                    df_tec_filt = df_tec_filt[df_tec_filt["Tip_Limpa"] == filtro_tip_g]
-                if filtro_mod_g != "Todas":
-                    df_tec_filt = df_tec_filt[df_tec_filt["Mod_Limpa"] == filtro_mod_g]
+            df_tec_filt = df_tec.copy()
+            if filtro_neg_g != "Todos":
+                df_tec_filt = df_tec_filt[df_tec_filt["Neg_Limpo"] == filtro_neg_g]
+            if filtro_tip_g != "Todas":
+                df_tec_filt = df_tec_filt[df_tec_filt["Tip_Limpa"] == filtro_tip_g]
+            if filtro_mod_g != "Todas":
+                df_tec_filt = df_tec_filt[df_tec_filt["Mod_Limpa"] == filtro_mod_g]
 
-            # ----------------------------------------------------------
-            # Ranking visual
-            # ----------------------------------------------------------
-            if not df_tec_filt.empty:
-                col_t = next(
-                    (
-                        col
-                        for col in ["TÉCNICAS", "TECNICAS", "TÉCNICA", "TECNICA"]
-                        if col in df_tec_filt.columns
-                    ),
-                    None,
-                )
-                if col_t:
-                    freq_global = df_tec_filt[col_t].value_counts().reset_index()
-                    freq_global.columns = ["Técnica", "Vezes Utilizada"]
+        # ----------------------------------------------------------
+        # Ranking visual
+        # ----------------------------------------------------------
+        if not df_tec_filt.empty:
+            col_t = next(
+                (
+                    col
+                    for col in ["TÉCNICAS", "TECNICAS", "TÉCNICA", "TECNICA"]
+                    if col in df_tec_filt.columns
+                ),
+                None,
+            )
+            if col_t:
+                freq_global = df_tec_filt[col_t].value_counts().reset_index()
+                freq_global.columns = ["Técnica", "Vezes Utilizada"]
 
-                    c_tab, c_tree = st.columns([1, 2])
-                    with c_tab:
-                        st.dataframe(freq_global, use_container_width=True, hide_index=True)
-                    with c_tree:
-                        fig_g = px.treemap(
-                            freq_global,
-                            path=["Técnica"],
-                            values="Vezes Utilizada",
-                            color="Vezes Utilizada",
-                            color_continuous_scale="Oranges",
-                        )
-                        fig_g.update_layout(
-                            paper_bgcolor="rgba(0,0,0,0)",
-                            plot_bgcolor="rgba(0,0,0,0)",
-                            font_color="#FFF",
-                            margin=dict(t=0, l=0, r=0, b=0),
-                        )
-                        st.plotly_chart(fig_g, use_container_width=True)
-                else:
-                    st.warning("Coluna 'TÉCNICAS' não encontrada.")
+                c_tab, c_tree = st.columns([1, 2])
+                with c_tab:
+                    st.dataframe(freq_global, use_container_width=True, hide_index=True)
+                with c_tree:
+                    fig_g = px.treemap(
+                        freq_global,
+                        path=["Técnica"],
+                        values="Vezes Utilizada",
+                        color="Vezes Utilizada",
+                        color_continuous_scale="Oranges",
+                    )
+                    fig_g.update_layout(
+                        paper_bgcolor="rgba(0,0,0,0)",
+                        plot_bgcolor="rgba(0,0,0,0)",
+                        font_color="#FFF",
+                        margin=dict(t=0, l=0, r=0, b=0),
+                    )
+                    st.plotly_chart(fig_g, use_container_width=True)
             else:
-                st.info("Nenhuma técnica encontrada para os filtros selecionados.")
+                st.warning("Coluna 'TÉCNICAS' não encontrada.")
+        else:
+            st.info("Nenhuma técnica encontrada para os filtros selecionados.")
 
-            st.markdown("---")
+        st.markdown("---")
 
-            # ----------------------------------------------------------
-            # Cabeçalho da seção de correlações
-            # ----------------------------------------------------------
+        # ----------------------------------------------------------
+        # Cabeçalho da seção de correlações
+        # ----------------------------------------------------------
+        st.markdown(
+            "<h4 style='color: #FFD700;'>🔬 O que os dados dizem sobre as ocorrências?</h4>"
+            "<p style='color: #aaa; font-size: 0.9rem; margin-top: -8px;'>"
+            "Os testes abaixo buscam padrões nos dados. "
+            "Os nomes técnicos ficam ocultos por padrão — o que importa é a pergunta e a resposta em linguagem clara."
+            "</p>",
+            unsafe_allow_html=True,
+        )
+
+        # -------------------------------------------------------
+        # Helpers estatísticos locais
+        # -------------------------------------------------------
+        import unicodedata
+
+        def norm_col(t):
+            return (
+                unicodedata.normalize("NFKD", str(t))
+                .encode("ASCII", "ignore")
+                .decode("ASCII")
+                .lower()
+            )
+
+        def achar_coluna(df, papel, metrica, momento):
+            for col in df.columns:
+                cn = norm_col(col)
+                if norm_col(papel) in cn and norm_col(metrica) in cn and norm_col(momento) in cn:
+                    return col
+            return None
+
+        def tempo_para_minutos(val):
+            """Converte segundos (inteiro ou lista) para minutos float."""
+            try:
+                if isinstance(val, list):
+                    val = val[0]
+                if pd.isna(val) or str(val).strip().lower() in ("", "n/d", "nan", "none"):
+                    return None
+                segundos = float(val)
+                return segundos / 60 if segundos > 0 else None
+            except Exception:
+                return None
+
+        lixo = {"none", "nan", "n/d", "", "null", "[]"}
+
+        col_agr_c = achar_coluna(df_quali_filt, "Principal", "Agressividade", "Chegada")
+        col_agr_e = achar_coluna(df_quali_filt, "Principal", "Agressividade", "Encerramento")
+
+        id_col = next(
+            (c for c in df_tec_filt.columns if "ID" in c.upper() or "VINCULO" in c.upper()),
+            None,
+        )
+
+        # N real de APAs (descartando linhas-lixo da coluna de técnicas)
+        if col_t:
+            df_tec_limpo = df_tec_filt[
+                ~df_tec_filt[col_t].astype(str).str.strip().str.lower().isin(lixo)
+            ].copy()
+        else:
+            df_tec_limpo = df_tec_filt.copy()
+
+        total_apas_reais = (
+            df_tec_limpo[id_col].astype(str).nunique() if id_col else len(df_tec_limpo)
+        )
+
+        # ----------------------------------------------------------
+        # Layout das duas colunas de análise
+        # ----------------------------------------------------------
+        c_sp1, c_sp2 = st.columns(2)
+
+        # ==========================================================
+        # COLUNA 1 — Spearman: Duração vs. Queda de Agressividade
+        # ==========================================================
+        with c_sp1:
             st.markdown(
-                "<h4 style='color: #FFD700;'>🔬 O que os dados dizem sobre as ocorrências?</h4>"
-                "<p style='color: #aaa; font-size: 0.9rem; margin-top: -8px;'>"
-                "Os testes abaixo buscam padrões nos dados. "
-                "Os nomes técnicos ficam ocultos por padrão — o que importa é a pergunta e a resposta em linguagem clara."
-                "</p>",
+                """
+                <div class='info-card'>
+                <strong>Ocorrências mais longas terminam com o causador menos agressivo?</strong><br>
+                <span style='font-size: 0.82rem; color: #aaa;'>
+                Verifica se existe uma relação matemática entre o tempo da negociação
+                e a queda de agressividade do causador do início ao fim da ocorrência.
+                </span>
+                """,
                 unsafe_allow_html=True,
             )
 
-            # -------------------------------------------------------
-            # Helpers estatísticos locais
-            # -------------------------------------------------------
-            import unicodedata
+            df_sp = df_quali_filt.copy()
 
-            def norm_col(t):
-                return (
-                    unicodedata.normalize("NFKD", str(t))
-                    .encode("ASCII", "ignore")
-                    .decode("ASCII")
-                    .lower()
+            # --- Verificações de pré-requisito ---
+            colunas_ausentes = []
+            if not col_agr_c:
+                colunas_ausentes.append("Agressividade na Chegada")
+            if not col_agr_e:
+                colunas_ausentes.append("Agressividade no Encerramento")
+            if "Tempo de Negociação Real" not in df_sp.columns:
+                colunas_ausentes.append("Tempo de Negociação Real")
+
+            if colunas_ausentes:
+                st.warning(
+                    f"⚠️ Colunas ausentes nos dados: {', '.join(colunas_ausentes)}. "
+                    "Verifique o formulário de registro."
                 )
 
-            def achar_coluna(df, papel, metrica, momento):
-                for col in df.columns:
-                    cn = norm_col(col)
-                    if norm_col(papel) in cn and norm_col(metrica) in cn and norm_col(momento) in cn:
-                        return col
-                return None
-
-            def tempo_para_minutos(val):
-                """Converte segundos (inteiro ou lista) para minutos float."""
-                try:
-                    if isinstance(val, list):
-                        val = val[0]
-                    if pd.isna(val) or str(val).strip().lower() in ("", "n/d", "nan", "none"):
-                        return None
-                    segundos = float(val)
-                    return segundos / 60 if segundos > 0 else None
-                except Exception:
-                    return None
-
-            lixo = {"none", "nan", "n/d", "", "null", "[]"}
-
-            col_agr_c = achar_coluna(df_quali_filt, "Principal", "Agressividade", "Chegada")
-            col_agr_e = achar_coluna(df_quali_filt, "Principal", "Agressividade", "Encerramento")
-
-            id_col = next(
-                (c for c in df_tec_filt.columns if "ID" in c.upper() or "VINCULO" in c.upper()),
-                None,
-            )
-
-            # N real de APAs (descartando linhas-lixo da coluna de técnicas)
-            if col_t:
-                df_tec_limpo = df_tec_filt[
-                    ~df_tec_filt[col_t].astype(str).str.strip().str.lower().isin(lixo)
-                ].copy()
             else:
-                df_tec_limpo = df_tec_filt.copy()
-
-            total_apas_reais = (
-                df_tec_limpo[id_col].astype(str).nunique() if id_col else len(df_tec_limpo)
-            )
-
-            # ----------------------------------------------------------
-            # Layout das duas colunas de análise
-            # ----------------------------------------------------------
-            c_sp1, c_sp2 = st.columns(2)
-
-            # ==========================================================
-            # COLUNA 1 — Spearman: Duração vs. Queda de Agressividade
-            # ==========================================================
-            with c_sp1:
-                st.markdown(
-                    """
-                    <div class='info-card'>
-                    <strong>Ocorrências mais longas terminam com o causador menos agressivo?</strong><br>
-                    <span style='font-size: 0.82rem; color: #aaa;'>
-                    Verifica se existe uma relação matemática entre o tempo da negociação
-                    e a queda de agressividade do causador do início ao fim da ocorrência.
-                    </span>
-                    """,
-                    unsafe_allow_html=True,
+                # Converte escalas e remove "Não Observado" (0)
+                # NOTA: zeros são descartados pois representam ausência de observação,
+                # não agressividade zero — incluí-los distorceria o coeficiente.
+                df_sp["Agr_Inicio"] = (
+                    df_sp[col_agr_c].apply(converter_escala).replace(0, pd.NA)
+                )
+                df_sp["Agr_Fim"] = (
+                    df_sp[col_agr_e].apply(converter_escala).replace(0, pd.NA)
+                )
+                df_sp["Tempo_Min"] = df_sp["Tempo de Negociação Real"].apply(
+                    tempo_para_minutos
                 )
 
-                df_sp = df_quali_filt.copy()
+                # Remove linhas sem os três valores necessários
+                df_sp = df_sp.dropna(subset=["Agr_Inicio", "Agr_Fim", "Tempo_Min"])
 
-                # --- Verificações de pré-requisito ---
-                colunas_ausentes = []
-                if not col_agr_c:
-                    colunas_ausentes.append("Agressividade na Chegada")
-                if not col_agr_e:
-                    colunas_ausentes.append("Agressividade no Encerramento")
-                if "Tempo de Negociação Real" not in df_sp.columns:
-                    colunas_ausentes.append("Tempo de Negociação Real")
+                # Delta positivo = queda de agressividade (bom sinal)
+                df_sp["Delta_Agressividade"] = df_sp["Agr_Inicio"] - df_sp["Agr_Fim"]
 
-                if colunas_ausentes:
+                n_valido = len(df_sp)
+
+                if n_valido < 5:
+                    # Barra de progresso visual
+                    progresso = int((n_valido / 5) * 100)
                     st.warning(
-                        f"⚠️ Colunas ausentes nos dados: {', '.join(colunas_ausentes)}. "
-                        "Verifique o formulário de registro."
+                        f"⏳ **Aguardando mais dados (N={n_valido}/5)**\n\n"
+                        "São necessárias pelo menos **5 ocorrências encerradas** "
+                        "com agressividade registrada nos dois momentos para calcular "
+                        "este indicador de forma confiável."
                     )
+                    st.progress(progresso)
 
                 else:
-                    # Converte escalas e remove "Não Observado" (0)
-                    # NOTA: zeros são descartados pois representam ausência de observação,
-                    # não agressividade zero — incluí-los distorceria o coeficiente.
-                    df_sp["Agr_Inicio"] = (
-                        df_sp[col_agr_c].apply(converter_escala).replace(0, pd.NA)
-                    )
-                    df_sp["Agr_Fim"] = (
-                        df_sp[col_agr_e].apply(converter_escala).replace(0, pd.NA)
-                    )
-                    df_sp["Tempo_Min"] = df_sp["Tempo de Negociação Real"].apply(
-                        tempo_para_minutos
-                    )
+                    res_sp = analise.calcular_spearman(df_sp, "Tempo_Min", "Delta_Agressividade")
 
-                    # Remove linhas sem os três valores necessários
-                    df_sp = df_sp.dropna(subset=["Agr_Inicio", "Agr_Fim", "Tempo_Min"])
+                    if res_sp.get("valido", False):
+                        rho = res_sp["rho"]
+                        p = res_sp["p_value"]
+                        significativo = p < 0.05
 
-                    # Delta positivo = queda de agressividade (bom sinal)
-                    df_sp["Delta_Agressividade"] = df_sp["Agr_Inicio"] - df_sp["Agr_Fim"]
-
-                    n_valido = len(df_sp)
-
-                    if n_valido < 5:
-                        # Barra de progresso visual
-                        progresso = int((n_valido / 5) * 100)
-                        st.warning(
-                            f"⏳ **Aguardando mais dados (N={n_valido}/5)**\n\n"
-                            "São necessárias pelo menos **5 ocorrências encerradas** "
-                            "com agressividade registrada nos dois momentos para calcular "
-                            "este indicador de forma confiável."
-                        )
-                        st.progress(progresso)
-
-                    else:
-                        res_sp = analise.calcular_spearman(df_sp, "Tempo_Min", "Delta_Agressividade")
-
-                        if res_sp.get("valido", False):
-                            rho = res_sp["rho"]
-                            p = res_sp["p_value"]
-                            significativo = p < 0.05
-
-                            # --- Veredito em linguagem clara ---
-                            if significativo and rho > 0:
-                                icone = "✅"
-                                titulo_veredito = "Sim — ocorrências mais longas tendem a terminar com menos agressividade"
-                                cor_veredito = "success"
-                                explicacao = (
-                                    f"Há uma associação **positiva e estatisticamente confirmada** "
-                                    f"(Rho = {rho:.2f}): quanto maior a duração, maior a queda de agressividade observada."
-                                )
-                            elif significativo and rho < 0:
-                                icone = "⚠️"
-                                titulo_veredito = "Atenção — ocorrências mais longas tendem a terminar com *mais* agressividade"
-                                cor_veredito = "warning"
-                                explicacao = (
-                                    f"A correlação é **negativa e estatisticamente confirmada** "
-                                    f"(Rho = {rho:.2f}): ocorrências prolongadas estão associadas a *menor* queda de agressividade. "
-                                    "Isso pode indicar desgaste ou escalada em casos arrastados."
-                                )
-                            elif not significativo and abs(rho) > 0.3:
-                                icone = "🔎"
-                                titulo_veredito = "Tendência visível, mas ainda sem confirmação estatística"
-                                cor_veredito = "info"
-                                explicacao = (
-                                    f"Existe uma tendência (Rho = {rho:.2f}), mas com os dados atuais "
-                                    f"(N={n_valido}) não é possível afirmar que não é coincidência (p = {p:.4f}). "
-                                    "Mais ocorrências devem confirmar ou refutar o padrão."
-                                )
-                            else:
-                                icone = "➖"
-                                titulo_veredito = "Ainda sem evidência clara de relação"
-                                cor_veredito = "info"
-                                explicacao = (
-                                    f"Nos dados atuais (N={n_valido}), a duração da ocorrência "
-                                    f"não está associada à variação de agressividade (Rho = {rho:.2f}, p = {p:.4f}). "
-                                    "Isso pode mudar com mais registros."
-                                )
-
-                            # Exibe o veredito
-                            getattr(st, cor_veredito)(f"{icone} **{titulo_veredito}**\n\n{explicacao}")
-
-                            # Detalhes técnicos colapsáveis
-                            with st.expander("🔬 Ver detalhes técnicos (Spearman)"):
-                                st.markdown(
-                                    f"- **Teste:** Correlação de Spearman (não-paramétrico — "
-                                    "adequado para escalas ordinais e distribuições assimétricas)\n"
-                                    f"- **Coeficiente Rho:** `{rho:.4f}` "
-                                    "*(varia de -1 a +1; próximo de 0 = sem relação)*\n"
-                                    f"- **P-Value:** `{p:.4f}` "
-                                    "*(abaixo de 0,05 = resultado improvável por acaso)*\n"
-                                    f"- **N válido:** `{n_valido}` ocorrências "
-                                    "*(apenas com agressividade registrada nos dois momentos e tempo preenchido)*\n"
-                                    "- **Nota:** valores 'Não Observado' foram excluídos do cálculo — "
-                                    "representam ausência de registro, não agressividade zero."
-                                )
+                        # --- Veredito em linguagem clara ---
+                        if significativo and rho > 0:
+                            icone = "✅"
+                            titulo_veredito = "Sim — ocorrências mais longas tendem a terminar com menos agressividade"
+                            cor_veredito = "success"
+                            explicacao = (
+                                f"Há uma associação **positiva e estatisticamente confirmada** "
+                                f"(Rho = {rho:.2f}): quanto maior a duração, maior a queda de agressividade observada."
+                            )
+                        elif significativo and rho < 0:
+                            icone = "⚠️"
+                            titulo_veredito = "Atenção — ocorrências mais longas tendem a terminar com *mais* agressividade"
+                            cor_veredito = "warning"
+                            explicacao = (
+                                f"A correlação é **negativa e estatisticamente confirmada** "
+                                f"(Rho = {rho:.2f}): ocorrências prolongadas estão associadas a *menor* queda de agressividade. "
+                                "Isso pode indicar desgaste ou escalada em casos arrastados."
+                            )
+                        elif not significativo and abs(rho) > 0.3:
+                            icone = "🔎"
+                            titulo_veredito = "Tendência visível, mas ainda sem confirmação estatística"
+                            cor_veredito = "info"
+                            explicacao = (
+                                f"Existe uma tendência (Rho = {rho:.2f}), mas com os dados atuais "
+                                f"(N={n_valido}) não é possível afirmar que não é coincidência (p = {p:.4f}). "
+                                "Mais ocorrências devem confirmar ou refutar o padrão."
+                            )
                         else:
-                            st.warning(res_sp.get("msg", "Dados insuficientes para o cálculo (N < 3)."))
+                            icone = "➖"
+                            titulo_veredito = "Ainda sem evidência clara de relação"
+                            cor_veredito = "info"
+                            explicacao = (
+                                f"Nos dados atuais (N={n_valido}), a duração da ocorrência "
+                                f"não está associada à variação de agressividade (Rho = {rho:.2f}, p = {p:.4f}). "
+                                "Isso pode mudar com mais registros."
+                            )
 
-                st.markdown("</div>", unsafe_allow_html=True)
+                        # Exibe o veredito
+                        getattr(st, cor_veredito)(f"{icone} **{titulo_veredito}**\n\n{explicacao}")
+
+                        # Detalhes técnicos colapsáveis
+                        with st.expander("🔬 Ver detalhes técnicos (Spearman)"):
+                            st.markdown(
+                                f"- **Teste:** Correlação de Spearman (não-paramétrico — "
+                                "adequado para escalas ordinais e distribuições assimétricas)\n"
+                                f"- **Coeficiente Rho:** `{rho:.4f}` "
+                                "*(varia de -1 a +1; próximo de 0 = sem relação)*\n"
+                                f"- **P-Value:** `{p:.4f}` "
+                                "*(abaixo de 0,05 = resultado improvável por acaso)*\n"
+                                f"- **N válido:** `{n_valido}` ocorrências "
+                                "*(apenas com agressividade registrada nos dois momentos e tempo preenchido)*\n"
+                                "- **Nota:** valores 'Não Observado' foram excluídos do cálculo — "
+                                "representam ausência de registro, não agressividade zero."
+                            )
+                    else:
+                        st.warning(res_sp.get("msg", "Dados insuficientes para o cálculo (N < 3)."))
+
+            st.markdown("</div>", unsafe_allow_html=True)
 
             # ==========================================================
             # COLUNA 2 — Qui-Quadrado: Técnica vs. Variável escolhida
