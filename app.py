@@ -555,6 +555,36 @@ strong {
     font-weight: 700;
     letter-spacing: 0.05em;
 }
+/* =========================================================
+   CORREÇÃO: ícone do expander 
+========================================================= */
+
+[data-testid="stExpanderToggleIcon"],
+[data-testid="stExpanderToggleIcon"] *,
+details summary svg,
+details summary svg * {
+    font-family: inherit !important;
+}
+
+/* Garante que o SVG do ícone seja visível */
+details > summary {
+    font-family: 'Orbitron', sans-serif !important;
+}
+
+details > summary > div > svg {
+    font-family: unset !important;
+    display: inline-block !important;
+}
+
+/* Esconde o fallback texto que aparece quando o glifo não carrega */
+[data-testid="stExpanderToggleIcon"] span {
+    font-size: 0 !important;
+    visibility: hidden !important;
+}
+[data-testid="stExpanderToggleIcon"] svg {
+    visibility: visible !important;
+    font-size: initial !important;
+}
 
 </style>
 """, unsafe_allow_html=True)
