@@ -735,21 +735,7 @@ p, span, div, strong {
 
     <div class="info-card">
 
-        <!-- LOGO -->
-        <div style="
-            display:flex;
-            justify-content:center;
-            margin-bottom:18px;
-        ">
-            <img 
-                src="data:image/webp;base64,{brasao_b64}"
-                style="
-                    width:90px;
-                    height:auto;
-                "
-            >
-        </div>
-
+                
         <!-- TITULO PRINCIPAL -->
         <h1 style="
             text-align:center;
