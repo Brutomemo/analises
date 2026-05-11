@@ -491,171 +491,304 @@ if 'stats_calculados' not in st.session_state: st.session_state['stats_calculado
 # ====
 # 2. CABEÇALHO VISUAL E FUNDO DO CABEÇALHO
 # ====
+
 import os
 import base64
 from PIL import Image
+import streamlit as st
+import streamlit.components.v1 as components
+
+# =========================================================
+# CSS GLOBAL — ORBITRON FUNCIONANDO NO APP INTEIRO
+# =========================================================
+st.markdown("""
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+<style>
+
+/* =========================================================
+FORÇA ORBITRON GLOBALMENTE
+========================================================= */
+
+html, body, [class*="css"], [data-testid="stAppViewContainer"] {
+    font-family: 'Orbitron', sans-serif !important;
+}
+
+/* TITULOS */
+h1, h2, h3, h4, h5, h6 {
+    font-family: 'Orbitron', sans-serif !important;
+    letter-spacing: 0.03em;
+}
+
+/* TEXTOS */
+p, span, div, label {
+    font-family: 'Orbitron', sans-serif !important;
+}
+
+/* STRONG */
+strong {
+    font-family: 'Orbitron', sans-serif !important;
+    font-weight: 700;
+}
+
+/* STREAMLIT */
+.stMarkdown,
+.stText,
+.stMetric,
+.stDataFrame,
+.stTable {
+    font-family: 'Orbitron', sans-serif !important;
+}
+
+/* SUBTITLE */
+.sub-title {
+    font-family: 'Orbitron', sans-serif !important;
+    letter-spacing: 0.04em;
+}
+
+/* MAIN TITLE */
+.main-title {
+    font-family: 'Orbitron', sans-serif !important;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+}
+
+</style>
+""", unsafe_allow_html=True)
+
+# =========================================================
+# PATHS
+# =========================================================
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
-path_assets = os.path.join(script_dir, "Assets") 
+path_assets = os.path.join(script_dir, "Assets")
 
-# Padronizando os caminhos limpos (Apenas banner e logo em webp)
-#path_teste_gate = os.path.join(path_assets, "teste_gate.webp")
 path_brasao_gate = os.path.join(path_assets, "brasao_gate.webp")
 
-# --- 1. PREPARAR IMAGENS (Codificar para Base64) ---
+# =========================================================
+# IMAGEM TOPO
+# =========================================================
+
 img_topo_b64 = ""
 
-# Topo (Banner principal)
 try:
-    with open(path_teste_gate, "rb") as img_file: 
+    with open(path_teste_gate, "rb") as img_file:
         img_topo_b64 = base64.b64encode(img_file.read()).decode()
-except: pass 
+except:
+    pass
 
-# --- 2. RENDERIZAR BANNER TOPO (Com animação e degradê) ---
+# =========================================================
+# BANNER TOPO
+# =========================================================
+
 if img_topo_b64:
     st.markdown(f"""
-        <div style="position: relative; width: 100%; height: 200px; border-radius: 0px !important; border: none !important; margin: 0px !important; overflow: hidden; background-image: url('data:image/webp;base64,{img_topo_b64}'); background-size: cover; background-position: center 40%; animation: fadeInUpBlur 1s cubic-bezier(0.2, 0.8, 0.2, 1) both;">
-            <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(180deg, rgba(5,5,5,0.1) 0%, rgba(249, 115, 22, 0.6) 100%);"></div>
+        <div style="
+            position: relative;
+            width: 100%;
+            height: 200px;
+            border-radius: 0px;
+            overflow: hidden;
+            background-image: url('data:image/webp;base64,{img_topo_b64}');
+            background-size: cover;
+            background-position: center 40%;
+            animation: fadeInUpBlur 1s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+        ">
+            <div style="
+                position: absolute;
+                inset: 0;
+                background: linear-gradient(
+                    180deg,
+                    rgba(5,5,5,0.1) 0%,
+                    rgba(249,115,22,0.6) 100%
+                );
+            "></div>
         </div>
     """, unsafe_allow_html=True)
-# --- 3. CONTEÚDO DO CABEÇALHO (Logo e Textos) ---
+
+# =========================================================
+# CABEÇALHO
+# =========================================================
+
 col_logo, col_titulo, col_espaco = st.columns([1, 6, 1])
 
 with col_logo:
-    try: 
-        # Carrega o brasão em base64 em vez de usar st.image
+
+    try:
+
         with open(path_brasao_gate, "rb") as f:
             brasao_b64 = base64.b64encode(f.read()).decode()
-        
-        # HTML puro: trava o tamanho em 90px (ajuste esse número se quiser maior/menor)
+
         st.markdown(f"""
-            <div style="display: flex; justify-content: center; width: 100%;">
-                <img src="data:image/webp;base64,{brasao_b64}" style="max-width: 90px; height: auto; border: none;">
+            <div style="display:flex; justify-content:center; width:100%;">
+                <img src="data:image/webp;base64,{brasao_b64}"
+                     style="max-width:90px; height:auto; border:none;">
             </div>
         """, unsafe_allow_html=True)
-    except Exception as e: 
+
+    except Exception:
         pass
 
 with col_titulo:
+
     st.markdown("""
         <div class="info-card header-box">
-            <h1 class="main-title" style="text-align: center;"></strong>Sistema de Análise</strong> Qualitativa das Negociações</strong></h1>
-            <p class="sub-title" style="text-align: center;"></strong>Estudo das Técnicas Aplicadas</strong></p>
+
+            <h1 class="main-title" style="text-align:center;">
+                Sistema de Análise Qualitativa das Negociações
+            </h1>
+
+            <p class="sub-title" style="text-align:center;">
+                Estudo das Técnicas Aplicadas
+            </p>
+
         </div>
     """, unsafe_allow_html=True)
 
-#EFEITO UNICORN
-# EFEITO UNICORN COM O CARD EMBUTIDO
-import streamlit as st
-import streamlit.components.v1 as components
+# =========================================================
+# EFEITO UNICORN
+# =========================================================
 
 header = """
 <!DOCTYPE html>
 <html>
+
 <head>
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;900&family=Share+Tech+Mono&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+
 <style>
-    body {
-        margin: 0;
-        overflow: hidden;
-        font-family: 'Inter', sans-serif;
-    }
-    /* Titulos dentro do banner -> Orbitron */
-    h1, h2, h3, h4, .info-card strong {
-        font-family: 'Orbitron', sans-serif !important;
-        letter-spacing: 0.02em;
-    }
 
-    .header {
-        position: relative;
-        width: 100%;
-        height: 520px; /* Aumentei um pouco para caber o card e o efeito confortavelmente */
-        border-radius: 20px;
-        overflow: hidden;
-        background: #0f172a;
-    }
+body {
+    margin: 0;
+    overflow: hidden;
+    font-family: 'Orbitron', sans-serif;
+}
 
-    /* UNICORN FUNDO */
-    .unicorn {
-        position: absolute;
-        inset: 0;
-        z-index: 1;
-    }
+h1, h2, h3, h4, h5, h6,
+p, span, div, strong {
+    font-family: 'Orbitron', sans-serif !important;
+}
 
-    /* OVERLAY ESCURO */
-    .overlay {
-        position: absolute;
-        inset: 0;
-        background: linear-gradient(180deg, rgba(5,5,5,0.1) 0%, rgba(249, 115, 22, 0.4) 100%); /* Mantive o seu gradiente original */
-        z-index: 2;
-    }
+.header {
+    position: relative;
+    width: 100%;
+    height: 520px;
+    border-radius: 20px;
+    overflow: hidden;
+    background: #0f172a;
+}
 
-    /* CONTAINER DO SEU CARD DE VIDRO */
-    .card-container {
-        position: absolute;
-        bottom: 20px; /* Isso empurra o card para baixo, cobrindo a marca d'água */
-        left: 20px;
-        right: 20px;
-        z-index: 100; /* Garante que fica muito acima do unicórnio */
-    }
+.unicorn {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+}
 
-    /* ESTILO EXATO DO SEU INFO-CARD */
-    .info-card { 
-        background: rgba(10, 10, 10, 0.72);
-        backdrop-filter: blur(16px) saturate(180%);
-        -webkit-backdrop-filter: blur(16px) saturate(180%);
-        border-top: 1px solid rgba(255, 255, 255, 0.15);
-        border-left: 1px solid rgba(255, 255, 255, 0.08);
-        border-right: 1px solid rgba(255, 255, 255, 0.08);
-        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
-        border-radius: 12px;
-        padding: 15px 20px;
-        color: white;
-    }
-    
-    .info-card p {
-        margin: 5px 0;
-    }
+.overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+        180deg,
+        rgba(5,5,5,0.1) 0%,
+        rgba(249,115,22,0.4) 100%
+    );
+    z-index: 2;
+}
+
+.card-container {
+    position: absolute;
+    bottom: 20px;
+    left: 20px;
+    right: 20px;
+    z-index: 100;
+}
+
+.info-card {
+    background: rgba(10,10,10,0.72);
+    backdrop-filter: blur(16px) saturate(180%);
+    -webkit-backdrop-filter: blur(16px) saturate(180%);
+
+    border-top: 1px solid rgba(255,255,255,0.15);
+    border-left: 1px solid rgba(255,255,255,0.08);
+    border-right: 1px solid rgba(255,255,255,0.08);
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+
+    box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+
+    border-radius: 12px;
+    padding: 15px 20px;
+
+    color: white;
+}
+
+.info-card p {
+    margin: 5px 0;
+}
+
 </style>
 </head>
 
 <body>
 
 <div class="header">
-  <div class="unicorn"
-       data-us-project="VI7kHmUyXr4GuFA6OWE8"
-       data-us-scale="1"
-       data-us-dpi="1.5">
-  </div>
 
-  <div class="overlay"></div>
+    <div class="unicorn"
+         data-us-project="VI7kHmUyXr4GuFA6OWE8"
+         data-us-scale="1"
+         data-us-dpi="1.5">
+    </div>
 
-  <div class="card-container">
-      <div class="info-card">
-          <p style="text-align: center; font-size: 1.1rem; font-weight: 600;">Sistema automatizado de análise qualitativa das Negociações em Incidentes Críticos atendidos pelo Grupo de Ações Táticas Especiais.</p>
-          <p style="font-size: 0.9rem; color: #bbb;">
-    Os dados são geridos de forma automatizada em nuvem via <strong>Airtable</strong>, integrando um motor estatístico multifatorial. O sistema realiza análises inferenciais robustas, utilizando <strong>Equações de Estimativas Generalizadas (GEE)</strong> para controle de efeitos agrupados por avaliador e <strong>Correlação de Spearman com Quartis</strong> para métricas não-paramétricas. A arquitetura de inteligência linguística aplica <strong>análise de similitude (Similaridade de Cosseno via TF-IDF)</strong> e <strong>modelagem de N-Gramas</strong> para identificar a convergência operacional entre os Negociadores. Testes de associação categórica (<strong>Qui-quadrado</strong>) e <strong>análise de frequências</strong> validam a existência de vieses perceptivos. A <strong>Inteligência Artificial</strong> atua como camada interpretativa final, estruturando metadados qualitativos sob a <strong>Perspectiva Tripla</strong>.
-</p>
-  </div>
+    <div class="overlay"></div>
+
+    <div class="card-container">
+
+        <div class="info-card">
+
+            <p style="
+                text-align:center;
+                font-size:1.1rem;
+                font-weight:600;
+            ">
+                Sistema automatizado de análise qualitativa das Negociações em Incidentes Críticos atendidos pelo Grupo de Ações Táticas Especiais.
+            </p>
+
+            <p style="
+                font-size:0.9rem;
+                color:#bbb;
+            ">
+                Os dados são geridos de forma automatizada em nuvem via <strong>Airtable</strong>,
+                integrando um motor estatístico multifatorial.
+            </p>
+
+        </div>
+
+    </div>
 
 </div>
 
 <script src="https://cdn.jsdelivr.net/gh/hiunicornstudio/unicornstudio.js@v2.1.6/dist/unicornStudio.umd.js"></script>
+
 <script>
+
 window.addEventListener("load", () => {
     if (window.UnicornStudio) {
         UnicornStudio.init();
     }
 });
-// 🔥 reforço leve (não quebra o original)
+
 setTimeout(() => {
     if (window.UnicornStudio) {
         UnicornStudio.init();
     }
 }, 800);
+
 </script>
 
 </body>
@@ -664,8 +797,19 @@ setTimeout(() => {
 
 components.html(header, height=520, scrolling=False)
 
-st.markdown('<p class="sub-title">Delta Negociação - GATE / PMESP</p>', unsafe_allow_html=True)
-st.markdown('<p style="color: #999; margin-top: 5px;">Desenvolvido por Cb PM Marcos - Supervisão: Cap PM Pavão</p>', unsafe_allow_html=True)
+# =========================================================
+# RODAPÉ
+# =========================================================
+
+st.markdown(
+    '<p class="sub-title">Delta Negociação - GATE / PMESP</p>',
+    unsafe_allow_html=True
+)
+
+st.markdown(
+    '<p style="color:#999; margin-top:5px;">Desenvolvido por Cb PM Marcos - Supervisão: Cap PM Pavão</p>',
+    unsafe_allow_html=True
+)
 
 # ====
 # 3. CONEXÃO E NAVEGAÇÃO PRINCIPAL (ABAS)
@@ -1822,7 +1966,7 @@ else:
             # para garantir que a maior fatia pegue a cor mais forte
             contagem = contagem.sort_values('Frequência', ascending=False)
 
-            cores_contraste = ['#FF8C15', "#AC4C1B", "#DEDDDC", '#DEB887', "#EBE9E7" ]
+            cores_contraste = ['#FF8C00', '#8B4513', '#CD853F', '#DEB887', "#EBE9E7" ]
 
             # Criação do Gráfico de Rosca
             fig = px.pie(
@@ -1858,7 +2002,7 @@ else:
             )
             return fig
 
-        c_g1, c_g2, col_wc_g3 = st.columns(3)
+        c_g1, c_g2 = st.columns(2)
         
         with c_g1:
             fig_res = gerar_grafico_resumo(df_quali_filt, 'Resolução', 'Resolução do Incidente')
@@ -1877,17 +2021,6 @@ else:
             fig_sexo = gerar_grafico_resumo(df_quali_filt, 'Sexo do Causador', 'Sexo do Causador')
             if fig_sexo: st.plotly_chart(fig_sexo, use_container_width=True)
             else: st.info("Sem dados de Sexo para os filtros atuais.")
-
-        with col_wc_g3:
-            fig_mod = gerar_grafico_resumo(df_quali_filt, 'Modalidade do incidente', 'Modalidade do incidente')
-            if fig_mod: st.plotly_chart(fig_mod, use_container_width=True)
-            else: st.info("Sem dados de Modalidade para os filtros atuais.")
-            
-            fig_tip = gerar_grafico_resumo(df_quali_filt, 'Tipologia', 'Tipologia')
-            if fig_tip: st.plotly_chart(fig_tip, use_container_width=True)
-            else: st.info("Sem dados de Tipologia para os filtros atuais.")
-
-
 
         st.markdown("---")
         st.markdown("#### Ranking de Técnicas Aplicadas")
