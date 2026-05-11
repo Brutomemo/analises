@@ -513,7 +513,7 @@ st.markdown("""
 FORÇA ORBITRON GLOBALMENTE
 ========================================================= */
 
-html, body, [class*="css"], [data-testid="stAppViewContainer"] {
+html, body, .stApp {
     font-family: 'Orbitron', sans-serif !important;
 }
 
@@ -634,20 +634,25 @@ with col_logo:
 
 with col_titulo:
 
-    st.markdown("""
-        <div class="info-card header-box">
+    titulo_html = """
+    <div class="info-card header-box">
+    
+        <h1 class="main-title">
+            Sistema de Análise Qualitativa das Negociações
+        </h1>
 
-            <h1 class="main-title" style="text-align:center;">
-                Sistema de Análise Qualitativa das Negociações
-            </h1>
+        <p class="sub-title">
+            Estudo das Técnicas Aplicadas
+        </p>
 
-            <p class="sub-title" style="text-align:center;">
-                Estudo das Técnicas Aplicadas
-            </p>
+    </div>
+    """
 
-        </div>
-    """, unsafe_allow_html=True)
-
+    st.components.v1.html(
+        titulo_html,
+        height=140,
+        scrolling=False
+    )
 # =========================================================
 # EFEITO UNICORN
 # =========================================================
