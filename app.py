@@ -634,25 +634,19 @@ with col_logo:
 
 with col_titulo:
 
-    titulo_html = """
-    <div class="info-card header-box">
-    
-        <h1 class="main-title">
-            Sistema de Análise Qualitativa das Negociações
-        </h1>
+    st.markdown("""
+        <div class="info-card header-box">
 
-        <p class="sub-title">
-            Estudo das Técnicas Aplicadas
-        </p>
+            <h1 class="main-title" style="text-align:center;">
+                Sistema de Análise Qualitativa das Negociações
+            </h1>
 
-    </div>
-    """
+            <p class="sub-title" style="text-align:center;">
+                Estudo das Técnicas Aplicadas
+            </p>
 
-    st.components.v1.html(
-        titulo_html,
-        height=140,
-        scrolling=False
-    )
+        </div>
+    """, unsafe_allow_html=True)
 # =========================================================
 # EFEITO UNICORN
 # =========================================================
