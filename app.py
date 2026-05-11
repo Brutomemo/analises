@@ -2479,113 +2479,116 @@ else:
 
                 st.markdown("</div>", unsafe_allow_html=True)
 
-            st.markdown("---")
-            st.markdown("<h4 style='color: #FFD700;'>📐 Modelagem Avançada: Viés do Negociador e Eficácia das Técnicas empregadas</h4>", unsafe_allow_html=True)
-            st.markdown("""
-            <p style='color: #bbb; font-size: 1rem; line-height: 1.6; margin-bottom: 20px;'>
-                Este módulo amplia a análise estatística ao empregar modelos inferenciais avançados, como Regressão Ordinal e Equações de Estimação Generalizadas (GEE), com o objetivo de avaliar a eficácia das técnicas aplicadas em diferentes contextos operacionais. A abordagem busca controlar variáveis de confusão — como diferenças individuais entre negociadores e características específicas dos cenários — permitindo uma análise mais precisa das associações observadas. O propósito é identificar padrões consistentes nos dados e subsidiar a construção de <strong>protocolos táticos orientados por evidências</strong>, reduzindo a influência de vieses e fortalecendo a avaliação da doutrina da Equipe de Negociação.
-            </p>
-            """, unsafe_allow_html=True)
-            
-            if total_apas_reais < 15:
-                st.info(f"""
-                💡 **Por que estas estatísticas estão ocultas? (Modo de Segurança)**
+
+
+
+                st.markdown("---")
+                st.markdown("<h4 style='color: #FFD700;'>📐 Modelagem Avançada: Viés do Negociador e Eficácia das Técnicas empregadas</h4>", unsafe_allow_html=True)
+                st.markdown("""
+                <p style='color: #bbb; font-size: 1rem; line-height: 1.6; margin-bottom: 20px;'>
+                    Este módulo amplia a análise estatística ao empregar modelos inferenciais avançados, como Regressão Ordinal e Equações de Estimação Generalizadas (GEE), com o objetivo de avaliar a eficácia das técnicas aplicadas em diferentes contextos operacionais. A abordagem busca controlar variáveis de confusão — como diferenças individuais entre negociadores e características específicas dos cenários — permitindo uma análise mais precisa das associações observadas. O propósito é identificar padrões consistentes nos dados e subsidiar a construção de <strong>protocolos táticos orientados por evidências</strong>, reduzindo a influência de vieses e fortalecendo a avaliação da doutrina da Equipe de Negociação.
+                </p>
+                """, unsafe_allow_html=True)
                 
-                Modelos matemáticos avançados (Regressão e GEE) exigem um volume histórico de ocorrências distintas para não gerarem resultados distorcidos. Atualmente, o sistema detectou dados de apenas **{total_apas_reais} ocorrências**.
-                
-                * **Meta para desbloqueio:** 15 ocorrências únicas.
-                """)
-            else:
-                col_resposta = next((col for col in df_tec_filt.columns if 'ATITUDE' in col.upper()), None)
-                
-                if not col_resposta:
-                    st.warning("⚠️ **Ativação Necessária:** Crie a coluna 'Resposta da Técnica' no Airtable.")
+                if total_apas_reais < 15:
+                    st.info(f"""
+                    💡 **Por que estas estatísticas estão ocultas? (Modo de Segurança)**
+                    
+                    Modelos matemáticos avançados (Regressão e GEE) exigem um volume histórico de ocorrências distintas para não gerarem resultados distorcidos. Atualmente, o sistema detectou dados de apenas **{total_apas_reais} ocorrências**.
+                    
+                    * **Meta para desbloqueio:** 15 ocorrências únicas.
+                    """)
                 else:
-                    try: 
-                        import statsmodels.api as sm
-                        import statsmodels.formula.api as smf
-                        from statsmodels.miscmodels.ordinal_model import OrderedModel
-                        from scipy.stats import chi2_contingency
-                        import numpy as np
+                    col_resposta = next((col for col in df_tec_filt.columns if 'ATITUDE' in col.upper()), None)
+                    
+                    if not col_resposta:
+                        st.warning("⚠️ **Ativação Necessária:** Crie a coluna 'Resposta da Técnica' no Airtable.")
+                    else:
+                        try: 
+                            import statsmodels.api as sm
+                            import statsmodels.formula.api as smf
+                            from statsmodels.miscmodels.ordinal_model import OrderedModel
+                            from scipy.stats import chi2_contingency
+                            import numpy as np
 
-                        df_adv = df_tec_limpo.copy()
-                        mapa_resp = {'-1': 'Negativa', '-1.0': 'Negativa', -1: 'Negativa', '🔴 reação negativa': 'Negativa',
-                        '0': 'Neutra', '0.0': 'Neutra', 0: 'Neutra', '⚪ reação neutra': 'Neutra',
-                        '1': 'Positiva', '1.0': 'Positiva', 1: 'Positiva', '🟢 reação positiva': 'Positiva'}
-                        
-                        df_adv['Resposta_Cat'] = df_adv[col_resposta].astype(str).str.lower().str.strip().map(mapa_resp).fillna('Nao_Observado')
-                        df_adv_clean = df_adv[df_adv['Resposta_Cat'] != 'Nao_Observado'].copy()
-                        df_adv_clean = df_adv_clean.dropna(subset=['TÉCNICAS'])
-                        df_adv_clean['Resposta_Ord'] = pd.Categorical(df_adv_clean['Resposta_Cat'], categories=['Negativa', 'Neutra', 'Positiva'], ordered=True)
-                        
-                        st.markdown("<div class='info-card'>", unsafe_allow_html=True)
-                        st.markdown("#### 1. Teste de Viés por Negociador (Qui-Quadrado de Resíduos)")
-                        st.markdown("<span style='font-size: 0.85rem; color: #aaa;'><strong>O que significa:</strong> Verifica se os relatos de 'sucesso' estão concentrados em apenas alguns negociadores ou se são homogêneos.</span>", unsafe_allow_html=True)
-                        
-                        tab_vies = pd.crosstab(df_adv_clean['Neg_Limpo'], df_adv_clean['Resposta_Cat'])
-                        if tab_vies.shape[0] > 1 and tab_vies.shape[1] > 1:
-                            chi2, p, dof, exp = chi2_contingency(tab_vies)
-                            residuos = (tab_vies - exp) / np.sqrt(exp)
-                            st.write(f"**P-Valor global:** `{p:.4e}`")
-                            fig_heat = px.imshow(residuos, text_auto=".2f", color_continuous_scale="RdBu", title="Mapa de Calor do Viés")
-                            fig_heat.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font_color="#FFF")
-                            st.plotly_chart(fig_heat, use_container_width=True)
-                        else:
-                            st.write("Dados insuficientes para comparar múltiplos negociadores.")
-                        st.markdown("</div>", unsafe_allow_html=True)
-                        
-                        st.markdown("<div class='info-card'>", unsafe_allow_html=True)
-                        st.markdown("#### 2. Eficácia Isolada da Técnica (Regressão Ordinal)")
-                        st.markdown("<span style='font-size: 0.85rem; color: #aaa;'><strong>O que significa:</strong> Isola o peso da técnica, removendo a influência do negociador e da tipologia da crise.</span>", unsafe_allow_html=True)
-                        
-                        if 'col_t' in locals() and col_t:
-                            df_adv_clean['Tecnica_Patsy'] = df_adv_clean[col_t].astype(str).str.replace(' ', '_').str.replace('-', '_')
-                            df_adv_clean['Neg_Patsy'] = df_adv_clean['Neg_Limpo'].astype(str).str.replace(' ', '_')
-                            df_adv_clean['Tip_Patsy'] = df_adv_clean['Tip_Limpa'].astype(str).str.replace(' ', '_')
+                            df_adv = df_tec_limpo.copy()
+                            mapa_resp = {'-1': 'Negativa', '-1.0': 'Negativa', -1: 'Negativa', '🔴 reação negativa': 'Negativa',
+                            '0': 'Neutra', '0.0': 'Neutra', 0: 'Neutra', '⚪ reação neutra': 'Neutra',
+                            '1': 'Positiva', '1.0': 'Positiva', 1: 'Positiva', '🟢 reação positiva': 'Positiva'}
+                            
+                            df_adv['Resposta_Cat'] = df_adv[col_resposta].astype(str).str.lower().str.strip().map(mapa_resp).fillna('Nao_Observado')
+                            df_adv_clean = df_adv[df_adv['Resposta_Cat'] != 'Nao_Observado'].copy()
+                            df_adv_clean = df_adv_clean.dropna(subset=['TÉCNICAS'])
+                            df_adv_clean['Resposta_Ord'] = pd.Categorical(df_adv_clean['Resposta_Cat'], categories=['Negativa', 'Neutra', 'Positiva'], ordered=True)
+                            
+                            st.markdown("<div class='info-card'>", unsafe_allow_html=True)
+                            st.markdown("#### 1. Teste de Viés por Negociador (Qui-Quadrado de Resíduos)")
+                            st.markdown("<span style='font-size: 0.85rem; color: #aaa;'><strong>O que significa:</strong> Verifica se os relatos de 'sucesso' estão concentrados em apenas alguns negociadores ou se são homogêneos.</span>", unsafe_allow_html=True)
+                            
+                            tab_vies = pd.crosstab(df_adv_clean['Neg_Limpo'], df_adv_clean['Resposta_Cat'])
+                            if tab_vies.shape[0] > 1 and tab_vies.shape[1] > 1:
+                                chi2, p, dof, exp = chi2_contingency(tab_vies)
+                                residuos = (tab_vies - exp) / np.sqrt(exp)
+                                st.write(f"**P-Valor global:** `{p:.4e}`")
+                                fig_heat = px.imshow(residuos, text_auto=".2f", color_continuous_scale="RdBu", title="Mapa de Calor do Viés")
+                                fig_heat.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font_color="#FFF")
+                                st.plotly_chart(fig_heat, use_container_width=True)
+                            else:
+                                st.write("Dados insuficientes para comparar múltiplos negociadores.")
+                            st.markdown("</div>", unsafe_allow_html=True)
+                            
+                            st.markdown("<div class='info-card'>", unsafe_allow_html=True)
+                            st.markdown("#### 2. Eficácia Isolada da Técnica (Regressão Ordinal)")
+                            st.markdown("<span style='font-size: 0.85rem; color: #aaa;'><strong>O que significa:</strong> Isola o peso da técnica, removendo a influência do negociador e da tipologia da crise.</span>", unsafe_allow_html=True)
+                            
+                            if 'col_t' in locals() and col_t:
+                                df_adv_clean['Tecnica_Patsy'] = df_adv_clean[col_t].astype(str).str.replace(' ', '_').str.replace('-', '_')
+                                df_adv_clean['Neg_Patsy'] = df_adv_clean['Neg_Limpo'].astype(str).str.replace(' ', '_')
+                                df_adv_clean['Tip_Patsy'] = df_adv_clean['Tip_Limpa'].astype(str).str.replace(' ', '_')
 
+                                try:
+                                    mod_ord = OrderedModel.from_formula("Resposta_Ord ~ C(Tecnica_Patsy) + C(Neg_Patsy) + C(Tip_Patsy)", data=df_adv_clean, distr='logit')
+                                    res_ord = mod_ord.fit(method='bfgs', disp=False)
+                                    coefs = res_ord.params[res_ord.params.index.str.contains('Tecnica')]
+                                    pvals = res_ord.pvalues[res_ord.params.index.str.contains('Tecnica')]
+                                    df_or = pd.DataFrame({'Técnica': coefs.index.str.extract(r'\[T\.(.*?)\]')[0], 'Odds_Ratio': np.exp(coefs), 'P_Valor': pvals})
+                                    df_or = df_or[df_or['P_Valor'] < 0.05].sort_values('Odds_Ratio', ascending=False)
+                                    
+                                    if not df_or.empty:
+                                        st.dataframe(df_or.style.format({'Odds_Ratio': '{:.2f}', 'P_Valor': '{:.4f}'}), use_container_width=True, hide_index=True)
+                                        st.success("💡 Um Odds Ratio de 2.0 indica que a técnica dobra a chance de uma resposta positiva.")
+                                    else:
+                                        st.info("ℹ️ Nenhuma técnica isolada apresentou significância estatística neste cenário.")
+                                except:
+                                    st.warning("O modelo Ordinal não convergiu para este subconjunto.")
+                            st.markdown("</div>", unsafe_allow_html=True)
+                            
+                            st.markdown("<div class='info-card'>", unsafe_allow_html=True)
+                            st.markdown("#### 3. Robustez Hierárquica (Equações de Estimação Generalizadas - GEE)")
+                            st.markdown("<span style='font-size: 0.85rem; color: #aaa;'><strong>O que significa:</strong> Valida se a técnica é eficaz para a Tropa inteira ou apenas resultado do talento individual.</span>", unsafe_allow_html=True)
+                            
+                            df_gee_real = df_adv_clean.copy()
+                            df_gee_real['Sucesso'] = np.where(df_gee_real['Resposta_Cat'] == 'Positiva', 1, 0)
                             try:
-                                mod_ord = OrderedModel.from_formula("Resposta_Ord ~ C(Tecnica_Patsy) + C(Neg_Patsy) + C(Tip_Patsy)", data=df_adv_clean, distr='logit')
-                                res_ord = mod_ord.fit(method='bfgs', disp=False)
-                                coefs = res_ord.params[res_ord.params.index.str.contains('Tecnica')]
-                                pvals = res_ord.pvalues[res_ord.params.index.str.contains('Tecnica')]
-                                df_or = pd.DataFrame({'Técnica': coefs.index.str.extract(r'\[T\.(.*?)\]')[0], 'Odds_Ratio': np.exp(coefs), 'P_Valor': pvals})
-                                df_or = df_or[df_or['P_Valor'] < 0.05].sort_values('Odds_Ratio', ascending=False)
-                                
-                                if not df_or.empty:
-                                    st.dataframe(df_or.style.format({'Odds_Ratio': '{:.2f}', 'P_Valor': '{:.4f}'}), use_container_width=True, hide_index=True)
-                                    st.success("💡 Um Odds Ratio de 2.0 indica que a técnica dobra a chance de uma resposta positiva.")
-                                else:
-                                    st.info("ℹ️ Nenhuma técnica isolada apresentou significância estatística neste cenário.")
+                                if 'Tecnica_Patsy' in df_gee_real.columns:
+                                    modelo_gee = smf.gee("Sucesso ~ C(Tecnica_Patsy)", groups=df_gee_real['Neg_Patsy'], data=df_gee_real, family=sm.families.Binomial(), cov_struct=sm.cov_struct.Exchangeable())
+                                    res_gee = modelo_gee.fit()
+                                    gee_coefs = res_gee.params[res_gee.params.index.str.contains('Tecnica')]
+                                    gee_pvals = res_gee.pvalues[res_gee.params.index.str.contains('Tecnica')]
+                                    df_gee = pd.DataFrame({'Técnica': gee_coefs.index.str.extract(r'\[T\.(.*?)\]')[0], 'Coeficiente_GEE': gee_coefs, 'P_Valor': gee_pvals})
+                                    
+                                    if not df_gee.empty:
+                                        st.dataframe(df_gee.style.format({'Coeficiente_GEE': '{:.2f}', 'P_Valor': '{:.4f}'}), use_container_width=True, hide_index=True)
+                                        if (gee_pvals < 0.05).any(): st.success("✅ **Doutrina Validada:** Técnica sobreviveu ao controle de viés.")
+                                        else: st.info("ℹ️ Nenhuma técnica atingiu significância.")
                             except:
-                                st.warning("O modelo Ordinal não convergiu para este subconjunto.")
-                        st.markdown("</div>", unsafe_allow_html=True)
-                        
-                        st.markdown("<div class='info-card'>", unsafe_allow_html=True)
-                        st.markdown("#### 3. Robustez Hierárquica (Equações de Estimação Generalizadas - GEE)")
-                        st.markdown("<span style='font-size: 0.85rem; color: #aaa;'><strong>O que significa:</strong> Valida se a técnica é eficaz para a Tropa inteira ou apenas resultado do talento individual.</span>", unsafe_allow_html=True)
-                        
-                        df_gee_real = df_adv_clean.copy()
-                        df_gee_real['Sucesso'] = np.where(df_gee_real['Resposta_Cat'] == 'Positiva', 1, 0)
-                        try:
-                            if 'Tecnica_Patsy' in df_gee_real.columns:
-                                modelo_gee = smf.gee("Sucesso ~ C(Tecnica_Patsy)", groups=df_gee_real['Neg_Patsy'], data=df_gee_real, family=sm.families.Binomial(), cov_struct=sm.cov_struct.Exchangeable())
-                                res_gee = modelo_gee.fit()
-                                gee_coefs = res_gee.params[res_gee.params.index.str.contains('Tecnica')]
-                                gee_pvals = res_gee.pvalues[res_gee.params.index.str.contains('Tecnica')]
-                                df_gee = pd.DataFrame({'Técnica': gee_coefs.index.str.extract(r'\[T\.(.*?)\]')[0], 'Coeficiente_GEE': gee_coefs, 'P_Valor': gee_pvals})
-                                
-                                if not df_gee.empty:
-                                    st.dataframe(df_gee.style.format({'Coeficiente_GEE': '{:.2f}', 'P_Valor': '{:.4f}'}), use_container_width=True, hide_index=True)
-                                    if (gee_pvals < 0.05).any(): st.success("✅ **Doutrina Validada:** Técnica sobreviveu ao controle de viés.")
-                                    else: st.info("ℹ️ Nenhuma técnica atingiu significância.")
-                        except:
-                            st.error("Erro no processamento GEE.")
-                        st.markdown("</div>", unsafe_allow_html=True)
-                        
-                    except ImportError:
-                        st.error("🚨 Biblioteca statsmodels não instalada.")
-                    except Exception as e:
-                        st.error(f"🚨 Erro geral: {str(e)}")
+                                st.error("Erro no processamento GEE.")
+                            st.markdown("</div>", unsafe_allow_html=True)
+                            
+                        except ImportError:
+                            st.error("🚨 Biblioteca statsmodels não instalada.")
+                        except Exception as e:
+                            st.error(f"🚨 Erro geral: {str(e)}")
 
             st.markdown("---")
             st.markdown("<h4 style='color: #FFD700;'>📈 Volume e Tendência Temporal</h4>", unsafe_allow_html=True)
