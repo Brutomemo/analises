@@ -2591,7 +2591,7 @@ else:
                         st.error(f"🚨 Erro geral: {str(e)}")
 
             st.markdown("---")
-            st.markdown("<h4 style='color: #FFD700;'>📈 Volume e Tendência Temporal</h4>", unsafe_allow_html=True)
+            st.markdown("<h4 style='color: #FFD700;'>📈 Volume de Registros e Tendência Temporal</h4>", unsafe_allow_html=True)
             
             col_data = next((col for col in ['Data da ocorrência', 'Data', 'DATA'] if col in df_quali_filt.columns), None)
             if col_data:
