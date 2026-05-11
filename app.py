@@ -737,17 +737,17 @@ p, span, div, strong {
 
                 
         <!-- TITULO PRINCIPAL -->
-        <h1 style="
+        <h2 style="
             text-align:center;
             font-size:2rem;
-            font-weight:400;
+            font-weight:600;
             margin-bottom:10px;
             color:white;
             letter-spacing:0.05em;
             font-family:'Orbitron', sans-serif;
         ">
             Sistema de Análise Qualitativa das Negociações
-        </h1>
+        </h2>
 
         <!-- SUBTITULO -->
         <p style="
@@ -765,7 +765,7 @@ p, span, div, strong {
         <p style="
             text-align:center;
             font-size:1.05rem;
-            font-weight:600;
+            font-weight:500;
             color:white;
             line-height:1.6;
         ">
