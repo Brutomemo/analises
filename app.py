@@ -2478,8 +2478,8 @@ else:
                     st.warning("Configuração de colunas inválida para o cruzamento selecionado.")
 
                 st.markdown("</div>", unsafe_allow_html=True)
-
-
+                st._legacy_column = None
+                
 
 
                 st.markdown("---")
