@@ -609,6 +609,28 @@ if img_topo_b64:
         </div>
     """, unsafe_allow_html=True)
 
+# =========================================================
+# CABEÇALHO
+# =========================================================
+
+col_logo, col_titulo, col_espaco = st.columns([1, 6, 1])
+
+with col_logo:
+
+    try:
+
+        with open(path_brasao_gate, "rb") as f:
+            brasao_b64 = base64.b64encode(f.read()).decode()
+
+        st.markdown(f"""
+            <div style="display:flex; justify-content:center; width:100%;">
+                <img src="data:image/webp;base64,{brasao_b64}"
+                     style="max-width:90px; height:auto; border:none;">
+            </div>
+        """, unsafe_allow_html=True)
+
+    except Exception:
+        pass
 
 # =========================================================
 # EFEITO UNICORN
