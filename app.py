@@ -2045,7 +2045,7 @@ else:
             )
             return fig
 
-        c_g1, c_g2 = st.columns(2)
+        c_g1, c_g2, c_g3 = st.columns(3)
         
         with c_g1:
             fig_res = gerar_grafico_resumo(df_quali_filt, 'Resolução', 'Resolução do Incidente')
@@ -2064,6 +2064,16 @@ else:
             fig_sexo = gerar_grafico_resumo(df_quali_filt, 'Sexo do Causador', 'Sexo do Causador')
             if fig_sexo: st.plotly_chart(fig_sexo, use_container_width=True)
             else: st.info("Sem dados de Sexo para os filtros atuais.")
+
+
+        with c_g3:
+            fig_mod = gerar_grafico_resumo(df_quali_filt, 'Modalidade do incidente', 'Modalidade do incidente')
+            if fig_mod: st.plotly_chart(fig_mod, use_container_width=True)
+            else: st.info("Sem dados de Modalidade do incidente para os filtros atuais.")
+            
+            fig_tip = gerar_grafico_resumo(df_quali_filt, 'Tipologia', 'Tipologia')
+            if fig_tip: st.plotly_chart(fig_tip, use_container_width=True)
+            else: st.info("Sem dados de Tipologia para os filtros atuais.")
 
         st.markdown("---")
         # ============================================================
