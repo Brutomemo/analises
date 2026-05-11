@@ -769,7 +769,7 @@ p, span, div, strong {
             color:white;
             line-height:1.6;
         ">
-            Sistema automatizado de análise qualitativa das Negociações em Incidentes Críticos atendidos pelo Grupo de Ações Táticas Especiais.
+            Automação em análises das Negociações em Incidentes Críticos atendidos pelo Grupo de Ações Táticas Especiais.
         </p>
 
         <p style="
