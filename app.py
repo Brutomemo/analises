@@ -2164,7 +2164,7 @@ else:
             # Cabeçalho da seção de correlações
             # ----------------------------------------------------------
             st.markdown(
-                "<h4 style='color: #FFD700;'>🔬 O que os dados dizem sobre as ocorrências?</h4>"
+                "<h4 style='color: #FFD700;'>✔ O que os dados dizem sobre as ocorrências?</h4>"
                 "<p style='color: #aaa; font-size: 0.9rem; margin-top: -8px;'>"
                 "Os testes abaixo buscam padrões nos dados. "
                 "Os nomes técnicos ficam ocultos por padrão — o que importa é a pergunta e a resposta em linguagem clara."
@@ -2523,7 +2523,7 @@ else:
                     
             with st.container():
                 st.markdown("---")
-                st.markdown("<h4 style='color: #FFD700;'>📐 Modelagem Avançada: Viés do Negociador e Eficácia das Técnicas empregadas</h4>", unsafe_allow_html=True)
+                st.markdown("<h4 style='color: #FFD700;'>✔ Modelagem Avançada: Viés do Negociador e Eficácia das Técnicas empregadas</h4>", unsafe_allow_html=True)
                 st.markdown("""
                 <p style='color: #bbb; font-size: 1rem; line-height: 1.6; margin-bottom: 20px;'>
                     Este módulo amplia a análise estatística ao empregar modelos inferenciais avançados, como Regressão Ordinal e Equações de Estimação Generalizadas (GEE), com o objetivo de avaliar a eficácia das técnicas aplicadas em diferentes contextos operacionais. A abordagem busca controlar variáveis de confusão — como diferenças individuais entre negociadores e características específicas dos cenários — permitindo uma análise mais precisa das associações observadas. O propósito é identificar padrões consistentes nos dados e subsidiar a construção de <strong>protocolos táticos orientados por evidências</strong>, reduzindo a influência de vieses e fortalecendo a avaliação da doutrina da Equipe de Negociação.
