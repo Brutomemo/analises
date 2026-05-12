@@ -1159,7 +1159,7 @@ else:
 
             st.markdown("---")
 
-            st.markdown("### ✔ Transcrições Literal")
+            st.markdown("### ✔ Transcrições")
 
             # Inicializa estado do toggle
             if "show_transcricoes" not in st.session_state:
@@ -1184,7 +1184,7 @@ else:
             
             #TABELA DE FREQUENCIA
 
-            st.markdown("<h4 style='color: #FFD700;'>✔ Frequência das Técnicas Aplicadas (Nesta APA)</h4>", unsafe_allow_html=True)
+            st.markdown("<h5 style='color: #FFD700;'>✔ Frequência das Técnicas Aplicadas (Nesta APA)</h5>", unsafe_allow_html=True)
 
             if st.button("✔ Calcular Frequência de Técnicas"):
                 if not df_tec.empty:
@@ -1689,7 +1689,7 @@ else:
                         st.pyplot(wc_ns)
 
                 with tab_ng4:
-                    st.markdown('<div class="info-card"><h4 style="color: #f97316; margin-top: 0;">✔ Temas Dominantes Gerais</h4>', unsafe_allow_html=True)
+                    st.markdown('<div class="info-card"><h5 style="color: #f97316; margin-top: 0;">✔ Temas Dominantes Gerais</h5>', unsafe_allow_html=True)
 
                     for t in topicos_globais:
                         st.markdown(t)
