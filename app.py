@@ -904,7 +904,7 @@ else:
     # ====
     #ETAPA 1
     with aba_individual:
-        st.markdown("<h4 style='font-size: 18px; font-weight: 500; margin-bottom: 0.5rem;'>✔ Etapa 1: Seleção e Metadados da Ocorrência</h4>", unsafe_allow_html=True)
+        st.markdown("<h4 style='font-size: 20px; font-weight: 500; margin-bottom: 0.5rem;'>✔ Etapa 1: Seleção e Metadados da Ocorrência</h4>", unsafe_allow_html=True)
 
         df_quali['Neg_Limpo'] = df_quali['Negociador Principal'].apply(limpar_valor)
         df_quali['Tip_Limpa'] = df_quali['Tipologia'].apply(limpar_valor)
@@ -1383,7 +1383,7 @@ else:
 
             #ETAPA 2
 
-            st.markdown("### ✔ Etapa 2: Análise Semântica (Machine Learning e Context-Aware NLP)")
+            st.markdown("<h4 style='font-size: 20px; font-weight: 500; margin-bottom: 0.5rem;'>✔ Etapa 2: Análise Semântica (Machine Learning e Context-Aware NLP)")
 
             # --- INÍCIO DO BLOCO DE EXPLICAÇÃO (EXPANDER) ---
             with st.expander("✔ Entenda a Análise Semântica Avançada e o Termômetro do Incidente", expanded=False):
