@@ -1616,7 +1616,7 @@ else:
                 ])
 
                 with tab_ng1:
-                    st.markdown('<div class="info-card"><h4 style="color: #f97316; margin-top: 0;">✔ Temas Dominantes - Causador</h4>', unsafe_allow_html=True)
+                    st.markdown('<div class="info-card"><h5 style="color: #f97316; margin-top: 0;">✔ Temas Dominantes - Causador</h5>', unsafe_allow_html=True)
                     for t in topicos_c:
                         st.markdown(t)
                     st.markdown('</div>', unsafe_allow_html=True)
@@ -1624,7 +1624,7 @@ else:
                         st.pyplot(wc_c)
 
                 with tab_ng2:
-                    st.markdown('<div class="info-card"><h4 style="color: #f97316; margin-top: 0;">✔ Temas Dominantes - Negociador Principal</h4>', unsafe_allow_html=True)
+                    st.markdown('<div class="info-card"><h5 style="color: #f97316; margin-top: 0;">✔ Temas Dominantes - Negociador Principal</h5>', unsafe_allow_html=True)
                     for t in topicos_np:
                         st.markdown(t)
                     st.markdown('</div>', unsafe_allow_html=True)
@@ -1632,7 +1632,7 @@ else:
                         st.pyplot(wc_np)
 
                 with tab_ng3:
-                    st.markdown('<div class="info-card"><h4 style="color: #f97316; margin-top: 0;">✔ Temas Dominantes - Negociador Secundário</h4>', unsafe_allow_html=True)
+                    st.markdown('<div class="info-card"><h5 style="color: #f97316; margin-top: 0;">✔ Temas Dominantes - Negociador Secundário</h5>', unsafe_allow_html=True)
                     for t in topicos_ns:
                         st.markdown(t)
                     st.markdown('</div>', unsafe_allow_html=True)
