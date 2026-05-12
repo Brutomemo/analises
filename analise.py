@@ -739,9 +739,6 @@ def gerar_radar_comparativo(texto_c, texto_np, texto_ns=None, resolucao_tipo="de
         fig_radar   -> plotly Figure (radar)
         convergencia -> dict com os índices calculados (sempre um dict; nunca None)
     """
-    # Cole isso DENTRO do bloco try, logo após gerar fig_radar e conv
-    st.write("DEBUG conv:", conv)
-    st.write("DEBUG debug_msg:", conv.get("debug_msg"))
     import plotly.graph_objects as go
 
     def _extrair_sumario(texto):
