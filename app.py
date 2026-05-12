@@ -888,6 +888,11 @@ st.markdown(
     }
     .stTabs [data-baseweb="tab-highlight"] { display: none; }
     .stTabs [data-baseweb="tab-border"]    { display: none; }
+
+    /* TAMANHO DOS TÍTULOS H3 (###) */
+    h3 { font-size: 18px !important; font-weight: 500 !important; }
+    /* Se quiser ajustar H2 (##) também: */
+    h2 { font-size: 22px !important; font-weight: 500 !important; }
     </style>
     """,
     unsafe_allow_html=True,
@@ -1383,7 +1388,7 @@ else:
 
             #ETAPA 2
 
-            st.markdown("<h4 style='font-size: 20px; font-weight: 500; margin-bottom: 0.5rem;'>✔ Etapa 2: Análise Semântica (Machine Learning e Context-Aware NLP)")
+            st.markdown("### ✔ Etapa 2: Análise Semântica (Machine Learning e Context-Aware NLP)")
 
             # --- INÍCIO DO BLOCO DE EXPLICAÇÃO (EXPANDER) ---
             with st.expander("✔ Entenda a Análise Semântica Avançada e o Termômetro do Incidente", expanded=False):
