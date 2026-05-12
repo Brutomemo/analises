@@ -2651,7 +2651,7 @@ else:
                 st.markdown("<h4 style='color: #06C755;'>✔ Síntese Interpretativa Avançada (Interpretação descritiva dos resultados estatísticos assistida por modelo de linguagem (LLM – OpenAI GPT-4o-mini), com base em dados previamente processados por métodos estatísticos.)</h4>", unsafe_allow_html=True)
                 st.markdown("<p style='color: #bbb;'>Este módulo traduz a matriz matemática gerada acima em um relatório estratégico que visa o aperfeiçoamento técnico contínuo do Negociador.</p>", unsafe_allow_html=True)
 
-                if st.button("🤖 GERAR RELATÓRIO ESTATÍSTICO DESCRITIVO"):
+                if st.button("✔ GERAR RELATÓRIO ESTATÍSTICO DESCRITIVO"):
                     with st.spinner("Estruturando matrizes e consultando Cientista de Dados IA..."):
                         try:
                             import ia_estatistica 
@@ -2694,14 +2694,14 @@ else:
 
                                 c_ia1, c_ia2 = st.columns(2)
                                 with c_ia1:
-                                    st.markdown(render_ia_card("Objetivo Analítico", relatorio_json.get("objetivo", "N/D"), "🎯"), unsafe_allow_html=True)
+                                    st.markdown(render_ia_card("Objetivo Analítico", relatorio_json.get("objetivo", "N/D"), "✔"), unsafe_allow_html=True)
                                     st.markdown(render_ia_card("Premissas e Limitações da Análise", relatorio_json.get("premissas", "N/D") + "<br><br><strong>Limitações Técnicas:</strong> " + relatorio_json.get("limitacoes", "N/D"), "⚖️"), unsafe_allow_html=True)
                                 with c_ia2:
-                                    st.markdown(render_ia_card("Resultados Principais", relatorio_json.get("resultados_principais", "N/D"), "📊"), unsafe_allow_html=True)
-                                    st.markdown(render_ia_card("Tamanho do Efeito", relatorio_json.get("tamanho_efeito", "N/D"), "📈"), unsafe_allow_html=True)
+                                    st.markdown(render_ia_card("Resultados Principais", relatorio_json.get("resultados_principais", "N/D"), "✔"), unsafe_allow_html=True)
+                                    st.markdown(render_ia_card("Tamanho do Efeito", relatorio_json.get("tamanho_efeito", "N/D"), "✔"), unsafe_allow_html=True)
 
-                                st.markdown(render_ia_card("Implicações Analíticas para a Tomada de Decisão", relatorio_json.get("interpretacao", "N/D"), "🧠"), unsafe_allow_html=True)
-                                st.markdown(render_ia_card("Direcionamento Estratégico Baseado em Evidências", relatorio_json.get("conclusao", "N/D"), "🏆"), unsafe_allow_html=True)
+                                st.markdown(render_ia_card("Implicações Analíticas para a Tomada de Decisão", relatorio_json.get("interpretacao", "N/D"), "✔"), unsafe_allow_html=True)
+                                st.markdown(render_ia_card("Direcionamento Estratégico Baseado em Evidências", relatorio_json.get("conclusao", "N/D"), "✔"), unsafe_allow_html=True)
 
                                 with st.expander("🕵️ Ver Matriz Bruta de Dados (JSON Payload e Retorno)"):
                                     st.markdown("**Payload enviado para a IA (O que o Python calculou):**")
