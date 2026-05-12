@@ -265,22 +265,8 @@ st.markdown("""
     }
 
     /* Selectbox / inputs -> Inter */
-    /* Selectbox / inputs -> Inter (SEM afetar handles internos) */
-    div[data-baseweb="select"] *:not([class*="icon"]):not([class*="arrow"]),
-    input[type="text"],
-    input[type="number"],
-    input[type="email"],
-    textarea,
-    div[data-baseweb="textarea"] textarea {
+    div[data-baseweb="select"] *, input, div[data-baseweb="textarea"] textarea {
         font-family: 'Inter', sans-serif !important;
-    }
-
-    /* Protege explicitamente os handles/ícones do textarea */
-    div[data-baseweb="textarea"] [class*="icon"],
-    div[data-baseweb="textarea"] button,
-    [data-testid="stTextArea"] ~ * button,
-    div[class*="resize"] {
-        font-family: unset !important;
     }
 
     /* Metricas (numeros) -> Share Tech Mono (visual de console tatico) */
