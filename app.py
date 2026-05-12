@@ -558,7 +558,23 @@ strong {
 /* =========================================================
    CORREÇÃO: ícone do expander 
 ========================================================= */
+/* Protege os ícones internos do Streamlit */
+[data-testid="stTextArea"] button,
+[data-testid="stTextArea"] button *,
+.stTextArea button,
+button[kind="icon"],
+[data-baseweb="textarea"] ~ div button,
+[data-baseweb] svg,
+[data-baseweb] [class*="icon"] {
+    font-family: inherit !important;
+}
 
+/* Corrige especificamente o _arrow nos resize handles */
+[data-baseweb="textarea"] + div,
+[data-baseweb="textarea"] ~ * {
+    font-family: "Source Sans Pro", sans-serif !important;
+}
+            
 [data-testid="stExpanderToggleIcon"],
 [data-testid="stExpanderToggleIcon"] *,
 details summary svg,
