@@ -1695,13 +1695,12 @@ else:
                                 texto_c_raw,
                                 texto_np_raw,
                                 texto_ns_raw if texto_ns_raw else None
-
-                                st.write("DEBUG conv:", conv)
-
-                                st.plotly_chart(fig_radar, use_container_width=True)
-
                             )
+
+                            st.write("DEBUG conv:", conv)
+
                             st.plotly_chart(fig_radar, use_container_width=True)
+                        
 
                             if conv:
                                 st.markdown("---")
