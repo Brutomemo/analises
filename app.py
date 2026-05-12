@@ -1707,31 +1707,31 @@ else:
                                 col_cv1, col_cv2, col_cv3 = st.columns(3)
 
                                 with col_cv1:
-                                delta_risco = conv.get('delta_risco')
-                                st.metric(
-                                    label="Δ Risco (Causador − Negociador Principal)",
-                                    value=f"{delta_risco:+.2f}" if delta_risco is not None else "N/D",
-                                    help="Positivo = o causador está mais carregado em linguagem de risco do que o negociador principal. Negativo = o negociador principal está usando mais linguagem de risco do que o causador. Próximo de zero: equilíbrio de carga de risco entre os dois"
-                                )
-                                st.caption(conv.get("leitura_risco") or "—")
+                                    delta_risco = conv.get('delta_risco')
+                                    st.metric(
+                                        label="Δ Risco (Causador − Negociador Principal)",
+                                        value=f"{delta_risco:+.2f}" if delta_risco is not None else "N/D",
+                                        help="Positivo = o causador está mais carregado em linguagem de risco do que o negociador principal. Negativo = o negociador principal está usando mais linguagem de risco do que o causador. Próximo de zero: equilíbrio de carga de risco entre os dois"
+                                    )
+                                    st.caption(conv.get("leitura_risco") or "—")
 
-                            with col_cv2:
-                                delta_protecao = conv.get('delta_protecao')
-                                st.metric(
-                                    label="Δ Proteção (Negociador Principal − Causador)",
-                                    value=f"{delta_protecao:+.2f}" if delta_protecao is not None else "N/D",
-                                    help="Positivo = negociador puxando para desescalada. Próximo de zero: pouca diferença entre os dois"
-                                )
-                                st.caption(conv.get("leitura_protecao") or "—")
+                                with col_cv2:
+                                    delta_protecao = conv.get('delta_protecao')
+                                    st.metric(
+                                        label="Δ Proteção (Negociador Principal − Causador)",
+                                        value=f"{delta_protecao:+.2f}" if delta_protecao is not None else "N/D",
+                                        help="Positivo = negociador puxando para desescalada. Próximo de zero: pouca diferença entre os dois"
+                                    )
+                                    st.caption(conv.get("leitura_protecao") or "—")
 
-                            with col_cv3:
-                                espelhamento = conv.get('espelhamento')
-                                st.metric(
-                                    label="Índice de convergência temática",
-                                    value=f"{espelhamento:.0%}" if espelhamento is not None else "N/D",
-                                    help="Quanto mais próximo de 100%, maior a sincronia dos temas abordados entre Negociador e Causador."
-                                )
-                                st.caption(conv.get("leitura_espelhamento") or "—")
+                                with col_cv3:
+                                    espelhamento = conv.get('espelhamento')
+                                    st.metric(
+                                        label="Índice de convergência temática",
+                                        value=f"{espelhamento:.0%}" if espelhamento is not None else "N/D",
+                                        help="Quanto mais próximo de 100%, maior a sincronia dos temas abordados entre Negociador e Causador."
+                                    )
+                                    st.caption(conv.get("leitura_espelhamento") or "—")
 
                         except Exception as e:
                             st.error(f"Erro ao gerar radar comparativo: {str(e)}")
