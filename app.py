@@ -890,7 +890,7 @@ st.markdown(
     .stTabs [data-baseweb="tab-border"]    { display: none; }
 
     /* TAMANHO DOS TÍTULOS H3 (###) */
-    h3 { font-size: 18px !important; font-weight: 500 !important; }
+    h3 { font-size: 20px !important; font-weight: 500 !important; }
     /* Se quiser ajustar H2 (##) também: */
     h2 { font-size: 22px !important; font-weight: 500 !important; }
     </style>
@@ -2073,7 +2073,7 @@ else:
         # ====
         # NOVOS GRÁFICOS: VISÃO GERAL DA AMOSTRA
         # ====
-        st.markdown("<h4 style='color: #FFD700;'> Visão Geral da Amostra</h4>", unsafe_allow_html=True)
+        st.markdown("<h5 style='color: #FFD700;'> Visão Geral da Amostra</h5>", unsafe_allow_html=True)
         
         def gerar_grafico_resumo(df, coluna, titulo):
             """Gera gráfico de rosca (donut) padronizado com o Design System."""
