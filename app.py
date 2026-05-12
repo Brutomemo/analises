@@ -202,7 +202,6 @@ def converter_escala(val):
 # 1. CONFIGURAÇÃO DA PÁGINA E CSS (UX e Design System)
 # ====
 # === FONTES OFICIAIS DO SISTEMA ===
-# Usa @import dentro de <style> (compativel com sanitizador do Streamlit Cloud).
 # O seletor universal * forca a fonte em TODO elemento, com excecoes para Share Tech Mono.
 st.markdown("""
 <style>
@@ -266,8 +265,22 @@ st.markdown("""
     }
 
     /* Selectbox / inputs -> Inter */
-    div[data-baseweb="select"] *, input, textarea {
+    /* Selectbox / inputs -> Inter (SEM afetar handles internos) */
+    div[data-baseweb="select"] *:not([class*="icon"]):not([class*="arrow"]),
+    input[type="text"],
+    input[type="number"],
+    input[type="email"],
+    textarea,
+    div[data-baseweb="textarea"] textarea {
         font-family: 'Inter', sans-serif !important;
+    }
+
+    /* Protege explicitamente os handles/ícones do textarea */
+    div[data-baseweb="textarea"] [class*="icon"],
+    div[data-baseweb="textarea"] button,
+    [data-testid="stTextArea"] ~ * button,
+    div[class*="resize"] {
+        font-family: unset !important;
     }
 
     /* Metricas (numeros) -> Share Tech Mono (visual de console tatico) */
@@ -558,23 +571,7 @@ strong {
 /* =========================================================
    CORREÇÃO: ícone do expander 
 ========================================================= */
-/* Protege os ícones internos do Streamlit */
-[data-testid="stTextArea"] button,
-[data-testid="stTextArea"] button *,
-.stTextArea button,
-button[kind="icon"],
-[data-baseweb="textarea"] ~ div button,
-[data-baseweb] svg,
-[data-baseweb] [class*="icon"] {
-    font-family: inherit !important;
-}
 
-/* Corrige especificamente o _arrow nos resize handles */
-[data-baseweb="textarea"] + div,
-[data-baseweb="textarea"] ~ * {
-    font-family: "Source Sans Pro", sans-serif !important;
-}
-            
 [data-testid="stExpanderToggleIcon"],
 [data-testid="stExpanderToggleIcon"] *,
 details summary svg,
