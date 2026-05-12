@@ -913,44 +913,67 @@ else:
             df_quali['ID'] = "APA " + df_quali.index.astype(str)
         df_quali['ID_Busca'] = df_quali['ID'].apply(limpar_id)
 
-        # ── FILTROS ENCADEADOS ──────────────────────────────────────────────
-        # Passo 1: Negociador filtra o df base para os outros dois
+        # ── FILTROS ENCADEADOS BIDIRECIONAIS ────────────────────────────────
         col_fi1, col_fi2, col_fi3 = st.columns(3)
+
+        # Lê os valores atuais do session_state (ou default)
+        neg_atual = st.session_state.get("f_neg_ind", "Todos")
+        tip_atual = st.session_state.get("f_tip_ind", "Todas")
+        mod_atual = st.session_state.get("f_mod_ind", "Todas")
+
+        # Contexto para NEGOCIADOR: filtra por tipologia + modalidade selecionadas
+        df_ctx_neg = df_quali.copy()
+        if tip_atual != "Todas":
+            df_ctx_neg = df_ctx_neg[df_ctx_neg['Tip_Limpa'] == tip_atual]
+        if mod_atual != "Todas":
+            df_ctx_neg = df_ctx_neg[df_ctx_neg['Mod_Limpa'] == mod_atual]
+
+        # Contexto para TIPOLOGIA: filtra por negociador + modalidade selecionados
+        df_ctx_tip = df_quali.copy()
+        if neg_atual != "Todos":
+            df_ctx_tip = df_ctx_tip[df_ctx_tip['Neg_Limpo'] == neg_atual]
+        if mod_atual != "Todas":
+            df_ctx_tip = df_ctx_tip[df_ctx_tip['Mod_Limpa'] == mod_atual]
+
+        # Contexto para MODALIDADE: filtra por negociador + tipologia selecionados
+        df_ctx_mod = df_quali.copy()
+        if neg_atual != "Todos":
+            df_ctx_mod = df_ctx_mod[df_ctx_mod['Neg_Limpo'] == neg_atual]
+        if tip_atual != "Todas":
+            df_ctx_mod = df_ctx_mod[df_ctx_mod['Tip_Limpa'] == tip_atual]
 
         with col_fi1:
             lista_neg = ["Todos"] + sorted(
-                df_quali[df_quali['Neg_Limpo'] != 'N/D']['Neg_Limpo'].unique().tolist()
+                df_ctx_neg[df_ctx_neg['Neg_Limpo'] != 'N/D']['Neg_Limpo'].unique().tolist()
             )
-            filtro_neg = st.selectbox("Filtrar por Negociador:", lista_neg, key="f_neg_ind")
-
-        # df intermediário após filtro de negociador
-        df_apos_neg = df_quali.copy()
-        if filtro_neg != "Todos":
-            df_apos_neg = df_apos_neg[df_apos_neg['Neg_Limpo'] == filtro_neg]
+            # Garante que o valor atual ainda existe na lista, senão reseta
+            idx_neg = lista_neg.index(neg_atual) if neg_atual in lista_neg else 0
+            filtro_neg = st.selectbox("Filtrar por Negociador:", lista_neg, index=idx_neg, key="f_neg_ind")
 
         with col_fi2:
             lista_tip = ["Todas"] + sorted(
-                df_apos_neg[df_apos_neg['Tip_Limpa'] != 'N/D']['Tip_Limpa'].unique().tolist()
+                df_ctx_tip[df_ctx_tip['Tip_Limpa'] != 'N/D']['Tip_Limpa'].unique().tolist()
             )
-            filtro_tip = st.selectbox("Filtrar por Tipologia:", lista_tip, key="f_tip_ind")
-
-        # df intermediário após filtro de tipologia
-        df_apos_tip = df_apos_neg.copy()
-        if filtro_tip != "Todas":
-            df_apos_tip = df_apos_tip[df_apos_tip['Tip_Limpa'] == filtro_tip]
+            idx_tip = lista_tip.index(tip_atual) if tip_atual in lista_tip else 0
+            filtro_tip = st.selectbox("Filtrar por Tipologia:", lista_tip, index=idx_tip, key="f_tip_ind")
 
         with col_fi3:
             lista_mod = ["Todas"] + sorted(
-                df_apos_tip[df_apos_tip['Mod_Limpa'] != 'N/D']['Mod_Limpa'].unique().tolist()
+                df_ctx_mod[df_ctx_mod['Mod_Limpa'] != 'N/D']['Mod_Limpa'].unique().tolist()
             )
-            filtro_mod = st.selectbox("Filtrar por Modalidade:", lista_mod, key="f_mod_ind")
+            idx_mod = lista_mod.index(mod_atual) if mod_atual in lista_mod else 0
+            filtro_mod = st.selectbox("Filtrar por Modalidade:", lista_mod, index=idx_mod, key="f_mod_ind")
 
         # df final com os três filtros aplicados
-        df_q_ind = df_apos_tip.copy()
+        df_q_ind = df_quali.copy()
+        if filtro_neg != "Todos":
+            df_q_ind = df_q_ind[df_q_ind['Neg_Limpo'] == filtro_neg]
+        if filtro_tip != "Todas":
+            df_q_ind = df_q_ind[df_q_ind['Tip_Limpa'] == filtro_tip]
         if filtro_mod != "Todas":
             df_q_ind = df_q_ind[df_q_ind['Mod_Limpa'] == filtro_mod]
         # ────────────────────────────────────────────────────────────────────
-
+      
         lista_apas = df_q_ind['ID_Busca'].tolist()
 
         if not lista_apas:
