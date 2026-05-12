@@ -904,57 +904,78 @@ else:
     # ====
     with aba_individual:
         st.markdown("### ✔ Etapa 1: Seleção e Metadados da Ocorrência")
-        
-        df_quali['Neg_Limpo'] = df_quali.get('Negociador Principal', '').apply(limpar_valor)
-        df_quali['Tip_Limpa'] = df_quali.get('Tipologia', '').apply(limpar_valor)
-        df_quali['Mod_Limpa'] = df_quali.get('Modalidade do incidente', '').apply(limpar_valor)
-        
-        if 'ID' not in df_quali.columns: df_quali['ID'] = "APA " + df_quali.index.astype(str)
-        df_quali['ID_Busca'] = df_quali.get('ID', df_quali.index).apply(limpar_id)
 
-        # Filtros Locais
+        df_quali['Neg_Limpo'] = df_quali['Negociador Principal'].apply(limpar_valor)
+        df_quali['Tip_Limpa'] = df_quali['Tipologia'].apply(limpar_valor)
+        df_quali['Mod_Limpa'] = df_quali['Modalidade do incidente'].apply(limpar_valor)
+
+        if 'ID' not in df_quali.columns:
+            df_quali['ID'] = "APA " + df_quali.index.astype(str)
+        df_quali['ID_Busca'] = df_quali['ID'].apply(limpar_id)
+
+        # ── FILTROS ENCADEADOS ──────────────────────────────────────────────
+        # Passo 1: Negociador filtra o df base para os outros dois
         col_fi1, col_fi2, col_fi3 = st.columns(3)
-        with col_fi1:
-            lista_neg_ind = ["Todos"] + sorted(df_quali[df_quali['Neg_Limpo'] != 'N/D']['Neg_Limpo'].unique().tolist())
-            filtro_neg_ind = st.selectbox("Filtrar por Negociador:", lista_neg_ind, key="f_neg_ind")
-        with col_fi2:
-            lista_tip_ind = ["Todas"] + sorted(df_quali[df_quali['Tip_Limpa'] != 'N/D']['Tip_Limpa'].unique().tolist())
-            filtro_tip_ind = st.selectbox("Filtrar por Tipologia:", lista_tip_ind, key="f_tip_ind")
-        with col_fi3:
-            lista_mod_ind = ["Todas"] + sorted(df_quali[df_quali['Mod_Limpa'] != 'N/D']['Mod_Limpa'].unique().tolist())
-            filtro_mod_ind = st.selectbox("Filtrar por Modalidade:", lista_mod_ind, key="f_mod_ind")
 
-        df_q_ind = df_quali.copy()
-        if filtro_neg_ind != "Todos": df_q_ind = df_q_ind[df_q_ind['Neg_Limpo'] == filtro_neg_ind]
-        if filtro_tip_ind != "Todas": df_q_ind = df_q_ind[df_q_ind['Tip_Limpa'] == filtro_tip_ind]
-        if filtro_mod_ind != "Todas": df_q_ind = df_q_ind[df_q_ind['Mod_Limpa'] == filtro_mod_ind]
-        
+        with col_fi1:
+            lista_neg = ["Todos"] + sorted(
+                df_quali[df_quali['Neg_Limpo'] != 'N/D']['Neg_Limpo'].unique().tolist()
+            )
+            filtro_neg = st.selectbox("Filtrar por Negociador:", lista_neg, key="f_neg_ind")
+
+        # df intermediário após filtro de negociador
+        df_apos_neg = df_quali.copy()
+        if filtro_neg != "Todos":
+            df_apos_neg = df_apos_neg[df_apos_neg['Neg_Limpo'] == filtro_neg]
+
+        with col_fi2:
+            lista_tip = ["Todas"] + sorted(
+                df_apos_neg[df_apos_neg['Tip_Limpa'] != 'N/D']['Tip_Limpa'].unique().tolist()
+            )
+            filtro_tip = st.selectbox("Filtrar por Tipologia:", lista_tip, key="f_tip_ind")
+
+        # df intermediário após filtro de tipologia
+        df_apos_tip = df_apos_neg.copy()
+        if filtro_tip != "Todas":
+            df_apos_tip = df_apos_tip[df_apos_tip['Tip_Limpa'] == filtro_tip]
+
+        with col_fi3:
+            lista_mod = ["Todas"] + sorted(
+                df_apos_tip[df_apos_tip['Mod_Limpa'] != 'N/D']['Mod_Limpa'].unique().tolist()
+            )
+            filtro_mod = st.selectbox("Filtrar por Modalidade:", lista_mod, key="f_mod_ind")
+
+        # df final com os três filtros aplicados
+        df_q_ind = df_apos_tip.copy()
+        if filtro_mod != "Todas":
+            df_q_ind = df_q_ind[df_q_ind['Mod_Limpa'] == filtro_mod]
+        # ────────────────────────────────────────────────────────────────────
+
         lista_apas = df_q_ind['ID_Busca'].tolist()
-        
+
         if not lista_apas:
             st.warning("Nenhuma ocorrência encontrada com estes filtros.")
         else:
-            # 1. Aqui termina o bloco de cima (Filtros e Seletor)
-            apa_selecionada = st.selectbox("Selecione a ID da APA para análise:", lista_apas, index=len(lista_apas)-1)
+            apa_selecionada = st.selectbox(
+                "Selecione a ID da APA para análise:",
+                lista_apas,
+                index=len(lista_apas) - 1,
+            )
             df_apa = df_quali[df_quali['ID_Busca'] == apa_selecionada].iloc[0]
-            
-                 
-            # 2. Aqui começa o bloco de baixo (Metadados)
+
+            # ── METADADOS ───────────────────────────────────────────────────
             c1, c2, c3, c4 = st.columns(4)
             with c1: st.markdown(f"<div class='info-card'><strong>Data:</strong><br>{limpar_valor(df_apa.get('Data da ocorrência'))}</div>", unsafe_allow_html=True)
             with c2: st.markdown(f"<div class='info-card'><strong>Modalidade:</strong><br>{limpar_valor(df_apa.get('Modalidade do incidente'))}</div>", unsafe_allow_html=True)
             with c3: st.markdown(f"<div class='info-card'><strong>Tipologia:</strong><br>{limpar_valor(df_apa.get('Tipologia'))}</div>", unsafe_allow_html=True)
             with c4: st.markdown(f"<div class='info-card'><strong>Motivação:</strong><br>{limpar_valor(df_apa.get('Motivação'))}</div>", unsafe_allow_html=True)
 
-            # Primeira linha metadados: 
             c5, c6, c7, c8 = st.columns(4)
             with c5: st.markdown(f"<div class='info-card'><strong>Negociador Principal:</strong><br>{limpar_valor(df_apa.get('Negociador Principal'))}</div>", unsafe_allow_html=True)
             with c6: st.markdown(f"<div class='info-card'><strong>Forma de Transição:</strong><br>{limpar_valor(df_apa.get('Forma de Transição'))}</div>", unsafe_allow_html=True)
             with c7: st.markdown(f"<div class='info-card'><strong>Tempo de Negociação Real:</strong><br>{formatar_tempo_airtable(df_apa.get('Tempo de Negociação Real'))}</div>", unsafe_allow_html=True)
             with c8: st.markdown(f"<div class='info-card'><strong>Tempo de Negociação Tática:</strong><br>{formatar_tempo_airtable(df_apa.get('Tempo de Negociação Tática'))}</div>", unsafe_allow_html=True)
 
-            # Segunda linha metadados: 
-            # Segunda linha técnica: campos de resolução, logística e dados do causador
             c9, c10, c11, _ = st.columns(4)
             with c9: st.markdown(f"<div class='info-card'><strong>Resolução:</strong><br>{limpar_valor(df_apa.get('Resolução'))}</div>", unsafe_allow_html=True)
             with c10: st.markdown(f"<div class='info-card'><strong>Uniforme Usado:</strong><br>{limpar_valor(df_apa.get('Uniforme Usado'))}</div>", unsafe_allow_html=True)
