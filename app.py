@@ -973,7 +973,7 @@ else:
             l_agr_c_num, l_rec_c_num = converter_escala(l_agr_c_txt), converter_escala(l_rec_c_txt)
             l_agr_e_num, l_rec_e_num = converter_escala(l_agr_e_txt), converter_escala(l_rec_e_txt)
 
-            st.markdown("### 📈 Percepção dos negociadores sobre a receptividade e agressividade do causador no início e encerramento da ocorrência (Linha de tendência)")
+            st.markdown("### ✔ Percepção dos negociadores sobre a receptividade e agressividade do causador no início e encerramento da ocorrência (Linha de tendência)")
             p_escolhida = st.selectbox(
                 "Visualizar evolução sob a perspectiva do:", 
                 ["Negociador Principal", "Negociador Secundário", "Negociador Líder"],
@@ -1093,9 +1093,9 @@ else:
             
             #TABELA DE FREQUENCIA
 
-            st.markdown("<h4 style='color: #FFD700;'>📉 Frequência das Técnicas Aplicadas (Nesta APA)</h4>", unsafe_allow_html=True)
+            st.markdown("<h4 style='color: #FFD700;'>✔ Frequência das Técnicas Aplicadas (Nesta APA)</h4>", unsafe_allow_html=True)
 
-            if st.button("📊 Calcular Frequência de Técnicas"):
+            if st.button("✔ Calcular Frequência de Técnicas"):
                 if not df_tec.empty:
                     col_vinculo = next((c for c in df_tec.columns if 'VINCULO' in c.upper() or 'VÍNCULO' in c.upper()), None)
                     
@@ -1135,7 +1135,7 @@ else:
             st.markdown("---")
 
             #ANALISE DE SIMILITUDE
-            st.markdown("### 🗣️ Índice de Similitude e Grafo de Espelhamento Léxico")
+            st.markdown("### ✔ Índice de Similitude e Grafo de Espelhamento Léxico")
             st.markdown("<div class='info-card'>", unsafe_allow_html=True)
             st.markdown("<span style='font-size: 0.85rem; color: #aaa;'><strong>O que significa:</strong> Compara matematicamente as palavras utilizadas pelo Negociador Principal e pelo Causador, mensurando o espelhamento. Índices mais altos indicam 'espelhamento' na estrutura da linguagem (mirroring). Em negociações bem-sucedidas, o negociador e o causador passam a apresentar núcleos semânticos em comum, criando uma 'Sincronia Lexical'. O grafo ilustra os núcleos semânticos que conectaram as duas partes.</span><br><br>", unsafe_allow_html=True)
 
@@ -1574,7 +1574,7 @@ else:
                 ])
 
                 with tab_ng1:
-                    st.markdown('<div class="info-card"><h4 style="color: #f97316; margin-top: 0;">🧠 Temas Dominantes - Causador</h4>', unsafe_allow_html=True)
+                    st.markdown('<div class="info-card"><h4 style="color: #f97316; margin-top: 0;">✔ Temas Dominantes - Causador</h4>', unsafe_allow_html=True)
                     for t in topicos_c:
                         st.markdown(t)
                     st.markdown('</div>', unsafe_allow_html=True)
@@ -1582,7 +1582,7 @@ else:
                         st.pyplot(wc_c)
 
                 with tab_ng2:
-                    st.markdown('<div class="info-card"><h4 style="color: #f97316; margin-top: 0;">🧠 Temas Dominantes - Negociador Principal</h4>', unsafe_allow_html=True)
+                    st.markdown('<div class="info-card"><h4 style="color: #f97316; margin-top: 0;">✔ Temas Dominantes - Negociador Principal</h4>', unsafe_allow_html=True)
                     for t in topicos_np:
                         st.markdown(t)
                     st.markdown('</div>', unsafe_allow_html=True)
@@ -1590,7 +1590,7 @@ else:
                         st.pyplot(wc_np)
 
                 with tab_ng3:
-                    st.markdown('<div class="info-card"><h4 style="color: #f97316; margin-top: 0;">🧠 Temas Dominantes - Negociador Secundário</h4>', unsafe_allow_html=True)
+                    st.markdown('<div class="info-card"><h4 style="color: #f97316; margin-top: 0;">✔ Temas Dominantes - Negociador Secundário</h4>', unsafe_allow_html=True)
                     for t in topicos_ns:
                         st.markdown(t)
                     st.markdown('</div>', unsafe_allow_html=True)
@@ -1598,7 +1598,7 @@ else:
                         st.pyplot(wc_ns)
 
                 with tab_ng4:
-                    st.markdown('<div class="info-card"><h4 style="color: #f97316; margin-top: 0;">🌐 Temas Dominantes Gerais</h4>', unsafe_allow_html=True)
+                    st.markdown('<div class="info-card"><h4 style="color: #f97316; margin-top: 0;">✔ Temas Dominantes Gerais</h4>', unsafe_allow_html=True)
 
                     for t in topicos_globais:
                         st.markdown(t)
