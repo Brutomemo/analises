@@ -866,13 +866,13 @@ if df_quali.empty:
     st.error(f"Erro na conexão com Airtable: {status_q}")
 else:
     # INCLUSÃO DA TERCEIRA ABA (Chat Analítico)
-    aba_individual, aba_geral, aba_chat = st.tabs(["🎯 Visão seletiva", "📊 Série Histórica", "💬 Chat Analítico"])
+    aba_individual, aba_geral, aba_chat = st.tabs(["✔ Visão seletiva", "✔ Série Histórica", "✔ Chat Analítico"])
                  
     # ====
     # ABA 1: VISÃO DA NEGOCIAÇÃO SOBRE O INCIDENTE EM ANÁLISE
     # ====
     with aba_individual:
-        st.markdown("### 🛠️ Etapa 1: Seleção e Metadados da Ocorrência")
+        st.markdown("### ✔ Etapa 1: Seleção e Metadados da Ocorrência")
         
         df_quali['Neg_Limpo'] = df_quali.get('Negociador Principal', '').apply(limpar_valor)
         df_quali['Tip_Limpa'] = df_quali.get('Tipologia', '').apply(limpar_valor)
@@ -1041,8 +1041,8 @@ else:
             
             st.plotly_chart(fig_trend, use_container_width=True)
 
-            st.markdown("### 🧠 Percepção dos negociadores sobre a receptividade e agressividade do causador no início e encerramento da ocorrência (Textual)")
-            tab_chegada, tab_encerramento = st.tabs(["➡️ Na Chegada à Ocorrência", "🛑 No Encerramento"])
+            st.markdown("### ✔ Percepção dos negociadores sobre a receptividade e agressividade do causador no início e encerramento da ocorrência (Textual)")
+            tab_chegada, tab_encerramento = st.tabs(["🏳 Na Chegada à Ocorrência", "🏴 No Encerramento"])
             
             def render_card(label, valor, cor_classe):
                 return f"<div class='info-card {cor_classe}' style='padding: 12px; margin-top: 5px; margin-bottom: 5px;'><strong style='color: #bbb;'>{label}:</strong><br><span style='font-size: 1.1rem; font-weight: bold;'>{valor}</span></div>"
@@ -1140,7 +1140,7 @@ else:
             st.markdown("<span style='font-size: 0.85rem; color: #aaa;'><strong>O que significa:</strong> Compara matematicamente as palavras utilizadas pelo Negociador Principal e pelo Causador, mensurando o espelhamento. Índices mais altos indicam 'espelhamento' na estrutura da linguagem (mirroring). Em negociações bem-sucedidas, o negociador e o causador passam a apresentar núcleos semânticos em comum, criando uma 'Sincronia Lexical'. O grafo ilustra os núcleos semânticos que conectaram as duas partes.</span><br><br>", unsafe_allow_html=True)
 
                         # 2. O Botão (Margem principal)
-            if st.button("🔍 Gerar Análise de Similitude"):
+            if st.button("✔ Gerar Análise de Similitude"):
                 col_causador = "TRANSCRIÇÃO DO CAUSADOR"
                 col_negociador = "TRANSCRIÇÃO DO NEGOCIADOR PRINCIPAL"
 
@@ -1149,9 +1149,9 @@ else:
                     txt_neg = str(df_apa[col_negociador]).strip()
                     
                     if txt_caus.lower() in ['nan', 'none', '', 'inaudível', 'n/d'] or txt_neg.lower() in ['nan', 'none', '', 'inaudível', 'n/d']:
-                        st.warning("⚠️ **Diálogo unilateral ou ausente.** Não foi possível mensurar o espelhamento pois uma das partes não produziu volume verbal audível/registrado. Isso geralmente indica ausência de rapport verbal estruturado na fase registrada.")
+                        st.warning("✔ **Diálogo unilateral ou ausente.** Não foi possível mensurar o espelhamento pois uma das partes não produziu volume verbal audível/registrado. Isso geralmente indica ausência de rapport verbal estruturado na fase registrada.")
                     elif len(txt_caus.split()) < 5 or len(txt_neg.split()) < 5:
-                        st.warning("⚠️ **Volume Verbal Insuficiente:** O diálogo registrado possui menos de 5 palavras válidas por parte, impossibilitando a análise matemática de similitude.")
+                        st.warning("✔ **Volume Verbal Insuficiente:** O diálogo registrado possui menos de 5 palavras válidas por parte, impossibilitando a análise matemática de similitude.")
                     else:
                         try:
                             from sklearn.feature_extraction.text import TfidfVectorizer
@@ -1193,14 +1193,14 @@ else:
                                 """, unsafe_allow_html=True)
                             
                             if sintonia_pct >= 25:
-                                st.success("✅ **Forte Vínculo (Espelhamento Tático):** Alto nível de ancoragem. O negociador adequou-se ao código linguístico do causador (espelhamento) e validou seus pontos de interesse.")
+                                st.success("✔ **Forte Vínculo (Espelhamento Tático):** Alto nível de ancoragem. O negociador adequou-se ao código linguístico do causador (espelhamento) e validou seus pontos de interesse.")
                             elif sintonia_pct >= 10:
-                                st.info("ℹ️ **Vínculo Moderado:** Há pontos de ancoragem semântica, mas os discursos ainda guardam distanciamento conceitual.")
+                                st.info("✔ **Vínculo Moderado:** Há pontos de ancoragem semântica, mas os discursos ainda guardam distanciamento conceitual.")
                             else:
-                                st.error("🚨 **Divergência de Discurso:** Vocabulários quase completamente distintos. Indica ruptura ou negociação puramente transacional.")
+                                st.error("✔ **Divergência de Discurso:** Vocabulários quase completamente distintos. Indica ruptura ou negociação puramente transacional.")
 
                             if sintonia_pct > 0:
-                                st.markdown("#### 🕸️ Grafo de Espelhamento Léxico (Núcleos Semânticos Compartilhados)")
+                                st.markdown("#### ✔ Grafo de Espelhamento Léxico (Núcleos Semânticos Compartilhados)")
                                 st.write("<span style='font-size: 0.85rem; color: #aaa;'>Visualização interativa dos termos que serviram de ponte para o estabelecimento do Rapport.</span>", unsafe_allow_html=True)
                                 
                                 try:
@@ -1292,7 +1292,7 @@ else:
                                         st.plotly_chart(fig_grafo, use_container_width=True)
                                         
                                     else:
-                                        st.info("ℹ️ Não há intersecção semântica suficiente para gerar um grafo estrutural (Discursos completamente isolados).")
+                                        st.info("✔ Não há intersecção semântica suficiente para gerar um grafo estrutural (Discursos completamente isolados).")
 
                                 except Exception as e:
                                     st.error(f"Erro ao desenhar o grafo estrutural: {e}")
@@ -1307,16 +1307,16 @@ else:
 
             #ETAPA 2
 
-            st.markdown("### 📊 Etapa 2: Análise Semântica (Machine Learning e Context-Aware NLP)")
+            st.markdown("### ✔ Etapa 2: Análise Semântica (Machine Learning e Context-Aware NLP)")
 
             # --- INÍCIO DO BLOCO DE EXPLICAÇÃO (EXPANDER) ---
-            with st.expander("📖 Entenda a Análise Semântica Avançada e o Termômetro do Incidente", expanded=False):
+            with st.expander("✔ Entenda a Análise Semântica Avançada e o Termômetro do Incidente", expanded=False):
 
                 tab_metodo, tab_convergencia, tab_ngramas, tab_limitacoes = st.tabs([
-                    "🧠 Método",
-                    "📊 Convergência",
-                    "🔁 N-Gramas",
-                    "⚠️ Limitações"
+                    "✔ Método",
+                    "✔ Convergência",
+                    "✔ N-Gramas",
+                    "✔ Limitações"
                 ])
 
                 with tab_metodo:
@@ -1324,7 +1324,7 @@ else:
                     """
                     <div class='info-card' style='margin-top: 0px;'>
 
-                    <h5 style='color: #FFD700; margin-top: 0;'>🧠 Como o sistema lê o diálogo?</h5>
+                    <h5 style='color: #FFD700; margin-top: 0;'>✔ Como o sistema lê o diálogo?</h5>
                     <p style='font-size: 0.92rem; color: #ddd; line-height: 1.6;'>
                     O sistema não conta palavras — ele <strong>interpreta intenções</strong>.<br>
                     Cada fala é analisada em contexto: o que foi dito, como foi dito, e o que estava ao redor da frase.
@@ -1332,7 +1332,7 @@ else:
 
                     <hr style='border-color: #444; margin: 12px 0;'>
 
-                    <h5 style='color: #FFD700; margin-top: 10px;'>⚖️ 1. Pesos e Gravidade das Palavras</h5>
+                    <h5 style='color: #FFD700; margin-top: 10px;'>✔ 1. Pesos e Gravidade das Palavras</h5>
                     <p style='font-size: 0.92rem; color: #ddd; line-height: 1.6;'>
                     Nem toda palavra tem o mesmo peso. O sistema atribui uma <strong>pontuação de gravidade</strong> a cada termo:<br>
                     • <em>"dor"</em> → peso baixo (sinal de sofrimento, mas não de ação imediata)<br>
@@ -1340,7 +1340,7 @@ else:
                     Isso evita que palavras comuns inflem artificialmente o resultado.
                     </p>
 
-                    <h5 style='color: #FFD700; margin-top: 15px;'>🔄 2. O Contexto Muda Tudo (Modificadores de Valência)</h5>
+                    <h5 style='color: #FFD700; margin-top: 15px;'>✔ 2. O Contexto Muda Tudo (Modificadores de Valência)</h5>
                     <p style='font-size: 0.92rem; color: #ddd; line-height: 1.6;'>
                     O sistema varre as palavras ao redor de cada termo para entender a intenção real:<br><br>
                     • <strong>Negação:</strong> <em>"<u>não</u> quero morrer"</em> → o risco da palavra <em>morrer</em> é reduzido. A frase sinaliza ambivalência, não intenção.<br>
@@ -1351,7 +1351,7 @@ else:
 
                     <hr style='border-color: #444; margin: 12px 0;'>
 
-                    <h5 style='color: #FFD700; margin-top: 10px;'>🧭 3. Os Três Vetores do Incidente Crítico</h5>
+                    <h5 style='color: #FFD700; margin-top: 10px;'>✔ 3. Os Três Vetores do Incidente Crítico</h5>
                     <p style='font-size: 0.92rem; color: #ddd; line-height: 1.6;'>
                     O sistema separa o diálogo em <strong>três forças opostas</strong>, como um cabo de guerra:<br><br>
                     🔴 <strong>Vetor de Risco:</strong> linguagem de ameaça, hostilidade, ideação suicida, exigências sob pressão.<br>
@@ -1439,7 +1439,7 @@ else:
                     • <strong>Próximo de zero</strong> → ambos estão em patamar semelhante de proteção.
                     </p>
 
-                    <h5 style='color: #FFD700; margin-top: 15px;'>📎 Índice de Convergência</h5>
+                    <h5 style='color: #FFD700; margin-top: 15px;'>✔ Índice de Convergência</h5>
                     <p style='font-size: 0.92rem; color: #ddd; line-height: 1.6;'>
                     Este índice mostra o quanto os interlocutores estão <strong>semanticamente alinhados</strong>.<br>
                     Ele <strong>não é espelhamento léxico literal</strong>. Ele mede a sobreposição de padrões temáticos, não apenas palavras iguais.<br><br>
@@ -1450,7 +1450,7 @@ else:
 
                     <hr style='border-color: #444; margin: 12px 0;'>
 
-                    <h5 style='color: #FFD700; margin-top: 10px;'>🧩 Importante: por que isso não é igual ao espelhamento léxico?</h5>
+                    <h5 style='color: #FFD700; margin-top: 10px;'>✔ Importante: por que isso não é igual ao espelhamento léxico?</h5>
                     <p style='font-size: 0.92rem; color: #ddd; line-height: 1.6;'>
                     O radar de convergência compara <strong>categorias semânticas e temáticas</strong>.<br>
                     Já o bloco de similitude compara <strong>palavras efetivamente compartilhadas</strong>.<br><br>
@@ -1473,7 +1473,7 @@ else:
                     """
                     <div class='info-card' style='margin-top: 0px;'>
 
-                    <h5 style='color: #FFD700; margin-top: 0;'>🔁 4. N-Gramas — Identificando o Loop Psicológico</h5>
+                    <h5 style='color: #FFD700; margin-top: 0;'>✔ 4. N-Gramas — Identificando o Loop Psicológico</h5>
                     <p style='font-size: 0.92rem; color: #ddd; line-height: 1.6;'>
                     O sistema mapeia <strong>frases curtas repetidas</strong> (2 a 3 palavras) ao longo de toda a transcrição.<br>
                     Pessoas sob estresse agudo tendem a repetir as mesmas expressões — isso é chamado de <strong>loop cognitivo</strong>.<br><br>
@@ -1494,7 +1494,7 @@ else:
                     """
                     <div class='info-card' style='margin-top: 0px;'>
 
-                    <h5 style='color: #FFD700; margin-top: 0;'>⚠️ Limitações importantes</h5>
+                    <h5 style='color: #FFD700; margin-top: 0;'>✔ Limitações importantes</h5>
                     <p style='font-size: 0.92rem; color: #ddd; line-height: 1.6;'>
                     Este sistema é uma <strong>ferramenta de apoio à decisão</strong>, não um substituto ao julgamento do negociador.<br>
                     • Transcrições incompletas ou com erros de digitação reduzem a precisão.<br>
@@ -1510,7 +1510,7 @@ else:
         # --- FIM DO BLOCO DE EXPLICAÇÃO ---
 
             ##N-GRAMAS
-            if st.button("⚙️ 2. GERAR NUVEM DE PALAVRAS E N-GRAMS"):
+            if st.button("✔ 2. GERAR NUVEM DE PALAVRAS E N-GRAMS"):
                 with st.spinner("Processando N-Grams e plotando gráficos..."):
                     texto_c = limpar_valor(df_apa.get('TRANSCRIÇÃO DO CAUSADOR'))
                     texto_np = limpar_valor(df_apa.get('TRANSCRIÇÃO DO NEGOCIADOR PRINCIPAL'))
@@ -1570,7 +1570,7 @@ else:
                     "Negociador Principal",
                     "Negociador Secundário",
                     "Visão Global",
-                    "⚡ Convergência"
+                    "✔ Convergência"
                 ])
 
                 with tab_ng1:
@@ -1604,7 +1604,7 @@ else:
                         st.markdown(t)
 
                     st.markdown("<hr style='border-color: rgba(255,255,255,0.12); margin: 16px 0;'>", unsafe_allow_html=True)
-                    st.markdown("#### 🖼️ Mapas de palavras por interlocutor", unsafe_allow_html=True)
+                    st.markdown("#### ✔ Mapas de palavras por interlocutor", unsafe_allow_html=True)
                     st.markdown(
                         "<p style='color:#aaa; font-size:0.9rem; margin-top:-5px;'>Os mesmos mapas exibidos nas abas individuais também são mostrados aqui para facilitar a comparação visual no contexto global da ocorrência.</p>",
                         unsafe_allow_html=True
@@ -1638,7 +1638,7 @@ else:
                 with tab_ng5:
                     st.markdown(
                         '<div class="info-card">'
-                        '<h4 style="color:#FFD700; margin-top:0;">⚡ Radar Comparativo & Índice de Convergência Temática</h4>'
+                        '<h4 style="color:#FFD700; margin-top:0;">✔ Radar Comparativo & Índice de Convergência Temática</h4>'
                         '<p style="color:#ccc; font-size:0.9rem; margin-bottom:1rem;">'
                         'Comparação direta dos vetores semânticos entre os interlocutores. '
                         'Quanto mais sobrepostos os polígonos, maior o espelhamento temático.</p>',
@@ -1646,7 +1646,7 @@ else:
                     )
 
                     if not texto_c_raw or not texto_np_raw:
-                        st.warning("⚠️ Transcrições insuficientes para gerar o radar comparativo.")
+                        st.warning("✔ Transcrições insuficientes para gerar o radar comparativo.")
                     else:
                         try:
                             fig_radar, conv = analise.gerar_radar_comparativo(
@@ -2009,7 +2009,7 @@ else:
             # para garantir que a maior fatia pegue a cor mais forte
             contagem = contagem.sort_values('Frequência', ascending=False)
 
-            cores_contraste = ['#FF8C00', '#8B4513', '#CD853F', '#DEB887', "#EBE9E7" ]
+            cores_contraste = ['#FF8C00', '#8B4513', "#A53A00", '#DEB887', "#EBE9E7" ]
 
             # Criação do Gráfico de Rosca
             fig = px.pie(
@@ -2084,7 +2084,7 @@ else:
 
         st.markdown("#### Ranking de Técnicas Aplicadas")
 
-        if st.button("📊 Abrir Ranking de Técnicas"):
+        if st.button("✔ Abrir Ranking de Técnicas"):
             st.session_state["exibir_ranking"] = True
 
         st.markdown("<div style='margin-bottom: 20px;'></div>", unsafe_allow_html=True)
@@ -2260,7 +2260,7 @@ else:
 
                 if colunas_ausentes:
                     st.warning(
-                        f"⚠️ Colunas ausentes nos dados: {', '.join(colunas_ausentes)}. "
+                        f"✔ Colunas ausentes nos dados: {', '.join(colunas_ausentes)}. "
                         "Verifique o formulário de registro."
                     )
 
@@ -2346,7 +2346,7 @@ else:
                             getattr(st, cor_veredito)(f"{icone} **{titulo_veredito}**\n\n{explicacao}")
 
                             # Detalhes técnicos colapsáveis
-                            with st.expander("🔬 Ver detalhes técnicos (Spearman)"):
+                            with st.expander("✔ Ver detalhes técnicos (Spearman)"):
                                 st.markdown(
                                     f"- **Teste:** Correlação de Spearman (não-paramétrico — "
                                     "adequado para escalas ordinais e distribuições assimétricas)\n"
@@ -2498,7 +2498,7 @@ else:
                                             f"sem relação sistemática com o {var_analise.lower()}."
                                         )
 
-                                    with st.expander(f"🔬 Ver detalhes técnicos (Qui-Quadrado × {var_analise})"):
+                                    with st.expander(f"✔ Ver detalhes técnicos (Qui-Quadrado × {var_analise})"):
                                         st.markdown(
                                             f"- **Teste:** Qui-Quadrado de Pearson (verifica independência entre variáveis categóricas)\n"
                                             f"- **Estatística χ²:** `{chi2:.4f}`\n"
@@ -2619,8 +2619,8 @@ else:
                                     
                                     if not df_gee.empty:
                                         st.dataframe(df_gee.style.format({'Coeficiente_GEE': '{:.2f}', 'P_Valor': '{:.4f}'}), use_container_width=True, hide_index=True)
-                                        if (gee_pvals < 0.05).any(): st.success("✅ **Doutrina Validada:** Técnica sobreviveu ao controle de viés.")
-                                        else: st.info("ℹ️ Nenhuma técnica atingiu significância.")
+                                        if (gee_pvals < 0.05).any(): st.success("✔ **Doutrina Validada:** Técnica sobreviveu ao controle de viés.")
+                                        else: st.info("✔ Nenhuma técnica atingiu significância.")
                             except:
                                 st.error("Erro no processamento GEE.")
                             st.markdown("</div>", unsafe_allow_html=True)
@@ -2631,7 +2631,7 @@ else:
                             st.error(f"🚨 Erro geral: {str(e)}")
 
                 st.markdown("---")
-                st.markdown("<h4 style='color: #FFD700;'>📈 Volume de Registros e Tendência Temporal</h4>", unsafe_allow_html=True)
+                st.markdown("<h4 style='color: #FFD700;'>✔ Volume de Registros e Tendência Temporal</h4>", unsafe_allow_html=True)
                 
                 col_data = next((col for col in ['Data da ocorrência', 'Data', 'DATA'] if col in df_quali_filt.columns), None)
                 if col_data:
@@ -2648,7 +2648,7 @@ else:
                 else: st.info("Coluna de Data não encontrada.")
 
                 st.markdown("---")
-                st.markdown("<h4 style='color: #06C755;'>🧠 Síntese Interpretativa Avançada (Interpretação descritiva dos resultados estatísticos assistida por modelo de linguagem (LLM – OpenAI GPT-4o-mini), com base em dados previamente processados por métodos estatísticos.)</h4>", unsafe_allow_html=True)
+                st.markdown("<h4 style='color: #06C755;'>✔ Síntese Interpretativa Avançada (Interpretação descritiva dos resultados estatísticos assistida por modelo de linguagem (LLM – OpenAI GPT-4o-mini), com base em dados previamente processados por métodos estatísticos.)</h4>", unsafe_allow_html=True)
                 st.markdown("<p style='color: #bbb;'>Este módulo traduz a matriz matemática gerada acima em um relatório estratégico que visa o aperfeiçoamento técnico contínuo do Negociador.</p>", unsafe_allow_html=True)
 
                 if st.button("🤖 GERAR RELATÓRIO ESTATÍSTICO DESCRITIVO"):
@@ -2710,7 +2710,7 @@ else:
                                     st.json(relatorio_json)
 
                                 st.markdown("---")
-                                st.markdown("### 🖨️ Exportar Relatório")
+                                st.markdown("### ✔ Exportar Relatório")
                                 
                                 try:
                                     pdf_hist = FPDF()
@@ -2746,7 +2746,7 @@ else:
                                         pdf_bytes_hist = bytes(pdf_saida_hist)
                                     
                                     st.download_button(
-                                        label="📥 BAIXAR RELATÓRIO (PDF)", 
+                                        label="✔ BAIXAR RELATÓRIO (PDF)", 
                                         data=pdf_bytes_hist, 
                                         file_name="Relatorio_de_análise_GATE.pdf", 
                                         mime="application/pdf"
@@ -3010,10 +3010,10 @@ Para consultas SIMPLES (uma variável, resposta direta):
 
 Para consultas COMPLEXAS (cruzamento de múltiplas variáveis):
   → Estrutura:
-  📊 Execução Analítica    [o que foi calculado e como]
-  🔍 Resultado             [tabela ou lista com dados encontrados]
-  📌 Interpretação Operacional [o que significa na prática da negociação]
-  ⚠️ Limitações e Ressalvas [N, confundidores, ausência de causalidade]
+  ✔ Execução Analítica    [o que foi calculado e como]
+  ✔ Resultado             [tabela ou lista com dados encontrados]
+  ✔ Interpretação Operacional [o que significa na prática da negociação]
+  ✔ Limitações e Ressalvas [N, confundidores, ausência de causalidade]
 
 Para consultas sobre MODELOS ESTATÍSTICOS:
   → Modelo → Hipótese testada → Resultado na base → Interpretação → Limitações
