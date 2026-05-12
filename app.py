@@ -1681,7 +1681,7 @@ else:
                     st.markdown(
                         '<div class="info-card">'
                         '<h4 style="color:#FFD700; margin-top:0;">✔ Radar Comparativo & Índice de Convergência Temática</h4>'
-                        '<p style="color:#ccc; font-size:1rem; margin-bottom:1rem;">'
+                        '<p style="color:#ccc; font-size:0.9rem; margin-bottom:1rem;">'
                         'Comparação direta dos vetores semânticos entre os interlocutores. '
                         'Quanto mais sobrepostos os polígonos, maior o espelhamento temático.</p>',
                         unsafe_allow_html=True
