@@ -1701,7 +1701,7 @@ else:
                             if conv:
                                 st.markdown("---")
                                 st.markdown(
-                                    '<h5 style="color:#FFD700;">✔ Índice de Convergência Temática</h5>',
+                                    '<h5 style="color:#FFD700;">📐 Índice de Convergência Temática</h5>',
                                     unsafe_allow_html=True
                                 )
                                 col_cv1, col_cv2, col_cv3 = st.columns(3)
