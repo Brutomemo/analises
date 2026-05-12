@@ -109,13 +109,13 @@ def check_password():
             st.session_state["password_correct"] = False
 
     if "password_correct" not in st.session_state:
-        st.markdown("## 🔒 Controle de Acesso")
+        st.markdown("## ✔ Controle de Acesso")
         st.text_input("Insira a Senha de Acesso:", type="password", on_change=password_entered, key="password")
         return False
     elif not st.session_state["password_correct"]:
-        st.markdown("## 🔒 Controle de Acesso Tático - GATE")
+        st.markdown("## ✔ Controle de Acesso - GATE")
         st.text_input("Senha incorreta. Tente novamente:", type="password", on_change=password_entered, key="password")
-        st.error("😕 Acesso negado. Credenciais inválidas.")
+        st.error("Acesso negado. Credenciais inválidas.")
         return False
     else:
         return True
@@ -1079,7 +1079,7 @@ else:
 
             st.markdown("---")
 
-            st.markdown("### 🗣️ Transcrições Literal")
+            st.markdown("### ✔ Transcrições Literal")
             with st.expander("Ver transcrições completas da ocorrência", expanded=False):
                 st.markdown("**Causador do Incidente:**")
                 st.write(limpar_valor(df_apa.get('TRANSCRIÇÃO DO CAUSADOR')))
@@ -1694,7 +1694,7 @@ else:
                     st.markdown('</div>', unsafe_allow_html=True)
             
                     
-            if st.button("📡 3. GERAR ANALYTICS E EXPORTAR ANÁLISE (PDF)"):
+            if st.button("✔ 3. GERAR ANALYTICS E EXPORTAR ANÁLISE (PDF)"):
                 with st.spinner("Compilando dados técnicos, consultando IA e desenhando PDF..."):
                     try:
                         t_causador = limpar_valor(df_apa.get('TRANSCRIÇÃO DO CAUSADOR'))
