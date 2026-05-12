@@ -307,8 +307,8 @@ st.markdown("""
 
     /* Estilo visual do .main-title (cores e gradiente — fonte ja vem do bloco superior) */
     .main-title {
-        font-size: 2.2rem;
-        font-weight: 700;
+        font-size: 2rem;
+        font-weight: 500;
         background: linear-gradient(180deg, #FFFF 0%, #BBBB 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
@@ -902,6 +902,7 @@ else:
     # ====
     # ABA 1: VISÃO DA NEGOCIAÇÃO SOBRE O INCIDENTE EM ANÁLISE
     # ====
+    #ETAPA 1
     with aba_individual:
         st.markdown("### ✔ Etapa 1: Seleção e Metadados da Ocorrência")
 
