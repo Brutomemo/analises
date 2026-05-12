@@ -307,7 +307,7 @@ st.markdown("""
 
     /* Estilo visual do .main-title (cores e gradiente — fonte ja vem do bloco superior) */
     .main-title {
-        font-size: 2rem;
+        font-size: 2.2rem;
         font-weight: 500;
         background: linear-gradient(180deg, #FFFF 0%, #BBBB 100%);
         -webkit-background-clip: text;
