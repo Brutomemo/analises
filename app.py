@@ -862,6 +862,37 @@ st.markdown(
 status_q = st.session_state.get("status_q", "OK")
 status_t = st.session_state.get("status_t", "OK")
 
+st.markdown(
+    """
+    <style>
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 0;
+        border-bottom: 1.5px solid #2a2d35 !important;
+        background: transparent;
+    }
+    .stTabs [data-baseweb="tab"] {
+        padding: 9px 22px;
+        font-size: 14px;
+        color: #8b8fa8;
+        border-bottom: 2px solid transparent;
+        background: transparent;
+    }
+    .stTabs [aria-selected="true"] {
+        color: #d4a017 !important;
+        border-bottom: 2px solid #d4a017 !important;
+        font-weight: 500;
+    }
+    .stTabs [data-baseweb="tab"]:hover {
+        color: #d4d6e0;
+        background: rgba(255,255,255,0.03);
+    }
+    .stTabs [data-baseweb="tab-highlight"] { display: none; }
+    .stTabs [data-baseweb="tab-border"]    { display: none; }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
 if df_quali.empty:
     st.error(f"Erro na conexão com Airtable: {status_q}")
 else:
