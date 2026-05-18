@@ -2714,6 +2714,15 @@ else:
     - Enfatizamos que a análise está condicionada e limitada aos dados registrados, não representa a realidade em sua totalidade
     """)
 
+    # Adicione isto ANTES de "if total_apas_reais < 15:"
+    if 'total_apas_reais' not in locals():
+        # Define baseado no que você tem disponível
+        if 'df_tec_limpo' in locals():
+            id_col = next((c for c in df_tec_limpo.columns if 'ID' in c.upper() or 'VINCULO' in c.upper()), None)
+            total_apas_reais = df_tec_limpo[id_col].astype(str).nunique() if id_col else len(df_tec_limpo)
+        else:
+            total_apas_reais = 0
+
     if total_apas_reais < 15:
         st.warning(
             f"""
