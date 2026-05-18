@@ -477,9 +477,24 @@ st.markdown("""
         z-index: 1 !important;
     }
 
-    /* DIAGNÓSTICO — descobre o elemento problemático */
-* {
-    outline: 1px solid red !important;
+   /* =========================================================
+   CORREÇÃO ESPECÍFICA: expander icon sobreposto
+   ========================================================= */
+
+/* Remove Orbitron especificamente do ícone do expander */
+button[kind="secondary"] span {
+    font-family: "Source Sans Pro", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important;
+}
+
+/* Alternativa se acima não funcionar */
+[class*="expanderButton"] span,
+[class*="stExpander"] span {
+    font-family: "Source Sans Pro", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important;
+}
+
+/* Se for SVG, garante visibilidade */
+button svg {
+    font-family: unset !important;
 }
 </style>
 
