@@ -1406,14 +1406,18 @@ else:
                                         fig_grafo.update_layout(height=400)
                                         st.plotly_chart(fig_grafo, use_container_width=True)
                                         
-                                        key_palavras = "show_palavras_similitude"
-                                        with st.expander("📝 Entenda as Palavras Compartilhadas"):
+                                        tab1, tab2 = st.tabs(["📊 Grafo", "📝 Palavras"])
+    
+                                        with tab1:
+                                            st.markdown("*Grafo acima*")
+                                        
+                                        with tab2:
                                             st.markdown("**Palavras que conectaram os dois lados:**")
                                             for palavra, freq in sorted(top_comuns.items(), key=lambda x: x[1], reverse=True):
                                                 st.markdown(f"- **{palavra}** — apareceu {freq} vezes")
                                                             
                                     else:
-                                        st.info("⚠️ **Sem palavras compartilhadas.** Os discursos são completamente isolados.")
+                                        st.info("⚠️ **Sem palavras compartilhadas.**")
 
                                 except Exception as e:
                                     st.error(f"Erro ao desenhar grafo: {str(e)[:80]}")
