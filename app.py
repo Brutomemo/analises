@@ -1406,15 +1406,22 @@ else:
                                         fig_grafo.update_layout(height=400)
                                         st.plotly_chart(fig_grafo, use_container_width=True)
                                         
-                                        tab1, tab2 = st.tabs(["📊 Grafo", "📝 Palavras"])
-    
+                                        tab1, tab2 = st.tabs(["📊 Resumo", "📝 Palavras Compartilhadas"])
+
                                         with tab1:
-                                            st.markdown("*Grafo acima*")
-                                        
+                                            st.markdown(f"""
+                                            **Análise de Similitude**
+                                            
+                                            - **Índice encontrado:** {sintonia_pct:.1f}%
+                                            - **Interpretação:** {'Forte vínculo ✅' if sintonia_pct >= 25 else 'Vínculo moderado ⚠️' if sintonia_pct >= 10 else 'Pouca sintonia ❌'}
+                                            - **Total de palavras compartilhadas:** {len(top_comuns)}
+                                            - **Palavra mais frequente:** {max(top_comuns.items(), key=lambda x: x[1])[0]} ({max(top_comuns.values())}x)
+                                            """)
+
                                         with tab2:
                                             st.markdown("**Palavras que conectaram os dois lados:**")
                                             for palavra, freq in sorted(top_comuns.items(), key=lambda x: x[1], reverse=True):
-                                                st.markdown(f"- **{palavra}** — apareceu {freq} vezes")
+                                                st.markdown(f"- **{palavra}** — {freq}x")
                                                             
                                     else:
                                         st.info("⚠️ **Sem palavras compartilhadas.**")
