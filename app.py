@@ -2579,29 +2579,86 @@ else:
                                     # --- Veredito em linguagem clara ---
                                     if p_chi < 0.05:
                                         st.success(
-                                            f"✅ **Há um padrão — o uso de técnicas depende do(a) {var_analise}**\n\n"
-                                            f"A associação encontrada dificilmente é coincidência (p = {p_chi:.4f}). "
-                                            f"Isso indica uma **atuação doutrinária**: a escolha de técnicas varia "
-                                            f"de forma consistente conforme o {var_analise.lower()} da ocorrência."
+                                            f"✅ **Há um padrão — técnicas são escolhidas diferente conforme a {var_analise.lower()}**\n\n"
+                                            f"**O que isso significa:** A escolha de técnicas **não é aleatória**. "
+                                            f"Negociadores (ou a equipe em geral) aplicam técnicas diferentes dependendo da {var_analise.lower()} da ocorrência.\n\n"
+                                            f"**Por que isso é importante?** Indica uma **atuação doutrinária** — existe um padrão consistente, "
+                                            f"possivelmente baseado em treinamento ou protocolo. Isso é bom porque mostra profissionalismo e adaptação ao contexto.\n\n"
+                                            f"**Exemplo prático:** Se a {var_analise.lower()} é 'Tipologia', significa que para cada tipo de ocorrência "
+                                            f"há uma 'receita' de técnicas preferidas — não é improviso.\n\n"
+                                            f"**Por que temos certeza?** Testamos {len(df_qui_clean)} ocorrências e a probabilidade desse padrão ser acaso é "
+                                            f"menor que 5% (p = {p_chi:.4f})."
                                         )
                                     else:
                                         st.info(
-                                            f"➖ **Sem padrão identificado — uso de técnicas parece independente do(a) {var_analise}**\n\n"
-                                            f"Não há evidência estatística de associação (p = {p_chi:.4f}). "
-                                            "A aplicação de técnicas parece **situacional ou improvisada**, "
-                                            f"sem relação sistemática com o {var_analise.lower()}."
+                                            f"➖ **Sem padrão — técnicas parecem ser escolhidas independentemente da {var_analise.lower()}**\n\n"
+                                            f"**O que isso significa:** Não existe uma relação consistente entre a {var_analise.lower()} e a técnica escolhida. "
+                                            f"Técnicas são aplicadas de forma **situacional ou improvisada**, sem seguir um padrão claro.\n\n"
+                                            f"**Por que isso importa?** Pode indicar:\n"
+                                            f"  • Falta de protocolo ou doutrina clara\n"
+                                            f"  • Cada negociador decide independentemente\n"
+                                            f"  • As técnicas funcionam bem em qualquer contexto (possivelmente positivo)\n"
+                                            f"  • Oportunidade de desenvolvimento de protocolo se não há uma estratégia deliberada\n\n"
+                                            f"**Por que não há padrão?** Com {len(df_qui_clean)} ocorrências, a probabilidade de haver um padrão escondido é "
+                                            f"maior que 5% (p = {p_chi:.4f}), então não podemos confirmar associação."
                                         )
 
-                                    with st.expander(f"✔ Ver detalhes técnicos (Qui-Quadrado × {var_analise})"):
+                                    if st.button(f"🔬 Ver detalhes técnicos (Qui-Quadrado × {var_analise})", key="btn_chi_details"):
                                         st.markdown(
-                                            f"- **Teste:** Qui-Quadrado de Pearson (verifica independência entre variáveis categóricas)\n"
-                                            f"- **Estatística χ²:** `{chi2:.4f}`\n"
-                                            f"- **P-Value:** `{p_chi:.4f}` *(abaixo de 0,05 = associação improvável por acaso)*\n"
-                                            f"- **Categorias em '{var_analise}':** `{cats_v1}`\n"
-                                            f"- **Técnicas distintas:** `{cats_v2}`\n"
-                                            f"- **N linhas analisadas:** `{len(df_qui_clean)}`\n"
-                                            "- **Limitação:** com células de frequência esperada < 5, "
-                                            "o teste perde precisão. Considere agrupar categorias raras."
+                                            f"""
+                                            **📊 O que é o Teste Qui-Quadrado?**
+                                            
+                                            É um teste que verifica se a escolha de uma coisa é independente de outra. 
+                                            No seu caso: "A técnica escolhida depende da {var_analise.lower()}?"
+                                            
+                                            Ele compara o que você observou com o que seria esperado por puro acaso.
+                                            
+                                            ---
+                                            
+                                            **📈 Interpretando a Estatística χ² (Chi-Quadrado): `{chi2:.4f}`**
+                                            
+                                            χ² mede "quanto a realidade se desvia do acaso":
+                                            - **χ² próximo de 0** = realidade igual ao acaso (sem padrão)
+                                            - **χ² grande** = realidade muito diferente do acaso (há padrão!)
+                                            - **Seu resultado: χ² = {chi2:.4f}**
+                                            
+                                            ---
+                                            
+                                            **🎯 P-Value: `{p_chi:.4f}` — "É realmente um padrão?"**
+                                            
+                                            Mesma lógica do Spearman:
+                                            - **p < 0.05** = Há um padrão real ✅ (improvável ser acaso)
+                                            - **p ≥ 0.05** = Sem confirmação ⚠️ (pode ser acaso)
+                                            - **Seu resultado: p = {p_chi:.4f}** = {'✅ Padrão real' if p_chi < 0.05 else '⚠️ Pode ser acaso'}
+                                            
+                                            ---
+                                            
+                                            **📋 Tabela de Contingência (o que foi analisado)**
+                                            
+                                            - **Variável 1 ({var_analise}):** {cats_v1} categorias diferentes
+                                            - **Variável 2 (Técnicas):** {cats_v2} técnicas diferentes
+                                            - **Linhas analisadas:** {len(df_qui_clean)} ocorrências
+                                            
+                                            O teste criou uma tabela cruzando as {cats_v1} × {cats_v2} = {cats_v1 * cats_v2} combinações possíveis
+                                            e viu se algumas combinações aparecem muito mais (ou pouco) que o esperado.
+                                            
+                                            ---
+                                            
+                                            **⚠️ Limitação importante**
+                                            
+                                            Se alguma combinação ocorrer menos de 5 vezes, a precisão do teste diminui.
+                                            Com dados limitados, procure agrupar categorias raras.
+                                            
+                                            ---
+                                            
+                                            **💡 Resumo técnico**
+                                            
+                                            Qui-Quadrado de Pearson:
+                                            • Funciona com variáveis **categóricas** (não contínuas)
+                                            • Verifica **independência** entre variáveis
+                                            • Não diz qual é a associação, apenas se ela existe
+                                            • Sensível a tamanhos de célula pequenos (< 5 observações)
+                                            """
                                         )
                                 else:
                                     st.warning(
@@ -2610,7 +2667,7 @@ else:
                                     )
                     else:
                         st.warning("Configuração de colunas inválida para o cruzamento selecionado.")
-
+            
                     st.markdown("</div>", unsafe_allow_html=True)
 
 
