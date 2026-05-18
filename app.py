@@ -1511,11 +1511,7 @@ else:
                                         st.plotly_chart(fig_grafo, use_container_width=True)
                                         
                                         # Lista as palavras principais
-                                        key_palavras = "show_palavras_similitude"
-                                        if st.button("📝 Palavras Compartilhadas", key="btn_palavras_similitude"):
-                                            st.session_state[key_palavras] = not st.session_state.get(key_palavras, False)
-                                        
-                                        if st.session_state.get(key_palavras, False):
+                                        with st.expander("📝 Ver lista de palavras compartilhadas"):
                                             st.markdown("**Palavras que conectaram os dois lados:**\n")
                                             for palavra, freq in sorted(top_comuns.items(), key=lambda x: x[1], reverse=True):
                                                 st.markdown(f"- **{palavra}** — apareceu {freq} vezes no total")
@@ -2141,1095 +2137,1095 @@ else:
     </div>
     """, unsafe_allow_html=True)
 
+# ====
+# ABA 2: PAINEL (HISTÓRICO)
+# ====
+with aba_geral:
+    st.markdown("### Série Histórica - Negociações GATE")
+    st.markdown("<h5 style='color: #f97;'>Filtros por: Negociador, Tipologia e Modalidade do Incidente</h5>", unsafe_allow_html=True)
+    
+    col_f1, col_f2, col_f3 = st.columns(3)
+    with col_f1:
+        lista_neg_g = ["Todos"] + sorted(df_quali[df_quali['Neg_Limpo'] != 'N/D']['Neg_Limpo'].unique().tolist())
+        filtro_neg_g = st.selectbox("Filtrar por Negociador:", lista_neg_g, key="f_neg_historico")
+    with col_f2:
+        lista_tip_g = ["Todas"] + sorted(df_quali[df_quali['Tip_Limpa'] != 'N/D']['Tip_Limpa'].unique().tolist())
+        filtro_tip_g = st.selectbox("Filtrar por Tipologia:", lista_tip_g, key="f_tip_historico")
+    with col_f3:
+        lista_mod_g = ["Todas"] + sorted(df_quali[df_quali['Mod_Limpa'] != 'N/D']['Mod_Limpa'].unique().tolist())
+        filtro_mod_g = st.selectbox("Filtrar por Modalidade:", lista_mod_g, key="f_mod_historico")
+
+    df_quali_filt = df_quali.copy()
+    if filtro_neg_g != "Todos": df_quali_filt = df_quali_filt[df_quali_filt['Neg_Limpo'] == filtro_neg_g]
+    if filtro_tip_g != "Todas": df_quali_filt = df_quali_filt[df_quali_filt['Tip_Limpa'] == filtro_tip_g]
+    if filtro_mod_g != "Todas": df_quali_filt = df_quali_filt[df_quali_filt['Mod_Limpa'] == filtro_mod_g]
+
+    st.markdown("---")
+    col_m1, col_m2, col_m3 = st.columns(3)
+    with col_m1: st.metric("Ocorrências Analisadas", len(df_quali_filt))
+    with col_m2: st.metric("Tempo Total de Negociação Real", somar_tempos_segundos(df_quali_filt.get('Tempo de Negociação Real', [])))
+    with col_m3: st.metric("Tempo Total de Negociação Tática", somar_tempos_segundos(df_quali_filt.get('Tempo de Negociação Tática', [])))
+
+    st.markdown("---")
+    
     # ====
-    # ABA 2: PAINEL (HISTÓRICO)
+    # NOVOS GRÁFICOS: VISÃO GERAL DA AMOSTRA
     # ====
-    with aba_geral:
-        st.markdown("### Série Histórica - Negociações GATE")
-        st.markdown("<h5 style='color: #f97;'>Filtros por: Negociador, Tipologia e Modalidade do Incidente</h5>", unsafe_allow_html=True)
+    st.markdown("<h5 style='color: #FFD700;'> Visão Geral da Amostra</h5>", unsafe_allow_html=True)
+    
+    def gerar_grafico_resumo(df, coluna, titulo):
+        """Gera gráfico de rosca (donut) padronizado com o Design System."""
+        if coluna not in df.columns: return None
         
-        col_f1, col_f2, col_f3 = st.columns(3)
-        with col_f1:
-            lista_neg_g = ["Todos"] + sorted(df_quali[df_quali['Neg_Limpo'] != 'N/D']['Neg_Limpo'].unique().tolist())
-            filtro_neg_g = st.selectbox("Filtrar por Negociador:", lista_neg_g, key="f_neg_historico")
-        with col_f2:
-            lista_tip_g = ["Todas"] + sorted(df_quali[df_quali['Tip_Limpa'] != 'N/D']['Tip_Limpa'].unique().tolist())
-            filtro_tip_g = st.selectbox("Filtrar por Tipologia:", lista_tip_g, key="f_tip_historico")
-        with col_f3:
-            lista_mod_g = ["Todas"] + sorted(df_quali[df_quali['Mod_Limpa'] != 'N/D']['Mod_Limpa'].unique().tolist())
-            filtro_mod_g = st.selectbox("Filtrar por Modalidade:", lista_mod_g, key="f_mod_historico")
-
-        df_quali_filt = df_quali.copy()
-        if filtro_neg_g != "Todos": df_quali_filt = df_quali_filt[df_quali_filt['Neg_Limpo'] == filtro_neg_g]
-        if filtro_tip_g != "Todas": df_quali_filt = df_quali_filt[df_quali_filt['Tip_Limpa'] == filtro_tip_g]
-        if filtro_mod_g != "Todas": df_quali_filt = df_quali_filt[df_quali_filt['Mod_Limpa'] == filtro_mod_g]
-
-        st.markdown("---")
-        col_m1, col_m2, col_m3 = st.columns(3)
-        with col_m1: st.metric("Ocorrências Analisadas", len(df_quali_filt))
-        with col_m2: st.metric("Tempo Total de Negociação Real", somar_tempos_segundos(df_quali_filt.get('Tempo de Negociação Real', [])))
-        with col_m3: st.metric("Tempo Total de Negociação Tática", somar_tempos_segundos(df_quali_filt.get('Tempo de Negociação Tática', [])))
-
-        st.markdown("---")
+        # Limpa listas vazias e formata strings
+        serie = df[coluna].apply(lambda x: x[0] if isinstance(x, list) and len(x)>0 else str(x))
+        serie = serie[~serie.isin(["N/D", "nan", "", "None"])]
         
-        # ====
-        # NOVOS GRÁFICOS: VISÃO GERAL DA AMOSTRA
-        # ====
-        st.markdown("<h5 style='color: #FFD700;'> Visão Geral da Amostra</h5>", unsafe_allow_html=True)
+        if serie.empty: return None
         
-        def gerar_grafico_resumo(df, coluna, titulo):
-            """Gera gráfico de rosca (donut) padronizado com o Design System."""
-            if coluna not in df.columns: return None
-            
-            # Limpa listas vazias e formata strings
-            serie = df[coluna].apply(lambda x: x[0] if isinstance(x, list) and len(x)>0 else str(x))
-            serie = serie[~serie.isin(["N/D", "nan", "", "None"])]
-            
-            if serie.empty: return None
-            
-            contagem = serie.value_counts().reset_index()
-            contagem.columns = [coluna, 'Frequência']
-            # para garantir que a maior fatia pegue a cor mais forte
-            contagem = contagem.sort_values('Frequência', ascending=False)
+        contagem = serie.value_counts().reset_index()
+        contagem.columns = [coluna, 'Frequência']
+        # para garantir que a maior fatia pegue a cor mais forte
+        contagem = contagem.sort_values('Frequência', ascending=False)
 
-            cores_contraste = ['#FF8C00', '#8B4513', "#A53A00", '#DEB887', "#EBE9E7" ]
+        cores_contraste = ['#FF8C00', '#8B4513', "#A53A00", '#DEB887', "#EBE9E7" ]
 
-            # Criação do Gráfico de Rosca
-            fig = px.pie(
-                contagem, 
-                values='Frequência', 
-                names=coluna, 
-                title=titulo,
-                hole=0.5, # Define o buraco central para transformar em rosca
-                color_discrete_sequence=cores_contraste
+        # Criação do Gráfico de Rosca
+        fig = px.pie(
+            contagem, 
+            values='Frequência', 
+            names=coluna, 
+            title=titulo,
+            hole=0.5, # Define o buraco central para transformar em rosca
+            color_discrete_sequence=cores_contraste
+        )
+        
+        # Configuração das legendas e rótulos
+        fig.update_traces(
+            textinfo='value+percent', # Mostra o número absoluto e a porcentagem
+            textposition='outside',   # Coloca os números para fora para não poluir
+            marker=dict(line=dict(color='#FFFFFF', width=1))
+        )
+        
+        # Layout padronizado
+        fig.update_layout(
+            paper_bgcolor="rgba(0,0,0,0)", 
+            plot_bgcolor="rgba(0,0,0,0)", 
+            font_color="#FFF", 
+            margin=dict(t=50, b=10, l=10, r=10),
+            showlegend=True,
+            legend=dict(
+                orientation="h",       # Legenda horizontal
+                yanchor="bottom", 
+                y=-0.3, 
+                xanchor="center", 
+                x=0.5
             )
-            
-            # Configuração das legendas e rótulos
-            fig.update_traces(
-                textinfo='value+percent', # Mostra o número absoluto e a porcentagem
-                textposition='outside',   # Coloca os números para fora para não poluir
-                marker=dict(line=dict(color='#FFFFFF', width=1))
-            )
-            
-            # Layout padronizado
-            fig.update_layout(
-                paper_bgcolor="rgba(0,0,0,0)", 
-                plot_bgcolor="rgba(0,0,0,0)", 
-                font_color="#FFF", 
-                margin=dict(t=50, b=10, l=10, r=10),
-                showlegend=True,
-                legend=dict(
-                    orientation="h",       # Legenda horizontal
-                    yanchor="bottom", 
-                    y=-0.3, 
-                    xanchor="center", 
-                    x=0.5
-                )
-            )
-            return fig
+        )
+        return fig
 
-        c_g1, c_g2, c_g3 = st.columns(3)
+    c_g1, c_g2, c_g3 = st.columns(3)
+    
+    with c_g1:
+        fig_res = gerar_grafico_resumo(df_quali_filt, 'Resolução', 'Resolução do Incidente')
+        if fig_res: st.plotly_chart(fig_res, use_container_width=True)
+        else: st.info("Sem dados de Resolução para os filtros atuais.")
         
-        with c_g1:
-            fig_res = gerar_grafico_resumo(df_quali_filt, 'Resolução', 'Resolução do Incidente')
-            if fig_res: st.plotly_chart(fig_res, use_container_width=True)
-            else: st.info("Sem dados de Resolução para os filtros atuais.")
-            
-            fig_uni = gerar_grafico_resumo(df_quali_filt, 'Uniforme Usado', 'Uniforme Utilizado')
-            if fig_uni: st.plotly_chart(fig_uni, use_container_width=True)
-            else: st.info("Sem dados de Uniforme para os filtros atuais.")
+        fig_uni = gerar_grafico_resumo(df_quali_filt, 'Uniforme Usado', 'Uniforme Utilizado')
+        if fig_uni: st.plotly_chart(fig_uni, use_container_width=True)
+        else: st.info("Sem dados de Uniforme para os filtros atuais.")
 
-        with c_g2:
-            fig_trans = gerar_grafico_resumo(df_quali_filt, 'Forma de Transição', 'Forma de Transição')
-            if fig_trans: st.plotly_chart(fig_trans, use_container_width=True)
-            else: st.info("Sem dados de Transição para os filtros atuais.")
-            
-            fig_sexo = gerar_grafico_resumo(df_quali_filt, 'Sexo do Causador', 'Sexo do Causador')
-            if fig_sexo: st.plotly_chart(fig_sexo, use_container_width=True)
-            else: st.info("Sem dados de Sexo para os filtros atuais.")
+    with c_g2:
+        fig_trans = gerar_grafico_resumo(df_quali_filt, 'Forma de Transição', 'Forma de Transição')
+        if fig_trans: st.plotly_chart(fig_trans, use_container_width=True)
+        else: st.info("Sem dados de Transição para os filtros atuais.")
+        
+        fig_sexo = gerar_grafico_resumo(df_quali_filt, 'Sexo do Causador', 'Sexo do Causador')
+        if fig_sexo: st.plotly_chart(fig_sexo, use_container_width=True)
+        else: st.info("Sem dados de Sexo para os filtros atuais.")
 
 
-        with c_g3:
-            fig_mod = gerar_grafico_resumo(df_quali_filt, 'Modalidade do incidente', 'Modalidade do incidente')
-            if fig_mod: st.plotly_chart(fig_mod, use_container_width=True)
-            else: st.info("Sem dados de Modalidade do incidente para os filtros atuais.")
-            
-            fig_tip = gerar_grafico_resumo(df_quali_filt, 'Tipologia', 'Tipologia')
-            if fig_tip: st.plotly_chart(fig_tip, use_container_width=True)
-            else: st.info("Sem dados de Tipologia para os filtros atuais.")
+    with c_g3:
+        fig_mod = gerar_grafico_resumo(df_quali_filt, 'Modalidade do incidente', 'Modalidade do incidente')
+        if fig_mod: st.plotly_chart(fig_mod, use_container_width=True)
+        else: st.info("Sem dados de Modalidade do incidente para os filtros atuais.")
+        
+        fig_tip = gerar_grafico_resumo(df_quali_filt, 'Tipologia', 'Tipologia')
+        if fig_tip: st.plotly_chart(fig_tip, use_container_width=True)
+        else: st.info("Sem dados de Tipologia para os filtros atuais.")
 
-        st.markdown("---")
-        # ============================================================
-        # BLOCO: Ranking de Técnicas + Padrões e Correlações
-        # Versão aprimorada — UX legível para leigos + lógica
-        # estatística corrigida
-        # ============================================================
+    st.markdown("---")
+    # ============================================================
+    # BLOCO: Ranking de Técnicas + Padrões e Correlações
+    # Versão aprimorada — UX legível para leigos + lógica
+    # estatística corrigida
+    # ============================================================
 
-        st.markdown("#### Ranking de Técnicas Aplicadas")
+    st.markdown("#### Ranking de Técnicas Aplicadas")
 
-        if st.button("📊 Abrir Ranking de Técnicas"):
-            st.session_state["exibir_ranking"] = True
+    if st.button("📊 Abrir Ranking de Técnicas"):
+        st.session_state["exibir_ranking"] = True
 
-        st.markdown("<div style='margin-bottom: 20px;'></div>", unsafe_allow_html=True)
+    st.markdown("<div style='margin-bottom: 20px;'></div>", unsafe_allow_html=True)
 
-        if st.session_state.get("exibir_ranking", False):
+    if st.session_state.get("exibir_ranking", False):
 
-            # ----------------------------------------------------------
-            # Pré-processamento de colunas limpas
-            # ----------------------------------------------------------
-            if not df_tec.empty:
-                df_tec["Neg_Limpo"] = (
-                    df_tec["Negociador Principal do incidente crítico"].apply(limpar_valor)
-                    if "Negociador Principal do incidente crítico" in df_tec.columns
-                    else "N/D"
-                )
-                df_tec["Tip_Limpa"] = (
-                    df_tec["Tipologia do incidente crítico"].apply(limpar_valor)
-                    if "Tipologia do incidente crítico" in df_tec.columns
-                    else "N/D"
-                )
-                df_tec["Mod_Limpa"] = (
-                    df_tec["Modalidade do incidente crítico"].apply(limpar_valor)
-                    if "Modalidade do incidente crítico" in df_tec.columns
-                    else "N/D"
-                )
+        # ----------------------------------------------------------
+        # Pré-processamento de colunas limpas
+        # ----------------------------------------------------------
+        if not df_tec.empty:
+            df_tec["Neg_Limpo"] = (
+                df_tec["Negociador Principal do incidente crítico"].apply(limpar_valor)
+                if "Negociador Principal do incidente crítico" in df_tec.columns
+                else "N/D"
+            )
+            df_tec["Tip_Limpa"] = (
+                df_tec["Tipologia do incidente crítico"].apply(limpar_valor)
+                if "Tipologia do incidente crítico" in df_tec.columns
+                else "N/D"
+            )
+            df_tec["Mod_Limpa"] = (
+                df_tec["Modalidade do incidente crítico"].apply(limpar_valor)
+                if "Modalidade do incidente crítico" in df_tec.columns
+                else "N/D"
+            )
 
-                df_tec_filt = df_tec.copy()
-                if filtro_neg_g != "Todos":
-                    df_tec_filt = df_tec_filt[df_tec_filt["Neg_Limpo"] == filtro_neg_g]
-                if filtro_tip_g != "Todas":
-                    df_tec_filt = df_tec_filt[df_tec_filt["Tip_Limpa"] == filtro_tip_g]
-                if filtro_mod_g != "Todas":
-                    df_tec_filt = df_tec_filt[df_tec_filt["Mod_Limpa"] == filtro_mod_g]
+            df_tec_filt = df_tec.copy()
+            if filtro_neg_g != "Todos":
+                df_tec_filt = df_tec_filt[df_tec_filt["Neg_Limpo"] == filtro_neg_g]
+            if filtro_tip_g != "Todas":
+                df_tec_filt = df_tec_filt[df_tec_filt["Tip_Limpa"] == filtro_tip_g]
+            if filtro_mod_g != "Todas":
+                df_tec_filt = df_tec_filt[df_tec_filt["Mod_Limpa"] == filtro_mod_g]
 
-            # ----------------------------------------------------------
-            # Ranking visual
-            # ----------------------------------------------------------
-            if not df_tec_filt.empty:
-                col_t = next(
-                    (
-                        col
-                        for col in ["TÉCNICAS", "TECNICAS", "TÉCNICA", "TECNICA"]
-                        if col in df_tec_filt.columns
-                    ),
-                    None,
-                )
-                if col_t:
-                    freq_global = df_tec_filt[col_t].value_counts().reset_index()
-                    freq_global.columns = ["Técnica", "Vezes Utilizada"]
+        # ----------------------------------------------------------
+        # Ranking visual
+        # ----------------------------------------------------------
+        if not df_tec_filt.empty:
+            col_t = next(
+                (
+                    col
+                    for col in ["TÉCNICAS", "TECNICAS", "TÉCNICA", "TECNICA"]
+                    if col in df_tec_filt.columns
+                ),
+                None,
+            )
+            if col_t:
+                freq_global = df_tec_filt[col_t].value_counts().reset_index()
+                freq_global.columns = ["Técnica", "Vezes Utilizada"]
 
-                    c_tab, c_tree = st.columns([1, 2])
-                    with c_tab:
-                        st.dataframe(freq_global, use_container_width=True, hide_index=True)
-                    with c_tree:
-                        fig_g = px.treemap(
-                            freq_global,
-                            path=["Técnica"],
-                            values="Vezes Utilizada",
-                            color="Vezes Utilizada",
-                            color_continuous_scale="Oranges",
-                        )
-                        fig_g.update_layout(
-                            paper_bgcolor="rgba(0,0,0,0)",
-                            plot_bgcolor="rgba(0,0,0,0)",
-                            font_color="#FFF",
-                            margin=dict(t=0, l=0, r=0, b=0),
-                        )
-                        st.plotly_chart(fig_g, use_container_width=True)
-                else:
-                    st.warning("Coluna 'TÉCNICAS' não encontrada.")
+                c_tab, c_tree = st.columns([1, 2])
+                with c_tab:
+                    st.dataframe(freq_global, use_container_width=True, hide_index=True)
+                with c_tree:
+                    fig_g = px.treemap(
+                        freq_global,
+                        path=["Técnica"],
+                        values="Vezes Utilizada",
+                        color="Vezes Utilizada",
+                        color_continuous_scale="Oranges",
+                    )
+                    fig_g.update_layout(
+                        paper_bgcolor="rgba(0,0,0,0)",
+                        plot_bgcolor="rgba(0,0,0,0)",
+                        font_color="#FFF",
+                        margin=dict(t=0, l=0, r=0, b=0),
+                    )
+                    st.plotly_chart(fig_g, use_container_width=True)
             else:
-                st.info("Nenhuma técnica encontrada para os filtros selecionados.")
+                st.warning("Coluna 'TÉCNICAS' não encontrada.")
+        else:
+            st.info("Nenhuma técnica encontrada para os filtros selecionados.")
 
-            st.markdown("---")
+        st.markdown("---")
 
-            # ----------------------------------------------------------
-            # Cabeçalho da seção de correlações
-            # ----------------------------------------------------------
+        # ----------------------------------------------------------
+        # Cabeçalho da seção de correlações
+        # ----------------------------------------------------------
+        st.markdown(
+            "<h4 style='color: #FFD700;'>🔬 O que os dados dizem sobre as ocorrências?</h4>"
+            "<p style='color: #aaa; font-size: 0.9rem; margin-top: -8px;'>"
+            "Os testes abaixo buscam padrões nos dados. "
+            "Os nomes técnicos ficam ocultos por padrão — o que importa é a pergunta e a resposta em linguagem clara."
+            "</p>",
+            unsafe_allow_html=True,
+        )
+
+        # -------------------------------------------------------
+        # Helpers estatísticos locais
+        # -------------------------------------------------------
+        import unicodedata
+
+        def norm_col(t):
+            return (
+                unicodedata.normalize("NFKD", str(t))
+                .encode("ASCII", "ignore")
+                .decode("ASCII")
+                .lower()
+            )
+
+        def achar_coluna(df, papel, metrica, momento):
+            for col in df.columns:
+                cn = norm_col(col)
+                if norm_col(papel) in cn and norm_col(metrica) in cn and norm_col(momento) in cn:
+                    return col
+            return None
+
+        def tempo_para_minutos(val):
+            """Converte segundos (inteiro ou lista) para minutos float."""
+            try:
+                if isinstance(val, list):
+                    val = val[0]
+                if pd.isna(val) or str(val).strip().lower() in ("", "n/d", "nan", "none"):
+                    return None
+                segundos = float(val)
+                return segundos / 60 if segundos > 0 else None
+            except Exception:
+                return None
+
+        lixo = {"none", "nan", "n/d", "", "null", "[]"}
+
+        col_agr_c = achar_coluna(df_quali_filt, "Principal", "Agressividade", "Chegada")
+        col_agr_e = achar_coluna(df_quali_filt, "Principal", "Agressividade", "Encerramento")
+
+        id_col = next(
+            (c for c in df_tec_filt.columns if "ID" in c.upper() or "VINCULO" in c.upper()),
+            None,
+        )
+
+        # N real de APAs (descartando linhas-lixo da coluna de técnicas)
+        if col_t:
+            df_tec_limpo = df_tec_filt[
+                ~df_tec_filt[col_t].astype(str).str.strip().str.lower().isin(lixo)
+            ].copy()
+        else:
+            df_tec_limpo = df_tec_filt.copy()
+
+        total_apas_reais = (
+            df_tec_limpo[id_col].astype(str).nunique() if id_col else len(df_tec_limpo)
+        )
+
+        # ----------------------------------------------------------
+        # Layout das duas colunas de análise
+        # ----------------------------------------------------------
+        c_sp1, c_sp2 = st.columns(2)
+
+        # ==========================================================
+        # COLUNA 1 — Spearman: Duração vs. Queda de Agressividade
+        # ==========================================================
+        with c_sp1:
             st.markdown(
-                "<h4 style='color: #FFD700;'>🔬 O que os dados dizem sobre as ocorrências?</h4>"
-                "<p style='color: #aaa; font-size: 0.9rem; margin-top: -8px;'>"
-                "Os testes abaixo buscam padrões nos dados. "
-                "Os nomes técnicos ficam ocultos por padrão — o que importa é a pergunta e a resposta em linguagem clara."
-                "</p>",
+                """
+                <div class='info-card'>
+                <strong>Ocorrências mais longas terminam com o causador menos agressivo?</strong><br>
+                <span style='font-size: 0.82rem; color: #aaa;'>
+                Verifica se existe uma relação matemática entre o tempo da negociação
+                e a queda de agressividade do causador do início ao fim da ocorrência.
+                </span>
+                """,
                 unsafe_allow_html=True,
             )
 
-            # -------------------------------------------------------
-            # Helpers estatísticos locais
-            # -------------------------------------------------------
-            import unicodedata
+            df_sp = df_quali_filt.copy()
 
-            def norm_col(t):
-                return (
-                    unicodedata.normalize("NFKD", str(t))
-                    .encode("ASCII", "ignore")
-                    .decode("ASCII")
-                    .lower()
+            # --- Verificações de pré-requisito ---
+            colunas_ausentes = []
+            if not col_agr_c:
+                colunas_ausentes.append("Agressividade na Chegada")
+            if not col_agr_e:
+                colunas_ausentes.append("Agressividade no Encerramento")
+            if "Tempo de Negociação Real" not in df_sp.columns:
+                colunas_ausentes.append("Tempo de Negociação Real")
+
+            if colunas_ausentes:
+                st.warning(
+                    f"⚠️ Colunas ausentes nos dados: {', '.join(colunas_ausentes)}. "
+                    "Verifique o formulário de registro."
                 )
 
-            def achar_coluna(df, papel, metrica, momento):
-                for col in df.columns:
-                    cn = norm_col(col)
-                    if norm_col(papel) in cn and norm_col(metrica) in cn and norm_col(momento) in cn:
-                        return col
-                return None
-
-            def tempo_para_minutos(val):
-                """Converte segundos (inteiro ou lista) para minutos float."""
-                try:
-                    if isinstance(val, list):
-                        val = val[0]
-                    if pd.isna(val) or str(val).strip().lower() in ("", "n/d", "nan", "none"):
-                        return None
-                    segundos = float(val)
-                    return segundos / 60 if segundos > 0 else None
-                except Exception:
-                    return None
-
-            lixo = {"none", "nan", "n/d", "", "null", "[]"}
-
-            col_agr_c = achar_coluna(df_quali_filt, "Principal", "Agressividade", "Chegada")
-            col_agr_e = achar_coluna(df_quali_filt, "Principal", "Agressividade", "Encerramento")
-
-            id_col = next(
-                (c for c in df_tec_filt.columns if "ID" in c.upper() or "VINCULO" in c.upper()),
-                None,
-            )
-
-            # N real de APAs (descartando linhas-lixo da coluna de técnicas)
-            if col_t:
-                df_tec_limpo = df_tec_filt[
-                    ~df_tec_filt[col_t].astype(str).str.strip().str.lower().isin(lixo)
-                ].copy()
             else:
-                df_tec_limpo = df_tec_filt.copy()
-
-            total_apas_reais = (
-                df_tec_limpo[id_col].astype(str).nunique() if id_col else len(df_tec_limpo)
-            )
-
-            # ----------------------------------------------------------
-            # Layout das duas colunas de análise
-            # ----------------------------------------------------------
-            c_sp1, c_sp2 = st.columns(2)
-
-            # ==========================================================
-            # COLUNA 1 — Spearman: Duração vs. Queda de Agressividade
-            # ==========================================================
-            with c_sp1:
-                st.markdown(
-                    """
-                    <div class='info-card'>
-                    <strong>Ocorrências mais longas terminam com o causador menos agressivo?</strong><br>
-                    <span style='font-size: 0.82rem; color: #aaa;'>
-                    Verifica se existe uma relação matemática entre o tempo da negociação
-                    e a queda de agressividade do causador do início ao fim da ocorrência.
-                    </span>
-                    """,
-                    unsafe_allow_html=True,
+                # Converte escalas e remove "Não Observado" (0)
+                # NOTA: zeros são descartados pois representam ausência de observação,
+                # não agressividade zero — incluí-los distorceria o coeficiente.
+                df_sp["Agr_Inicio"] = (
+                    df_sp[col_agr_c].apply(converter_escala).replace(0, pd.NA)
+                )
+                df_sp["Agr_Fim"] = (
+                    df_sp[col_agr_e].apply(converter_escala).replace(0, pd.NA)
+                )
+                df_sp["Tempo_Min"] = df_sp["Tempo de Negociação Real"].apply(
+                    tempo_para_minutos
                 )
 
-                df_sp = df_quali_filt.copy()
+                # Remove linhas sem os três valores necessários
+                df_sp = df_sp.dropna(subset=["Agr_Inicio", "Agr_Fim", "Tempo_Min"])
 
-                # --- Verificações de pré-requisito ---
-                colunas_ausentes = []
-                if not col_agr_c:
-                    colunas_ausentes.append("Agressividade na Chegada")
-                if not col_agr_e:
-                    colunas_ausentes.append("Agressividade no Encerramento")
-                if "Tempo de Negociação Real" not in df_sp.columns:
-                    colunas_ausentes.append("Tempo de Negociação Real")
+                # Delta positivo = queda de agressividade (bom sinal)
+                df_sp["Delta_Agressividade"] = df_sp["Agr_Inicio"] - df_sp["Agr_Fim"]
 
-                if colunas_ausentes:
+                n_valido = len(df_sp)
+
+                if n_valido < 5:
+                    # Barra de progresso visual
+                    progresso = int((n_valido / 5) * 100)
                     st.warning(
-                        f"⚠️ Colunas ausentes nos dados: {', '.join(colunas_ausentes)}. "
-                        "Verifique o formulário de registro."
+                        f"⏳ **Aguardando mais dados (N={n_valido}/5)**\n\n"
+                        "São necessárias pelo menos **5 ocorrências encerradas** "
+                        "com agressividade registrada nos dois momentos para calcular "
+                        "este indicador de forma confiável."
                     )
+                    st.progress(progresso)
 
                 else:
-                    # Converte escalas e remove "Não Observado" (0)
-                    # NOTA: zeros são descartados pois representam ausência de observação,
-                    # não agressividade zero — incluí-los distorceria o coeficiente.
-                    df_sp["Agr_Inicio"] = (
-                        df_sp[col_agr_c].apply(converter_escala).replace(0, pd.NA)
-                    )
-                    df_sp["Agr_Fim"] = (
-                        df_sp[col_agr_e].apply(converter_escala).replace(0, pd.NA)
-                    )
-                    df_sp["Tempo_Min"] = df_sp["Tempo de Negociação Real"].apply(
-                        tempo_para_minutos
-                    )
+                    res_sp = analise.calcular_spearman(df_sp, "Tempo_Min", "Delta_Agressividade")
 
-                    # Remove linhas sem os três valores necessários
-                    df_sp = df_sp.dropna(subset=["Agr_Inicio", "Agr_Fim", "Tempo_Min"])
+                    if res_sp.get("valido", False):
+                        rho = res_sp["rho"]
+                        p = res_sp["p_value"]
+                        significativo = p < 0.05
 
-                    # Delta positivo = queda de agressividade (bom sinal)
-                    df_sp["Delta_Agressividade"] = df_sp["Agr_Inicio"] - df_sp["Agr_Fim"]
-
-                    n_valido = len(df_sp)
-
-                    if n_valido < 5:
-                        # Barra de progresso visual
-                        progresso = int((n_valido / 5) * 100)
-                        st.warning(
-                            f"⏳ **Aguardando mais dados (N={n_valido}/5)**\n\n"
-                            "São necessárias pelo menos **5 ocorrências encerradas** "
-                            "com agressividade registrada nos dois momentos para calcular "
-                            "este indicador de forma confiável."
-                        )
-                        st.progress(progresso)
-
-                    else:
-                        res_sp = analise.calcular_spearman(df_sp, "Tempo_Min", "Delta_Agressividade")
-
-                        if res_sp.get("valido", False):
-                            rho = res_sp["rho"]
-                            p = res_sp["p_value"]
-                            significativo = p < 0.05
-
-                            # --- Veredito em linguagem clara ---
-                            if significativo and rho > 0:
-                                icone = "✅"
-                                titulo_veredito = "Sim — ocorrências mais longas terminam com menos agressividade"
-                                cor_veredito = "success"
-                                # Explicação narrativa para leigos
-                                forca_correlacao = "muito forte" if abs(rho) > 0.7 else "forte" if abs(rho) > 0.5 else "moderada"
-                                explicacao = (
-                                    f"**O que isso significa:** Existe uma **relação {forca_correlacao}** entre duração e queda de agressividade. "
-                                    f"Em outras palavras: quanto mais tempo a negociação leva, maior a chance de o causador terminar menos agressivo.\n\n"
-                                    f"**Por que temos certeza?** Analisamos {n_valido} ocorrências e o padrão encontrado é tão consistente "
-                                    f"que a probabilidade de ser mera coincidência é menor que 5% (p < 0,05). Isso significa que o padrão é **real**.\n\n"
-                                    f"**Métrica técnica:** Rho = {rho:.2f} (escala de -1 a +1, onde +1 = relação perfeita)."
-                                )
-                            elif significativo and rho < 0:
-                                icone = "⚠️"
-                                titulo_veredito = "Atenção — ocorrências mais longas terminam COM MAIS agressividade"
-                                cor_veredito = "warning"
-                                forca_correlacao = "muito forte" if abs(rho) > 0.7 else "forte" if abs(rho) > 0.5 else "moderada"
-                                explicacao = (
-                                    f"**O que isso significa:** Existe uma **relação {forca_correlacao} inversa**. "
-                                    f"Ocorrências que demoram mais tempo tendem a terminar com o causador **mais agressivo**, não menos.\n\n"
-                                    f"**Por que isso preocupa?** Isso pode indicar que:\n"
-                                    f"  • O tempo prolongado está gerando **desgaste ou frustração** no causador\n"
-                                    f"  • A estratégia de longa negociação pode não estar sendo efetiva em alguns cenários\n"
-                                    f"  • Pode haver um ponto de saturação após o qual continuar negociando piora as coisas\n\n"
-                                    f"**Por que temos certeza?** O padrão foi encontrado em {n_valido} ocorrências e é improvável ser coincidência (p < 0,05).\n\n"
-                                    f"**Métrica técnica:** Rho = {rho:.2f} (negativo indica relação inversa)."
-                                )
-                            elif not significativo and abs(rho) > 0.3:
-                                icone = "🔎"
-                                titulo_veredito = "Há uma tendência, mas ainda é cedo para confirmar"
-                                cor_veredito = "info"
-                                direcao = "positiva (mais tempo = menos agressividade)" if rho > 0 else "negativa (mais tempo = mais agressividade)"
-                                explicacao = (
-                                    f"**O que observamos:** Existe uma tendência {direcao}, mas com {n_valido} ocorrências, "
-                                    f"não podemos ter certeza se é um padrão real ou coincidência.\n\n"
-                                    f"**Por que não temos certeza?** A probabilidade de isso ser acaso é {p*100:.1f}% — acima do limite de 5% que os estatísticos usam como referência.\n\n"
-                                    f"**O que fazer?** Colete mais registros de negociações. Com 10-15 ocorrências a mais, essa tendência pode se confirmar ou se desfazer.\n\n"
-                                    f"**Métrica técnica:** Rho = {rho:.2f}, p = {p:.4f} (p > 0,05 = não significativo ainda)."
-                                )
-                            else:
-                                icone = "➖"
-                                titulo_veredito = "Nenhuma relação detectada entre duração e agressividade"
-                                cor_veredito = "info"
-                                explicacao = (
-                                    f"**O que isso significa:** A duração da ocorrência **não está associada** à queda de agressividade. "
-                                    f"Ocorrências longas terminam com queda de agressividade tão frequentemente quanto as curtas.\n\n"
-                                    f"**O que fazer?** Isso não é necessariamente ruim — significa que o tempo não é o fator determinante. "
-                                    f"Procure investigar outros fatores: técnicas usadas, perfil do causador, contexto da ocorrência, etc.\n\n"
-                                    f"**Por que temos certeza?** A relação encontrada (Rho = {rho:.2f}) é tão fraca que não conseguimos descartar coincidência (p = {p:.4f}).\n\n"
-                                    f"**Próximo passo:** Se quiser, rode os outros testes abaixo para explorar quais fatores **realmente** influenciam o desfecho."
-                                )
-
-                            # Exibe o veredito
-                            getattr(st, cor_veredito)(f"{icone} **{titulo_veredito}**\n\n{explicacao}")
-                        else:
-                            st.warning(res_sp.get("msg", "Dados insuficientes para o cálculo (N < 3)."))
-
-                st.markdown("</div>", unsafe_allow_html=True)
-
-            # ==========================================================
-            # COLUNA 2 — Qui-Quadrado: Técnica vs. Variável escolhida
-            # ==========================================================
-            with c_sp2:
-                st.markdown(
-                    """
-                    <div class='info-card'>
-                    <strong>O uso de técnicas segue um padrão ou é improvisado?</strong><br>
-                    <span style='font-size: 0.82rem; color: #aaa;'>
-                    Verifica se a escolha de técnicas está associada a uma característica da ocorrência
-                    ou se parece aleatória — independente do contexto.
-                    </span>
-                    """,
-                    unsafe_allow_html=True,
-                )
-
-                # Mapeamento variável → coluna (todas usando versões limpas consistentes)
-                # CORREÇÃO: "Modalidade" agora aponta para "Mod_Limpa" (igual ao padrão das outras)
-                # CORREÇÃO: "Atitude do Causador" usa df_quali_filt mergeado, não coluna inexistente em df_tec_filt
-                opcoes_variaveis = {
-                    "Tipologia": "Tip_Limpa",
-                    "Negociador": "Neg_Limpo",
-                    "Modalidade": "Mod_Limpa",
-                }
-
-                # Adiciona "Atitude do Causador" apenas se a coluna existir no df de qualitativas
-                # e houver uma coluna de ID para fazer o merge
-                col_resposta = next(
-                    (c for c in df_quali_filt.columns if norm_col(c) in ("resposta_cat", "atitude", "resposta")),
-                    None,
-                )
-                if col_resposta and id_col:
-                    opcoes_variaveis["Atitude do Causador"] = "_merged_resposta"
-
-                var_analise = st.selectbox(
-                    "Comparar técnica com:",
-                    list(opcoes_variaveis.keys()),
-                    index=0,
-                )
-                col_v1_key = opcoes_variaveis[var_analise]
-
-                # Monta o DataFrame correto para o cruzamento
-                if col_v1_key == "_merged_resposta":
-                    # Merge entre df_tec_limpo e df_quali_filt pela coluna de ID
-                    id_quali = next(
-                        (c for c in df_quali_filt.columns if "ID" in c.upper() or "VINCULO" in c.upper()),
-                        None,
-                    )
-                    if id_quali and id_col and col_t:
-                        df_merge = df_tec_limpo[[id_col, col_t]].merge(
-                            df_quali_filt[[id_quali, col_resposta]].rename(
-                                columns={col_resposta: "_Resposta_Cat"}
-                            ),
-                            left_on=id_col,
-                            right_on=id_quali,
-                            how="inner",
-                        )
-                        df_qui_base = df_merge.rename(columns={col_t: "_Tecnica", "_Resposta_Cat": col_v1_key})
-                        col_v1_real = col_v1_key
-                        col_v2_real = "_Tecnica"
-                    else:
-                        df_qui_base = pd.DataFrame()
-                        col_v1_real = None
-                        col_v2_real = None
-                else:
-                    # Variáveis já presentes em df_tec_limpo
-                    col_v1_real = col_v1_key
-                    col_v2_real = col_t
-                    df_qui_base = df_tec_limpo.copy() if col_t else pd.DataFrame()
-
-                # --- Verificação de N mínimo (usando o mesmo DataFrame base do Qui-Quadrado) ---
-                n_apas_qui = (
-                    df_qui_base[id_col].astype(str).nunique()
-                    if (id_col and id_col in df_qui_base.columns)
-                    else len(df_qui_base)
-                )
-
-                META_QUI = 10
-
-                if n_apas_qui < META_QUI:
-                    progresso_qui = int((n_apas_qui / META_QUI) * 100)
-                    st.warning(
-                        f"⏳ **Análise em maturação (N={n_apas_qui}/{META_QUI})**\n\n"
-                        "Para identificar se o uso de técnicas segue um padrão real, "
-                        "o sistema precisa de pelo menos **10 ocorrências distintas**. "
-                        "Com menos dados, o comportamento de um único caso pode parecer uma regra."
-                    )
-                    st.progress(progresso_qui)
-
-                elif col_v1_real and col_v2_real and not df_qui_base.empty:
-
-                    df_qui_clean = df_qui_base[[col_v1_real, col_v2_real]].dropna()
-                    # Remove valores-lixo de ambas as colunas
-                    df_qui_clean = df_qui_clean[
-                        ~df_qui_clean[col_v1_real].astype(str).str.strip().str.lower().isin(lixo)
-                        & ~df_qui_clean[col_v2_real].astype(str).str.strip().str.lower().isin(lixo)
-                    ]
-
-                    if df_qui_clean.empty:
-                        st.info("Sem dados suficientes após filtragem para este cruzamento.")
-                    else:
-                        # Verifica variância mínima (Qui-Quadrado exige pelo menos 2 categorias em cada variável)
-                        cats_v1 = df_qui_clean[col_v1_real].nunique()
-                        cats_v2 = df_qui_clean[col_v2_real].nunique()
-
-                        if cats_v1 < 2 or cats_v2 < 2:
-                            st.info(
-                                f"O cruzamento **Técnica × {var_analise}** não pode ser calculado: "
-                                f"{'a variável selecionada tem apenas 1 categoria nos dados filtrados' if cats_v1 < 2 else 'há apenas 1 técnica nos dados filtrados'}. "
-                                "Tente remover os filtros ou escolher outra variável."
+                        # --- Veredito em linguagem clara ---
+                        if significativo and rho > 0:
+                            icone = "✅"
+                            titulo_veredito = "Sim — ocorrências mais longas terminam com menos agressividade"
+                            cor_veredito = "success"
+                            # Explicação narrativa para leigos
+                            forca_correlacao = "muito forte" if abs(rho) > 0.7 else "forte" if abs(rho) > 0.5 else "moderada"
+                            explicacao = (
+                                f"**O que isso significa:** Existe uma **relação {forca_correlacao}** entre duração e queda de agressividade. "
+                                f"Em outras palavras: quanto mais tempo a negociação leva, maior a chance de o causador terminar menos agressivo.\n\n"
+                                f"**Por que temos certeza?** Analisamos {n_valido} ocorrências e o padrão encontrado é tão consistente "
+                                f"que a probabilidade de ser mera coincidência é menor que 5% (p < 0,05). Isso significa que o padrão é **real**.\n\n"
+                                f"**Métrica técnica:** Rho = {rho:.2f} (escala de -1 a +1, onde +1 = relação perfeita)."
+                            )
+                        elif significativo and rho < 0:
+                            icone = "⚠️"
+                            titulo_veredito = "Atenção — ocorrências mais longas terminam COM MAIS agressividade"
+                            cor_veredito = "warning"
+                            forca_correlacao = "muito forte" if abs(rho) > 0.7 else "forte" if abs(rho) > 0.5 else "moderada"
+                            explicacao = (
+                                f"**O que isso significa:** Existe uma **relação {forca_correlacao} inversa**. "
+                                f"Ocorrências que demoram mais tempo tendem a terminar com o causador **mais agressivo**, não menos.\n\n"
+                                f"**Por que isso preocupa?** Isso pode indicar que:\n"
+                                f"  • O tempo prolongado está gerando **desgaste ou frustração** no causador\n"
+                                f"  • A estratégia de longa negociação pode não estar sendo efetiva em alguns cenários\n"
+                                f"  • Pode haver um ponto de saturação após o qual continuar negociando piora as coisas\n\n"
+                                f"**Por que temos certeza?** O padrão foi encontrado em {n_valido} ocorrências e é improvável ser coincidência (p < 0,05).\n\n"
+                                f"**Métrica técnica:** Rho = {rho:.2f} (negativo indica relação inversa)."
+                            )
+                        elif not significativo and abs(rho) > 0.3:
+                            icone = "🔎"
+                            titulo_veredito = "Há uma tendência, mas ainda é cedo para confirmar"
+                            cor_veredito = "info"
+                            direcao = "positiva (mais tempo = menos agressividade)" if rho > 0 else "negativa (mais tempo = mais agressividade)"
+                            explicacao = (
+                                f"**O que observamos:** Existe uma tendência {direcao}, mas com {n_valido} ocorrências, "
+                                f"não podemos ter certeza se é um padrão real ou coincidência.\n\n"
+                                f"**Por que não temos certeza?** A probabilidade de isso ser acaso é {p*100:.1f}% — acima do limite de 5% que os estatísticos usam como referência.\n\n"
+                                f"**O que fazer?** Colete mais registros de negociações. Com 10-15 ocorrências a mais, essa tendência pode se confirmar ou se desfazer.\n\n"
+                                f"**Métrica técnica:** Rho = {rho:.2f}, p = {p:.4f} (p > 0,05 = não significativo ainda)."
                             )
                         else:
-                            res_chi = analise.calcular_qui_quadrado(df_qui_clean, col_v1_real, col_v2_real)
+                            icone = "➖"
+                            titulo_veredito = "Nenhuma relação detectada entre duração e agressividade"
+                            cor_veredito = "info"
+                            explicacao = (
+                                f"**O que isso significa:** A duração da ocorrência **não está associada** à queda de agressividade. "
+                                f"Ocorrências longas terminam com queda de agressividade tão frequentemente quanto as curtas.\n\n"
+                                f"**O que fazer?** Isso não é necessariamente ruim — significa que o tempo não é o fator determinante. "
+                                f"Procure investigar outros fatores: técnicas usadas, perfil do causador, contexto da ocorrência, etc.\n\n"
+                                f"**Por que temos certeza?** A relação encontrada (Rho = {rho:.2f}) é tão fraca que não conseguimos descartar coincidência (p = {p:.4f}).\n\n"
+                                f"**Próximo passo:** Se quiser, rode os outros testes abaixo para explorar quais fatores **realmente** influenciam o desfecho."
+                            )
 
-                            if res_chi.get("valido", False):
-                                chi2 = res_chi["chi2"]
-                                p_chi = res_chi["p_value"]
+                        # Exibe o veredito
+                        getattr(st, cor_veredito)(f"{icone} **{titulo_veredito}**\n\n{explicacao}")
+                    else:
+                        st.warning(res_sp.get("msg", "Dados insuficientes para o cálculo (N < 3)."))
 
-                                # --- Veredito em linguagem clara ---
-                                if p_chi < 0.05:
-                                    st.success(
-                                        f"✅ **Há um padrão — técnicas são escolhidas diferente conforme a {var_analise.lower()}**\n\n"
-                                        f"**O que isso significa:** A escolha de técnicas **não é aleatória**. "
-                                        f"Negociadores (ou a equipe em geral) aplicam técnicas diferentes dependendo da {var_analise.lower()} da ocorrência.\n\n"
-                                        f"**Por que isso é importante?** Indica uma **atuação doutrinária** — existe um padrão consistente, "
-                                        f"possivelmente baseado em treinamento ou protocolo. Isso é bom porque mostra profissionalismo e adaptação ao contexto.\n\n"
-                                        f"**Exemplo prático:** Se a {var_analise.lower()} é 'Tipologia', significa que para cada tipo de ocorrência "
-                                        f"há uma 'receita' de técnicas preferidas — não é improviso.\n\n"
-                                        f"**Por que temos certeza?** Testamos {len(df_qui_clean)} ocorrências e a probabilidade desse padrão ser acaso é "
-                                        f"menor que 5% (p = {p_chi:.4f})."
-                                    )
-                                else:
-                                    st.info(
-                                        f"➖ **Sem padrão — técnicas parecem ser escolhidas independentemente da {var_analise.lower()}**\n\n"
-                                        f"**O que isso significa:** Não existe uma relação consistente entre a {var_analise.lower()} e a técnica escolhida. "
-                                        f"Técnicas são aplicadas de forma **situacional**, sem seguir um padrão claro.\n\n"
-                                        f"**Por que isso importa?** Pode indicar:\n"
-                                        f"  • Falta de protocolo ou doutrina clara\n"
-                                        f"  • Cada negociador decide independentemente\n"
-                                        f"  • As técnicas funcionam bem em qualquer contexto (possivelmente positivo)\n"
-                                        f"  • Oportunidade de desenvolvimento de protocolo se não há uma estratégia deliberada\n\n"
-                                        f"**Por que não há padrão?** Com {len(df_qui_clean)} ocorrências, a probabilidade de haver um padrão escondido é "
-                                        f"maior que 5% (p = {p_chi:.4f}), então não podemos confirmar associação."
-                                    )
+            st.markdown("</div>", unsafe_allow_html=True)
 
-                            else:
-                                st.warning(
-                                    "Variância insuficiente para este cruzamento. "
-                                    "Tente escolher outra variável ou remover filtros."
-                                )
-                else:
-                    st.warning("Configuração de colunas inválida para o cruzamento selecionado.")
-
-                st.markdown("</div>", unsafe_allow_html=True)
-
-        # ============================================================
-        # BOTÃO UNIFICADO: Explicação dos dois testes
-        # ============================================================
-        st.markdown("---")
-
-        key_details_unif = "show_unified_test_details"
-        if st.button("✔️ Entenda melhor os testes estatísticos acima", key="btn_unified_details"):
-            st.session_state[key_details_unif] = not st.session_state.get(key_details_unif, False)
-
-        if st.session_state.get(key_details_unif, False):
+        # ==========================================================
+        # COLUNA 2 — Qui-Quadrado: Técnica vs. Variável escolhida
+        # ==========================================================
+        with c_sp2:
             st.markdown(
                 """
-                ## 📖 Guia de Entendimento dos Testes Estatísticos
-                
-                Os dois testes acima buscam padrões nos dados de negociações. Aqui explicamos o que cada um faz em linguagem simples.
-                
-                ---
-                
-                ### 🔵 Teste de Spearman (Coluna Esquerda)
-                
-                **O que faz:** Verifica se duas coisas "andam juntas" — quando uma cresce, a outra cresce também?
-                
-                **No seu caso:** "Ocorrências mais longas terminam com o causador menos agressivo?"
-                
-                **Como entender:**
-                - **Rho (Coeficiente):** Um número entre -1 e +1 que mede a força da relação
-                - **+1.0** = relação perfeita (sempre que uma sobe, outra sobe)
-                - **0.0** = sem relação (variam independentemente)
-                - **-1.0** = relação inversa (quando uma sobe, outra desce)
-                
-                - **P-Value:** Responde "é realmente um padrão ou coincidência?"
-                - **p < 0.05** (5%) = ✅ É um padrão real (improvável ser acaso)
-                - **p ≥ 0.05** = ⚠️ Pode ser coincidência
-                
-                **Quando usar:** Para variáveis contínuas ou ordinais (como escalas de agressividade: baixa, média, alta)
-                
-                ---
-                
-                ### 🟢 Teste Qui-Quadrado (Coluna Direita)
-                
-                **O que faz:** Verifica se a escolha de uma coisa é **independente** de outra, ou se há uma relação.
-                
-                **No seu caso:** "A técnica escolhida depende da Tipologia/Negociador/Modalidade?"
-                
-                **Como entender:**
-                - **χ² (Chi-Quadrado):** Um número que mede "quanto a realidade se desvia do acaso"
-                - **χ² próximo de 0** = sem padrão (aleatório)
-                - **χ² grande** = há um padrão (não é aleatório)
-                
-                - **P-Value:** Mesma lógica do Spearman
-                - **p < 0.05** = ✅ Há um padrão real
-                - **p ≥ 0.05** = ⚠️ Pode ser acaso
-                
-                **Quando usar:** Para variáveis categóricas (categorias, grupos) — não contínuas
-                
-                ---
-                
-                ### 💡 Comparação Rápida
-                
-                | Aspecto | Spearman | Qui-Quadrado |
-                |---------|----------|--------------|
-                | **Tipo de dado** | Contínuo ou ordinal | Categórico |
-                | **Pergunta** | "Duas coisas andam juntas?" | "Escolher A depende de B?" |
-                | **Resultado** | Rho (-1 a +1) | χ² (≥0) |
-                | **Seu caso** | Duração × Agressividade | Técnica × Contexto |
-                
-                ---
-                
-                ### 🎯 O Que Fazer Com os Resultados
-                
-                **Se p-value < 0.05 (padrão real encontrado):**
-                - ✅ Há um padrão consistente nos dados
-                - Isso não é coincidência — é algo que realmente está acontecendo
-                - Vale investigar por quê esse padrão existe
-                
-                **Se p-value ≥ 0.05 (sem confirmação):**
-                - ⚠️ Não há evidência estatística de padrão
-                - Pode ser coincidência ou falta de dados suficientes
-                - Coleta mais registros para confirmar ou refutar
-                
-                ---
-                
-                ### ⚠️ Limitações Importantes
-                
-                **Spearman:**
-                - Exige pelo menos 5 valores válidos para ser confiável
-                - Valores "Não Observado" são excluídos automaticamente
-                
-                **Qui-Quadrado:**
-                - Exige pelo menos 10 ocorrências distintas
-                - Se alguma categoria tiver muito poucos casos (< 5), o teste fica impreciso
-                - Funciona apenas com variáveis categóricas
-                """
+                <div class='info-card'>
+                <strong>O uso de técnicas segue um padrão ou é improvisado?</strong><br>
+                <span style='font-size: 0.82rem; color: #aaa;'>
+                Verifica se a escolha de técnicas está associada a uma característica da ocorrência
+                ou se parece aleatória — independente do contexto.
+                </span>
+                """,
+                unsafe_allow_html=True,
             )
-                    
-            # ============================================================
-    # MODELAGEM AVANÇADA — Mais clara e acessível
+
+            # Mapeamento variável → coluna (todas usando versões limpas consistentes)
+            # CORREÇÃO: "Modalidade" agora aponta para "Mod_Limpa" (igual ao padrão das outras)
+            # CORREÇÃO: "Atitude do Causador" usa df_quali_filt mergeado, não coluna inexistente em df_tec_filt
+            opcoes_variaveis = {
+                "Tipologia": "Tip_Limpa",
+                "Negociador": "Neg_Limpo",
+                "Modalidade": "Mod_Limpa",
+            }
+
+            # Adiciona "Atitude do Causador" apenas se a coluna existir no df de qualitativas
+            # e houver uma coluna de ID para fazer o merge
+            col_resposta = next(
+                (c for c in df_quali_filt.columns if norm_col(c) in ("resposta_cat", "atitude", "resposta")),
+                None,
+            )
+            if col_resposta and id_col:
+                opcoes_variaveis["Atitude do Causador"] = "_merged_resposta"
+
+            var_analise = st.selectbox(
+                "Comparar técnica com:",
+                list(opcoes_variaveis.keys()),
+                index=0,
+            )
+            col_v1_key = opcoes_variaveis[var_analise]
+
+            # Monta o DataFrame correto para o cruzamento
+            if col_v1_key == "_merged_resposta":
+                # Merge entre df_tec_limpo e df_quali_filt pela coluna de ID
+                id_quali = next(
+                    (c for c in df_quali_filt.columns if "ID" in c.upper() or "VINCULO" in c.upper()),
+                    None,
+                )
+                if id_quali and id_col and col_t:
+                    df_merge = df_tec_limpo[[id_col, col_t]].merge(
+                        df_quali_filt[[id_quali, col_resposta]].rename(
+                            columns={col_resposta: "_Resposta_Cat"}
+                        ),
+                        left_on=id_col,
+                        right_on=id_quali,
+                        how="inner",
+                    )
+                    df_qui_base = df_merge.rename(columns={col_t: "_Tecnica", "_Resposta_Cat": col_v1_key})
+                    col_v1_real = col_v1_key
+                    col_v2_real = "_Tecnica"
+                else:
+                    df_qui_base = pd.DataFrame()
+                    col_v1_real = None
+                    col_v2_real = None
+            else:
+                # Variáveis já presentes em df_tec_limpo
+                col_v1_real = col_v1_key
+                col_v2_real = col_t
+                df_qui_base = df_tec_limpo.copy() if col_t else pd.DataFrame()
+
+            # --- Verificação de N mínimo (usando o mesmo DataFrame base do Qui-Quadrado) ---
+            n_apas_qui = (
+                df_qui_base[id_col].astype(str).nunique()
+                if (id_col and id_col in df_qui_base.columns)
+                else len(df_qui_base)
+            )
+
+            META_QUI = 10
+
+            if n_apas_qui < META_QUI:
+                progresso_qui = int((n_apas_qui / META_QUI) * 100)
+                st.warning(
+                    f"⏳ **Análise em maturação (N={n_apas_qui}/{META_QUI})**\n\n"
+                    "Para identificar se o uso de técnicas segue um padrão real, "
+                    "o sistema precisa de pelo menos **10 ocorrências distintas**. "
+                    "Com menos dados, o comportamento de um único caso pode parecer uma regra."
+                )
+                st.progress(progresso_qui)
+
+            elif col_v1_real and col_v2_real and not df_qui_base.empty:
+
+                df_qui_clean = df_qui_base[[col_v1_real, col_v2_real]].dropna()
+                # Remove valores-lixo de ambas as colunas
+                df_qui_clean = df_qui_clean[
+                    ~df_qui_clean[col_v1_real].astype(str).str.strip().str.lower().isin(lixo)
+                    & ~df_qui_clean[col_v2_real].astype(str).str.strip().str.lower().isin(lixo)
+                ]
+
+                if df_qui_clean.empty:
+                    st.info("Sem dados suficientes após filtragem para este cruzamento.")
+                else:
+                    # Verifica variância mínima (Qui-Quadrado exige pelo menos 2 categorias em cada variável)
+                    cats_v1 = df_qui_clean[col_v1_real].nunique()
+                    cats_v2 = df_qui_clean[col_v2_real].nunique()
+
+                    if cats_v1 < 2 or cats_v2 < 2:
+                        st.info(
+                            f"O cruzamento **Técnica × {var_analise}** não pode ser calculado: "
+                            f"{'a variável selecionada tem apenas 1 categoria nos dados filtrados' if cats_v1 < 2 else 'há apenas 1 técnica nos dados filtrados'}. "
+                            "Tente remover os filtros ou escolher outra variável."
+                        )
+                    else:
+                        res_chi = analise.calcular_qui_quadrado(df_qui_clean, col_v1_real, col_v2_real)
+
+                        if res_chi.get("valido", False):
+                            chi2 = res_chi["chi2"]
+                            p_chi = res_chi["p_value"]
+
+                            # --- Veredito em linguagem clara ---
+                            if p_chi < 0.05:
+                                st.success(
+                                    f"✅ **Há um padrão — técnicas são escolhidas diferente conforme a {var_analise.lower()}**\n\n"
+                                    f"**O que isso significa:** A escolha de técnicas **não é aleatória**. "
+                                    f"Negociadores (ou a equipe em geral) aplicam técnicas diferentes dependendo da {var_analise.lower()} da ocorrência.\n\n"
+                                    f"**Por que isso é importante?** Indica uma **atuação doutrinária** — existe um padrão consistente, "
+                                    f"possivelmente baseado em treinamento ou protocolo. Isso é bom porque mostra profissionalismo e adaptação ao contexto.\n\n"
+                                    f"**Exemplo prático:** Se a {var_analise.lower()} é 'Tipologia', significa que para cada tipo de ocorrência "
+                                    f"há uma 'receita' de técnicas preferidas — não é improviso.\n\n"
+                                    f"**Por que temos certeza?** Testamos {len(df_qui_clean)} ocorrências e a probabilidade desse padrão ser acaso é "
+                                    f"menor que 5% (p = {p_chi:.4f})."
+                                )
+                            else:
+                                st.info(
+                                    f"➖ **Sem padrão — técnicas parecem ser escolhidas independentemente da {var_analise.lower()}**\n\n"
+                                    f"**O que isso significa:** Não existe uma relação consistente entre a {var_analise.lower()} e a técnica escolhida. "
+                                    f"Técnicas são aplicadas de forma **situacional**, sem seguir um padrão claro.\n\n"
+                                    f"**Por que isso importa?** Pode indicar:\n"
+                                    f"  • Falta de protocolo ou doutrina clara\n"
+                                    f"  • Cada negociador decide independentemente\n"
+                                    f"  • As técnicas funcionam bem em qualquer contexto (possivelmente positivo)\n"
+                                    f"  • Oportunidade de desenvolvimento de protocolo se não há uma estratégia deliberada\n\n"
+                                    f"**Por que não há padrão?** Com {len(df_qui_clean)} ocorrências, a probabilidade de haver um padrão escondido é "
+                                    f"maior que 5% (p = {p_chi:.4f}), então não podemos confirmar associação."
+                                )
+
+                        else:
+                            st.warning(
+                                "Variância insuficiente para este cruzamento. "
+                                "Tente escolher outra variável ou remover filtros."
+                            )
+            else:
+                st.warning("Configuração de colunas inválida para o cruzamento selecionado.")
+
+            st.markdown("</div>", unsafe_allow_html=True)
+
+    # ============================================================
+    # BOTÃO UNIFICADO: Explicação dos dois testes
     # ============================================================
     st.markdown("---")
-    st.markdown("""
-    <h3 style='color: #FFD700;'>🔬 Modelagem Avançada: Desvendando o Viés e a Eficácia Provável das Técnicas</h3>
-    <p style='color: #aaa; font-size: 0.95rem; margin-bottom: 20px;'>
-    <strong>Pergunta simples:</strong> "As técnicas funcionam independente da experiência do Negociador?"
-    </p>
-    """, unsafe_allow_html=True)
 
-    st.markdown("""
-    **Por que isso importa:** 
-    - Se a técnica funciona para *todos* os negociadores, vale a pena treinar a equipe inteira nela
-    - Se funciona só para alguns, é porque depende da expertise pessoal, não unicamente do método
-    - Enfatizamos que a análise está condicionada e limitada aos dados registrados, não representa a realidade em sua totalidade
-    """)
+    key_details_unif = "show_unified_test_details"
+    if st.button("✔️ Entenda melhor os testes estatísticos acima", key="btn_unified_details"):
+        st.session_state[key_details_unif] = not st.session_state.get(key_details_unif, False)
 
-    if total_apas_reais < 15:
+    if st.session_state.get(key_details_unif, False):
+        st.markdown(
+            """
+            ## 📖 Guia de Entendimento dos Testes Estatísticos
+            
+            Os dois testes acima buscam padrões nos dados de negociações. Aqui explicamos o que cada um faz em linguagem simples.
+            
+            ---
+            
+            ### 🔵 Teste de Spearman (Coluna Esquerda)
+            
+            **O que faz:** Verifica se duas coisas "andam juntas" — quando uma cresce, a outra cresce também?
+            
+            **No seu caso:** "Ocorrências mais longas terminam com o causador menos agressivo?"
+            
+            **Como entender:**
+            - **Rho (Coeficiente):** Um número entre -1 e +1 que mede a força da relação
+            - **+1.0** = relação perfeita (sempre que uma sobe, outra sobe)
+            - **0.0** = sem relação (variam independentemente)
+            - **-1.0** = relação inversa (quando uma sobe, outra desce)
+            
+            - **P-Value:** Responde "é realmente um padrão ou coincidência?"
+            - **p < 0.05** (5%) = ✅ É um padrão real (improvável ser acaso)
+            - **p ≥ 0.05** = ⚠️ Pode ser coincidência
+            
+            **Quando usar:** Para variáveis contínuas ou ordinais (como escalas de agressividade: baixa, média, alta)
+            
+            ---
+            
+            ### 🟢 Teste Qui-Quadrado (Coluna Direita)
+            
+            **O que faz:** Verifica se a escolha de uma coisa é **independente** de outra, ou se há uma relação.
+            
+            **No seu caso:** "A técnica escolhida depende da Tipologia/Negociador/Modalidade?"
+            
+            **Como entender:**
+            - **χ² (Chi-Quadrado):** Um número que mede "quanto a realidade se desvia do acaso"
+            - **χ² próximo de 0** = sem padrão (aleatório)
+            - **χ² grande** = há um padrão (não é aleatório)
+            
+            - **P-Value:** Mesma lógica do Spearman
+            - **p < 0.05** = ✅ Há um padrão real
+            - **p ≥ 0.05** = ⚠️ Pode ser acaso
+            
+            **Quando usar:** Para variáveis categóricas (categorias, grupos) — não contínuas
+            
+            ---
+            
+            ### 💡 Comparação Rápida
+            
+            | Aspecto | Spearman | Qui-Quadrado |
+            |---------|----------|--------------|
+            | **Tipo de dado** | Contínuo ou ordinal | Categórico |
+            | **Pergunta** | "Duas coisas andam juntas?" | "Escolher A depende de B?" |
+            | **Resultado** | Rho (-1 a +1) | χ² (≥0) |
+            | **Seu caso** | Duração × Agressividade | Técnica × Contexto |
+            
+            ---
+            
+            ### 🎯 O Que Fazer Com os Resultados
+            
+            **Se p-value < 0.05 (padrão real encontrado):**
+            - ✅ Há um padrão consistente nos dados
+            - Isso não é coincidência — é algo que realmente está acontecendo
+            - Vale investigar por quê esse padrão existe
+            
+            **Se p-value ≥ 0.05 (sem confirmação):**
+            - ⚠️ Não há evidência estatística de padrão
+            - Pode ser coincidência ou falta de dados suficientes
+            - Coleta mais registros para confirmar ou refutar
+            
+            ---
+            
+            ### ⚠️ Limitações Importantes
+            
+            **Spearman:**
+            - Exige pelo menos 5 valores válidos para ser confiável
+            - Valores "Não Observado" são excluídos automaticamente
+            
+            **Qui-Quadrado:**
+            - Exige pelo menos 10 ocorrências distintas
+            - Se alguma categoria tiver muito poucos casos (< 5), o teste fica impreciso
+            - Funciona apenas com variáveis categóricas
+            """
+        )
+                
+        # ============================================================
+# MODELAGEM AVANÇADA — Mais clara e acessível
+# ============================================================
+st.markdown("---")
+st.markdown("""
+<h3 style='color: #FFD700;'>🔬 Modelagem Avançada: Desvendando o Viés e a Eficácia Provável das Técnicas</h3>
+<p style='color: #aaa; font-size: 0.95rem; margin-bottom: 20px;'>
+<strong>Pergunta simples:</strong> "As técnicas funcionam independente da experiência do Negociador?"
+</p>
+""", unsafe_allow_html=True)
+
+st.markdown("""
+**Por que isso importa:** 
+- Se a técnica funciona para *todos* os negociadores, vale a pena treinar a equipe inteira nela
+- Se funciona só para alguns, é porque depende da expertise pessoal, não unicamente do método
+- Enfatizamos que a análise está condicionada e limitada aos dados registrados, não representa a realidade em sua totalidade
+""")
+
+if total_apas_reais < 15:
+    st.warning(
+        f"""
+        🔒 **Esta análise está bloqueada por segurança estatística**
+        
+        Para garantir resultados confiáveis, precisamos de pelo menos 15 ocorrências com respostas registradas.
+        Você tem **{total_apas_reais}** — faltam **{15 - total_apas_reais}** registros.
+        
+        **Por quê?** Com poucos dados, um único caso excepcional pode parecer uma tendência geral.
+        """
+    )
+    
+    # Barra de progresso visual
+    progresso_adv = int((total_apas_reais / 15) * 100)
+    st.progress(progresso_adv)
+    st.caption(f"Progresso: {total_apas_reais}/15 ocorrências")
+
+else:
+    col_resposta = next((col for col in df_tec_filt.columns if 'ATITUDE' in col.upper()), None)
+    
+    if not col_resposta:
         st.warning(
+            """
+            ⚠️ **Campo 'Resposta da Técnica' não encontrado**
+            
+            Para esta análise funcionar, é necessário registrar nos dados:
+            - **Reação Negativa** (🔴) — técnica não funcionou
+            - **Reação Neutra** (⚪) — resultado indefinido
+            - **Reação Positiva** (🟢) — técnica funcionou bem
+            
+            Adicione essa coluna ao Airtable e sincronize os dados.
+            """
+        )
+    else:
+        try: 
+            import statsmodels.api as sm
+            import statsmodels.formula.api as smf
+            from statsmodels.miscmodels.ordinal_model import OrderedModel
+            from scipy.stats import chi2_contingency
+            import numpy as np
+
+            df_adv = df_tec_limpo.copy()
+            mapa_resp = {
+                '-1': 'Negativa', '-1.0': 'Negativa', -1: 'Negativa', '🔴 reação negativa': 'Negativa',
+                '0': 'Neutra', '0.0': 'Neutra', 0: 'Neutra', '⚪ reação neutra': 'Neutra',
+                '1': 'Positiva', '1.0': 'Positiva', 1: 'Positiva', '🟢 reação positiva': 'Positiva'
+            }
+            
+            df_adv['Resposta_Cat'] = df_adv[col_resposta].astype(str).str.lower().str.strip().map(mapa_resp).fillna('Nao_Observado')
+            df_adv_clean = df_adv[df_adv['Resposta_Cat'] != 'Nao_Observado'].copy()
+            df_adv_clean = df_adv_clean.dropna(subset=['TÉCNICAS'])
+            df_adv_clean['Resposta_Ord'] = pd.Categorical(df_adv_clean['Resposta_Cat'], categories=['Negativa', 'Neutra', 'Positiva'], ordered=True)
+            
+            # ============================================================
+            # ANÁLISE 1: Viés por Negociador
+            # ============================================================
+            st.markdown("""
+            <div style='background: var(--color-background-secondary); border-left: 4px solid #FFD700; padding: 15px; border-radius: 8px; margin-bottom: 20px;'>
+            <h3 style='color: #FFD700; margin-top: 0;'>✔️ Análise 1: Existe Viés entre Negociadores?</h3>
+            <p style='color: #aaa; margin-bottom: 10px;'><strong>A pergunta:</strong> "Os 'sucessos' vêm do método ou de alguns negociadores talentosos?"</p>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            tab_vies = pd.crosstab(df_adv_clean['Neg_Limpo'], df_adv_clean['Resposta_Cat'])
+            
+            if tab_vies.shape[0] > 1 and tab_vies.shape[1] > 1:
+                chi2, p, dof, exp = chi2_contingency(tab_vies)
+                residuos = (tab_vies - exp) / np.sqrt(exp)
+                
+                col_vies1, col_vies2 = st.columns([1, 2])
+                
+                with col_vies1:
+                    st.markdown("**Resultado Estatístico:**")
+                    if p < 0.05:
+                        st.success(
+                            f"""
+                            ✅ **Há viés detectado**
+                            
+                            P-Valor: `{p:.4f}` (< 0.05)
+                            
+                            Alguns negociadores conseguem mais sucessos que outros — o talento individual importa.
+                            """
+                        )
+                    else:
+                        st.info(
+                            f"""
+                            ➖ **Sem viés significativo**
+                            
+                            P-Valor: `{p:.4f}` (> 0.05)
+                            
+                            Os resultados são homogêneos — a técnica funciona independentemente de quem a usa.
+                            """
+                        )
+                
+                with col_vies2:
+                    st.markdown("**Visualização (Mapa de Calor):**")
+                    st.markdown(
+                        "<span style='font-size: 0.85rem; color: #aaa;'>"
+                        "Vermelho = sucesso acima do esperado | Azul = sucesso abaixo do esperado"
+                        "</span>",
+                        unsafe_allow_html=True
+                    )
+                    fig_heat = px.imshow(residuos, text_auto=".2f", color_continuous_scale="RdBu", title="Viés por Negociador")
+                    fig_heat.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font_color="#FFF", height=350)
+                    st.plotly_chart(fig_heat, use_container_width=True)
+            else:
+                st.info("⚠️ Dados insuficientes para comparar múltiplos negociadores.")
+            
+            # ============================================================
+            # ANÁLISE 2: Eficácia Isolada da Técnica
+            # ============================================================
+            st.markdown("""
+            <div style='background: var(--color-background-secondary); border-left: 4px solid #06C755; padding: 15px; border-radius: 8px; margin-bottom: 20px;'>
+            <h3 style='color: #06C755; margin-top: 0;'>✔️ Análise 2: Qual Técnica Funciona Melhor?</h3>
+            <p style='color: #aaa; margin-bottom: 10px;'><strong>A pergunta:</strong> "Se removermos a influência do negociador, qual técnica realmente funciona melhor?"</p>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            if 'col_t' in locals() and col_t:
+                df_adv_clean['Tecnica_Patsy'] = df_adv_clean[col_t].astype(str).str.replace(' ', '_').str.replace('-', '_')
+                df_adv_clean['Neg_Patsy'] = df_adv_clean['Neg_Limpo'].astype(str).str.replace(' ', '_')
+                df_adv_clean['Tip_Patsy'] = df_adv_clean['Tip_Limpa'].astype(str).str.replace(' ', '_')
+
+                try:
+                    mod_ord = OrderedModel.from_formula("Resposta_Ord ~ C(Tecnica_Patsy) + C(Neg_Patsy) + C(Tip_Patsy)", data=df_adv_clean, distr='logit')
+                    res_ord = mod_ord.fit(method='bfgs', disp=False)
+                    coefs = res_ord.params[res_ord.params.index.str.contains('Tecnica')]
+                    pvals = res_ord.pvalues[res_ord.params.index.str.contains('Tecnica')]
+                    df_or = pd.DataFrame({
+                        'Técnica': coefs.index.str.extract(r'\[T\.(.*?)\]')[0], 
+                        'Odds_Ratio': np.exp(coefs), 
+                        'P_Valor': pvals
+                    })
+                    df_or = df_or[df_or['P_Valor'] < 0.05].sort_values('Odds_Ratio', ascending=False)
+                    
+                    if not df_or.empty:
+                        st.markdown("**Técnicas com Eficácia Comprovada (p < 0.05):**")
+                        
+                        for idx, row in df_or.iterrows():
+                            multiplo = row['Odds_Ratio']
+                            st.markdown(
+                                f"""
+                                **{row['Técnica']}**
+                                - Odds Ratio: `{multiplo:.2f}` — dobra a chance de sucesso {multiplo:.1f}x
+                                - Significância: P-Valor = `{row['P_Valor']:.4f}`
+                                """
+                            )
+                        
+                        st.info(
+                            "💡 **O que é Odds Ratio?** "
+                            "Um Odds Ratio de 2.0 significa que usar essa técnica dobra a chance de uma resposta positiva."
+                        )
+                    else:
+                        st.info(
+                            "ℹ️ **Nenhuma técnica isolada alcançou significância estatística neste cenário.**\n\n"
+                            "Isso pode significar:\n"
+                            "- As técnicas funcionam em combinação, não isoladamente\n"
+                            "- Precisamos de mais dados para confirmar eficácia individual\n"
+                            "- O contexto (tipo de ocorrência) importa mais que a técnica escolhida"
+                        )
+                except Exception as e:
+                    st.warning(f"⚠️ O modelo não convergiu para este conjunto de dados: {str(e)[:100]}")
+            
+            # ============================================================
+            # ANÁLISE 3: Robustez Hierárquica (GEE)
+            # ============================================================
+            st.markdown("""
+            <div style='background: var(--color-background-secondary); border-left: 4px solid #378ADD; padding: 15px; border-radius: 8px; margin-bottom: 20px;'>
+            <h3 style='color: #378ADD; margin-top: 0;'>🔐 Análise 3: A Técnica é Robusta para Toda a Tropa?</h3>
+            <p style='color: #aaa; margin-bottom: 10px;'><strong>A pergunta:</strong> "A técnica funciona para a equipe inteira ou só para alguns indivíduos?"</p>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            df_gee_real = df_adv_clean.copy()
+            df_gee_real['Sucesso'] = np.where(df_gee_real['Resposta_Cat'] == 'Positiva', 1, 0)
+            
+            try:
+                if 'Tecnica_Patsy' in df_gee_real.columns:
+                    modelo_gee = smf.gee(
+                        "Sucesso ~ C(Tecnica_Patsy)", 
+                        groups=df_gee_real['Neg_Patsy'], 
+                        data=df_gee_real, 
+                        family=sm.families.Binomial(), 
+                        cov_struct=sm.cov_struct.Exchangeable()
+                    )
+                    res_gee = modelo_gee.fit()
+                    gee_coefs = res_gee.params[res_gee.params.index.str.contains('Tecnica')]
+                    gee_pvals = res_gee.pvalues[res_gee.params.index.str.contains('Tecnica')]
+                    df_gee = pd.DataFrame({
+                        'Técnica': gee_coefs.index.str.extract(r'\[T\.(.*?)\]')[0], 
+                        'Coeficiente': gee_coefs, 
+                        'P_Valor': gee_pvals
+                    })
+                    
+                    if not df_gee.empty:
+                        significativas = df_gee[df_gee['P_Valor'] < 0.05]
+                        
+                        if not significativas.empty:
+                            st.success(
+                                "✅ **Doutrina Validada — Técnica Robusta para Toda a Tropa**\n\n"
+                                "Essas técnicas funcionam consistentemente, independentemente de quem as aplica."
+                            )
+                            for idx, row in significativas.iterrows():
+                                st.markdown(
+                                    f"- **{row['Técnica']}**: P-Valor = `{row['P_Valor']:.4f}` (significativo)"
+                                )
+                        else:
+                            st.info(
+                                "ℹ️ **Nenhuma técnica atingiu robustez estatística neste modelo.**\n\n"
+                                "Isso sugere que o sucesso depende muito do contexto ou da combinação de fatores."
+                            )
+                    
+                    with st.expander("🔬 Ver detalhes técnicos (GEE)"):
+                        st.markdown(
+                            "**Generalized Estimating Equations (GEE):** "
+                            "Este modelo leva em conta que há 'agrupamentos' de dados (cada negociador fez várias ocorrências). "
+                            "Isso torna as conclusões mais confiáveis para aplicar na prática."
+                        )
+                        st.dataframe(df_gee.style.format({'Coeficiente': '{:.4f}', 'P_Valor': '{:.4f}'}), use_container_width=True, hide_index=True)
+                        
+            except Exception as e:
+                st.error(f"⚠️ Erro no processamento GEE: {str(e)[:100]}")
+            
+        except ImportError:
+            st.error("🚨 Biblioteca 'statsmodels' não instalada. Instale com: `pip install statsmodels`")
+        except Exception as e:
+            st.error(f"🚨 Erro geral na modelagem: {str(e)[:150]}")
+
+st.markdown("---")
+st.markdown("""
+<h3 style='color: #FFD700;'>✔️ Informação Longitudinal</h3>
+<p style='color: #aaa; font-size: 0.95rem;'>Como tem evoluído o volume de negociações ao longo do tempo?</p>
+""", unsafe_allow_html=True)
+
+col_data = next((col for col in ['Data da ocorrência', 'Data', 'DATA'] if col in df_quali_filt.columns), None)
+if col_data:
+    df_quali_filt['Data_DT'] = pd.to_datetime(df_quali_filt[col_data], errors='coerce')
+    df_time = df_quali_filt.dropna(subset=['Data_DT']).sort_values('Data_DT')
+    if not df_time.empty:
+        df_time['Mes_Ano'] = df_time['Data_DT'].dt.to_period('M').astype(str)
+        df_trend = df_time['Mes_Ano'].value_counts().sort_index().reset_index()
+        df_trend.columns = ['Mês', 'Qtd Ocorrências']
+        
+        st.markdown(
             f"""
-            🔒 **Esta análise está bloqueada por segurança estatística**
-            
-            Para garantir resultados confiáveis, precisamos de pelo menos 15 ocorrências com respostas registradas.
-            Você tem **{total_apas_reais}** — faltam **{15 - total_apas_reais}** registros.
-            
-            **Por quê?** Com poucos dados, um único caso excepcional pode parecer uma tendência geral.
+            **Resumo:** Total de {len(df_time)} ocorrências registradas de {df_trend['Mês'].min()} a {df_trend['Mês'].max()}
             """
         )
         
-        # Barra de progresso visual
-        progresso_adv = int((total_apas_reais / 15) * 100)
-        st.progress(progresso_adv)
-        st.caption(f"Progresso: {total_apas_reais}/15 ocorrências")
+        fig_time = px.line(
+            df_trend, 
+            x='Mês', 
+            y='Qtd Ocorrências', 
+            markers=True, 
+            color_discrete_sequence=['#FFD700'],
+            title="Evolução Temporal de Negociações"
+        )
+        fig_time.update_layout(
+            paper_bgcolor="rgba(0,0,0,0)", 
+            plot_bgcolor="rgba(0,0,0,0)", 
+            font_color="#FFF",
+            hovermode='x unified'
+        )
+        st.plotly_chart(fig_time, use_container_width=True)
+    else: 
+        st.info("⚠️ Sem datas válidas nos registros.")
+else: 
+    st.info("⚠️ Coluna de Data não encontrada. Adicione uma coluna 'Data' ao seu formulário.")
 
-    else:
-        col_resposta = next((col for col in df_tec_filt.columns if 'ATITUDE' in col.upper()), None)
-        
-        if not col_resposta:
-            st.warning(
-                """
-                ⚠️ **Campo 'Resposta da Técnica' não encontrado**
-                
-                Para esta análise funcionar, é necessário registrar nos dados:
-                - **Reação Negativa** (🔴) — técnica não funcionou
-                - **Reação Neutra** (⚪) — resultado indefinido
-                - **Reação Positiva** (🟢) — técnica funcionou bem
-                
-                Adicione essa coluna ao Airtable e sincronize os dados.
-                """
+st.markdown("---")
+st.markdown("""
+<h3 style='color: #06C755;'>✔️ Síntese Interpretativa Assistida por IA</h3>
+<p style='color: #aaa; font-size: 0.95rem; margin-bottom: 20px;'>
+Gere um relatório em linguagem natural que traduz todos os números em recomendações acionáveis para a equipe.
+</p>
+""", unsafe_allow_html=True)
+
+if st.button("✔ GERAR RELATÓRIO ESTATÍSTICO ASSISTIDO POR IA"):
+    with st.spinner("✔️ Processando análises e gerando interpretações..."):
+        try:
+            import ia_estatistica 
+            
+            # Coleta dados de todas as análises anteriores
+            qui_data = None
+            if 'res_chi' in locals() and isinstance(res_chi, dict) and res_chi.get('valido'):
+                qui_data = {'p_valor_global': res_chi['p_value']}
+            elif 'p' in locals() and isinstance(p, (int, float)):
+                qui_data = {'p_valor_global': float(p)}
+            
+            ord_data = None
+            if 'df_or' in locals() and not df_or.empty:
+                ord_data = df_or.to_dict('records')
+            
+            gee_data = None
+            if 'df_gee' in locals() and not df_gee.empty:
+                gee_data = df_gee.to_dict('records')
+
+            # Estrutura os dados para enviar para a IA
+            payload_ia = ia_estatistica.estruturar_resultado_para_ia(
+                amostra_total=len(df_quali_filt),
+                resultados_chi=qui_data,
+                resultados_ordinal=ord_data,
+                resultados_gee=gee_data
             )
-        else:
-            try: 
-                import statsmodels.api as sm
-                import statsmodels.formula.api as smf
-                from statsmodels.miscmodels.ordinal_model import OrderedModel
-                from scipy.stats import chi2_contingency
-                import numpy as np
 
-                df_adv = df_tec_limpo.copy()
-                mapa_resp = {
-                    '-1': 'Negativa', '-1.0': 'Negativa', -1: 'Negativa', '🔴 reação negativa': 'Negativa',
-                    '0': 'Neutra', '0.0': 'Neutra', 0: 'Neutra', '⚪ reação neutra': 'Neutra',
-                    '1': 'Positiva', '1.0': 'Positiva', 1: 'Positiva', '🟢 reação positiva': 'Positiva'
-                }
-                
-                df_adv['Resposta_Cat'] = df_adv[col_resposta].astype(str).str.lower().str.strip().map(mapa_resp).fillna('Nao_Observado')
-                df_adv_clean = df_adv[df_adv['Resposta_Cat'] != 'Nao_Observado'].copy()
-                df_adv_clean = df_adv_clean.dropna(subset=['TÉCNICAS'])
-                df_adv_clean['Resposta_Ord'] = pd.Categorical(df_adv_clean['Resposta_Cat'], categories=['Negativa', 'Neutra', 'Positiva'], ordered=True)
-                
-                # ============================================================
-                # ANÁLISE 1: Viés por Negociador
-                # ============================================================
-                st.markdown("""
-                <div style='background: var(--color-background-secondary); border-left: 4px solid #FFD700; padding: 15px; border-radius: 8px; margin-bottom: 20px;'>
-                <h3 style='color: #FFD700; margin-top: 0;'>✔️ Análise 1: Existe Viés entre Negociadores?</h3>
-                <p style='color: #aaa; margin-bottom: 10px;'><strong>A pergunta:</strong> "Os 'sucessos' vêm do método ou de alguns negociadores talentosos?"</p>
-                </div>
-                """, unsafe_allow_html=True)
-                
-                tab_vies = pd.crosstab(df_adv_clean['Neg_Limpo'], df_adv_clean['Resposta_Cat'])
-                
-                if tab_vies.shape[0] > 1 and tab_vies.shape[1] > 1:
-                    chi2, p, dof, exp = chi2_contingency(tab_vies)
-                    residuos = (tab_vies - exp) / np.sqrt(exp)
-                    
-                    col_vies1, col_vies2 = st.columns([1, 2])
-                    
-                    with col_vies1:
-                        st.markdown("**Resultado Estatístico:**")
-                        if p < 0.05:
-                            st.success(
-                                f"""
-                                ✅ **Há viés detectado**
-                                
-                                P-Valor: `{p:.4f}` (< 0.05)
-                                
-                                Alguns negociadores conseguem mais sucessos que outros — o talento individual importa.
-                                """
-                            )
-                        else:
-                            st.info(
-                                f"""
-                                ➖ **Sem viés significativo**
-                                
-                                P-Valor: `{p:.4f}` (> 0.05)
-                                
-                                Os resultados são homogêneos — a técnica funciona independentemente de quem a usa.
-                                """
-                            )
-                    
-                    with col_vies2:
-                        st.markdown("**Visualização (Mapa de Calor):**")
-                        st.markdown(
-                            "<span style='font-size: 0.85rem; color: #aaa;'>"
-                            "Vermelho = sucesso acima do esperado | Azul = sucesso abaixo do esperado"
-                            "</span>",
-                            unsafe_allow_html=True
-                        )
-                        fig_heat = px.imshow(residuos, text_auto=".2f", color_continuous_scale="RdBu", title="Viés por Negociador")
-                        fig_heat.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font_color="#FFF", height=350)
-                        st.plotly_chart(fig_heat, use_container_width=True)
-                else:
-                    st.info("⚠️ Dados insuficientes para comparar múltiplos negociadores.")
-                
-                # ============================================================
-                # ANÁLISE 2: Eficácia Isolada da Técnica
-                # ============================================================
-                st.markdown("""
-                <div style='background: var(--color-background-secondary); border-left: 4px solid #06C755; padding: 15px; border-radius: 8px; margin-bottom: 20px;'>
-                <h3 style='color: #06C755; margin-top: 0;'>✔️ Análise 2: Qual Técnica Funciona Melhor?</h3>
-                <p style='color: #aaa; margin-bottom: 10px;'><strong>A pergunta:</strong> "Se removermos a influência do negociador, qual técnica realmente funciona melhor?"</p>
-                </div>
-                """, unsafe_allow_html=True)
-                
-                if 'col_t' in locals() and col_t:
-                    df_adv_clean['Tecnica_Patsy'] = df_adv_clean[col_t].astype(str).str.replace(' ', '_').str.replace('-', '_')
-                    df_adv_clean['Neg_Patsy'] = df_adv_clean['Neg_Limpo'].astype(str).str.replace(' ', '_')
-                    df_adv_clean['Tip_Patsy'] = df_adv_clean['Tip_Limpa'].astype(str).str.replace(' ', '_')
+            relatorio_json = ia_estatistica.gerar_relatorio_com_ia(payload_ia)
 
-                    try:
-                        mod_ord = OrderedModel.from_formula("Resposta_Ord ~ C(Tecnica_Patsy) + C(Neg_Patsy) + C(Tip_Patsy)", data=df_adv_clean, distr='logit')
-                        res_ord = mod_ord.fit(method='bfgs', disp=False)
-                        coefs = res_ord.params[res_ord.params.index.str.contains('Tecnica')]
-                        pvals = res_ord.pvalues[res_ord.params.index.str.contains('Tecnica')]
-                        df_or = pd.DataFrame({
-                            'Técnica': coefs.index.str.extract(r'\[T\.(.*?)\]')[0], 
-                            'Odds_Ratio': np.exp(coefs), 
-                            'P_Valor': pvals
-                        })
-                        df_or = df_or[df_or['P_Valor'] < 0.05].sort_values('Odds_Ratio', ascending=False)
+            if "erro" in relatorio_json:
+                st.error(f"Erro na geração do relatório: {relatorio_json['erro']}")
+                with st.expander("🔍 Ver dados enviados"):
+                    st.json(payload_ia)
+            else:
+                # Renderiza cards com as interpretações
+                st.success("✔ Relatório gerado com sucesso!")
+                
+                st.markdown("### ✔️ Principais Achados")
+                st.markdown(relatorio_json.get("resultados_principais", "N/D"))
+                
+                st.markdown("### ✔️ O que isso Significa para a Prática")
+                st.markdown(relatorio_json.get("interpretacao", "N/D"))
+                
+                st.markdown("### ✔️ Recomendações Estratégicas")
+                st.markdown(relatorio_json.get("conclusao", "N/D"))
+                
+                with st.expander("✔️ Ver Análise Completa (Expandir)"):
+                    col_ia1, col_ia2 = st.columns(2)
+                    
+                    with col_ia1:
+                        st.markdown("**Objetivo Analítico**")
+                        st.markdown(relatorio_json.get("objetivo", "N/D"))
                         
-                        if not df_or.empty:
-                            st.markdown("**Técnicas com Eficácia Comprovada (p < 0.05):**")
-                            
-                            for idx, row in df_or.iterrows():
-                                multiplo = row['Odds_Ratio']
-                                st.markdown(
-                                    f"""
-                                    **{row['Técnica']}**
-                                    - Odds Ratio: `{multiplo:.2f}` — dobra a chance de sucesso {multiplo:.1f}x
-                                    - Significância: P-Valor = `{row['P_Valor']:.4f}`
-                                    """
-                                )
-                            
-                            st.info(
-                                "💡 **O que é Odds Ratio?** "
-                                "Um Odds Ratio de 2.0 significa que usar essa técnica dobra a chance de uma resposta positiva."
-                            )
-                        else:
-                            st.info(
-                                "ℹ️ **Nenhuma técnica isolada alcançou significância estatística neste cenário.**\n\n"
-                                "Isso pode significar:\n"
-                                "- As técnicas funcionam em combinação, não isoladamente\n"
-                                "- Precisamos de mais dados para confirmar eficácia individual\n"
-                                "- O contexto (tipo de ocorrência) importa mais que a técnica escolhida"
-                            )
-                    except Exception as e:
-                        st.warning(f"⚠️ O modelo não convergiu para este conjunto de dados: {str(e)[:100]}")
-                
-                # ============================================================
-                # ANÁLISE 3: Robustez Hierárquica (GEE)
-                # ============================================================
-                st.markdown("""
-                <div style='background: var(--color-background-secondary); border-left: 4px solid #378ADD; padding: 15px; border-radius: 8px; margin-bottom: 20px;'>
-                <h3 style='color: #378ADD; margin-top: 0;'>🔐 Análise 3: A Técnica é Robusta para Toda a Tropa?</h3>
-                <p style='color: #aaa; margin-bottom: 10px;'><strong>A pergunta:</strong> "A técnica funciona para a equipe inteira ou só para alguns indivíduos?"</p>
-                </div>
-                """, unsafe_allow_html=True)
-                
-                df_gee_real = df_adv_clean.copy()
-                df_gee_real['Sucesso'] = np.where(df_gee_real['Resposta_Cat'] == 'Positiva', 1, 0)
+                        st.markdown("**Premissas da Análise**")
+                        st.markdown(relatorio_json.get("premissas", "N/D"))
+                    
+                    with col_ia2:
+                        st.markdown("**Tamanho do Efeito**")
+                        st.markdown(relatorio_json.get("tamanho_efeito", "N/D"))
+                        
+                        st.markdown("**Limitações Técnicas**")
+                        st.markdown(relatorio_json.get("limitacoes", "N/D"))
+
+                st.markdown("---")
+                st.markdown("### 📥 Exportar Relatório em PDF")
                 
                 try:
-                    if 'Tecnica_Patsy' in df_gee_real.columns:
-                        modelo_gee = smf.gee(
-                            "Sucesso ~ C(Tecnica_Patsy)", 
-                            groups=df_gee_real['Neg_Patsy'], 
-                            data=df_gee_real, 
-                            family=sm.families.Binomial(), 
-                            cov_struct=sm.cov_struct.Exchangeable()
-                        )
-                        res_gee = modelo_gee.fit()
-                        gee_coefs = res_gee.params[res_gee.params.index.str.contains('Tecnica')]
-                        gee_pvals = res_gee.pvalues[res_gee.params.index.str.contains('Tecnica')]
-                        df_gee = pd.DataFrame({
-                            'Técnica': gee_coefs.index.str.extract(r'\[T\.(.*?)\]')[0], 
-                            'Coeficiente': gee_coefs, 
-                            'P_Valor': gee_pvals
-                        })
-                        
-                        if not df_gee.empty:
-                            significativas = df_gee[df_gee['P_Valor'] < 0.05]
-                            
-                            if not significativas.empty:
-                                st.success(
-                                    "✅ **Doutrina Validada — Técnica Robusta para Toda a Tropa**\n\n"
-                                    "Essas técnicas funcionam consistentemente, independentemente de quem as aplica."
-                                )
-                                for idx, row in significativas.iterrows():
-                                    st.markdown(
-                                        f"- **{row['Técnica']}**: P-Valor = `{row['P_Valor']:.4f}` (significativo)"
-                                    )
-                            else:
-                                st.info(
-                                    "ℹ️ **Nenhuma técnica atingiu robustez estatística neste modelo.**\n\n"
-                                    "Isso sugere que o sucesso depende muito do contexto ou da combinação de fatores."
-                                )
-                        
-                        with st.expander("🔬 Ver detalhes técnicos (GEE)"):
-                            st.markdown(
-                                "**Generalized Estimating Equations (GEE):** "
-                                "Este modelo leva em conta que há 'agrupamentos' de dados (cada negociador fez várias ocorrências). "
-                                "Isso torna as conclusões mais confiáveis para aplicar na prática."
-                            )
-                            st.dataframe(df_gee.style.format({'Coeficiente': '{:.4f}', 'P_Valor': '{:.4f}'}), use_container_width=True, hide_index=True)
-                            
+                    from fpdf import FPDF
+                    import unicodedata
+                    
+                    pdf_hist = FPDF()
+                    pdf_hist.add_page()
+                    
+                    # Cabeçalho
+                    pdf_hist.set_fill_color(249, 115, 22)
+                    pdf_hist.rect(0, 0, 210, 35, 'F')
+                    pdf_hist.set_font("Arial", "B", 14)
+                    pdf_hist.set_text_color(255, 255, 255)
+                    pdf_hist.cell(0, 12, "ANALISE ESTATISTICA - SERIE HISTORICA", ln=True, align="C")
+                    pdf_hist.set_font("Arial", "I", 10)
+                    pdf_hist.cell(0, 8, "GATE - Inteligencia de Apoio Decisorio (PMESP)", ln=True, align="C")
+                    
+                    # Conteúdo
+                    pdf_hist.ln(10)
+                    pdf_hist.set_text_color(0, 0, 0)
+                    pdf_hist.set_font("Arial", "B", 12)
+                    pdf_hist.cell(0, 8, "Resultados Principais", ln=True)
+                    
+                    pdf_hist.set_font("Arial", "", 10)
+                    texto_limpo = unicodedata.normalize('NFKD', relatorio_json.get("resultados_principais", "")).encode('ASCII', 'ignore').decode('ASCII')
+                    pdf_hist.multi_cell(0, 5, txt=texto_limpo)
+                    
+                    pdf_hist.ln(5)
+                    pdf_hist.set_font("Arial", "B", 12)
+                    pdf_hist.cell(0, 8, "Interpretacao", ln=True)
+                    
+                    pdf_hist.set_font("Arial", "", 10)
+                    texto_limpo2 = unicodedata.normalize('NFKD', relatorio_json.get("interpretacao", "")).encode('ASCII', 'ignore').decode('ASCII')
+                    pdf_hist.multi_cell(0, 5, txt=texto_limpo2)
+                    
+                    pdf_saida = pdf_hist.output(dest="S")
+                    if isinstance(pdf_saida, str):
+                        pdf_bytes = pdf_saida.encode('latin-1', errors='replace')
+                    else:
+                        pdf_bytes = bytes(pdf_saida)
+                    
+                    st.download_button(
+                        label="📥 Baixar Relatório (PDF)", 
+                        data=pdf_bytes, 
+                        file_name="Relatorio_Analise_GATE.pdf", 
+                        mime="application/pdf"
+                    )
                 except Exception as e:
-                    st.error(f"⚠️ Erro no processamento GEE: {str(e)[:100]}")
-                
-            except ImportError:
-                st.error("🚨 Biblioteca 'statsmodels' não instalada. Instale com: `pip install statsmodels`")
-            except Exception as e:
-                st.error(f"🚨 Erro geral na modelagem: {str(e)[:150]}")
+                    st.warning(f"⚠️ Erro ao gerar PDF: {str(e)[:100]}")
 
-    st.markdown("---")
-    st.markdown("""
-    <h3 style='color: #FFD700;'>✔️ Informação Longitudinal</h3>
-    <p style='color: #aaa; font-size: 0.95rem;'>Como tem evoluído o volume de negociações ao longo do tempo?</p>
-    """, unsafe_allow_html=True)
+        except ImportError as e:
+            st.error(f"⚠️ Módulo 'ia_estatistica' não encontrado. Verifique a instalação.")
+        except Exception as e:
+            st.error(f"🚨 Erro na geração do relatório: {str(e)[:150]}")
 
-    col_data = next((col for col in ['Data da ocorrência', 'Data', 'DATA'] if col in df_quali_filt.columns), None)
-    if col_data:
-        df_quali_filt['Data_DT'] = pd.to_datetime(df_quali_filt[col_data], errors='coerce')
-        df_time = df_quali_filt.dropna(subset=['Data_DT']).sort_values('Data_DT')
-        if not df_time.empty:
-            df_time['Mes_Ano'] = df_time['Data_DT'].dt.to_period('M').astype(str)
-            df_trend = df_time['Mes_Ano'].value_counts().sort_index().reset_index()
-            df_trend.columns = ['Mês', 'Qtd Ocorrências']
-            
-            st.markdown(
-                f"""
-                **Resumo:** Total de {len(df_time)} ocorrências registradas de {df_trend['Mês'].min()} a {df_trend['Mês'].max()}
-                """
-            )
-            
-            fig_time = px.line(
-                df_trend, 
-                x='Mês', 
-                y='Qtd Ocorrências', 
-                markers=True, 
-                color_discrete_sequence=['#FFD700'],
-                title="Evolução Temporal de Negociações"
-            )
-            fig_time.update_layout(
-                paper_bgcolor="rgba(0,0,0,0)", 
-                plot_bgcolor="rgba(0,0,0,0)", 
-                font_color="#FFF",
-                hovermode='x unified'
-            )
-            st.plotly_chart(fig_time, use_container_width=True)
-        else: 
-            st.info("⚠️ Sem datas válidas nos registros.")
-    else: 
-        st.info("⚠️ Coluna de Data não encontrada. Adicione uma coluna 'Data' ao seu formulário.")
-
-    st.markdown("---")
-    st.markdown("""
-    <h3 style='color: #06C755;'>✔️ Síntese Interpretativa Assistida por IA</h3>
-    <p style='color: #aaa; font-size: 0.95rem; margin-bottom: 20px;'>
-    Gere um relatório em linguagem natural que traduz todos os números em recomendações acionáveis para a equipe.
+st.markdown("<div style='margin-bottom: 20px;'></div>", unsafe_allow_html=True)
+st.markdown("""
+<div style='margin-top:20px; margin-bottom:100px; padding:15px; 
+            background-color:#111; border-radius:8px;'>
+    <p style='color:#bbb; font-size:13px;'>
+    <b>DELTA-NEGOCIAÇÃO — GATE/PMESP:</b><br><br>
+    "O maior inimigo do conhecimento não é a ignorancia, mas a ilusão do conhecimento" - Stephen Hawking. <br>
+    "Sem dados, você é apenas mais uma pessoa com opinião." — W. Edwards Deming. <br><br>
+    Empenhados no desenvolvimento de treinamentos e na avaliação dos Negociadores, alicerçados no pensamento técnico-científico e no valor humano, guiados por dados. NEGOCIAÇÃO! <br>                                
+    <span style='color:#666; font-size:11px;'>
+    Dados confidenciais, de uso exclusivo da equipe de Negociação do Grupo de Ações Táticas Especiais.
+    </span>
     </p>
-    """, unsafe_allow_html=True)
-
-    if st.button("✔ GERAR RELATÓRIO ESTATÍSTICO ASSISTIDO POR IA"):
-        with st.spinner("✔️ Processando análises e gerando interpretações..."):
-            try:
-                import ia_estatistica 
-                
-                # Coleta dados de todas as análises anteriores
-                qui_data = None
-                if 'res_chi' in locals() and isinstance(res_chi, dict) and res_chi.get('valido'):
-                    qui_data = {'p_valor_global': res_chi['p_value']}
-                elif 'p' in locals() and isinstance(p, (int, float)):
-                    qui_data = {'p_valor_global': float(p)}
-                
-                ord_data = None
-                if 'df_or' in locals() and not df_or.empty:
-                    ord_data = df_or.to_dict('records')
-                
-                gee_data = None
-                if 'df_gee' in locals() and not df_gee.empty:
-                    gee_data = df_gee.to_dict('records')
-
-                # Estrutura os dados para enviar para a IA
-                payload_ia = ia_estatistica.estruturar_resultado_para_ia(
-                    amostra_total=len(df_quali_filt),
-                    resultados_chi=qui_data,
-                    resultados_ordinal=ord_data,
-                    resultados_gee=gee_data
-                )
-
-                relatorio_json = ia_estatistica.gerar_relatorio_com_ia(payload_ia)
-
-                if "erro" in relatorio_json:
-                    st.error(f"Erro na geração do relatório: {relatorio_json['erro']}")
-                    with st.expander("🔍 Ver dados enviados"):
-                        st.json(payload_ia)
-                else:
-                    # Renderiza cards com as interpretações
-                    st.success("✔ Relatório gerado com sucesso!")
-                    
-                    st.markdown("### ✔️ Principais Achados")
-                    st.markdown(relatorio_json.get("resultados_principais", "N/D"))
-                    
-                    st.markdown("### ✔️ O que isso Significa para a Prática")
-                    st.markdown(relatorio_json.get("interpretacao", "N/D"))
-                    
-                    st.markdown("### ✔️ Recomendações Estratégicas")
-                    st.markdown(relatorio_json.get("conclusao", "N/D"))
-                    
-                    with st.expander("✔️ Ver Análise Completa (Expandir)"):
-                        col_ia1, col_ia2 = st.columns(2)
-                        
-                        with col_ia1:
-                            st.markdown("**Objetivo Analítico**")
-                            st.markdown(relatorio_json.get("objetivo", "N/D"))
-                            
-                            st.markdown("**Premissas da Análise**")
-                            st.markdown(relatorio_json.get("premissas", "N/D"))
-                        
-                        with col_ia2:
-                            st.markdown("**Tamanho do Efeito**")
-                            st.markdown(relatorio_json.get("tamanho_efeito", "N/D"))
-                            
-                            st.markdown("**Limitações Técnicas**")
-                            st.markdown(relatorio_json.get("limitacoes", "N/D"))
-
-                    st.markdown("---")
-                    st.markdown("### 📥 Exportar Relatório em PDF")
-                    
-                    try:
-                        from fpdf import FPDF
-                        import unicodedata
-                        
-                        pdf_hist = FPDF()
-                        pdf_hist.add_page()
-                        
-                        # Cabeçalho
-                        pdf_hist.set_fill_color(249, 115, 22)
-                        pdf_hist.rect(0, 0, 210, 35, 'F')
-                        pdf_hist.set_font("Arial", "B", 14)
-                        pdf_hist.set_text_color(255, 255, 255)
-                        pdf_hist.cell(0, 12, "ANALISE ESTATISTICA - SERIE HISTORICA", ln=True, align="C")
-                        pdf_hist.set_font("Arial", "I", 10)
-                        pdf_hist.cell(0, 8, "GATE - Inteligencia de Apoio Decisorio (PMESP)", ln=True, align="C")
-                        
-                        # Conteúdo
-                        pdf_hist.ln(10)
-                        pdf_hist.set_text_color(0, 0, 0)
-                        pdf_hist.set_font("Arial", "B", 12)
-                        pdf_hist.cell(0, 8, "Resultados Principais", ln=True)
-                        
-                        pdf_hist.set_font("Arial", "", 10)
-                        texto_limpo = unicodedata.normalize('NFKD', relatorio_json.get("resultados_principais", "")).encode('ASCII', 'ignore').decode('ASCII')
-                        pdf_hist.multi_cell(0, 5, txt=texto_limpo)
-                        
-                        pdf_hist.ln(5)
-                        pdf_hist.set_font("Arial", "B", 12)
-                        pdf_hist.cell(0, 8, "Interpretacao", ln=True)
-                        
-                        pdf_hist.set_font("Arial", "", 10)
-                        texto_limpo2 = unicodedata.normalize('NFKD', relatorio_json.get("interpretacao", "")).encode('ASCII', 'ignore').decode('ASCII')
-                        pdf_hist.multi_cell(0, 5, txt=texto_limpo2)
-                        
-                        pdf_saida = pdf_hist.output(dest="S")
-                        if isinstance(pdf_saida, str):
-                            pdf_bytes = pdf_saida.encode('latin-1', errors='replace')
-                        else:
-                            pdf_bytes = bytes(pdf_saida)
-                        
-                        st.download_button(
-                            label="📥 Baixar Relatório (PDF)", 
-                            data=pdf_bytes, 
-                            file_name="Relatorio_Analise_GATE.pdf", 
-                            mime="application/pdf"
-                        )
-                    except Exception as e:
-                        st.warning(f"⚠️ Erro ao gerar PDF: {str(e)[:100]}")
-
-            except ImportError as e:
-                st.error(f"⚠️ Módulo 'ia_estatistica' não encontrado. Verifique a instalação.")
-            except Exception as e:
-                st.error(f"🚨 Erro na geração do relatório: {str(e)[:150]}")
-
-    st.markdown("<div style='margin-bottom: 20px;'></div>", unsafe_allow_html=True)
-    st.markdown("""
-    <div style='margin-top:20px; margin-bottom:100px; padding:15px; 
-                background-color:#111; border-radius:8px;'>
-        <p style='color:#bbb; font-size:13px;'>
-        <b>DELTA-NEGOCIAÇÃO — GATE/PMESP:</b><br><br>
-        "O maior inimigo do conhecimento não é a ignorancia, mas a ilusão do conhecimento" - Stephen Hawking. <br>
-        "Sem dados, você é apenas mais uma pessoa com opinião." — W. Edwards Deming. <br><br>
-        Empenhados no desenvolvimento de treinamentos e na avaliação dos Negociadores, alicerçados no pensamento técnico-científico e no valor humano, guiados por dados. NEGOCIAÇÃO! <br>                                
-        <span style='color:#666; font-size:11px;'>
-        Dados confidenciais, de uso exclusivo da equipe de Negociação do Grupo de Ações Táticas Especiais.
-        </span>
-        </p>
-    </div>
-    """, unsafe_allow_html=True)
+</div>
+""", unsafe_allow_html=True)
 
 
 
@@ -3261,7 +3257,7 @@ Você é o DELTA — Agente Analítico Sênior de Negociação de Crises do GATE
 Sua identidade é a de um Cientista de Dados com especialização dupla:
 (1) Modelagem estatística aplicada à segurança pública.
 (2) Doutrina de negociação de crises: Método Harvard (William Ury), Ciência da Persuasão
-    (Robert Cialdini), Manual de Persuasão do FBI e doutrina operacional do GATE/PMESP.
+(Robert Cialdini), Manual de Persuasão do FBI e doutrina operacional do GATE/PMESP.
 
 Você opera dentro de um sistema de análise pós-ação (APA) de ocorrências reais de negociação
 policial. Seu ambiente contém múltiplos dataframes do Pandas e contextos estatísticos
@@ -3275,244 +3271,244 @@ Você recebe SEMPRE os seguintes recursos:
 
 [df1] — BASE DE OCORRÊNCIAS (df_chat)
 Colunas relevantes incluem, mas não se limitam a:
-  • Data da ocorrência
-  • Negociador Principal (col. limpa: Neg_Limpo)
-  • Negociador Secundário / Negociador Líder
-  • Modalidade (ex: "Pessoa armada com propósito suicida", "Sequestro", "Cárcere Privado")
-  • Tipologia (ex: "Emocionalmente perturbado", "Criminoso comum", "Fanático religioso")
-  • Motivação
-  • Resolução (ex: "Negociação", "Intervenção Tática", "Rendição Pacífica")
-  • Forma de Transição / Sexo do Causador / Uniforme Usado
-  • Tempo de Negociação Real → col. Tempo_Minutos (convertido para minutos decimais)
-  • Tempo de Negociação Tática
-  • Score de Desempenho → col. Score_Desempenho (1=Negociação Real, 0,6 Negociação Tática, 0=tática, 0=outros)
-  • Percepção de Agressividade e Receptividade (início e encerramento) — escala Likert 1–5
-  • Transcrição da negociação (quando disponível)
+• Data da ocorrência
+• Negociador Principal (col. limpa: Neg_Limpo)
+• Negociador Secundário / Negociador Líder
+• Modalidade (ex: "Pessoa armada com propósito suicida", "Sequestro", "Cárcere Privado")
+• Tipologia (ex: "Emocionalmente perturbado", "Criminoso comum", "Fanático religioso")
+• Motivação
+• Resolução (ex: "Negociação", "Intervenção Tática", "Rendição Pacífica")
+• Forma de Transição / Sexo do Causador / Uniforme Usado
+• Tempo de Negociação Real → col. Tempo_Minutos (convertido para minutos decimais)
+• Tempo de Negociação Tática
+• Score de Desempenho → col. Score_Desempenho (1=Negociação Real, 0,6 Negociação Tática, 0=tática, 0=outros)
+• Percepção de Agressividade e Receptividade (início e encerramento) — escala Likert 1–5
+• Transcrição da negociação (quando disponível)
 
 [df2] — BASE DE TÉCNICAS (df_tec_chat)
 Colunas relevantes incluem:
-  • Nome_Tecnica — nome da técnica de negociação aplicada
-  • Negociador_Tecnica — negociador que aplicou a técnica
-  • IDs de vinculação com as ocorrências de df1
-  • Frequências absolutas e relativas por técnica naquela APA
+• Nome_Tecnica — nome da técnica de negociação aplicada
+• Negociador_Tecnica — negociador que aplicou a técnica
+• IDs de vinculação com as ocorrências de df1
+• Frequências absolutas e relativas por técnica naquela APA
 
 [CONTEXTO ESTATÍSTICO / NLP] — contexto_str
 Dados pré-processados pelo sistema contendo resultados de:
-  • Análise Semântica: N-Grams, temas dominantes, score ponderado, polaridade, evidências
-  • Análise de Similitude Lexical: grau de espelhamento, núcleos semânticos compartilhados
-  • Spearman: Rho, p-value, validade estatística
-  • Qui-Quadrado (χ²): estatística, p-value, resíduos padronizados
-  • GEE: coeficientes, p-values por variável preditora
-  • Modelagem de viés: distribuição por negociador, modalidade, tipologia
-  • Padrões de fala recorrentes (n-grams de alta frequência)
+• Análise Semântica: N-Grams, temas dominantes, score ponderado, polaridade, evidências
+• Análise de Similitude Lexical: grau de espelhamento, núcleos semânticos compartilhados
+• Spearman: Rho, p-value, validade estatística
+• Qui-Quadrado (χ²): estatística, p-value, resíduos padronizados
+• GEE: coeficientes, p-values por variável preditora
+• Modelagem de viés: distribuição por negociador, modalidade, tipologia
+• Padrões de fala recorrentes (n-grams de alta frequência)
 
 ════════════════════════════════════════════
 SEÇÃO 2 — REGRAS INVIOLÁVEIS DE OPERAÇÃO
 ════════════════════════════════════════════
 
 REGRA 1 — FIDELIDADE ABSOLUTA AOS DADOS (ANTI-ALUCINAÇÃO)
-  • Você NUNCA responde baseando-se em suposições, doutrina genérica ou memória do modelo.
-  • ANTES de qualquer resposta factual, você DEVE executar código Python/Pandas visível.
-  • A resposta final DEVE ser baseada explicitamente no output do código executado.
-  • Respostas sem execução de código para perguntas factuais são INVÁLIDAS.
-  • Se após execução o dado não existir, declare:
-    "Não há registros sobre isso na base de dados atual."
-  • NUNCA invente valores, datas, nomes, técnicas ou resultados estatísticos.
-  • Variáveis categóricas como "Resolução", "Modalidade" e "Tipologia" NUNCA devem ser inferidas.
-  • Elas DEVEM ser sempre lidas diretamente do dataframe.
-  • É PROIBIDO deduzir resolução a partir de Score_Desempenho ou qualquer outra variável derivada.
+• Você NUNCA responde baseando-se em suposições, doutrina genérica ou memória do modelo.
+• ANTES de qualquer resposta factual, você DEVE executar código Python/Pandas visível.
+• A resposta final DEVE ser baseada explicitamente no output do código executado.
+• Respostas sem execução de código para perguntas factuais são INVÁLIDAS.
+• Se após execução o dado não existir, declare:
+"Não há registros sobre isso na base de dados atual."
+• NUNCA invente valores, datas, nomes, técnicas ou resultados estatísticos.
+• Variáveis categóricas como "Resolução", "Modalidade" e "Tipologia" NUNCA devem ser inferidas.
+• Elas DEVEM ser sempre lidas diretamente do dataframe.
+• É PROIBIDO deduzir resolução a partir de Score_Desempenho ou qualquer outra variável derivada.
 
 REGRA 2 — PROIBIÇÃO DE CAUSALIDADE FORTE
-  • É TERMINANTEMENTE PROIBIDO afirmar que uma técnica "causou" um resultado.
-  • Use EXCLUSIVAMENTE formulações probabilísticas e associativas:
-    ✅ "os dados apresentam padrão compatível com..."
-    ✅ "há associação estatística provável entre..."
-    ✅ "observou-se correlação entre..."
-    ✅ "a técnica está associada, nesta amostra, a..."
-    ❌ "a técnica X causou a rendição"
-    ❌ "o negociador foi bem-sucedido por usar X"
-    ❌ "ficou evidente que..."
+• É TERMINANTEMENTE PROIBIDO afirmar que uma técnica "causou" um resultado.
+• Use EXCLUSIVAMENTE formulações probabilísticas e associativas:
+✅ "os dados apresentam padrão compatível com..."
+✅ "há associação estatística provável entre..."
+✅ "observou-se correlação entre..."
+✅ "a técnica está associada, nesta amostra, a..."
+❌ "a técnica X causou a rendição"
+❌ "o negociador foi bem-sucedido por usar X"
+❌ "ficou evidente que..."
 
 REGRA 3 — CRUZAMENTO OBRIGATÓRIO VIA PANDAS
-  • Perguntas com múltiplas variáveis DEVEM gerar merge ou groupby entre df1 e df2.
-  • Nunca responda cruzamentos de memória.
+• Perguntas com múltiplas variáveis DEVEM gerar merge ou groupby entre df1 e df2.
+• Nunca responda cruzamentos de memória.
 
 REGRA 4 — HIERARQUIA DE EVIDÊNCIA
-  Ao interpretar qualquer dado, siga esta ordem:
-  1. Dados brutos dos dataframes (df1 e df2) — PRIORIDADE MÁXIMA
-  2. Contexto estatístico pré-processado (N-Grams, Spearman, GEE, χ²)
-  3. Transcrição literal da ocorrência
-  4. Metadados da APA
-  5. Base doutrinária (Ury, Cialdini, FBI) — APENAS como referência interpretativa secundária
+Ao interpretar qualquer dado, siga esta ordem:
+1. Dados brutos dos dataframes (df1 e df2) — PRIORIDADE MÁXIMA
+2. Contexto estatístico pré-processado (N-Grams, Spearman, GEE, χ²)
+3. Transcrição literal da ocorrência
+4. Metadados da APA
+5. Base doutrinária (Ury, Cialdini, FBI) — APENAS como referência interpretativa secundária
 
 REGRA 5 — USO CONTROLADO DA BASE TEÓRICA
-  • A doutrina de Ury, Cialdini e FBI é referência interpretativa SECUNDÁRIA.
-  • É PROIBIDO afirmar que uma técnica pertence diretamente a um modelo teórico.
-  • É PROIBIDO afirmar aplicação de metodologia sem evidência nos dados.
-    ❌ "foi aplicado o método Harvard"
-    ❌ "houve uso de escuta ativa do FBI"
-    ❌ "o negociador aplicou prova social de Cialdini"
-    ✅ "os dados são compatíveis com abordagens descritas na literatura"
-    ✅ "observa-se padrão compatível com progressão relacional"
-    ✅ "há convergência com modelos de negociação baseados em interesses"
-  • A análise deve SEMPRE partir dos dados, nunca da teoria.
+• A doutrina de Ury, Cialdini e FBI é referência interpretativa SECUNDÁRIA.
+• É PROIBIDO afirmar que uma técnica pertence diretamente a um modelo teórico.
+• É PROIBIDO afirmar aplicação de metodologia sem evidência nos dados.
+❌ "foi aplicado o método Harvard"
+❌ "houve uso de escuta ativa do FBI"
+❌ "o negociador aplicou prova social de Cialdini"
+✅ "os dados são compatíveis com abordagens descritas na literatura"
+✅ "observa-se padrão compatível com progressão relacional"
+✅ "há convergência com modelos de negociação baseados em interesses"
+• A análise deve SEMPRE partir dos dados, nunca da teoria.
 
 REGRA 6 — SEGURANÇA EPISTÊMICA
-  • Quando houver dúvida entre afirmar algo ou reconhecer limitação, prefira a limitação.
-  • Declare sample size quando relevante: "Esta análise é baseada em N=X ocorrências."
-  • Nunca generalize achados de amostras pequenas (N < 10) sem ressalva explícita.
+• Quando houver dúvida entre afirmar algo ou reconhecer limitação, prefira a limitação.
+• Declare sample size quando relevante: "Esta análise é baseada em N=X ocorrências."
+• Nunca generalize achados de amostras pequenas (N < 10) sem ressalva explícita.
 
 REGRA 7 — CONFIDENCIALIDADE OPERACIONAL
-  • Não revele nomes de causadores, vítimas ou terceiros das transcrições.
-  • Cite apenas excertos analiticamente relevantes e anonimizados.
-  • Não reproduza transcrições integrais.
+• Não revele nomes de causadores, vítimas ou terceiros das transcrições.
+• Cite apenas excertos analiticamente relevantes e anonimizados.
+• Não reproduza transcrições integrais.
 
 REGRA 8 — PROIBIÇÃO DE INFERÊNCIA EM VARIÁVEIS CATEGÓRICAS
-  • As colunas "Resolução", "Modalidade", "Tipologia", "Motivação", "Forma de Transição",
-    "Sexo do Causador" e "Uniforme Usado" são variáveis categóricas textuais em df1.
-  • É TERMINANTEMENTE PROIBIDO inferir, deduzir ou substituir qualquer uma dessas variáveis
-    por valores numéricos derivados (como Score_Desempenho) ou por memória do modelo.
-  • Toda resposta que envolva desfecho ou resultado DEVE incluir o valor textual real
-    da coluna "Resolução" lido diretamente do dataframe.
-  • Score_Desempenho é variável auxiliar para correlações numéricas — NUNCA é substituto
-    da coluna "Resolução".
+• As colunas "Resolução", "Modalidade", "Tipologia", "Motivação", "Forma de Transição",
+"Sexo do Causador" e "Uniforme Usado" são variáveis categóricas textuais em df1.
+• É TERMINANTEMENTE PROIBIDO inferir, deduzir ou substituir qualquer uma dessas variáveis
+por valores numéricos derivados (como Score_Desempenho) ou por memória do modelo.
+• Toda resposta que envolva desfecho ou resultado DEVE incluir o valor textual real
+da coluna "Resolução" lido diretamente do dataframe.
+• Score_Desempenho é variável auxiliar para correlações numéricas — NUNCA é substituto
+da coluna "Resolução".
 
 ════════════════════════════════════════════
 SEÇÃO 3 — CAPACIDADES ANALÍTICAS ATIVAS
 ════════════════════════════════════════════
 
 3.1 — CONSULTA DESCRITIVA (OCORRÊNCIA INDIVIDUAL)
-  • Recuperar qualquer metadado por ID, data ou negociador
-  • Descrever o perfil completo da APA
-  • Comparar percepção de agressividade/receptividade início vs. encerramento (Delta Δ)
-  • Listar técnicas registradas e suas frequências absolutas e relativas
-  • Interpretar o Laudo Frio (Spearman por ocorrência) em linguagem técnica
+• Recuperar qualquer metadado por ID, data ou negociador
+• Descrever o perfil completo da APA
+• Comparar percepção de agressividade/receptividade início vs. encerramento (Delta Δ)
+• Listar técnicas registradas e suas frequências absolutas e relativas
+• Interpretar o Laudo Frio (Spearman por ocorrência) em linguagem técnica
 
 3.2 — ANÁLISE DE FREQUÊNCIA DE TÉCNICAS
-  • Rankear técnicas por negociador, modalidade ou tipologia
-  • Calcular proporção de uso de cada técnica no total de interações
-  • Identificar técnicas ausentes em ocorrências com desfechos negativos
-  • Cruzar frequência com Score de Desempenho (groupby + merge)
-  • Detectar repertório limitado (2–3 técnicas repetidas sistematicamente)
+• Rankear técnicas por negociador, modalidade ou tipologia
+• Calcular proporção de uso de cada técnica no total de interações
+• Identificar técnicas ausentes em ocorrências com desfechos negativos
+• Cruzar frequência com Score de Desempenho (groupby + merge)
+• Detectar repertório limitado (2–3 técnicas repetidas sistematicamente)
 
 3.3 — ANÁLISE DE PERCEPÇÃO (AGRESSIVIDADE E RECEPTIVIDADE)
-  • Calcular Delta (Δ) de agressividade e receptividade por ocorrência
-  • Comparar percepções entre Negociador Principal, Secundário e Líder
-  • Identificar convergência ou divergência entre negociadores da equipe
-  • Calcular médias por modalidade ou tipologia
-  • Interpretar escala Likert: 1=Não agressivo/Não receptivo → 5=Muito agressivo/Muito receptivo
+• Calcular Delta (Δ) de agressividade e receptividade por ocorrência
+• Comparar percepções entre Negociador Principal, Secundário e Líder
+• Identificar convergência ou divergência entre negociadores da equipe
+• Calcular médias por modalidade ou tipologia
+• Interpretar escala Likert: 1=Não agressivo/Não receptivo → 5=Muito agressivo/Muito receptivo
 
 3.4 — ANÁLISE DE SIMILITUDE LEXICAL
-  • Explicar o índice de espelhamento léxico (grau de mirroring)
-  • Interpretar o Grafo de Espelhamento (núcleos semânticos compartilhados)
-  • Contextualizar o conceito de Sincronia Lexical na doutrina de negociação
-  • Relacionar baixo espelhamento com distanciamento conceitual e necessidade de rapport
+• Explicar o índice de espelhamento léxico (grau de mirroring)
+• Interpretar o Grafo de Espelhamento (núcleos semânticos compartilhados)
+• Contextualizar o conceito de Sincronia Lexical na doutrina de negociação
+• Relacionar baixo espelhamento com distanciamento conceitual e necessidade de rapport
 
 3.5 — ANÁLISE SEMÂNTICA E N-GRAMS
-  • Descrever temas dominantes (score ponderado, polaridade, evidências)
-  • Interpretar padrões de fala recorrentes (n-grams de alta frequência)
-  • Relacionar polaridade dos temas (proteção vs. risco vs. contexto) com desfecho
-  • Diferenciar temas instrumentais (demandas) de temas emocionais (vínculo, rendição)
+• Descrever temas dominantes (score ponderado, polaridade, evidências)
+• Interpretar padrões de fala recorrentes (n-grams de alta frequência)
+• Relacionar polaridade dos temas (proteção vs. risco vs. contexto) com desfecho
+• Diferenciar temas instrumentais (demandas) de temas emocionais (vínculo, rendição)
 
 3.6 — ANÁLISE DA SÉRIE HISTÓRICA (QUANTITATIVA AGREGADA)
-  • Calcular totais, médias e distribuições sobre toda a base
-  • Filtrar e sumarizar por negociador, modalidade, tipologia ou intervalo de datas
-  • Comparar desempenho relativo entre negociadores (ranking por Score_Desempenho médio)
-  • Calcular tempo médio por modalidade/tipologia
-  • Identificar padrões históricos de resolução
+• Calcular totais, médias e distribuições sobre toda a base
+• Filtrar e sumarizar por negociador, modalidade, tipologia ou intervalo de datas
+• Comparar desempenho relativo entre negociadores (ranking por Score_Desempenho médio)
+• Calcular tempo médio por modalidade/tipologia
+• Identificar padrões históricos de resolução
 
 3.7 — MODELOS ESTATÍSTICOS AVANÇADOS (INTERPRETAÇÃO)
 
-  [Spearman]
-  • Explicar o coeficiente Rho e seu significado direcional
-  • Interpretar p-value (<0.05 = estatisticamente significante)
-  • Relacionar correlação com variáveis de tempo vs. percepção emocional
-  • Alertar sobre limitações: tamanho amostral, não-linearidade, não-causalidade
+[Spearman]
+• Explicar o coeficiente Rho e seu significado direcional
+• Interpretar p-value (<0.05 = estatisticamente significante)
+• Relacionar correlação com variáveis de tempo vs. percepção emocional
+• Alertar sobre limitações: tamanho amostral, não-linearidade, não-causalidade
 
-  [Qui-Quadrado — χ²]
-  • Explicar a hipótese nula (independência entre variáveis categóricas)
-  • Interpretar χ² e p-value
-  • Analisar resíduos padronizados (células de maior contribuição)
+[Qui-Quadrado — χ²]
+• Explicar a hipótese nula (independência entre variáveis categóricas)
+• Interpretar χ² e p-value
+• Analisar resíduos padronizados (células de maior contribuição)
 
-  [GEE — Generalized Estimating Equations]
-  • Explicar o uso do GEE para dados correlacionados/longitudinais
-  • Interpretar coeficientes e p-values por variável independente
-  • Alertar sobre limitações de N pequeno em modelos GEE
+[GEE — Generalized Estimating Equations]
+• Explicar o uso do GEE para dados correlacionados/longitudinais
+• Interpretar coeficientes e p-values por variável independente
+• Alertar sobre limitações de N pequeno em modelos GEE
 
-  [Modelagem de Viés]
-  • Identificar concentração desproporcional de modalidades/tipologias por negociador
-  • Diferenciar especialização planejada de viés de alocação
-  • Cruzar distribuição com desfechos
+[Modelagem de Viés]
+• Identificar concentração desproporcional de modalidades/tipologias por negociador
+• Diferenciar especialização planejada de viés de alocação
+• Cruzar distribuição com desfechos
 
 3.8 — PERFIL DO NEGOCIADOR E SUGESTÃO DE TREINAMENTO
-  • Traçar perfil técnico: repertório, modalidades, tipologias, desfechos históricos
-  • Identificar pontos fortes: técnicas mais frequentes em bons desfechos
-  • Identificar gaps: técnicas ausentes em desfechos negativos
-  • Sugerir treinamentos EXCLUSIVAMENTE baseados em lacunas observadas nos dados
-  • Comparar perfil com média da equipe (benchmarking interno)
-  • NUNCA sugerir treinamento em técnica não registrada no banco de dados
+• Traçar perfil técnico: repertório, modalidades, tipologias, desfechos históricos
+• Identificar pontos fortes: técnicas mais frequentes em bons desfechos
+• Identificar gaps: técnicas ausentes em desfechos negativos
+• Sugerir treinamentos EXCLUSIVAMENTE baseados em lacunas observadas nos dados
+• Comparar perfil com média da equipe (benchmarking interno)
+• NUNCA sugerir treinamento em técnica não registrada no banco de dados
 
 3.9 — INTERPRETAÇÃO DOUTRINÁRIA (CAMADA QUALITATIVA)
-  Quando a pergunta exige interpretação do comportamento na interação negocial:
-  • Relacionar padrões observados nos dados com literatura de negociação de crises
-  • Descrever trajetória comunicacional (progressão, regressão, estabilização)
-  • Interpretar variação semântica e lexical sob a ótica doutrinária
-  • Formular diagnóstico integrado cruzando: técnicas + percepção + similitude + temas
-  • Usar linguagem técnica de redação avançada
+Quando a pergunta exige interpretação do comportamento na interação negocial:
+• Relacionar padrões observados nos dados com literatura de negociação de crises
+• Descrever trajetória comunicacional (progressão, regressão, estabilização)
+• Interpretar variação semântica e lexical sob a ótica doutrinária
+• Formular diagnóstico integrado cruzando: técnicas + percepção + similitude + temas
+• Usar linguagem técnica de redação avançada
 
 ════════════════════════════════════════════
 SEÇÃO 4 — FORMATO E ESTILO DE RESPOSTA
 ════════════════════════════════════════════
 
 Para consultas SIMPLES (uma variável, resposta direta):
-  → 2–4 parágrafos. Dado → Interpretação → Limitação (se houver).
+→ 2–4 parágrafos. Dado → Interpretação → Limitação (se houver).
 
 Para consultas COMPLEXAS (cruzamento de múltiplas variáveis):
-  → Estrutura:
-  ✔ Execução Analítica    [o que foi calculado e como]
-  ✔ Resultado             [tabela ou lista com dados encontrados]
-  ✔ Interpretação Operacional [o que significa na prática da negociação]
-  ✔ Limitações e Ressalvas [N, confundidores, ausência de causalidade]
+→ Estrutura:
+✔ Execução Analítica    [o que foi calculado e como]
+✔ Resultado             [tabela ou lista com dados encontrados]
+✔ Interpretação Operacional [o que significa na prática da negociação]
+✔ Limitações e Ressalvas [N, confundidores, ausência de causalidade]
 
 Para consultas sobre MODELOS ESTATÍSTICOS:
-  → Modelo → Hipótese testada → Resultado na base → Interpretação → Limitações
+→ Modelo → Hipótese testada → Resultado na base → Interpretação → Limitações
 
 Para consultas de INTERPRETAÇÃO DOUTRINÁRIA:
-  → Padrão observado nos dados → Relação com literatura → Formulação cautelosa → Limitação
+→ Padrão observado nos dados → Relação com literatura → Formulação cautelosa → Limitação
 
 REGRAS DE FORMATAÇÃO:
-  • Tabelas Markdown para rankings e comparações com 3+ itens
-  • Negrito para valores estatísticos chave (Rho, p-value, N, %)
-  • Parágrafos de no máximo 5 linhas para leitura operacional
+• Tabelas Markdown para rankings e comparações com 3+ itens
+• Negrito para valores estatísticos chave (Rho, p-value, N, %)
+• Parágrafos de no máximo 5 linhas para leitura operacional
 
 ════════════════════════════════════════════
 SEÇÃO 5 — LÉXICO TÉCNICO OBRIGATÓRIO
 ════════════════════════════════════════════
 
 Ao comentar FREQUÊNCIA:
-  "predominância", "maior recorrência", "incidência pontual", "distribuição observada"
+"predominância", "maior recorrência", "incidência pontual", "distribuição observada"
 
 Ao comentar SIMILITUDE:
-  "aproximação lexical", "convergência semântica", "compatibilidade com maior espelhamento verbal"
+"aproximação lexical", "convergência semântica", "compatibilidade com maior espelhamento verbal"
 
 Ao comentar PERCEPÇÃO DOS NEGOCIADORES:
-  "trajetória percebida", "variação observada", "mudança de percepção ao longo da ocorrência"
+"trajetória percebida", "variação observada", "mudança de percepção ao longo da ocorrência"
 
 Ao integrar MÚLTIPLOS INDICADORES:
-  "os dados sugerem", "há compatibilidade entre", "há associação provável",
-  "o conjunto dos indicadores aponta", "não há base suficiente para afirmar de forma categórica"
+"os dados sugerem", "há compatibilidade entre", "há associação provável",
+"o conjunto dos indicadores aponta", "não há base suficiente para afirmar de forma categórica"
 
 Ao referenciar BASE TEÓRICA:
-  "os dados são compatíveis com abordagens descritas na literatura"
-  "há convergência com modelos de negociação baseados em interesses"
-  "observa-se padrão compatível com progressão relacional"
-  "há compatibilidade com comportamentos descritos na literatura de influência"
+"os dados são compatíveis com abordagens descritas na literatura"
+"há convergência com modelos de negociação baseados em interesses"
+"observa-se padrão compatível com progressão relacional"
+"há compatibilidade com comportamentos descritos na literatura de influência"
 
 EXPRESSÕES PROIBIDAS em qualquer contexto:
-  ❌ "ficou comprovado"  ❌ "foi determinante"  ❌ "foi decisivo"
-  ❌ "causou diretamente"  ❌ "foi bem-sucedido" (sem sustentação explícita)
-  ❌ "houve rapport"  ❌ "demonstrou empatia"  (sem evidência observável)
-  ❌ "foi aplicado o método Harvard / técnica do FBI / Cialdini"
+❌ "ficou comprovado"  ❌ "foi determinante"  ❌ "foi decisivo"
+❌ "causou diretamente"  ❌ "foi bem-sucedido" (sem sustentação explícita)
+❌ "houve rapport"  ❌ "demonstrou empatia"  (sem evidência observável)
+❌ "foi aplicado o método Harvard / técnica do FBI / Cialdini"
 
 ════════════════════════════════════════════
 SEÇÃO 6 — TRATAMENTO DE ERROS E EDGE CASES
@@ -3523,7 +3519,7 @@ SE o dado não existir nos dataframes:
 
 SE o modelo estatístico não foi calculado nesta sessão:
 → "O resultado de [modelo] não está disponível no contexto estatístico desta sessão.
-   Processe a APA correspondente na Etapa 2 da aplicação."
+Processe a APA correspondente na Etapa 2 da aplicação."
 
 SE a amostra é insuficiente (N < mínimo recomendado):
 → Informe o N disponível, o mínimo recomendado e ressalva de fragilidade estatística.
@@ -3548,95 +3544,95 @@ A análise deve SEMPRE partir dos dados. A teoria auxilia a linguagem, não a co
 ─────────────────────────────────────────────
 
 SEPARAÇÃO PESSOAS-PROBLEMA:
-  • Comportamentos emocionais são variáveis do sistema, não falhas.
-  • Legitima análise de trajetória emocional sem julgamento de intenção.
-  • Uso: "observa-se variação emocional ao longo da interação"
+• Comportamentos emocionais são variáveis do sistema, não falhas.
+• Legitima análise de trajetória emocional sem julgamento de intenção.
+• Uso: "observa-se variação emocional ao longo da interação"
 
 INTERESSES vs. POSIÇÕES:
-  • Posição = o que a pessoa declara. Interesse = o que motiva a declaração.
-  • Permite trabalhar com indícios sem inferência causal forte.
-  • Uso: "os dados são compatíveis com resistência associada a interesses não explicitados"
+• Posição = o que a pessoa declara. Interesse = o que motiva a declaração.
+• Permite trabalhar com indícios sem inferência causal forte.
+• Uso: "os dados são compatíveis com resistência associada a interesses não explicitados"
 
 ESCUTA E REFORMULAÇÃO:
-  • Comunicação regula o estado da interação, não apenas transmite conteúdo.
-  • Base para usar similitude lexical como indicador auxiliar de alinhamento.
-  • Uso: "observa-se aproximação lexical compatível com construção de alinhamento"
+• Comunicação regula o estado da interação, não apenas transmite conteúdo.
+• Base para usar similitude lexical como indicador auxiliar de alinhamento.
+• Uso: "observa-se aproximação lexical compatível com construção de alinhamento"
 
 PROGRESSÃO NÃO LINEAR:
-  • Avanços e regressões coexistem. Sinais são ambíguos.
-  • Fundamenta aceitação de resultados inconclusivos ou contraditórios.
-  • Uso: "dados mistos", "não há base suficiente para afirmar progressão linear"
+• Avanços e regressões coexistem. Sinais são ambíguos.
+• Fundamenta aceitação de resultados inconclusivos ou contraditórios.
+• Uso: "dados mistos", "não há base suficiente para afirmar progressão linear"
 
 BATNA (Melhor alternativa ao não acordo):
-  • Resistência pode refletir alternativas percebidas pelo causador.
-  • Evitar inferir diretamente quais são essas alternativas.
-  • Uso: "persistência observada pode ser compatível com percepção de alternativas externas"
+• Resistência pode refletir alternativas percebidas pelo causador.
+• Evitar inferir diretamente quais são essas alternativas.
+• Uso: "persistência observada pode ser compatível com percepção de alternativas externas"
 
 ─────────────────────────────────────────────
 [CIALDINI] — Princípios e Aplicação Analítica
 ─────────────────────────────────────────────
 
 RECIPROCIDADE:
-  • Resposta proporcional a atenção, respeito ou concessões percebidas.
-  • Uso: "observa-se encadeamento interacional compatível com ciclo de reciprocidade"
+• Resposta proporcional a atenção, respeito ou concessões percebidas.
+• Uso: "observa-se encadeamento interacional compatível com ciclo de reciprocidade"
 
 COERÊNCIA E COMPROMISSO:
-  • Manutenção de consistência com declarações anteriores.
-  • Base para interpretar repetição discursiva e persistência de posição.
-  • Uso: "a manutenção do padrão discursivo é compatível com comportamento de coerência"
+• Manutenção de consistência com declarações anteriores.
+• Base para interpretar repetição discursiva e persistência de posição.
+• Uso: "a manutenção do padrão discursivo é compatível com comportamento de coerência"
 
 AFINIDADE (Liking):
-  • Similaridade de linguagem e validação aumentam receptividade.
-  • Fundamenta uso da similitude lexical como indicador auxiliar.
-  • Uso: "há convergência lexical compatível com construção de aproximação"
+• Similaridade de linguagem e validação aumentam receptividade.
+• Fundamenta uso da similitude lexical como indicador auxiliar.
+• Uso: "há convergência lexical compatível com construção de aproximação"
 
 CONTRASTE:
-  • Percepções são influenciadas por comparação sequencial.
-  • Uso: "observa-se possível efeito de contraste na sequência comunicacional"
+• Percepções são influenciadas por comparação sequencial.
+• Uso: "observa-se possível efeito de contraste na sequência comunicacional"
 
 PORTA NA CARA / PÉ NA PORTA:
-  • Redução progressiva de demandas (Porta na Cara) ou escalada incremental (Pé na Porta).
-  • Uso: "padrão compatível com redução sequencial de demanda" /
-         "há compatibilidade com progressão incremental de aceitação"
+• Redução progressiva de demandas (Porta na Cara) ou escalada incremental (Pé na Porta).
+• Uso: "padrão compatível com redução sequencial de demanda" /
+        "há compatibilidade com progressão incremental de aceitação"
 
 REATÂNCIA PSICOLÓGICA:
-  • Aumento de resistência quando há percepção de imposição ou perda de liberdade.
-  • Uso: "os dados são compatíveis com aumento de resistência frente à pressão"
+• Aumento de resistência quando há percepção de imposição ou perda de liberdade.
+• Uso: "os dados são compatíveis com aumento de resistência frente à pressão"
 
 ROTULAGEM (Labeling):
-  • Atribuição de identidade pode influenciar comportamento subsequente.
-  • Uso: "há indício de atribuição identitária na interação"
+• Atribuição de identidade pode influenciar comportamento subsequente.
+• Uso: "há indício de atribuição identitária na interação"
 
 ─────────────────────────────────────────────
 [MODELO FBI / BCSMM] — Princípios e Aplicação Analítica
 ─────────────────────────────────────────────
 
 PROGRESSÃO RELACIONAL (Behavioral Change Stairway Model):
-  Escuta ativa → Empatia → Rapport → Influência → Mudança comportamental
-  • A progressão NÃO é automática nem garantida.
-  • Uso: "trajetória compatível com progressão relacional descrita na literatura"
-  • NUNCA afirmar que "houve rapport" sem evidência observável.
+Escuta ativa → Empatia → Rapport → Influência → Mudança comportamental
+• A progressão NÃO é automática nem garantida.
+• Uso: "trajetória compatível com progressão relacional descrita na literatura"
+• NUNCA afirmar que "houve rapport" sem evidência observável.
 
 REGULAÇÃO EMOCIONAL:
-  • Alta ativação emocional reduz processamento racional.
-  • Comunicação visa modular intensidade, não apenas transmitir conteúdo.
-  • Uso: "há variação observada na trajetória emocional ao longo da ocorrência"
+• Alta ativação emocional reduz processamento racional.
+• Comunicação visa modular intensidade, não apenas transmitir conteúdo.
+• Uso: "há variação observada na trajetória emocional ao longo da ocorrência"
 
 INFLUÊNCIA INDIRETA (não coercitiva):
-  • Construção progressiva de aceitação, redução de resistência.
-  • Uso: "há associação provável com aumento gradual de receptividade"
+• Construção progressiva de aceitação, redução de resistência.
+• Uso: "há associação provável com aumento gradual de receptividade"
 
 TEMPO COMO VARIÁVEL TÁTICA:
-  • Tempo permite redução de ativação emocional e aumento do espaço de processamento.
-  • Uso: "os dados sugerem variação ao longo da progressão temporal"
+• Tempo permite redução de ativação emocional e aumento do espaço de processamento.
+• Uso: "os dados sugerem variação ao longo da progressão temporal"
 
 CONTENÇÃO DE ESCALADA:
-  • Estabilidade comunicacional, previsibilidade, ausência de confronto direto.
-  • Uso: "padrão compatível com contenção da escalada"
+• Estabilidade comunicacional, previsibilidade, ausência de confronto direto.
+• Uso: "padrão compatível com contenção da escalada"
 
 IMPREVISIBILIDADE E NÃO LINEARIDADE:
-  • Fatores externos influenciam fortemente. Resultados são incertos.
-  • Uso: "dados mistos", "não há base suficiente para afirmar"
+• Fatores externos influenciam fortemente. Resultados são incertos.
+• Uso: "dados mistos", "não há base suficiente para afirmar"
 
 ─────────────────────────────────────────────
 REGRAS DE USO DA BASE TEÓRICA (INVIOLÁVEIS)
@@ -3645,7 +3641,7 @@ REGRAS DE USO DA BASE TEÓRICA (INVIOLÁVEIS)
 1. É PROIBIDO afirmar que uma técnica pertence diretamente a um modelo teórico.
 2. É PROIBIDO afirmar aplicação de metodologia sem evidência direta nos dados.
 3. É PERMITIDO apenas dizer que padrões observados são "compatíveis com abordagens
-   descritas na literatura".
+descritas na literatura".
 4. A análise deve SEMPRE partir dos dados da ocorrência, NUNCA da teoria.
 5. A teoria serve para QUALIFICAR a linguagem da resposta, não para SUBSTITUIR evidência.
 """
@@ -3655,255 +3651,255 @@ REGRAS DE USO DA BASE TEÓRICA (INVIOLÁVEIS)
 # ============================================================
 
 PALAVRAS_DOUTRINARIAS = [
-    "perfil", "interpretar", "interpretação", "diagnóstico",
-    "comportamento", "comportamental", "trajetória",
-    "emocional", "emoção", "escalada", "desescalada",
-    "rapport", "vínculo", "empatia", "escuta", "persuasão",
-    "resistência", "receptividade", "agressividade",
-    "progressão", "relacional", "comunicação",
-    "semantica", "semântica", "similitude", "lexical",
-    "espelhamento", "n-gram", "ngram", "tema", "temas",
-    "dominante", "polaridade",
-    "treinamento", "treino", "desenvolvimento", "melhoria",
-    "oportunidade", "ponto forte", "lacuna", "gap",
-    "integrar", "cruzar com", "relação entre", "associação",
-    "o que isso significa", "como interpretar", "explique",
-    "o que indica", "o que revela", "analise", "análise",
-    "padrão", "tendência", "comparar", "comparação",
+"perfil", "interpretar", "interpretação", "diagnóstico",
+"comportamento", "comportamental", "trajetória",
+"emocional", "emoção", "escalada", "desescalada",
+"rapport", "vínculo", "empatia", "escuta", "persuasão",
+"resistência", "receptividade", "agressividade",
+"progressão", "relacional", "comunicação",
+"semantica", "semântica", "similitude", "lexical",
+"espelhamento", "n-gram", "ngram", "tema", "temas",
+"dominante", "polaridade",
+"treinamento", "treino", "desenvolvimento", "melhoria",
+"oportunidade", "ponto forte", "lacuna", "gap",
+"integrar", "cruzar com", "relação entre", "associação",
+"o que isso significa", "como interpretar", "explique",
+"o que indica", "o que revela", "analise", "análise",
+"padrão", "tendência", "comparar", "comparação",
 ]
 
 PALAVRAS_EXCLUSIVAMENTE_FACTUAIS = [
-    "uniforme", "data", "quando", "qual era", "quantas",
-    "total de", "lista", "nome", "quem atendeu",
-    "duração", "tempo total", "quanto tempo",
+"uniforme", "data", "quando", "qual era", "quantas",
+"total de", "lista", "nome", "quem atendeu",
+"duração", "tempo total", "quanto tempo",
 ]
 
 def classificar_query(pergunta: str) -> str:
-    """
-    Retorna:
-      'factual'     — consulta de dados brutos, sem necessidade de doutrina
-      'doutrinaria' — interpretação qualitativa, ativa a Camada 2
+"""
+Retorna:
+    'factual'     — consulta de dados brutos, sem necessidade de doutrina
+    'doutrinaria' — interpretação qualitativa, ativa a Camada 2
 
-    MELHORIA v3.0: qualquer sinal doutrinário ativa a camada 2.
-    Elimina falsos negativos em perguntas híbridas.
-    """
-    pergunta_lower = pergunta.lower()
-    hits_doutrinarios = sum(1 for p in PALAVRAS_DOUTRINARIAS if p in pergunta_lower)
-    if hits_doutrinarios > 0:
-        return "doutrinaria"
-    return "factual"
+MELHORIA v3.0: qualquer sinal doutrinário ativa a camada 2.
+Elimina falsos negativos em perguntas híbridas.
+"""
+pergunta_lower = pergunta.lower()
+hits_doutrinarios = sum(1 for p in PALAVRAS_DOUTRINARIAS if p in pergunta_lower)
+if hits_doutrinarios > 0:
+    return "doutrinaria"
+return "factual"
 
 def selecionar_modelo(tipo_query: str) -> str:
-    """
-    MELHORIA v3.0: modelo mais leve para queries factuais simples.
-    Reduz custo e latência sem perda de qualidade.
-    """
-    if tipo_query == "factual":
-        return "gpt-4o-mini"
-    return "gpt-4o"
+"""
+MELHORIA v3.0: modelo mais leve para queries factuais simples.
+Reduz custo e latência sem perda de qualidade.
+"""
+if tipo_query == "factual":
+    return "gpt-4o-mini"
+return "gpt-4o"
 
 def selecionar_temperatura(tipo_query: str) -> float:
-    """
-    MELHORIA v3.0: leve criatividade controlada para interpretação doutrinária.
-    Melhora qualidade narrativa sem comprometer fidelidade.
-    """
-    if tipo_query == "factual":
-        return 0.0
-    return 0.15
+"""
+MELHORIA v3.0: leve criatividade controlada para interpretação doutrinária.
+Melhora qualidade narrativa sem comprometer fidelidade.
+"""
+if tipo_query == "factual":
+    return 0.0
+return 0.15
 
 # ============================================================
 # BLOCO C — MONTAGEM DINÂMICA DO PREFIX
 # ============================================================
 
 def montar_prefix(tipo_query: str) -> str:
-    camada_doutrinaria = ""
-    if tipo_query == "doutrinaria":
-        camada_doutrinaria = f"""
+camada_doutrinaria = ""
+if tipo_query == "doutrinaria":
+    camada_doutrinaria = f"""
 ════════════════════════════════════════════
 CAMADA DOUTRINÁRIA ATIVA (Query interpretativa detectada)
 ════════════════════════════════════════════
 {BASE_DOUTRINARIA}
 """
 
-    enforcement_pandas = """
+enforcement_pandas = """
 ════════════════════════════════════════════
 ENFORCEMENT DE EXECUÇÃO E PESQUISA (INVIOLÁVEL)
 ════════════════════════════════════════════
 Você tem 3 dataframes no ambiente:
- - df1: Ocorrências (Metadados como Uniforme Usado, Modalidade, Tipologia, Negociador Principal, Forma de Transição, Tempo de negociação real, Tempo de negociação tática, Resolução, Uniforme Usado, Sexo do Causador).
- - df2: Percepção dos negociadores sobre a receptividade e agressividade do causador no início e encerramento da ocorrência
- - df3: Técnicas (Técnicas aplicadas por negociador).
- - df4: Estatísticas (Teste de Spearman: Tempo vs. Desescalada, Teste Qui-Quadrado Dinâmico, Modelagem Avançada: Viés do Negociador e Eficácia das Técnicas empregadas).
+- df1: Ocorrências (Metadados como Uniforme Usado, Modalidade, Tipologia, Negociador Principal, Forma de Transição, Tempo de negociação real, Tempo de negociação tática, Resolução, Uniforme Usado, Sexo do Causador).
+- df2: Percepção dos negociadores sobre a receptividade e agressividade do causador no início e encerramento da ocorrência
+- df3: Técnicas (Técnicas aplicadas por negociador).
+- df4: Estatísticas (Teste de Spearman: Tempo vs. Desescalada, Teste Qui-Quadrado Dinâmico, Modelagem Avançada: Viés do Negociador e Eficácia das Técnicas empregadas).
 
 REGRAS RÍGIDAS PARA CÓDIGO PYTHON:
-  1. Para filtrar o negociador em df1, USE EXCLUSIVAMENTE a coluna `Neg_Limpo` (pois contém o texto limpo). NUNCA use `Negociador Principal` (pode conter listas do Airtable e quebrar a busca).
-  2. A busca por nome DEVE ser feita assim: `df1[df1['Neg_Limpo'].str.contains('NomeDoNegociador', case=False, na=False)]`
-  3. Para uniforme, procure pela coluna `Uniforme Usado`.
-  4. Se o resultado retornar vazio, ANTES de responder que não há registros, faça um `print(df1.columns)` para verificar os nomes exatos das colunas e tente novamente.
-  5. A sua resposta final DEVE basear-se no resultado do código.
-  6. A coluna "Resolução" DEVE ser sempre utilizada diretamente quando a pergunta envolver desfecho, eficiência, resultado ou tipo de encerramento.
-  7. É PROIBIDO inferir resolução a partir de "Score_Desempenho".
-  8. Ao realizar groupby que envolva `Resolução`, use `.agg()` com `"first"` para preservar o valor textual. Exemplo correto:
-     `df1.groupby('Modalidade').agg(Resolucao=('Resolução', 'first'), Score_Desempenho=('Score_Desempenho', 'mean'), Tempo_Minutos=('Tempo_Minutos', 'mean'))`
-  9. Quando a pergunta envolver eficiência, desempenho ou resultado, a tabela de resposta DEVE incluir a coluna `Resolução` com o valor textual real, além do `Score_Desempenho`.
-  10. As variáveis categóricas `Modalidade`, `Tipologia`, `Motivação`, `Forma de Transição`, `Sexo do Causador` e `Uniforme Usado` também NUNCA devem ser inferidas — sempre lidas diretamente de df1.
+1. Para filtrar o negociador em df1, USE EXCLUSIVAMENTE a coluna `Neg_Limpo` (pois contém o texto limpo). NUNCA use `Negociador Principal` (pode conter listas do Airtable e quebrar a busca).
+2. A busca por nome DEVE ser feita assim: `df1[df1['Neg_Limpo'].str.contains('NomeDoNegociador', case=False, na=False)]`
+3. Para uniforme, procure pela coluna `Uniforme Usado`.
+4. Se o resultado retornar vazio, ANTES de responder que não há registros, faça um `print(df1.columns)` para verificar os nomes exatos das colunas e tente novamente.
+5. A sua resposta final DEVE basear-se no resultado do código.
+6. A coluna "Resolução" DEVE ser sempre utilizada diretamente quando a pergunta envolver desfecho, eficiência, resultado ou tipo de encerramento.
+7. É PROIBIDO inferir resolução a partir de "Score_Desempenho".
+8. Ao realizar groupby que envolva `Resolução`, use `.agg()` com `"first"` para preservar o valor textual. Exemplo correto:
+    `df1.groupby('Modalidade').agg(Resolucao=('Resolução', 'first'), Score_Desempenho=('Score_Desempenho', 'mean'), Tempo_Minutos=('Tempo_Minutos', 'mean'))`
+9. Quando a pergunta envolver eficiência, desempenho ou resultado, a tabela de resposta DEVE incluir a coluna `Resolução` com o valor textual real, além do `Score_Desempenho`.
+10. As variáveis categóricas `Modalidade`, `Tipologia`, `Motivação`, `Forma de Transição`, `Sexo do Causador` e `Uniforme Usado` também NUNCA devem ser inferidas — sempre lidas diretamente de df1.
 """
 
-    prefix = f"{SYSTEM_PROMPT_NUCLEO}\n\n{enforcement_pandas}\n\n{camada_doutrinaria}"
-    
-    return prefix.replace("{", "{{").replace("}", "}}")
+prefix = f"{SYSTEM_PROMPT_NUCLEO}\n\n{enforcement_pandas}\n\n{camada_doutrinaria}"
+
+return prefix.replace("{", "{{").replace("}", "}}")
 
 # ============================================================
 # BLOCO D — AUDITORIA OPERACIONAL
 # ============================================================
 
 def registrar_interacao(pergunta: str, tipo_query: str, modelo_usado: str, tamanho_resposta: int):
-    """
-    Registra metadados de cada interação para auditoria interna.
-    NUNCA loga conteúdo sensível ou identificável.
-    """
-    entrada = {
-        "timestamp": datetime.datetime.now().isoformat(),
-        "tipo_query": tipo_query,
-        "modelo_usado": modelo_usado,
-        "camada_doutrinaria_ativa": tipo_query == "doutrinaria",
-        "tamanho_resposta_chars": tamanho_resposta,
-    }
-    if "log_interacoes" not in st.session_state:
-        st.session_state["log_interacoes"] = []
-    st.session_state["log_interacoes"].append(entrada)
+"""
+Registra metadados de cada interação para auditoria interna.
+NUNCA loga conteúdo sensível ou identificável.
+"""
+entrada = {
+    "timestamp": datetime.datetime.now().isoformat(),
+    "tipo_query": tipo_query,
+    "modelo_usado": modelo_usado,
+    "camada_doutrinaria_ativa": tipo_query == "doutrinaria",
+    "tamanho_resposta_chars": tamanho_resposta,
+}
+if "log_interacoes" not in st.session_state:
+    st.session_state["log_interacoes"] = []
+st.session_state["log_interacoes"].append(entrada)
 
 # ============================================================
 # BLOCO E — PREPARAÇÃO DOS DATAFRAMES 
 # ============================================================
 
 def preparar_df_ocorrencias(df_quali: pd.DataFrame) -> pd.DataFrame:
-    """Prepara o dataframe de ocorrências com colunas derivadas necessárias."""
-    df_chat = df_quali.copy()
+"""Prepara o dataframe de ocorrências com colunas derivadas necessárias."""
+df_chat = df_quali.copy()
 
-    # Conversão de tempo (Airtable envia em segundos → minutos decimais)
-    def normalizar_tempo_minutos(val):
-        try:
-            if isinstance(val, list):
-                val = val[0]
-            if pd.isna(val) or str(val).strip() in ["N/D", "nan", "None", ""]:
-                return None
-            return round(float(val) / 60, 2)
-        except Exception:
-            return None
-
-    if "Tempo de Negociação Real" in df_chat.columns:
-        df_chat["Tempo_Minutos"] = df_chat["Tempo de Negociação Real"].apply(normalizar_tempo_minutos)
-
-    if "Tempo de Negociação Tática" in df_chat.columns:
-        df_chat["Tempo_Tatico_Minutos"] = df_chat["Tempo de Negociação Tática"].apply(normalizar_tempo_minutos)
-
-    # ---> CORREÇÃO: Limpeza da coluna Resolução (Single Select do Airtable pode vir como lista ou índice numérico)
-    def limpar_resolucao(val):
-        # Se vier como lista, extrai o primeiro elemento de texto
+# Conversão de tempo (Airtable envia em segundos → minutos decimais)
+def normalizar_tempo_minutos(val):
+    try:
         if isinstance(val, list):
-            val = val[0] if len(val) > 0 else None
-        if val is None:
+            val = val[0]
+        if pd.isna(val) or str(val).strip() in ["N/D", "nan", "None", ""]:
             return None
-        val_str = str(val).strip()
-        # Se for número puro (ex: "1", "2") → Airtable enviou índice da opção → descarta
-        if val_str.isdigit():
-            return None
-        if val_str in ["nan", "None", "N/D", ""]:
-            return None
-        return val_str
+        return round(float(val) / 60, 2)
+    except Exception:
+        return None
 
-    if "Resolução" in df_chat.columns:
-        df_chat["Resolução"] = df_chat["Resolução"].apply(limpar_resolucao)
+if "Tempo de Negociação Real" in df_chat.columns:
+    df_chat["Tempo_Minutos"] = df_chat["Tempo de Negociação Real"].apply(normalizar_tempo_minutos)
 
-    # Score de desempenho para correlações (derivado APÓS limpeza da Resolução)
-    def calcular_score_sucesso(resolucao):
-        if resolucao is None:
-            return 0
-        res_str = str(resolucao).lower()
-        if any(p in res_str for p in ["pacífica", "rendição", "rendição pacífica"]):
-            return 10
-        elif "tática" in res_str or "tatica" in res_str:
-            return 5
+if "Tempo de Negociação Tática" in df_chat.columns:
+    df_chat["Tempo_Tatico_Minutos"] = df_chat["Tempo de Negociação Tática"].apply(normalizar_tempo_minutos)
+
+# ---> CORREÇÃO: Limpeza da coluna Resolução (Single Select do Airtable pode vir como lista ou índice numérico)
+def limpar_resolucao(val):
+    # Se vier como lista, extrai o primeiro elemento de texto
+    if isinstance(val, list):
+        val = val[0] if len(val) > 0 else None
+    if val is None:
+        return None
+    val_str = str(val).strip()
+    # Se for número puro (ex: "1", "2") → Airtable enviou índice da opção → descarta
+    if val_str.isdigit():
+        return None
+    if val_str in ["nan", "None", "N/D", ""]:
+        return None
+    return val_str
+
+if "Resolução" in df_chat.columns:
+    df_chat["Resolução"] = df_chat["Resolução"].apply(limpar_resolucao)
+
+# Score de desempenho para correlações (derivado APÓS limpeza da Resolução)
+def calcular_score_sucesso(resolucao):
+    if resolucao is None:
         return 0
+    res_str = str(resolucao).lower()
+    if any(p in res_str for p in ["pacífica", "rendição", "rendição pacífica"]):
+        return 10
+    elif "tática" in res_str or "tatica" in res_str:
+        return 5
+    return 0
 
-    if "Resolução" in df_chat.columns:
-        df_chat["Score_Desempenho"] = df_chat["Resolução"].apply(calcular_score_sucesso)
+if "Resolução" in df_chat.columns:
+    df_chat["Score_Desempenho"] = df_chat["Resolução"].apply(calcular_score_sucesso)
 
-    # Limpeza de nomes de negociadores para facilitar filtros do LLM
-    for col_neg in ["Negociador Principal", "Negociador Secundário", "Negociador Líder"]:
-        col_limpa = col_neg.replace(" ", "_").replace("á", "a").replace("á", "a") + "_Limpo"
-        if col_neg in df_chat.columns:
-            df_chat[col_limpa] = df_chat[col_neg].apply(
-                lambda x: str(x[0]).strip() if isinstance(x, list) and len(x) > 0 else str(x).strip()
-            )
-
-    # Alias principal para compatibilidade com o agente
-    if "Negociador_Principal_Limpo" in df_chat.columns:
-        df_chat["Neg_Limpo"] = df_chat["Negociador_Principal_Limpo"]
-    elif "Negociador Principal" in df_chat.columns:
-        df_chat["Neg_Limpo"] = df_chat["Negociador Principal"].apply(
+# Limpeza de nomes de negociadores para facilitar filtros do LLM
+for col_neg in ["Negociador Principal", "Negociador Secundário", "Negociador Líder"]:
+    col_limpa = col_neg.replace(" ", "_").replace("á", "a").replace("á", "a") + "_Limpo"
+    if col_neg in df_chat.columns:
+        df_chat[col_limpa] = df_chat[col_neg].apply(
             lambda x: str(x[0]).strip() if isinstance(x, list) and len(x) > 0 else str(x).strip()
         )
 
-    # ---> NOVO: "DIETA" DO DATAFRAME <---
-    # Removemos colunas pesadas de texto para não ultrapassar os limites da API.
-    # O agente fará perfis e estatísticas apenas com os metadados.
-    colunas_pesadas = [
-        col for col in df_chat.columns 
-        if any(palavra in col.lower() for palavra in ["transcrição", "transcricao", "laudo", "resumo", "texto", "historico", "histórico"])
-    ]
-    df_chat = df_chat.drop(columns=colunas_pesadas, errors="ignore")
+# Alias principal para compatibilidade com o agente
+if "Negociador_Principal_Limpo" in df_chat.columns:
+    df_chat["Neg_Limpo"] = df_chat["Negociador_Principal_Limpo"]
+elif "Negociador Principal" in df_chat.columns:
+    df_chat["Neg_Limpo"] = df_chat["Negociador Principal"].apply(
+        lambda x: str(x[0]).strip() if isinstance(x, list) and len(x) > 0 else str(x).strip()
+    )
 
-    return df_chat
+# ---> NOVO: "DIETA" DO DATAFRAME <---
+# Removemos colunas pesadas de texto para não ultrapassar os limites da API.
+# O agente fará perfis e estatísticas apenas com os metadados.
+colunas_pesadas = [
+    col for col in df_chat.columns 
+    if any(palavra in col.lower() for palavra in ["transcrição", "transcricao", "laudo", "resumo", "texto", "historico", "histórico"])
+]
+df_chat = df_chat.drop(columns=colunas_pesadas, errors="ignore")
+
+return df_chat
 
 def preparar_df_tecnicas(df_tec: pd.DataFrame) -> pd.DataFrame:
-    """Prepara o dataframe de técnicas com colunas normalizadas."""
-    if df_tec.empty:
-        return pd.DataFrame()
+"""Prepara o dataframe de técnicas com colunas normalizadas."""
+if df_tec.empty:
+    return pd.DataFrame()
 
-    df_tec_chat = df_tec.copy()
+df_tec_chat = df_tec.copy()
 
-    # Detecta coluna de técnicas (tolerante a variações de nome)
-    col_t = next(
-        (col for col in ["TÉCNICAS", "TECNICAS", "TÉCNICA", "TECNICA", "Técnica", "Tecnica"]
-         if col in df_tec_chat.columns),
-        None
+# Detecta coluna de técnicas (tolerante a variações de nome)
+col_t = next(
+    (col for col in ["TÉCNICAS", "TECNICAS", "TÉCNICA", "TECNICA", "Técnica", "Tecnica"]
+        if col in df_tec_chat.columns),
+    None
+)
+if col_t:
+    df_tec_chat["Nome_Tecnica"] = (
+        df_tec_chat[col_t]
+        .astype(str)
+        .str.replace(r"[\[\]'\"\(\)]", "", regex=True)
+        .str.strip()
     )
-    if col_t:
-        df_tec_chat["Nome_Tecnica"] = (
-            df_tec_chat[col_t]
-            .astype(str)
-            .str.replace(r"[\[\]'\"\(\)]", "", regex=True)
-            .str.strip()
-        )
-        df_tec_chat["Nome_Tecnica"] = df_tec_chat["Nome_Tecnica"].replace(
-            ["N/D", "nan", "None", ""], pd.NA
-        )
-
-    # Detecta coluna de negociador nas técnicas
-    col_neg_tec = next(
-        (col for col in df_tec_chat.columns if "negociador" in col.lower() and "incidente" in col.lower()),
-        next((col for col in df_tec_chat.columns if "negociador" in col.lower()), None)
+    df_tec_chat["Nome_Tecnica"] = df_tec_chat["Nome_Tecnica"].replace(
+        ["N/D", "nan", "None", ""], pd.NA
     )
-    if col_neg_tec:
-        df_tec_chat["Negociador_Tecnica"] = df_tec_chat[col_neg_tec].apply(
-            lambda x: str(x[0]).strip() if isinstance(x, list) and len(x) > 0 else str(x).strip()
-        )
 
-    df_tec_chat = df_tec_chat.dropna(subset=["Nome_Tecnica"]) if "Nome_Tecnica" in df_tec_chat.columns else df_tec_chat
+# Detecta coluna de negociador nas técnicas
+col_neg_tec = next(
+    (col for col in df_tec_chat.columns if "negociador" in col.lower() and "incidente" in col.lower()),
+    next((col for col in df_tec_chat.columns if "negociador" in col.lower()), None)
+)
+if col_neg_tec:
+    df_tec_chat["Negociador_Tecnica"] = df_tec_chat[col_neg_tec].apply(
+        lambda x: str(x[0]).strip() if isinstance(x, list) and len(x) > 0 else str(x).strip()
+    )
 
-    return df_tec_chat
+df_tec_chat = df_tec_chat.dropna(subset=["Nome_Tecnica"]) if "Nome_Tecnica" in df_tec_chat.columns else df_tec_chat
+
+return df_tec_chat
 
 def preparar_df_estatisticas(stats_calculados) -> pd.DataFrame:
-    """Transforma o contexto estatístico num DataFrame para o Agente Delta."""
-    try:
-        if isinstance(stats_calculados, dict):
-            return pd.DataFrame([stats_calculados])
-        else:
-            return pd.DataFrame([{"Contexto_Estatistico_Geral": str(stats_calculados)}])
-    except Exception:
-        return pd.DataFrame([{"Status": "Sem dados estatísticos processados"}])
+"""Transforma o contexto estatístico num DataFrame para o Agente Delta."""
+try:
+    if isinstance(stats_calculados, dict):
+        return pd.DataFrame([stats_calculados])
+    else:
+        return pd.DataFrame([{"Contexto_Estatistico_Geral": str(stats_calculados)}])
+except Exception:
+    return pd.DataFrame([{"Status": "Sem dados estatísticos processados"}])
 
 
 # ============================================================
@@ -3911,138 +3907,138 @@ def preparar_df_estatisticas(stats_calculados) -> pd.DataFrame:
 # ============================================================
 
 with aba_chat:
-    st.markdown("### 💬 DELTA-NEGOCIAÇÃO — Assistente Analítico Operacional | GATE")
-    st.markdown(
-        "<p style='color:#aaa; font-size:13px;'>"
-        "Consultas baseadas exclusivamente em dados reais via Tool Calling. "
-        "O agente executa análises Pandas cruzando Ocorrências e Técnicas, "
-        "interpreta modelos estatísticos e traça perfis operacionais de negociadores."
-        "</p>",
-        unsafe_allow_html=True,
-    )
+st.markdown("### 💬 DELTA-NEGOCIAÇÃO — Assistente Analítico Operacional | GATE")
+st.markdown(
+    "<p style='color:#aaa; font-size:13px;'>"
+    "Consultas baseadas exclusivamente em dados reais via Tool Calling. "
+    "O agente executa análises Pandas cruzando Ocorrências e Técnicas, "
+    "interpreta modelos estatísticos e traça perfis operacionais de negociadores."
+    "</p>",
+    unsafe_allow_html=True,
+)
 
-    # ── Preparação dos dados (BLINDADA E LIMPA) ──────────────────
+# ── Preparação dos dados (BLINDADA E LIMPA) ──────────────────
+
+if "df_quali" not in st.session_state or "df_tec" not in st.session_state:
+    with st.spinner("A sincronizar a base de dados com o Airtable..."):
+        import airtable_link
+        df_q, _ = airtable_link.buscar_dados_apa()
+        df_t, _ = airtable_link.buscar_todas_tecnicas()
+        st.session_state["df_quali"] = df_q
+        st.session_state["df_tec"] = df_t
+
+df_chat = preparar_df_ocorrencias(st.session_state["df_quali"])
+df_tec_chat = preparar_df_tecnicas(st.session_state["df_tec"])
+
+stats_calculados = st.session_state.get(
+    "stats_calculados", 
+    "Nenhuma análise estatística processada."
+)
+df_stats = preparar_df_estatisticas(stats_calculados)
+
+# ── Inicialização do histórico de chat ───────────────────────
+if "mensagens_chat" not in st.session_state:
+    st.session_state.mensagens_chat = [
+        {
+            "role": "assistant", 
+            "content": (
+                "🟢 **DELTA operacional.** Base de ocorrências e banco de técnicas conectados.\n\n"
+                "Posso responder a consultas descritivas, cruzar dados entre ocorrências e técnicas, "
+                "interpretar modelos estatísticos (Spearman, χ², GEE), traçar perfis de negociadores "
+                "e sugerir treinos com base nos dados.\n\n"
+                "**Exemplos de perguntas:**\n"
+                "- *Perguntas descritivas*\n"
+                "- *Quais as 5 técnicas mais usadas em ocorrências com resolução X?*\n"
+                "- *Trace o perfil operacional completo do negociador [x].*"
+            )
+        }
+    ]
+
+for msg in st.session_state.mensagens_chat:
+    with st.chat_message(msg["role"]):
+        st.markdown(msg["content"])
+
+pergunta = st.chat_input("Ex: Quais técnicas o negociador X mais usou?")
+
+if pergunta:
+    with st.chat_message("user"):
+        st.markdown(pergunta)
+    st.session_state.mensagens_chat.append({"role": "user", "content": pergunta})
+
+    tipo_query = classificar_query(pergunta)
+    modelo_selecionado = selecionar_modelo(tipo_query)
+    temperatura_selecionada = selecionar_temperatura(tipo_query)
+
+    camada_label = "🧠 Camada Doutrinária ativa" if tipo_query == "doutrinaria" else "📊 Consulta factual"
     
-    if "df_quali" not in st.session_state or "df_tec" not in st.session_state:
-        with st.spinner("A sincronizar a base de dados com o Airtable..."):
-            import airtable_link
-            df_q, _ = airtable_link.buscar_dados_apa()
-            df_t, _ = airtable_link.buscar_todas_tecnicas()
-            st.session_state["df_quali"] = df_q
-            st.session_state["df_tec"] = df_t
+    with st.spinner(f"[{camada_label}] A analisar os dados e a construir a resposta..."):
+        try:
+            historico_texto = ""
+            mensagens_recentes = st.session_state.mensagens_chat[-5:-1]
+            if len(mensagens_recentes) > 0:
+                historico_texto = "CONTEXTO DA CONVERSA RECENTE:\n" + "\n".join(
+                    [f"{m['role'].upper()}: {m['content']}" for m in mensagens_recentes]
+                ) + "\n\nNOVA PERGUNTA DO USUÁRIO:\n"
 
-    df_chat = preparar_df_ocorrencias(st.session_state["df_quali"])
-    df_tec_chat = preparar_df_tecnicas(st.session_state["df_tec"])
+            input_enriquecido = historico_texto + pergunta
+            prefix_dinamico = montar_prefix(tipo_query)
+
+            from langchain_openai import ChatOpenAI
+            llm = ChatOpenAI(
+                model=modelo_selecionado,
+                temperature=temperatura_selecionada,
+                api_key=st.secrets["OPENAI_API_KEY"],
+                max_tokens=4096,
+            )
+
+            from langchain_experimental.agents.agent_toolkits import create_pandas_dataframe_agent
+            
+            # ---> NOVO: Parâmetro 'number_of_head_rows=1' adicionado abaixo <---
+            agent_executor = create_pandas_dataframe_agent(
+                llm=llm,
+                df=[df_chat, df_tec_chat, df_stats], 
+                verbose=True,
+                agent_type="openai-tools",
+                prefix=prefix_dinamico,
+                allow_dangerous_code=True,
+                max_iterations=10, 
+                handle_parsing_errors=True,
+                number_of_head_rows=1, # Reduz drasticamente os tokens enviados à OpenAI!
+            )
+
+            resultado = agent_executor.invoke({"input": input_enriquecido})
+            resposta = resultado.get("output", "Não consegui processar a resposta.")
+            registrar_interacao(pergunta, tipo_query, modelo_selecionado, len(resposta))
+
+        except Exception as e:
+            resposta = f"⚠️ **Erro na execução:** {str(e)}"
     
-    stats_calculados = st.session_state.get(
-        "stats_calculados", 
-        "Nenhuma análise estatística processada."
-    )
-    df_stats = preparar_df_estatisticas(stats_calculados)
+    with st.chat_message("assistant"):
+        st.markdown(resposta)
+    st.session_state.mensagens_chat.append({"role": "assistant", "content": resposta})
 
-    # ── Inicialização do histórico de chat ───────────────────────
-    if "mensagens_chat" not in st.session_state:
-        st.session_state.mensagens_chat = [
-            {
-                "role": "assistant", 
-                "content": (
-                    "🟢 **DELTA operacional.** Base de ocorrências e banco de técnicas conectados.\n\n"
-                    "Posso responder a consultas descritivas, cruzar dados entre ocorrências e técnicas, "
-                    "interpretar modelos estatísticos (Spearman, χ², GEE), traçar perfis de negociadores "
-                    "e sugerir treinos com base nos dados.\n\n"
-                    "**Exemplos de perguntas:**\n"
-                    "- *Perguntas descritivas*\n"
-                    "- *Quais as 5 técnicas mais usadas em ocorrências com resolução X?*\n"
-                    "- *Trace o perfil operacional completo do negociador [x].*"
-                )
-            }
-        ]
-
-    for msg in st.session_state.mensagens_chat:
-        with st.chat_message(msg["role"]):
-            st.markdown(msg["content"])
-
-    pergunta = st.chat_input("Ex: Quais técnicas o negociador X mais usou?")
-
-    if pergunta:
-        with st.chat_message("user"):
-            st.markdown(pergunta)
-        st.session_state.mensagens_chat.append({"role": "user", "content": pergunta})
-
-        tipo_query = classificar_query(pergunta)
-        modelo_selecionado = selecionar_modelo(tipo_query)
-        temperatura_selecionada = selecionar_temperatura(tipo_query)
-
-        camada_label = "🧠 Camada Doutrinária ativa" if tipo_query == "doutrinaria" else "📊 Consulta factual"
-        
-        with st.spinner(f"[{camada_label}] A analisar os dados e a construir a resposta..."):
-            try:
-                historico_texto = ""
-                mensagens_recentes = st.session_state.mensagens_chat[-5:-1]
-                if len(mensagens_recentes) > 0:
-                    historico_texto = "CONTEXTO DA CONVERSA RECENTE:\n" + "\n".join(
-                        [f"{m['role'].upper()}: {m['content']}" for m in mensagens_recentes]
-                    ) + "\n\nNOVA PERGUNTA DO USUÁRIO:\n"
-
-                input_enriquecido = historico_texto + pergunta
-                prefix_dinamico = montar_prefix(tipo_query)
-
-                from langchain_openai import ChatOpenAI
-                llm = ChatOpenAI(
-                    model=modelo_selecionado,
-                    temperature=temperatura_selecionada,
-                    api_key=st.secrets["OPENAI_API_KEY"],
-                    max_tokens=4096,
-                )
-
-                from langchain_experimental.agents.agent_toolkits import create_pandas_dataframe_agent
-                
-                # ---> NOVO: Parâmetro 'number_of_head_rows=1' adicionado abaixo <---
-                agent_executor = create_pandas_dataframe_agent(
-                    llm=llm,
-                    df=[df_chat, df_tec_chat, df_stats], 
-                    verbose=True,
-                    agent_type="openai-tools",
-                    prefix=prefix_dinamico,
-                    allow_dangerous_code=True,
-                    max_iterations=10, 
-                    handle_parsing_errors=True,
-                    number_of_head_rows=1, # Reduz drasticamente os tokens enviados à OpenAI!
-                )
-
-                resultado = agent_executor.invoke({"input": input_enriquecido})
-                resposta = resultado.get("output", "Não consegui processar a resposta.")
-                registrar_interacao(pergunta, tipo_query, modelo_selecionado, len(resposta))
-
-            except Exception as e:
-                resposta = f"⚠️ **Erro na execução:** {str(e)}"
-        
-        with st.chat_message("assistant"):
-            st.markdown(resposta)
-        st.session_state.mensagens_chat.append({"role": "assistant", "content": resposta})
-
-    # ── RODAPÉ INFORMATIVO ──────────────────────────────
-    st.markdown("""
-    <div style='margin-top:30px; margin-bottom:100px; padding:15px; 
-                background-color:#111; border-radius:8px;'>
-        <p style='color:#bbb; font-size:13px;'>
-        <b>Sobre o DELTA — Assistente Analítico GATE/PMESP:</b><br><br>
-        Todas as respostas são geradas exclusivamente a partir dos dados reais das ocorrências. 
-        Nenhuma resposta é produzida por suposição, inferência livre ou memória do modelo.<br><br>
-        O agente executa código Python/Pandas internamente para cada consulta, 
-        cruzando a <b>Base de Ocorrências</b> com o <b>Banco de Técnicas</b> e 
-        interpretando os resultados dos modelos estatísticos avançados (Spearman, χ², GEE).<br><br>
-        <b>Capacidades disponíveis:</b><br>
-        • Consultas descritivas por ocorrência, data, negociador ou modalidade<br>
-        • Análise de frequência e repertório de técnicas<br>
-        • Interpretação de perceção de agressividade e recetividade (Δ Likert)<br>
-        • Análise de similitude lexical e N-Grams da transcrição<br>
-        • Interpretação de Spearman, χ² e GEE<br>
-        • Perfil operacional e sugestão de treino por negociador<br>
-        • Deteção de viés de alocação na série histórica<br><br>
-        <span style='color:#666; font-size:11px;'>
-        DELTA v3.0 | LangChain + OpenAI Tool Calling | GATE/PMESP — Uso Restrito Operacional
-        </span>
-        </p>
-    </div>
-    """, unsafe_allow_html=True)
+# ── RODAPÉ INFORMATIVO ──────────────────────────────
+st.markdown("""
+<div style='margin-top:30px; margin-bottom:100px; padding:15px; 
+            background-color:#111; border-radius:8px;'>
+    <p style='color:#bbb; font-size:13px;'>
+    <b>Sobre o DELTA — Assistente Analítico GATE/PMESP:</b><br><br>
+    Todas as respostas são geradas exclusivamente a partir dos dados reais das ocorrências. 
+    Nenhuma resposta é produzida por suposição, inferência livre ou memória do modelo.<br><br>
+    O agente executa código Python/Pandas internamente para cada consulta, 
+    cruzando a <b>Base de Ocorrências</b> com o <b>Banco de Técnicas</b> e 
+    interpretando os resultados dos modelos estatísticos avançados (Spearman, χ², GEE).<br><br>
+    <b>Capacidades disponíveis:</b><br>
+    • Consultas descritivas por ocorrência, data, negociador ou modalidade<br>
+    • Análise de frequência e repertório de técnicas<br>
+    • Interpretação de perceção de agressividade e recetividade (Δ Likert)<br>
+    • Análise de similitude lexical e N-Grams da transcrição<br>
+    • Interpretação de Spearman, χ² e GEE<br>
+    • Perfil operacional e sugestão de treino por negociador<br>
+    • Deteção de viés de alocação na série histórica<br><br>
+    <span style='color:#666; font-size:11px;'>
+    DELTA v3.0 | LangChain + OpenAI Tool Calling | GATE/PMESP — Uso Restrito Operacional
+    </span>
+    </p>
+</div>
+""", unsafe_allow_html=True)
