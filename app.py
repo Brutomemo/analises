@@ -1228,7 +1228,6 @@ else:
 
             # ============================================================
             # ANÁLISE DE SIMILITUDE — Versão Melhorada para Leigos
-            # Substitua a seção antiga por este código
             # ============================================================
 
             st.markdown("---")
@@ -1528,6 +1527,7 @@ else:
                     st.info("⚠️ Colunas de transcrição não encontradas. Verifique se existem:\n- 'TRANSCRIÇÃO DO CAUSADOR'\n- 'TRANSCRIÇÃO DO NEGOCIADOR PRINCIPAL'")
                                 
             st.markdown("<div style='margin-bottom: 30px;'></div>", unsafe_allow_html=True)
+            st.markdown("</div>", unsafe_allow_html=True)
 
 
             #ETAPA 2
