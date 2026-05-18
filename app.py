@@ -2910,7 +2910,7 @@ else:
 
     st.markdown("---")
     st.markdown("""
-    <h3 style='color: #FFD700;'>📈 Histórico de Registros e Tendência Temporal</h3>
+    <h3 style='color: #FFD700;'>✔️ Histórico de Registros e Tendência Temporal</h3>
     <p style='color: #aaa; font-size: 0.95rem;'>Como tem evoluído o volume de negociações ao longo do tempo?</p>
     """, unsafe_allow_html=True)
 
@@ -2951,14 +2951,14 @@ else:
 
     st.markdown("---")
     st.markdown("""
-    <h3 style='color: #06C755;'>📋 Síntese Interpretativa Assistida por IA</h3>
+    <h3 style='color: #06C755;'>✔️ Síntese Interpretativa Assistida por IA</h3>
     <p style='color: #aaa; font-size: 0.95rem; margin-bottom: 20px;'>
     Gere um relatório em linguagem natural que traduz todos os números em recomendações acionáveis para a equipe.
     </p>
     """, unsafe_allow_html=True)
 
     if st.button("✔ GERAR RELATÓRIO ESTATÍSTICO COMPLETO (com IA)"):
-        with st.spinner("🤖 Processando análises e gerando interpretações..."):
+        with st.spinner("✔️ Processando análises e gerando interpretações..."):
             try:
                 import ia_estatistica 
                 
@@ -2993,18 +2993,18 @@ else:
                         st.json(payload_ia)
                 else:
                     # Renderiza cards com as interpretações
-                    st.success("✅ Relatório gerado com sucesso!")
+                    st.success("✔ Relatório gerado com sucesso!")
                     
-                    st.markdown("### 📊 Principais Achados")
+                    st.markdown("### ✔️ Principais Achados")
                     st.markdown(relatorio_json.get("resultados_principais", "N/D"))
                     
-                    st.markdown("### 💡 O que isso Significa para a Prática")
+                    st.markdown("### ✔️ O que isso Significa para a Prática")
                     st.markdown(relatorio_json.get("interpretacao", "N/D"))
                     
-                    st.markdown("### 🎯 Recomendações Estratégicas")
+                    st.markdown("### ✔️ Recomendações Estratégicas")
                     st.markdown(relatorio_json.get("conclusao", "N/D"))
                     
-                    with st.expander("📚 Ver Análise Completa (Expandir)"):
+                    with st.expander("✔️ Ver Análise Completa (Expandir)"):
                         col_ia1, col_ia2 = st.columns(2)
                         
                         with col_ia1:
