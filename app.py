@@ -1227,6 +1227,7 @@ else:
             st.markdown("---")
 
             # ============================================================
+            # ============================================================
             # ANÁLISE DE SIMILITUDE — Versão Melhorada para Leigos
             # Substitua a seção antiga por este código
             # ============================================================
@@ -1510,12 +1511,8 @@ else:
                                         
                                         st.plotly_chart(fig_grafo, use_container_width=True)
                                         
-                                        # Lista as palavras principais com botão toggle
-                                        key_palavras = "show_palavras_similitude"
-                                        if st.button("📝 Palavras Compartilhadas", key="btn_palavras_similitude"):
-                                            st.session_state[key_palavras] = not st.session_state.get(key_palavras, False)
-                                        
-                                        if st.session_state.get(key_palavras, False):
+                                        # Lista as palavras principais
+                                        with st.expander("📝 Ver lista de palavras compartilhadas"):
                                             st.markdown("**Palavras que conectaram os dois lados:**\n")
                                             for palavra, freq in sorted(top_comuns.items(), key=lambda x: x[1], reverse=True):
                                                 st.markdown(f"- **{palavra}** — apareceu {freq} vezes no total")
@@ -1530,8 +1527,11 @@ else:
                             st.error(f"Erro no cálculo de similitude: {str(e)[:100]}")
                 else:
                     st.info("⚠️ Colunas de transcrição não encontradas. Verifique se existem:\n- 'TRANSCRIÇÃO DO CAUSADOR'\n- 'TRANSCRIÇÃO DO NEGOCIADOR PRINCIPAL'")
-                    
-st.markdown("<div style='margin-bottom: 30px;'></div>", unsafe_allow_html=True)
+                                
+            st.markdown("<div style='margin-bottom: 30px;'></div>", unsafe_allow_html=True)
+            e transcrição não encontradas. Verifique se existem:\n- 'TRANSCRIÇÃO DO CAUSADOR'\n- 'TRANSCRIÇÃO DO NEGOCIADOR PRINCIPAL'")
+                                
+            st.markdown("<div style='margin-bottom: 30px;'></div>", unsafe_allow_html=True)
 
 
 
