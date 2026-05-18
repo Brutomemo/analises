@@ -2624,7 +2624,7 @@ else:
                 
                 ---
                 
-                ### ✔️ Comparação Rápida
+                ### 💡 Comparação Rápida
                 
                 | Aspecto | Spearman | Qui-Quadrado |
                 |---------|----------|--------------|
@@ -2635,7 +2635,7 @@ else:
                 
                 ---
                 
-                ### ✔️O Que Fazer Com os Resultados
+                ### 🎯 O Que Fazer Com os Resultados
                 
                 **Se p-value < 0.05 (padrão real encontrado):**
                 - ✅ Há um padrão consistente nos dados
@@ -2793,7 +2793,7 @@ else:
                         # ============================================================
                         st.markdown("""
                         <div style='background: var(--color-background-secondary); border-left: 4px solid #06C755; padding: 15px; border-radius: 8px; margin-bottom: 20px;'>
-                        <h3 style='color: #06C755; margin-top: 0;'>✔️ Análise 2: Qual Técnica Funciona Melhor?</h3>
+                        <h4 style='color: #06C755; margin-top: 0;'>✔️ Análise 2: Qual Técnica Funciona Melhor?</h4>
                         <p style='color: #aaa; margin-bottom: 10px;'><strong>A pergunta:</strong> "Se removermos a influência do negociador, qual técnica realmente funciona melhor?"</p>
                         </div>
                         """, unsafe_allow_html=True)
@@ -2848,7 +2848,7 @@ else:
                         # ============================================================
                         st.markdown("""
                         <div style='background: var(--color-background-secondary); border-left: 4px solid #378ADD; padding: 15px; border-radius: 8px; margin-bottom: 20px;'>
-                        <h3 style='color: #378ADD; margin-top: 0;'>🔐 Análise 3: A Técnica é Robusta para Toda a Tropa?</h3>
+                        <h4 style='color: #378ADD; margin-top: 0;'>🔐 Análise 3: A Técnica é Robusta para Toda a Tropa?</h4>
                         <p style='color: #aaa; margin-bottom: 10px;'><strong>A pergunta:</strong> "A técnica funciona para a equipe inteira ou só para alguns indivíduos?"</p>
                         </div>
                         """, unsafe_allow_html=True)
