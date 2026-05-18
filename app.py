@@ -1511,7 +1511,11 @@ else:
                                         st.plotly_chart(fig_grafo, use_container_width=True)
                                         
                                         # Lista as palavras principais
-                                        with st.expander("📝 Ver lista de palavras compartilhadas"):
+                                        key_palavras = "show_palavras_similitude"
+                                        if st.button("📝 Palavras Compartilhadas", key="btn_palavras_similitude"):
+                                            st.session_state[key_palavras] = not st.session_state.get(key_palavras, False)
+                                        
+                                        if st.session_state.get(key_palavras, False):
                                             st.markdown("**Palavras que conectaram os dois lados:**\n")
                                             for palavra, freq in sorted(top_comuns.items(), key=lambda x: x[1], reverse=True):
                                                 st.markdown(f"- **{palavra}** — apareceu {freq} vezes no total")
@@ -1528,6 +1532,7 @@ else:
                     st.info("⚠️ Colunas de transcrição não encontradas. Verifique se existem:\n- 'TRANSCRIÇÃO DO CAUSADOR'\n- 'TRANSCRIÇÃO DO NEGOCIADOR PRINCIPAL'")
                                 
             st.markdown("<div style='margin-bottom: 30px;'></div>", unsafe_allow_html=True)
+
 
 
             #ETAPA 2
