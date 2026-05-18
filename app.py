@@ -2392,8 +2392,8 @@ else:
                             getattr(st, cor_veredito)(f"{icone} **{titulo_veredito}**\n\n{explicacao}")
 
                             # Detalhes técnicos colapsáveis
-                            with st.expander("✔ Ver detalhes técnicos (Spearman)"):
-                                st.markdown(
+                            if st.button("✔ Ver detalhes técnicos (Spearman)"):
+                                st.info(
                                     f"- **Teste:** Correlação de Spearman (não-paramétrico — "
                                     "adequado para escalas ordinais e distribuições assimétricas)\n"
                                     f"- **Coeficiente Rho:** `{rho:.4f}` "
