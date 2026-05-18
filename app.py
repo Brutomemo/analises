@@ -2137,33 +2137,33 @@ st.markdown("<div style='margin-bottom: 20px;'></div>", unsafe_allow_html=True)
 
 if st.session_state.get("exibir_ranking", False):
 
-    # ----------------------------------------------------------
-    # Pré-processamento de colunas limpas
-    # ----------------------------------------------------------
-    if not df_tec.empty:
-        df_tec["Neg_Limpo"] = (
-            df_tec["Negociador Principal do incidente crítico"].apply(limpar_valor)
-            if "Negociador Principal do incidente crítico" in df_tec.columns
-            else "N/D"
-        )
-        df_tec["Tip_Limpa"] = (
-            df_tec["Tipologia do incidente crítico"].apply(limpar_valor)
-            if "Tipologia do incidente crítico" in df_tec.columns
-            else "N/D"
-        )
-        df_tec["Mod_Limpa"] = (
-            df_tec["Modalidade do incidente crítico"].apply(limpar_valor)
-            if "Modalidade do incidente crítico" in df_tec.columns
-            else "N/D"
-        )
+# ----------------------------------------------------------
+# Pré-processamento de colunas limpas
+# ----------------------------------------------------------
+if not df_tec.empty:
+    df_tec["Neg_Limpo"] = (
+        df_tec["Negociador Principal do incidente crítico"].apply(limpar_valor)
+        if "Negociador Principal do incidente crítico" in df_tec.columns
+        else "N/D"
+    )
+    df_tec["Tip_Limpa"] = (
+        df_tec["Tipologia do incidente crítico"].apply(limpar_valor)
+        if "Tipologia do incidente crítico" in df_tec.columns
+        else "N/D"
+    )
+    df_tec["Mod_Limpa"] = (
+        df_tec["Modalidade do incidente crítico"].apply(limpar_valor)
+        if "Modalidade do incidente crítico" in df_tec.columns
+        else "N/D"
+    )
 
-        df_tec_filt = df_tec.copy()
-        if filtro_neg_g != "Todos":
-            df_tec_filt = df_tec_filt[df_tec_filt["Neg_Limpo"] == filtro_neg_g]
-        if filtro_tip_g != "Todas":
-            df_tec_filt = df_tec_filt[df_tec_filt["Tip_Limpa"] == filtro_tip_g]
-        if filtro_mod_g != "Todas":
-            df_tec_filt = df_tec_filt[df_tec_filt["Mod_Limpa"] == filtro_mod_g]
+    df_tec_filt = df_tec.copy()
+    if filtro_neg_g != "Todos":
+        df_tec_filt = df_tec_filt[df_tec_filt["Neg_Limpo"] == filtro_neg_g]
+    if filtro_tip_g != "Todas":
+        df_tec_filt = df_tec_filt[df_tec_filt["Tip_Limpa"] == filtro_tip_g]
+    if filtro_mod_g != "Todas":
+        df_tec_filt = df_tec_filt[df_tec_filt["Mod_Limpa"] == filtro_mod_g]
 
     # ----------------------------------------------------------
     # Ranking visual
