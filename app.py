@@ -844,7 +844,7 @@ components.html(header, height=520, scrolling=False)
 # =========================================================
 
 st.markdown(
-    '<p class="sub-title">Delta Negociação - GATE / PMESP</p>',
+    '<p class="sub-title">Delta-Negociação - GATE / PMESP</p>',
     unsafe_allow_html=True
 )
 
@@ -1992,7 +1992,7 @@ else:
     <div style='margin-top:20px; margin-bottom:100px; padding:15px; 
                 background-color:#111; border-radius:8px;'>
         <p style='color:#bbb; font-size:13px;'>
-        <b>DELTA NEGOCIAÇÃO — GATE/PMESP:</b><br><br>
+        <b>DELTA-NEGOCIAÇÃO — GATE/PMESP:</b><br><br>
         "O maior inimigo do conhecimento não é a ignorancia, mas a ilusão do conhecimento" - Stephen Hawking. <br>
         “Sem dados, você é apenas mais uma pessoa com opinião.” — W. Edwards Deming. <br><br>
         Empenhados no desenvolvimento de treinamentos e na avaliação dos Negociadores, alicerçados no pensamento técnico-científico e no valor humano, guiados por dados. NEGOCIAÇÃO! <br>                                
@@ -2807,7 +2807,7 @@ else:
         <div style='margin-top:20px; margin-bottom:100px; padding:15px; 
                     background-color:#111; border-radius:8px;'>
             <p style='color:#bbb; font-size:13px;'>
-            <b>DELTA NEGOCIAÇÃO — GATE/PMESP:</b><br><br>
+            <b>DELTA-NEGOCIAÇÃO — GATE/PMESP:</b><br><br>
             "O maior inimigo do conhecimento não é a ignorancia, mas a ilusão do conhecimento" - Stephen Hawking. <br>
             “Sem dados, você é apenas mais uma pessoa com opinião.” — W. Edwards Deming. <br><br>
             Empenhados no desenvolvimento de treinamentos e na avaliação dos Negociadores, alicerçados no pensamento técnico-científico e no valor humano, guiados por dados. NEGOCIAÇÃO! <br>                                
@@ -3497,7 +3497,7 @@ def preparar_df_estatisticas(stats_calculados) -> pd.DataFrame:
 # ============================================================
 
 with aba_chat:
-    st.markdown("### 💬 DELTA NEGOCIAÇÃO — Assistente Analítico Operacional | GATE")
+    st.markdown("### 💬 DELTA-NEGOCIAÇÃO — Assistente Analítico Operacional | GATE")
     st.markdown(
         "<p style='color:#aaa; font-size:13px;'>"
         "Consultas baseadas exclusivamente em dados reais via Tool Calling. "
