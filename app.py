@@ -2910,7 +2910,7 @@ else:
 
     st.markdown("---")
     st.markdown("""
-    <h3 style='color: #FFD700;'>✔️ Histórico de Registros e Tendência Temporal</h3>
+    <h3 style='color: #FFD700;'>✔️ Informação Longitudinal</h3>
     <p style='color: #aaa; font-size: 0.95rem;'>Como tem evoluído o volume de negociações ao longo do tempo?</p>
     """, unsafe_allow_html=True)
 
