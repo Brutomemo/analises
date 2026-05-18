@@ -2123,552 +2123,552 @@ else:
 
         st.markdown("---")
         # ============================================================
-# BLOCO: Ranking de Técnicas + Padrões e Correlações
-# Versão aprimorada — UX legível para leigos + lógica
-# estatística corrigida
-# ============================================================
+        # BLOCO: Ranking de Técnicas + Padrões e Correlações
+        # Versão aprimorada — UX legível para leigos + lógica
+        # estatística corrigida
+        # ============================================================
 
-st.markdown("#### Ranking de Técnicas Aplicadas")
+        st.markdown("#### Ranking de Técnicas Aplicadas")
 
-if st.button("📊 Abrir Ranking de Técnicas"):
-    st.session_state["exibir_ranking"] = True
+        if st.button("📊 Abrir Ranking de Técnicas"):
+            st.session_state["exibir_ranking"] = True
 
-st.markdown("<div style='margin-bottom: 20px;'></div>", unsafe_allow_html=True)
+        st.markdown("<div style='margin-bottom: 20px;'></div>", unsafe_allow_html=True)
 
-if st.session_state.get("exibir_ranking", False):
+        if st.session_state.get("exibir_ranking", False):
 
-    # ----------------------------------------------------------
-    # Pré-processamento de colunas limpas
-    # ----------------------------------------------------------
-    if not df_tec.empty:
-        df_tec["Neg_Limpo"] = (
-            df_tec["Negociador Principal do incidente crítico"].apply(limpar_valor)
-            if "Negociador Principal do incidente crítico" in df_tec.columns
-            else "N/D"
-        )
-        df_tec["Tip_Limpa"] = (
-            df_tec["Tipologia do incidente crítico"].apply(limpar_valor)
-            if "Tipologia do incidente crítico" in df_tec.columns
-            else "N/D"
-        )
-        df_tec["Mod_Limpa"] = (
-            df_tec["Modalidade do incidente crítico"].apply(limpar_valor)
-            if "Modalidade do incidente crítico" in df_tec.columns
-            else "N/D"
-        )
-
-        df_tec_filt = df_tec.copy()
-        if filtro_neg_g != "Todos":
-            df_tec_filt = df_tec_filt[df_tec_filt["Neg_Limpo"] == filtro_neg_g]
-        if filtro_tip_g != "Todas":
-            df_tec_filt = df_tec_filt[df_tec_filt["Tip_Limpa"] == filtro_tip_g]
-        if filtro_mod_g != "Todas":
-            df_tec_filt = df_tec_filt[df_tec_filt["Mod_Limpa"] == filtro_mod_g]
-
-    # ----------------------------------------------------------
-    # Ranking visual
-    # ----------------------------------------------------------
-    if not df_tec_filt.empty:
-        col_t = next(
-            (
-                col
-                for col in ["TÉCNICAS", "TECNICAS", "TÉCNICA", "TECNICA"]
-                if col in df_tec_filt.columns
-            ),
-            None,
-        )
-        if col_t:
-            freq_global = df_tec_filt[col_t].value_counts().reset_index()
-            freq_global.columns = ["Técnica", "Vezes Utilizada"]
-
-            c_tab, c_tree = st.columns([1, 2])
-            with c_tab:
-                st.dataframe(freq_global, use_container_width=True, hide_index=True)
-            with c_tree:
-                fig_g = px.treemap(
-                    freq_global,
-                    path=["Técnica"],
-                    values="Vezes Utilizada",
-                    color="Vezes Utilizada",
-                    color_continuous_scale="Oranges",
+            # ----------------------------------------------------------
+            # Pré-processamento de colunas limpas
+            # ----------------------------------------------------------
+            if not df_tec.empty:
+                df_tec["Neg_Limpo"] = (
+                    df_tec["Negociador Principal do incidente crítico"].apply(limpar_valor)
+                    if "Negociador Principal do incidente crítico" in df_tec.columns
+                    else "N/D"
                 )
-                fig_g.update_layout(
-                    paper_bgcolor="rgba(0,0,0,0)",
-                    plot_bgcolor="rgba(0,0,0,0)",
-                    font_color="#FFF",
-                    margin=dict(t=0, l=0, r=0, b=0),
+                df_tec["Tip_Limpa"] = (
+                    df_tec["Tipologia do incidente crítico"].apply(limpar_valor)
+                    if "Tipologia do incidente crítico" in df_tec.columns
+                    else "N/D"
                 )
-                st.plotly_chart(fig_g, use_container_width=True)
-        else:
-            st.warning("Coluna 'TÉCNICAS' não encontrada.")
-    else:
-        st.info("Nenhuma técnica encontrada para os filtros selecionados.")
-
-    st.markdown("---")
-
-    # ----------------------------------------------------------
-    # Cabeçalho da seção de correlações
-    # ----------------------------------------------------------
-    st.markdown(
-        "<h4 style='color: #FFD700;'>🔬 O que os dados dizem sobre as ocorrências?</h4>"
-        "<p style='color: #aaa; font-size: 0.9rem; margin-top: -8px;'>"
-        "Os testes abaixo buscam padrões nos dados. "
-        "Os nomes técnicos ficam ocultos por padrão — o que importa é a pergunta e a resposta em linguagem clara."
-        "</p>",
-        unsafe_allow_html=True,
-    )
-
-    # -------------------------------------------------------
-    # Helpers estatísticos locais
-    # -------------------------------------------------------
-    import unicodedata
-
-    def norm_col(t):
-        return (
-            unicodedata.normalize("NFKD", str(t))
-            .encode("ASCII", "ignore")
-            .decode("ASCII")
-            .lower()
-        )
-
-    def achar_coluna(df, papel, metrica, momento):
-        for col in df.columns:
-            cn = norm_col(col)
-            if norm_col(papel) in cn and norm_col(metrica) in cn and norm_col(momento) in cn:
-                return col
-        return None
-
-    def tempo_para_minutos(val):
-        """Converte segundos (inteiro ou lista) para minutos float."""
-        try:
-            if isinstance(val, list):
-                val = val[0]
-            if pd.isna(val) or str(val).strip().lower() in ("", "n/d", "nan", "none"):
-                return None
-            segundos = float(val)
-            return segundos / 60 if segundos > 0 else None
-        except Exception:
-            return None
-
-    lixo = {"none", "nan", "n/d", "", "null", "[]"}
-
-    col_agr_c = achar_coluna(df_quali_filt, "Principal", "Agressividade", "Chegada")
-    col_agr_e = achar_coluna(df_quali_filt, "Principal", "Agressividade", "Encerramento")
-
-    id_col = next(
-        (c for c in df_tec_filt.columns if "ID" in c.upper() or "VINCULO" in c.upper()),
-        None,
-    )
-
-    # N real de APAs (descartando linhas-lixo da coluna de técnicas)
-    if col_t:
-        df_tec_limpo = df_tec_filt[
-            ~df_tec_filt[col_t].astype(str).str.strip().str.lower().isin(lixo)
-        ].copy()
-    else:
-        df_tec_limpo = df_tec_filt.copy()
-
-    total_apas_reais = (
-        df_tec_limpo[id_col].astype(str).nunique() if id_col else len(df_tec_limpo)
-    )
-
-    # ----------------------------------------------------------
-    # Layout das duas colunas de análise
-    # ----------------------------------------------------------
-    c_sp1, c_sp2 = st.columns(2)
-
-    # ==========================================================
-    # COLUNA 1 — Spearman: Duração vs. Queda de Agressividade
-    # ==========================================================
-    with c_sp1:
-        st.markdown(
-            """
-            <div class='info-card'>
-            <strong>Ocorrências mais longas terminam com o causador menos agressivo?</strong><br>
-            <span style='font-size: 0.82rem; color: #aaa;'>
-            Verifica se existe uma relação matemática entre o tempo da negociação
-            e a queda de agressividade do causador do início ao fim da ocorrência.
-            </span>
-            """,
-            unsafe_allow_html=True,
-        )
-
-        df_sp = df_quali_filt.copy()
-
-        # --- Verificações de pré-requisito ---
-        colunas_ausentes = []
-        if not col_agr_c:
-            colunas_ausentes.append("Agressividade na Chegada")
-        if not col_agr_e:
-            colunas_ausentes.append("Agressividade no Encerramento")
-        if "Tempo de Negociação Real" not in df_sp.columns:
-            colunas_ausentes.append("Tempo de Negociação Real")
-
-        if colunas_ausentes:
-            st.warning(
-                f"⚠️ Colunas ausentes nos dados: {', '.join(colunas_ausentes)}. "
-                "Verifique o formulário de registro."
-            )
-
-        else:
-            # Converte escalas e remove "Não Observado" (0)
-            # NOTA: zeros são descartados pois representam ausência de observação,
-            # não agressividade zero — incluí-los distorceria o coeficiente.
-            df_sp["Agr_Inicio"] = (
-                df_sp[col_agr_c].apply(converter_escala).replace(0, pd.NA)
-            )
-            df_sp["Agr_Fim"] = (
-                df_sp[col_agr_e].apply(converter_escala).replace(0, pd.NA)
-            )
-            df_sp["Tempo_Min"] = df_sp["Tempo de Negociação Real"].apply(
-                tempo_para_minutos
-            )
-
-            # Remove linhas sem os três valores necessários
-            df_sp = df_sp.dropna(subset=["Agr_Inicio", "Agr_Fim", "Tempo_Min"])
-
-            # Delta positivo = queda de agressividade (bom sinal)
-            df_sp["Delta_Agressividade"] = df_sp["Agr_Inicio"] - df_sp["Agr_Fim"]
-
-            n_valido = len(df_sp)
-
-            if n_valido < 5:
-                # Barra de progresso visual
-                progresso = int((n_valido / 5) * 100)
-                st.warning(
-                    f"⏳ **Aguardando mais dados (N={n_valido}/5)**\n\n"
-                    "São necessárias pelo menos **5 ocorrências encerradas** "
-                    "com agressividade registrada nos dois momentos para calcular "
-                    "este indicador de forma confiável."
+                df_tec["Mod_Limpa"] = (
+                    df_tec["Modalidade do incidente crítico"].apply(limpar_valor)
+                    if "Modalidade do incidente crítico" in df_tec.columns
+                    else "N/D"
                 )
-                st.progress(progresso)
 
-            else:
-                res_sp = analise.calcular_spearman(df_sp, "Tempo_Min", "Delta_Agressividade")
+                df_tec_filt = df_tec.copy()
+                if filtro_neg_g != "Todos":
+                    df_tec_filt = df_tec_filt[df_tec_filt["Neg_Limpo"] == filtro_neg_g]
+                if filtro_tip_g != "Todas":
+                    df_tec_filt = df_tec_filt[df_tec_filt["Tip_Limpa"] == filtro_tip_g]
+                if filtro_mod_g != "Todas":
+                    df_tec_filt = df_tec_filt[df_tec_filt["Mod_Limpa"] == filtro_mod_g]
 
-                if res_sp.get("valido", False):
-                    rho = res_sp["rho"]
-                    p = res_sp["p_value"]
-                    significativo = p < 0.05
+            # ----------------------------------------------------------
+            # Ranking visual
+            # ----------------------------------------------------------
+            if not df_tec_filt.empty:
+                col_t = next(
+                    (
+                        col
+                        for col in ["TÉCNICAS", "TECNICAS", "TÉCNICA", "TECNICA"]
+                        if col in df_tec_filt.columns
+                    ),
+                    None,
+                )
+                if col_t:
+                    freq_global = df_tec_filt[col_t].value_counts().reset_index()
+                    freq_global.columns = ["Técnica", "Vezes Utilizada"]
 
-                    # --- Veredito em linguagem clara ---
-                    if significativo and rho > 0:
-                        icone = "✅"
-                        titulo_veredito = "Sim — ocorrências mais longas terminam com menos agressividade"
-                        cor_veredito = "success"
-                        # Explicação narrativa para leigos
-                        forca_correlacao = "muito forte" if abs(rho) > 0.7 else "forte" if abs(rho) > 0.5 else "moderada"
-                        explicacao = (
-                            f"**O que isso significa:** Existe uma **relação {forca_correlacao}** entre duração e queda de agressividade. "
-                            f"Em outras palavras: quanto mais tempo a negociação leva, maior a chance de o causador terminar menos agressivo.\n\n"
-                            f"**Por que temos certeza?** Analisamos {n_valido} ocorrências e o padrão encontrado é tão consistente "
-                            f"que a probabilidade de ser mera coincidência é menor que 5% (p < 0,05). Isso significa que o padrão é **real**.\n\n"
-                            f"**Métrica técnica:** Rho = {rho:.2f} (escala de -1 a +1, onde +1 = relação perfeita)."
+                    c_tab, c_tree = st.columns([1, 2])
+                    with c_tab:
+                        st.dataframe(freq_global, use_container_width=True, hide_index=True)
+                    with c_tree:
+                        fig_g = px.treemap(
+                            freq_global,
+                            path=["Técnica"],
+                            values="Vezes Utilizada",
+                            color="Vezes Utilizada",
+                            color_continuous_scale="Oranges",
                         )
-                    elif significativo and rho < 0:
-                        icone = "⚠️"
-                        titulo_veredito = "Atenção — ocorrências mais longas terminam COM MAIS agressividade"
-                        cor_veredito = "warning"
-                        forca_correlacao = "muito forte" if abs(rho) > 0.7 else "forte" if abs(rho) > 0.5 else "moderada"
-                        explicacao = (
-                            f"**O que isso significa:** Existe uma **relação {forca_correlacao} inversa**. "
-                            f"Ocorrências que demoram mais tempo tendem a terminar com o causador **mais agressivo**, não menos.\n\n"
-                            f"**Por que isso preocupa?** Isso pode indicar que:\n"
-                            f"  • O tempo prolongado está gerando **desgaste ou frustração** no causador\n"
-                            f"  • A estratégia de longa negociação pode não estar sendo efetiva em alguns cenários\n"
-                            f"  • Pode haver um ponto de saturação após o qual continuar negociando piora as coisas\n\n"
-                            f"**Por que temos certeza?** O padrão foi encontrado em {n_valido} ocorrências e é improvável ser coincidência (p < 0,05).\n\n"
-                            f"**Métrica técnica:** Rho = {rho:.2f} (negativo indica relação inversa)."
+                        fig_g.update_layout(
+                            paper_bgcolor="rgba(0,0,0,0)",
+                            plot_bgcolor="rgba(0,0,0,0)",
+                            font_color="#FFF",
+                            margin=dict(t=0, l=0, r=0, b=0),
                         )
-                    elif not significativo and abs(rho) > 0.3:
-                        icone = "🔎"
-                        titulo_veredito = "Há uma tendência, mas ainda é cedo para confirmar"
-                        cor_veredito = "info"
-                        direcao = "positiva (mais tempo = menos agressividade)" if rho > 0 else "negativa (mais tempo = mais agressividade)"
-                        explicacao = (
-                            f"**O que observamos:** Existe uma tendência {direcao}, mas com {n_valido} ocorrências, "
-                            f"não podemos ter certeza se é um padrão real ou coincidência.\n\n"
-                            f"**Por que não temos certeza?** A probabilidade de isso ser acaso é {p*100:.1f}% — acima do limite de 5% que os estatísticos usam como referência.\n\n"
-                            f"**O que fazer?** Colete mais registros de negociações. Com 10-15 ocorrências a mais, essa tendência pode se confirmar ou se desfazer.\n\n"
-                            f"**Métrica técnica:** Rho = {rho:.2f}, p = {p:.4f} (p > 0,05 = não significativo ainda)."
-                        )
-                    else:
-                        icone = "➖"
-                        titulo_veredito = "Nenhuma relação detectada entre duração e agressividade"
-                        cor_veredito = "info"
-                        explicacao = (
-                            f"**O que isso significa:** A duração da ocorrência **não está associada** à queda de agressividade. "
-                            f"Ocorrências longas terminam com queda de agressividade tão frequentemente quanto as curtas.\n\n"
-                            f"**O que fazer?** Isso não é necessariamente ruim — significa que o tempo não é o fator determinante. "
-                            f"Procure investigar outros fatores: técnicas usadas, perfil do causador, contexto da ocorrência, etc.\n\n"
-                            f"**Por que temos certeza?** A relação encontrada (Rho = {rho:.2f}) é tão fraca que não conseguimos descartar coincidência (p = {p:.4f}).\n\n"
-                            f"**Próximo passo:** Se quiser, rode os outros testes abaixo para explorar quais fatores **realmente** influenciam o desfecho."
-                        )
-
-                    # Exibe o veredito
-                    getattr(st, cor_veredito)(f"{icone} **{titulo_veredito}**\n\n{explicacao}")
-
-                    # Detalhes técnicos colapsáveis com botão
-                    if st.button("✔️ Ver detalhes técnicos (Spearman)", key="btn_spearman_details"):
-                        st.markdown(
-                            f"""
-                            **✔️ O que é a Correlação de Spearman?**
-                            
-                            É um teste que mede se duas variáveis "andam juntas". Se uma sobe, a outra sobe? Se uma desce, a outra desce?
-                            Responde à pergunta: "Essas duas coisas estão relacionadas?"
-                            
-                            ---
-                            
-                            **✔️ Interpretando o Coeficiente Rho: `{rho:.4f}`**
-                            
-                            Rho varia de **-1 a +1**:
-                            - **+1.0** = relação perfeita positiva (quando uma sobe, outra sempre sobe)
-                            - **0.0** = sem relação (variam independentemente)
-                            - **-1.0** = relação perfeita negativa (quando uma sobe, outra sempre desce)
-                            - **Seu resultado: {rho:.4f}** = {'relação positiva' if rho > 0 else 'relação negativa' if rho < 0 else 'sem relação'}
-                            
-                            ---
-                            
-                            **✔️ P-Value: `{p:.4f}` — O teste de "É realmente um padrão?"**
-                            
-                            O p-value responde: "Se não houvesse nenhuma relação real, qual a chance de eu ter encontrado isso por coincidência?"
-                            
-                            - **p < 0.05** (5%) = PADRÃO REAL ✅ Improvável ser coincidência
-                            - **p ≥ 0.05** = SEM CONFIRMAÇÃO Ainda pode ser coincidência
-                            - **Seu resultado: p = {p:.4f}** = {'✅ Padrão real' if p < 0.05 else '⚠️ Pode ser coincidência'}
-                            
-                            ---
-                            
-                            **✔️ Dados analisados**
-                            - **N válido:** {n_valido} ocorrências (com agressividade registrada nos dois momentos e tempo preenchido)
-                            - **Valores excluídos:** Registros com "Não Observado" foram removidos — representam ausência de registro, não agressividade zero
-                            
-                            ---
-                            
-                            **✔️ Resumo técnico**
-                            
-                            Spearman é não-paramétrico, adequado para:
-                            • Escalas ordinais (como agressividade: baixa, média, alta)
-                            • Distribuições assimétricas ou não-normais
-                            • Relações monotônicas (consistentes na direção, mas não necessariamente lineares)
-                            """
-                        )
+                        st.plotly_chart(fig_g, use_container_width=True)
                 else:
-                    st.warning(res_sp.get("msg", "Dados insuficientes para o cálculo (N < 3)."))
+                    st.warning("Coluna 'TÉCNICAS' não encontrada.")
+            else:
+                st.info("Nenhuma técnica encontrada para os filtros selecionados.")
 
-        st.markdown("</div>", unsafe_allow_html=True)
+            st.markdown("---")
 
-        # ==========================================================
-        # COLUNA 2 — Qui-Quadrado: Técnica vs. Variável escolhida
-        # ==========================================================
-        with c_sp2:
+            # ----------------------------------------------------------
+            # Cabeçalho da seção de correlações
+            # ----------------------------------------------------------
             st.markdown(
-                """
-                <div class='info-card'>
-                <strong>O uso de técnicas segue um padrão ou é improvisado?</strong><br>
-                <span style='font-size: 0.82rem; color: #aaa;'>
-                Verifica se a escolha de técnicas está associada a uma característica da ocorrência
-                ou se parece aleatória — independente do contexto.
-                </span>
-                """,
+                "<h4 style='color: #FFD700;'>🔬 O que os dados dizem sobre as ocorrências?</h4>"
+                "<p style='color: #aaa; font-size: 0.9rem; margin-top: -8px;'>"
+                "Os testes abaixo buscam padrões nos dados. "
+                "Os nomes técnicos ficam ocultos por padrão — o que importa é a pergunta e a resposta em linguagem clara."
+                "</p>",
                 unsafe_allow_html=True,
             )
 
-            # Mapeamento variável → coluna (todas usando versões limpas consistentes)
-            # CORREÇÃO: "Modalidade" agora aponta para "Mod_Limpa" (igual ao padrão das outras)
-            # CORREÇÃO: "Atitude do Causador" usa df_quali_filt mergeado, não coluna inexistente em df_tec_filt
-            opcoes_variaveis = {
-                "Tipologia": "Tip_Limpa",
-                "Negociador": "Neg_Limpo",
-                "Modalidade": "Mod_Limpa",
-            }
+            # -------------------------------------------------------
+            # Helpers estatísticos locais
+            # -------------------------------------------------------
+            import unicodedata
 
-            # Adiciona "Atitude do Causador" apenas se a coluna existir no df de qualitativas
-            # e houver uma coluna de ID para fazer o merge
-            col_resposta = next(
-                (c for c in df_quali_filt.columns if norm_col(c) in ("resposta_cat", "atitude", "resposta")),
+            def norm_col(t):
+                return (
+                    unicodedata.normalize("NFKD", str(t))
+                    .encode("ASCII", "ignore")
+                    .decode("ASCII")
+                    .lower()
+                )
+
+            def achar_coluna(df, papel, metrica, momento):
+                for col in df.columns:
+                    cn = norm_col(col)
+                    if norm_col(papel) in cn and norm_col(metrica) in cn and norm_col(momento) in cn:
+                        return col
+                return None
+
+            def tempo_para_minutos(val):
+                """Converte segundos (inteiro ou lista) para minutos float."""
+                try:
+                    if isinstance(val, list):
+                        val = val[0]
+                    if pd.isna(val) or str(val).strip().lower() in ("", "n/d", "nan", "none"):
+                        return None
+                    segundos = float(val)
+                    return segundos / 60 if segundos > 0 else None
+                except Exception:
+                    return None
+
+            lixo = {"none", "nan", "n/d", "", "null", "[]"}
+
+            col_agr_c = achar_coluna(df_quali_filt, "Principal", "Agressividade", "Chegada")
+            col_agr_e = achar_coluna(df_quali_filt, "Principal", "Agressividade", "Encerramento")
+
+            id_col = next(
+                (c for c in df_tec_filt.columns if "ID" in c.upper() or "VINCULO" in c.upper()),
                 None,
             )
-            if col_resposta and id_col:
-                opcoes_variaveis["Atitude do Causador"] = "_merged_resposta"
 
-            var_analise = st.selectbox(
-                "Comparar técnica com:",
-                list(opcoes_variaveis.keys()),
-                index=0,
-            )
-            col_v1_key = opcoes_variaveis[var_analise]
-
-            # Monta o DataFrame correto para o cruzamento
-            if col_v1_key == "_merged_resposta":
-                # Merge entre df_tec_limpo e df_quali_filt pela coluna de ID
-                id_quali = next(
-                    (c for c in df_quali_filt.columns if "ID" in c.upper() or "VINCULO" in c.upper()),
-                    None,
-                )
-                if id_quali and id_col and col_t:
-                    df_merge = df_tec_limpo[[id_col, col_t]].merge(
-                        df_quali_filt[[id_quali, col_resposta]].rename(
-                            columns={col_resposta: "_Resposta_Cat"}
-                        ),
-                        left_on=id_col,
-                        right_on=id_quali,
-                        how="inner",
-                    )
-                    df_qui_base = df_merge.rename(columns={col_t: "_Tecnica", "_Resposta_Cat": col_v1_key})
-                    col_v1_real = col_v1_key
-                    col_v2_real = "_Tecnica"
-                else:
-                    df_qui_base = pd.DataFrame()
-                    col_v1_real = None
-                    col_v2_real = None
+            # N real de APAs (descartando linhas-lixo da coluna de técnicas)
+            if col_t:
+                df_tec_limpo = df_tec_filt[
+                    ~df_tec_filt[col_t].astype(str).str.strip().str.lower().isin(lixo)
+                ].copy()
             else:
-                # Variáveis já presentes em df_tec_limpo
-                col_v1_real = col_v1_key
-                col_v2_real = col_t
-                df_qui_base = df_tec_limpo.copy() if col_t else pd.DataFrame()
+                df_tec_limpo = df_tec_filt.copy()
 
-            # --- Verificação de N mínimo (usando o mesmo DataFrame base do Qui-Quadrado) ---
-            n_apas_qui = (
-                df_qui_base[id_col].astype(str).nunique()
-                if (id_col and id_col in df_qui_base.columns)
-                else len(df_qui_base)
+            total_apas_reais = (
+                df_tec_limpo[id_col].astype(str).nunique() if id_col else len(df_tec_limpo)
             )
 
-            META_QUI = 10
+            # ----------------------------------------------------------
+            # Layout das duas colunas de análise
+            # ----------------------------------------------------------
+            c_sp1, c_sp2 = st.columns(2)
 
-            if n_apas_qui < META_QUI:
-                progresso_qui = int((n_apas_qui / META_QUI) * 100)
-                st.warning(
-                    f"⏳ **Análise em maturação (N={n_apas_qui}/{META_QUI})**\n\n"
-                    "Para identificar se o uso de técnicas segue um padrão real, "
-                    "o sistema precisa de pelo menos **10 ocorrências distintas**. "
-                    "Com menos dados, o comportamento de um único caso pode parecer uma regra."
+            # ==========================================================
+            # COLUNA 1 — Spearman: Duração vs. Queda de Agressividade
+            # ==========================================================
+            with c_sp1:
+                st.markdown(
+                    """
+                    <div class='info-card'>
+                    <strong>Ocorrências mais longas terminam com o causador menos agressivo?</strong><br>
+                    <span style='font-size: 0.82rem; color: #aaa;'>
+                    Verifica se existe uma relação matemática entre o tempo da negociação
+                    e a queda de agressividade do causador do início ao fim da ocorrência.
+                    </span>
+                    """,
+                    unsafe_allow_html=True,
                 )
-                st.progress(progresso_qui)
 
-            elif col_v1_real and col_v2_real and not df_qui_base.empty:
+                df_sp = df_quali_filt.copy()
 
-                df_qui_clean = df_qui_base[[col_v1_real, col_v2_real]].dropna()
-                # Remove valores-lixo de ambas as colunas
-                df_qui_clean = df_qui_clean[
-                    ~df_qui_clean[col_v1_real].astype(str).str.strip().str.lower().isin(lixo)
-                    & ~df_qui_clean[col_v2_real].astype(str).str.strip().str.lower().isin(lixo)
-                ]
+                # --- Verificações de pré-requisito ---
+                colunas_ausentes = []
+                if not col_agr_c:
+                    colunas_ausentes.append("Agressividade na Chegada")
+                if not col_agr_e:
+                    colunas_ausentes.append("Agressividade no Encerramento")
+                if "Tempo de Negociação Real" not in df_sp.columns:
+                    colunas_ausentes.append("Tempo de Negociação Real")
 
-                if df_qui_clean.empty:
-                    st.info("Sem dados suficientes após filtragem para este cruzamento.")
+                if colunas_ausentes:
+                    st.warning(
+                        f"⚠️ Colunas ausentes nos dados: {', '.join(colunas_ausentes)}. "
+                        "Verifique o formulário de registro."
+                    )
+
                 else:
-                    # Verifica variância mínima (Qui-Quadrado exige pelo menos 2 categorias em cada variável)
-                    cats_v1 = df_qui_clean[col_v1_real].nunique()
-                    cats_v2 = df_qui_clean[col_v2_real].nunique()
+                    # Converte escalas e remove "Não Observado" (0)
+                    # NOTA: zeros são descartados pois representam ausência de observação,
+                    # não agressividade zero — incluí-los distorceria o coeficiente.
+                    df_sp["Agr_Inicio"] = (
+                        df_sp[col_agr_c].apply(converter_escala).replace(0, pd.NA)
+                    )
+                    df_sp["Agr_Fim"] = (
+                        df_sp[col_agr_e].apply(converter_escala).replace(0, pd.NA)
+                    )
+                    df_sp["Tempo_Min"] = df_sp["Tempo de Negociação Real"].apply(
+                        tempo_para_minutos
+                    )
 
-                    if cats_v1 < 2 or cats_v2 < 2:
-                        st.info(
-                            f"O cruzamento **Técnica × {var_analise}** não pode ser calculado: "
-                            f"{'a variável selecionada tem apenas 1 categoria nos dados filtrados' if cats_v1 < 2 else 'há apenas 1 técnica nos dados filtrados'}. "
-                            "Tente remover os filtros ou escolher outra variável."
+                    # Remove linhas sem os três valores necessários
+                    df_sp = df_sp.dropna(subset=["Agr_Inicio", "Agr_Fim", "Tempo_Min"])
+
+                    # Delta positivo = queda de agressividade (bom sinal)
+                    df_sp["Delta_Agressividade"] = df_sp["Agr_Inicio"] - df_sp["Agr_Fim"]
+
+                    n_valido = len(df_sp)
+
+                    if n_valido < 5:
+                        # Barra de progresso visual
+                        progresso = int((n_valido / 5) * 100)
+                        st.warning(
+                            f"⏳ **Aguardando mais dados (N={n_valido}/5)**\n\n"
+                            "São necessárias pelo menos **5 ocorrências encerradas** "
+                            "com agressividade registrada nos dois momentos para calcular "
+                            "este indicador de forma confiável."
                         )
-                    else:
-                        res_chi = analise.calcular_qui_quadrado(df_qui_clean, col_v1_real, col_v2_real)
+                        st.progress(progresso)
 
-                        if res_chi.get("valido", False):
-                            chi2 = res_chi["chi2"]
-                            p_chi = res_chi["p_value"]
+                    else:
+                        res_sp = analise.calcular_spearman(df_sp, "Tempo_Min", "Delta_Agressividade")
+
+                        if res_sp.get("valido", False):
+                            rho = res_sp["rho"]
+                            p = res_sp["p_value"]
+                            significativo = p < 0.05
 
                             # --- Veredito em linguagem clara ---
-                            if p_chi < 0.05:
-                                st.success(
-                                    f"✔️ **Há um padrão — técnicas são escolhidas diferente conforme a {var_analise.lower()}**\n\n"
-                                    f"**O que isso significa:** A escolha de técnicas **não é aleatória**. "
-                                    f"Negociadores (ou a equipe em geral) aplicam técnicas diferentes dependendo da {var_analise.lower()} da ocorrência.\n\n"
-                                    f"**Por que isso é importante?** Indica uma **atuação doutrinária** — existe um padrão consistente, "
-                                    f"possivelmente baseado em treinamento ou protocolo. Isso é bom porque mostra profissionalismo e adaptação ao contexto.\n\n"
-                                    f"**Exemplo prático:** Se a {var_analise.lower()} é 'Tipologia', significa que para cada tipo de ocorrência "
-                                    f"há uma 'receita' de técnicas preferidas — não é improviso.\n\n"
-                                    f"**Por que temos certeza?** Testamos {len(df_qui_clean)} ocorrências e a probabilidade desse padrão ser acaso é "
-                                    f"menor que 5% (p = {p_chi:.4f})."
+                            if significativo and rho > 0:
+                                icone = "✅"
+                                titulo_veredito = "Sim — ocorrências mais longas terminam com menos agressividade"
+                                cor_veredito = "success"
+                                # Explicação narrativa para leigos
+                                forca_correlacao = "muito forte" if abs(rho) > 0.7 else "forte" if abs(rho) > 0.5 else "moderada"
+                                explicacao = (
+                                    f"**O que isso significa:** Existe uma **relação {forca_correlacao}** entre duração e queda de agressividade. "
+                                    f"Em outras palavras: quanto mais tempo a negociação leva, maior a chance de o causador terminar menos agressivo.\n\n"
+                                    f"**Por que temos certeza?** Analisamos {n_valido} ocorrências e o padrão encontrado é tão consistente "
+                                    f"que a probabilidade de ser mera coincidência é menor que 5% (p < 0,05). Isso significa que o padrão é **real**.\n\n"
+                                    f"**Métrica técnica:** Rho = {rho:.2f} (escala de -1 a +1, onde +1 = relação perfeita)."
+                                )
+                            elif significativo and rho < 0:
+                                icone = "⚠️"
+                                titulo_veredito = "Atenção — ocorrências mais longas terminam COM MAIS agressividade"
+                                cor_veredito = "warning"
+                                forca_correlacao = "muito forte" if abs(rho) > 0.7 else "forte" if abs(rho) > 0.5 else "moderada"
+                                explicacao = (
+                                    f"**O que isso significa:** Existe uma **relação {forca_correlacao} inversa**. "
+                                    f"Ocorrências que demoram mais tempo tendem a terminar com o causador **mais agressivo**, não menos.\n\n"
+                                    f"**Por que isso preocupa?** Isso pode indicar que:\n"
+                                    f"  • O tempo prolongado está gerando **desgaste ou frustração** no causador\n"
+                                    f"  • A estratégia de longa negociação pode não estar sendo efetiva em alguns cenários\n"
+                                    f"  • Pode haver um ponto de saturação após o qual continuar negociando piora as coisas\n\n"
+                                    f"**Por que temos certeza?** O padrão foi encontrado em {n_valido} ocorrências e é improvável ser coincidência (p < 0,05).\n\n"
+                                    f"**Métrica técnica:** Rho = {rho:.2f} (negativo indica relação inversa)."
+                                )
+                            elif not significativo and abs(rho) > 0.3:
+                                icone = "🔎"
+                                titulo_veredito = "Há uma tendência, mas ainda é cedo para confirmar"
+                                cor_veredito = "info"
+                                direcao = "positiva (mais tempo = menos agressividade)" if rho > 0 else "negativa (mais tempo = mais agressividade)"
+                                explicacao = (
+                                    f"**O que observamos:** Existe uma tendência {direcao}, mas com {n_valido} ocorrências, "
+                                    f"não podemos ter certeza se é um padrão real ou coincidência.\n\n"
+                                    f"**Por que não temos certeza?** A probabilidade de isso ser acaso é {p*100:.1f}% — acima do limite de 5% que os estatísticos usam como referência.\n\n"
+                                    f"**O que fazer?** Colete mais registros de negociações. Com 10-15 ocorrências a mais, essa tendência pode se confirmar ou se desfazer.\n\n"
+                                    f"**Métrica técnica:** Rho = {rho:.2f}, p = {p:.4f} (p > 0,05 = não significativo ainda)."
                                 )
                             else:
-                                st.info(
-                                    f"➖ **Sem padrão — técnicas parecem ser escolhidas independentemente da {var_analise.lower()}**\n\n"
-                                    f"**O que isso significa:** Não existe uma relação consistente entre a {var_analise.lower()} e a técnica escolhida. "
-                                    f"Técnicas são aplicadas de forma **situacional ou improvisada**, sem seguir um padrão claro.\n\n"
-                                    f"**Por que isso importa?** Pode indicar:\n"
-                                    f"  • Falta de protocolo ou doutrina clara\n"
-                                    f"  • Cada negociador decide independentemente\n"
-                                    f"  • As técnicas funcionam bem em qualquer contexto (possivelmente positivo)\n"
-                                    f"  • Oportunidade de desenvolvimento de protocolo se não há uma estratégia deliberada\n\n"
-                                    f"**Por que não há padrão?** Com {len(df_qui_clean)} ocorrências, a probabilidade de haver um padrão escondido é "
-                                    f"maior que 5% (p = {p_chi:.4f}), então não podemos confirmar associação."
+                                icone = "➖"
+                                titulo_veredito = "Nenhuma relação detectada entre duração e agressividade"
+                                cor_veredito = "info"
+                                explicacao = (
+                                    f"**O que isso significa:** A duração da ocorrência **não está associada** à queda de agressividade. "
+                                    f"Ocorrências longas terminam com queda de agressividade tão frequentemente quanto as curtas.\n\n"
+                                    f"**O que fazer?** Isso não é necessariamente ruim — significa que o tempo não é o fator determinante. "
+                                    f"Procure investigar outros fatores: técnicas usadas, perfil do causador, contexto da ocorrência, etc.\n\n"
+                                    f"**Por que temos certeza?** A relação encontrada (Rho = {rho:.2f}) é tão fraca que não conseguimos descartar coincidência (p = {p:.4f}).\n\n"
+                                    f"**Próximo passo:** Se quiser, rode os outros testes abaixo para explorar quais fatores **realmente** influenciam o desfecho."
                                 )
 
-                            if st.button(f"✔️ Ver detalhes técnicos (Qui-Quadrado × {var_analise})", key="btn_chi_details"):
+                            # Exibe o veredito
+                            getattr(st, cor_veredito)(f"{icone} **{titulo_veredito}**\n\n{explicacao}")
+
+                            # Detalhes técnicos colapsáveis com botão
+                            if st.button("✔️ Ver detalhes técnicos (Spearman)", key="btn_spearman_details"):
                                 st.markdown(
                                     f"""
-                                    **✔️ O que é o Teste Qui-Quadrado?**
+                                    **✔️ O que é a Correlação de Spearman?**
                                     
-                                    É um teste que verifica se a escolha de uma coisa é independente de outra. 
-                                    No seu caso: "A técnica escolhida depende da {var_analise.lower()}?"
-                                    
-                                    Ele compara o que você observou com o que seria esperado por puro acaso.
+                                    É um teste que mede se duas variáveis "andam juntas". Se uma sobe, a outra sobe? Se uma desce, a outra desce?
+                                    Responde à pergunta: "Essas duas coisas estão relacionadas?"
                                     
                                     ---
                                     
-                                    **✔️ Interpretando a Estatística χ² (Chi-Quadrado): `{chi2:.4f}`**
+                                    **✔️ Interpretando o Coeficiente Rho: `{rho:.4f}`**
                                     
-                                    χ² mede "quanto a realidade se desvia do acaso":
-                                    - **χ² próximo de 0** = realidade igual ao acaso (sem padrão)
-                                    - **χ² grande** = realidade muito diferente do acaso (há padrão!)
-                                    - **Seu resultado: χ² = {chi2:.4f}**
-                                    
-                                    ---
-                                    
-                                    **✔️ P-Value: `{p_chi:.4f}` — "É realmente um padrão?"**
-                                    
-                                    Mesma lógica do Spearman:
-                                    - **p < 0.05** = Há um padrão real ✔️ (improvável ser acaso)
-                                    - **p ≥ 0.05** = Sem confirmação ✔️ (pode ser acaso)
-                                    - **Seu resultado: p = {p_chi:.4f}** = {'✔️ Padrão real' if p_chi < 0.05 else '✔️ Pode ser acaso'}
+                                    Rho varia de **-1 a +1**:
+                                    - **+1.0** = relação perfeita positiva (quando uma sobe, outra sempre sobe)
+                                    - **0.0** = sem relação (variam independentemente)
+                                    - **-1.0** = relação perfeita negativa (quando uma sobe, outra sempre desce)
+                                    - **Seu resultado: {rho:.4f}** = {'relação positiva' if rho > 0 else 'relação negativa' if rho < 0 else 'sem relação'}
                                     
                                     ---
                                     
-                                    **✔️ Tabela de Contingência (o que foi analisado)**
+                                    **✔️ P-Value: `{p:.4f}` — O teste de "É realmente um padrão?"**
                                     
-                                    - **Variável 1 ({var_analise}):** {cats_v1} categorias diferentes
-                                    - **Variável 2 (Técnicas):** {cats_v2} técnicas diferentes
-                                    - **Linhas analisadas:** {len(df_qui_clean)} ocorrências
+                                    O p-value responde: "Se não houvesse nenhuma relação real, qual a chance de eu ter encontrado isso por coincidência?"
                                     
-                                    O teste criou uma tabela cruzando as {cats_v1} × {cats_v2} = {cats_v1 * cats_v2} combinações possíveis
-                                    e viu se algumas combinações aparecem muito mais (ou pouco) que o esperado.
+                                    - **p < 0.05** (5%) = PADRÃO REAL ✅ Improvável ser coincidência
+                                    - **p ≥ 0.05** = SEM CONFIRMAÇÃO Ainda pode ser coincidência
+                                    - **Seu resultado: p = {p:.4f}** = {'✅ Padrão real' if p < 0.05 else '⚠️ Pode ser coincidência'}
                                     
                                     ---
                                     
-                                    **✔️ Limitação importante**
-                                    
-                                    Se alguma combinação ocorrer menos de 5 vezes, a precisão do teste diminui.
-                                    Com dados limitados, procure agrupar categorias raras.
+                                    **✔️ Dados analisados**
+                                    - **N válido:** {n_valido} ocorrências (com agressividade registrada nos dois momentos e tempo preenchido)
+                                    - **Valores excluídos:** Registros com "Não Observado" foram removidos — representam ausência de registro, não agressividade zero
                                     
                                     ---
                                     
                                     **✔️ Resumo técnico**
                                     
-                                    Qui-Quadrado de Pearson:
-                                    • Funciona com variáveis **categóricas** (não contínuas)
-                                    • Verifica **independência** entre variáveis
-                                    • Não diz qual é a associação, apenas se ela existe
-                                    • Sensível a tamanhos de célula pequenos (< 5 observações)
+                                    Spearman é não-paramétrico, adequado para:
+                                    • Escalas ordinais (como agressividade: baixa, média, alta)
+                                    • Distribuições assimétricas ou não-normais
+                                    • Relações monotônicas (consistentes na direção, mas não necessariamente lineares)
                                     """
                                 )
                         else:
-                            st.warning(
-                                "Variância insuficiente para este cruzamento. "
-                                "Tente escolher outra variável ou remover filtros."
-                            )
-            else:
-                st.warning("Configuração de colunas inválida para o cruzamento selecionado.")
+                            st.warning(res_sp.get("msg", "Dados insuficientes para o cálculo (N < 3)."))
 
-            st.markdown("</div>", unsafe_allow_html=True)
+                st.markdown("</div>", unsafe_allow_html=True)
+
+                # ==========================================================
+                # COLUNA 2 — Qui-Quadrado: Técnica vs. Variável escolhida
+                # ==========================================================
+                with c_sp2:
+                    st.markdown(
+                        """
+                        <div class='info-card'>
+                        <strong>O uso de técnicas segue um padrão ou é improvisado?</strong><br>
+                        <span style='font-size: 0.82rem; color: #aaa;'>
+                        Verifica se a escolha de técnicas está associada a uma característica da ocorrência
+                        ou se parece aleatória — independente do contexto.
+                        </span>
+                        """,
+                        unsafe_allow_html=True,
+                    )
+
+                    # Mapeamento variável → coluna (todas usando versões limpas consistentes)
+                    # CORREÇÃO: "Modalidade" agora aponta para "Mod_Limpa" (igual ao padrão das outras)
+                    # CORREÇÃO: "Atitude do Causador" usa df_quali_filt mergeado, não coluna inexistente em df_tec_filt
+                    opcoes_variaveis = {
+                        "Tipologia": "Tip_Limpa",
+                        "Negociador": "Neg_Limpo",
+                        "Modalidade": "Mod_Limpa",
+                    }
+
+                    # Adiciona "Atitude do Causador" apenas se a coluna existir no df de qualitativas
+                    # e houver uma coluna de ID para fazer o merge
+                    col_resposta = next(
+                        (c for c in df_quali_filt.columns if norm_col(c) in ("resposta_cat", "atitude", "resposta")),
+                        None,
+                    )
+                    if col_resposta and id_col:
+                        opcoes_variaveis["Atitude do Causador"] = "_merged_resposta"
+
+                    var_analise = st.selectbox(
+                        "Comparar técnica com:",
+                        list(opcoes_variaveis.keys()),
+                        index=0,
+                    )
+                    col_v1_key = opcoes_variaveis[var_analise]
+
+                    # Monta o DataFrame correto para o cruzamento
+                    if col_v1_key == "_merged_resposta":
+                        # Merge entre df_tec_limpo e df_quali_filt pela coluna de ID
+                        id_quali = next(
+                            (c for c in df_quali_filt.columns if "ID" in c.upper() or "VINCULO" in c.upper()),
+                            None,
+                        )
+                        if id_quali and id_col and col_t:
+                            df_merge = df_tec_limpo[[id_col, col_t]].merge(
+                                df_quali_filt[[id_quali, col_resposta]].rename(
+                                    columns={col_resposta: "_Resposta_Cat"}
+                                ),
+                                left_on=id_col,
+                                right_on=id_quali,
+                                how="inner",
+                            )
+                            df_qui_base = df_merge.rename(columns={col_t: "_Tecnica", "_Resposta_Cat": col_v1_key})
+                            col_v1_real = col_v1_key
+                            col_v2_real = "_Tecnica"
+                        else:
+                            df_qui_base = pd.DataFrame()
+                            col_v1_real = None
+                            col_v2_real = None
+                    else:
+                        # Variáveis já presentes em df_tec_limpo
+                        col_v1_real = col_v1_key
+                        col_v2_real = col_t
+                        df_qui_base = df_tec_limpo.copy() if col_t else pd.DataFrame()
+
+                    # --- Verificação de N mínimo (usando o mesmo DataFrame base do Qui-Quadrado) ---
+                    n_apas_qui = (
+                        df_qui_base[id_col].astype(str).nunique()
+                        if (id_col and id_col in df_qui_base.columns)
+                        else len(df_qui_base)
+                    )
+
+                    META_QUI = 10
+
+                    if n_apas_qui < META_QUI:
+                        progresso_qui = int((n_apas_qui / META_QUI) * 100)
+                        st.warning(
+                            f"⏳ **Análise em maturação (N={n_apas_qui}/{META_QUI})**\n\n"
+                            "Para identificar se o uso de técnicas segue um padrão real, "
+                            "o sistema precisa de pelo menos **10 ocorrências distintas**. "
+                            "Com menos dados, o comportamento de um único caso pode parecer uma regra."
+                        )
+                        st.progress(progresso_qui)
+
+                    elif col_v1_real and col_v2_real and not df_qui_base.empty:
+
+                        df_qui_clean = df_qui_base[[col_v1_real, col_v2_real]].dropna()
+                        # Remove valores-lixo de ambas as colunas
+                        df_qui_clean = df_qui_clean[
+                            ~df_qui_clean[col_v1_real].astype(str).str.strip().str.lower().isin(lixo)
+                            & ~df_qui_clean[col_v2_real].astype(str).str.strip().str.lower().isin(lixo)
+                        ]
+
+                        if df_qui_clean.empty:
+                            st.info("Sem dados suficientes após filtragem para este cruzamento.")
+                        else:
+                            # Verifica variância mínima (Qui-Quadrado exige pelo menos 2 categorias em cada variável)
+                            cats_v1 = df_qui_clean[col_v1_real].nunique()
+                            cats_v2 = df_qui_clean[col_v2_real].nunique()
+
+                            if cats_v1 < 2 or cats_v2 < 2:
+                                st.info(
+                                    f"O cruzamento **Técnica × {var_analise}** não pode ser calculado: "
+                                    f"{'a variável selecionada tem apenas 1 categoria nos dados filtrados' if cats_v1 < 2 else 'há apenas 1 técnica nos dados filtrados'}. "
+                                    "Tente remover os filtros ou escolher outra variável."
+                                )
+                            else:
+                                res_chi = analise.calcular_qui_quadrado(df_qui_clean, col_v1_real, col_v2_real)
+
+                                if res_chi.get("valido", False):
+                                    chi2 = res_chi["chi2"]
+                                    p_chi = res_chi["p_value"]
+
+                                    # --- Veredito em linguagem clara ---
+                                    if p_chi < 0.05:
+                                        st.success(
+                                            f"✔️ **Há um padrão — técnicas são escolhidas diferente conforme a {var_analise.lower()}**\n\n"
+                                            f"**O que isso significa:** A escolha de técnicas **não é aleatória**. "
+                                            f"Negociadores (ou a equipe em geral) aplicam técnicas diferentes dependendo da {var_analise.lower()} da ocorrência.\n\n"
+                                            f"**Por que isso é importante?** Indica uma **atuação doutrinária** — existe um padrão consistente, "
+                                            f"possivelmente baseado em treinamento ou protocolo. Isso é bom porque mostra profissionalismo e adaptação ao contexto.\n\n"
+                                            f"**Exemplo prático:** Se a {var_analise.lower()} é 'Tipologia', significa que para cada tipo de ocorrência "
+                                            f"há uma 'receita' de técnicas preferidas — não é improviso.\n\n"
+                                            f"**Por que temos certeza?** Testamos {len(df_qui_clean)} ocorrências e a probabilidade desse padrão ser acaso é "
+                                            f"menor que 5% (p = {p_chi:.4f})."
+                                        )
+                                    else:
+                                        st.info(
+                                            f"➖ **Sem padrão — técnicas parecem ser escolhidas independentemente da {var_analise.lower()}**\n\n"
+                                            f"**O que isso significa:** Não existe uma relação consistente entre a {var_analise.lower()} e a técnica escolhida. "
+                                            f"Técnicas são aplicadas de forma **situacional ou improvisada**, sem seguir um padrão claro.\n\n"
+                                            f"**Por que isso importa?** Pode indicar:\n"
+                                            f"  • Falta de protocolo ou doutrina clara\n"
+                                            f"  • Cada negociador decide independentemente\n"
+                                            f"  • As técnicas funcionam bem em qualquer contexto (possivelmente positivo)\n"
+                                            f"  • Oportunidade de desenvolvimento de protocolo se não há uma estratégia deliberada\n\n"
+                                            f"**Por que não há padrão?** Com {len(df_qui_clean)} ocorrências, a probabilidade de haver um padrão escondido é "
+                                            f"maior que 5% (p = {p_chi:.4f}), então não podemos confirmar associação."
+                                        )
+
+                                    if st.button(f"✔️ Ver detalhes técnicos (Qui-Quadrado × {var_analise})", key="btn_chi_details"):
+                                        st.markdown(
+                                            f"""
+                                            **✔️ O que é o Teste Qui-Quadrado?**
+                                            
+                                            É um teste que verifica se a escolha de uma coisa é independente de outra. 
+                                            No seu caso: "A técnica escolhida depende da {var_analise.lower()}?"
+                                            
+                                            Ele compara o que você observou com o que seria esperado por puro acaso.
+                                            
+                                            ---
+                                            
+                                            **✔️ Interpretando a Estatística χ² (Chi-Quadrado): `{chi2:.4f}`**
+                                            
+                                            χ² mede "quanto a realidade se desvia do acaso":
+                                            - **χ² próximo de 0** = realidade igual ao acaso (sem padrão)
+                                            - **χ² grande** = realidade muito diferente do acaso (há padrão!)
+                                            - **Seu resultado: χ² = {chi2:.4f}**
+                                            
+                                            ---
+                                            
+                                            **✔️ P-Value: `{p_chi:.4f}` — "É realmente um padrão?"**
+                                            
+                                            Mesma lógica do Spearman:
+                                            - **p < 0.05** = Há um padrão real ✔️ (improvável ser acaso)
+                                            - **p ≥ 0.05** = Sem confirmação ✔️ (pode ser acaso)
+                                            - **Seu resultado: p = {p_chi:.4f}** = {'✔️ Padrão real' if p_chi < 0.05 else '✔️ Pode ser acaso'}
+                                            
+                                            ---
+                                            
+                                            **✔️ Tabela de Contingência (o que foi analisado)**
+                                            
+                                            - **Variável 1 ({var_analise}):** {cats_v1} categorias diferentes
+                                            - **Variável 2 (Técnicas):** {cats_v2} técnicas diferentes
+                                            - **Linhas analisadas:** {len(df_qui_clean)} ocorrências
+                                            
+                                            O teste criou uma tabela cruzando as {cats_v1} × {cats_v2} = {cats_v1 * cats_v2} combinações possíveis
+                                            e viu se algumas combinações aparecem muito mais (ou pouco) que o esperado.
+                                            
+                                            ---
+                                            
+                                            **✔️ Limitação importante**
+                                            
+                                            Se alguma combinação ocorrer menos de 5 vezes, a precisão do teste diminui.
+                                            Com dados limitados, procure agrupar categorias raras.
+                                            
+                                            ---
+                                            
+                                            **✔️ Resumo técnico**
+                                            
+                                            Qui-Quadrado de Pearson:
+                                            • Funciona com variáveis **categóricas** (não contínuas)
+                                            • Verifica **independência** entre variáveis
+                                            • Não diz qual é a associação, apenas se ela existe
+                                            • Sensível a tamanhos de célula pequenos (< 5 observações)
+                                            """
+                                        )
+                                else:
+                                    st.warning(
+                                        "Variância insuficiente para este cruzamento. "
+                                        "Tente escolher outra variável ou remover filtros."
+                                    )
+                    else:
+                        st.warning("Configuração de colunas inválida para o cruzamento selecionado.")
+
+                    st.markdown("</div>", unsafe_allow_html=True)
 
 
 
