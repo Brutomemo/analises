@@ -1552,7 +1552,7 @@ else:
             # --- FIM DO BLOCO DE EXPLICAÇÃO ---
 
             ##N-GRAMAS
-            if st.button("✔ 2. GERAR NUVEM DE PALAVRAS E N-GRAMS"):
+            if st.button("✔ 2. Gerar Nuvem de Palavras e N-Grams"):
                 with st.spinner("Processando N-Grams e plotando gráficos..."):
                     texto_c = limpar_valor(df_apa.get('TRANSCRIÇÃO DO CAUSADOR'))
                     texto_np = limpar_valor(df_apa.get('TRANSCRIÇÃO DO NEGOCIADOR PRINCIPAL'))
@@ -2676,7 +2676,7 @@ else:
                             st.error(f"🚨 Erro geral: {str(e)}")
 
                 st.markdown("---")
-                st.markdown("<h4 style='color: #FFD700;'>✔ Volume de Registros e Tendência Temporal</h4>", unsafe_allow_html=True)
+                st.markdown("<h3 style='color: #FFD700;'>✔ Volume de Registros e Tendência Temporal</h3>", unsafe_allow_html=True)
                 
                 col_data = next((col for col in ['Data da ocorrência', 'Data', 'DATA'] if col in df_quali_filt.columns), None)
                 if col_data:
