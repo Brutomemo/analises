@@ -476,7 +476,6 @@ st.markdown("""
         margin-top: -150px !important; 
         z-index: 1 !important;
     }
-
    
 </style>
 
