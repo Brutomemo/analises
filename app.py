@@ -476,6 +476,11 @@ st.markdown("""
         margin-top: -150px !important; 
         z-index: 1 !important;
     }
+
+    /* DIAGNÓSTICO — descobre o elemento problemático */
+* {
+    outline: 1px solid red !important;
+}
 </style>
 
 <div class="liquid-blob blob1"></div>
@@ -1400,7 +1405,7 @@ else:
 
             st.markdown("### ✔ Etapa 2: Análise Semântica (Machine Learning e Context-Aware NLP)")
 
-            # --- INÍCIO DO BLOCO DE EXPLICAÇÃO (TOGGLE SEM EXPANDER) ---
+            # --- INÍCIO DO BLOCO DE EXPLICAÇÃO ---
             if "show_explicacao" not in st.session_state:
                 st.session_state["show_explicacao"] = False
 
