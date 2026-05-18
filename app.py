@@ -2473,7 +2473,7 @@ else:
                         """,
                         unsafe_allow_html=True,
                     )
-
+            
                     # Mapeamento variável → coluna (todas usando versões limpas consistentes)
                     # CORREÇÃO: "Modalidade" agora aponta para "Mod_Limpa" (igual ao padrão das outras)
                     # CORREÇÃO: "Atitude do Causador" usa df_quali_filt mergeado, não coluna inexistente em df_tec_filt
@@ -2482,7 +2482,7 @@ else:
                         "Negociador": "Neg_Limpo",
                         "Modalidade": "Mod_Limpa",
                     }
-
+            
                     # Adiciona "Atitude do Causador" apenas se a coluna existir no df de qualitativas
                     # e houver uma coluna de ID para fazer o merge
                     col_resposta = next(
@@ -2491,14 +2491,14 @@ else:
                     )
                     if col_resposta and id_col:
                         opcoes_variaveis["Atitude do Causador"] = "_merged_resposta"
-
+            
                     var_analise = st.selectbox(
                         "Comparar técnica com:",
                         list(opcoes_variaveis.keys()),
                         index=0,
                     )
                     col_v1_key = opcoes_variaveis[var_analise]
-
+            
                     # Monta o DataFrame correto para o cruzamento
                     if col_v1_key == "_merged_resposta":
                         # Merge entre df_tec_limpo e df_quali_filt pela coluna de ID
@@ -2527,42 +2527,42 @@ else:
                         col_v1_real = col_v1_key
                         col_v2_real = col_t
                         df_qui_base = df_tec_limpo.copy() if col_t else pd.DataFrame()
-
+            
                     # --- Verificação de N mínimo (usando o mesmo DataFrame base do Qui-Quadrado) ---
                     n_apas_qui = (
                         df_qui_base[id_col].astype(str).nunique()
                         if (id_col and id_col in df_qui_base.columns)
                         else len(df_qui_base)
                     )
-
+            
                     META_QUI = 10
-
+            
                     if n_apas_qui < META_QUI:
                         progresso_qui = int((n_apas_qui / META_QUI) * 100)
                         st.warning(
-                            f"⏳ **Análise em maturação (N={n_apas_qui}/{META_QUI})**\n\n"
+                            f"✔️ **Análise em maturação (N={n_apas_qui}/{META_QUI})**\n\n"
                             "Para identificar se o uso de técnicas segue um padrão real, "
                             "o sistema precisa de pelo menos **10 ocorrências distintas**. "
                             "Com menos dados, o comportamento de um único caso pode parecer uma regra."
                         )
                         st.progress(progresso_qui)
-
+            
                     elif col_v1_real and col_v2_real and not df_qui_base.empty:
-
+            
                         df_qui_clean = df_qui_base[[col_v1_real, col_v2_real]].dropna()
                         # Remove valores-lixo de ambas as colunas
                         df_qui_clean = df_qui_clean[
                             ~df_qui_clean[col_v1_real].astype(str).str.strip().str.lower().isin(lixo)
                             & ~df_qui_clean[col_v2_real].astype(str).str.strip().str.lower().isin(lixo)
                         ]
-
+            
                         if df_qui_clean.empty:
                             st.info("Sem dados suficientes após filtragem para este cruzamento.")
                         else:
                             # Verifica variância mínima (Qui-Quadrado exige pelo menos 2 categorias em cada variável)
                             cats_v1 = df_qui_clean[col_v1_real].nunique()
                             cats_v2 = df_qui_clean[col_v2_real].nunique()
-
+            
                             if cats_v1 < 2 or cats_v2 < 2:
                                 st.info(
                                     f"O cruzamento **Técnica × {var_analise}** não pode ser calculado: "
@@ -2571,15 +2571,15 @@ else:
                                 )
                             else:
                                 res_chi = analise.calcular_qui_quadrado(df_qui_clean, col_v1_real, col_v2_real)
-
+            
                                 if res_chi.get("valido", False):
                                     chi2 = res_chi["chi2"]
                                     p_chi = res_chi["p_value"]
-
+            
                                     # --- Veredito em linguagem clara ---
                                     if p_chi < 0.05:
                                         st.success(
-                                            f"✔️ **Há um padrão — técnicas são escolhidas diferente conforme a {var_analise.lower()}**\n\n"
+                                            f"✅ **Há um padrão — técnicas são escolhidas diferente conforme a {var_analise.lower()}**\n\n"
                                             f"**O que isso significa:** A escolha de técnicas **não é aleatória**. "
                                             f"Negociadores (ou a equipe em geral) aplicam técnicas diferentes dependendo da {var_analise.lower()} da ocorrência.\n\n"
                                             f"**Por que isso é importante?** Indica uma **atuação doutrinária** — existe um padrão consistente, "
@@ -2602,8 +2602,13 @@ else:
                                             f"**Por que não há padrão?** Com {len(df_qui_clean)} ocorrências, a probabilidade de haver um padrão escondido é "
                                             f"maior que 5% (p = {p_chi:.4f}), então não podemos confirmar associação."
                                         )
-
-                                    if st.button(f"✔️ Ver detalhes técnicos (Qui-Quadrado × {var_analise})", key="btn_chi_details"):
+            
+                                    # Toggle para mostrar/ocultar detalhes técnicos com session_state
+                                    key_details = f"show_chi_details_{var_analise}_{id(df_qui_clean)}"
+                                    if st.button(f"🔬 Ver detalhes técnicos (Qui-Quadrado × {var_analise})", key=key_details):
+                                        st.session_state[key_details] = not st.session_state.get(key_details, False)
+                                    
+                                    if st.session_state.get(key_details, False):
                                         st.markdown(
                                             f"""
                                             **✔️ O que é o Teste Qui-Quadrado?**
@@ -2627,9 +2632,9 @@ else:
                                             **✔️ P-Value: `{p_chi:.4f}` — "É realmente um padrão?"**
                                             
                                             Mesma lógica do Spearman:
-                                            - **p < 0.05** = Há um padrão real ✔️ (improvável ser acaso)
-                                            - **p ≥ 0.05** = Sem confirmação ✔️ (pode ser acaso)
-                                            - **Seu resultado: p = {p_chi:.4f}** = {'✔️ Padrão real' if p_chi < 0.05 else '✔️ Pode ser acaso'}
+                                            - **p < 0.05** = Há um padrão real ✅ (improvável ser acaso)
+                                            - **p ≥ 0.05** = Sem confirmação ⚠️ (pode ser acaso)
+                                            - **Seu resultado: p = {p_chi:.4f}** = {'✅ Padrão real' if p_chi < 0.05 else '⚠️ Pode ser acaso'}
                                             
                                             ---
                                             
@@ -2667,7 +2672,7 @@ else:
                                     )
                     else:
                         st.warning("Configuração de colunas inválida para o cruzamento selecionado.")
-
+            
                     st.markdown("</div>", unsafe_allow_html=True)
 
 
