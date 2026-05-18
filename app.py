@@ -2547,7 +2547,7 @@ else:
                                     st.info(
                                         f"➖ **Sem padrão — técnicas parecem ser escolhidas independentemente da {var_analise.lower()}**\n\n"
                                         f"**O que isso significa:** Não existe uma relação consistente entre a {var_analise.lower()} e a técnica escolhida. "
-                                        f"Técnicas são aplicadas de forma **situacional ou improvisada**, sem seguir um padrão claro.\n\n"
+                                        f"Técnicas são aplicadas de forma **situacional**, sem seguir um padrão claro.\n\n"
                                         f"**Por que isso importa?** Pode indicar:\n"
                                         f"  • Falta de protocolo ou doutrina clara\n"
                                         f"  • Cada negociador decide independentemente\n"
@@ -2573,7 +2573,7 @@ else:
         st.markdown("---")
 
         key_details_unif = "show_unified_test_details"
-        if st.button("📚 Entenda melhor os testes estatísticos acima", key="btn_unified_details"):
+        if st.button("✔️ Entenda melhor os testes estatísticos acima", key="btn_unified_details"):
             st.session_state[key_details_unif] = not st.session_state.get(key_details_unif, False)
 
         if st.session_state.get(key_details_unif, False):
@@ -2667,17 +2667,17 @@ else:
     # ============================================================
     st.markdown("---")
     st.markdown("""
-    <h3 style='color: #FFD700;'>🔬 Modelagem Avançada: Desvendando o Viés e a Eficácia Real das Técnicas</h3>
+    <h3 style='color: #FFD700;'>🔬 Modelagem Avançada: Desvendando o Viés e a Eficácia Provável das Técnicas</h3>
     <p style='color: #aaa; font-size: 0.95rem; margin-bottom: 20px;'>
-    <strong>Pergunta simples:</strong> "As técnicas funcionam de verdade, ou é só porque alguns negociadores são talentosos?"
+    <strong>Pergunta simples:</strong> "As técnicas funcionam independente da experiência do Negociador?"
     </p>
     """, unsafe_allow_html=True)
 
     st.markdown("""
     **Por que isso importa:** 
     - Se a técnica funciona para *todos* os negociadores, vale a pena treinar a equipe inteira nela
-    - Se funciona só para alguns, é porque depende do talento pessoal, não do método
-    - Esta seção descobre qual é qual
+    - Se funciona só para alguns, é porque depende da expertise pessoal, não unicamente do método
+    - Enfatizamos que a análise está condicionada e limitada aos dados registrados, não representa a realidade em sua totalidade
     """)
 
     if total_apas_reais < 15:
@@ -2738,7 +2738,7 @@ else:
                 # ============================================================
                 st.markdown("""
                 <div style='background: var(--color-background-secondary); border-left: 4px solid #FFD700; padding: 15px; border-radius: 8px; margin-bottom: 20px;'>
-                <h4 style='color: #FFD700; margin-top: 0;'>📊 Análise 1: Existe Viés entre Negociadores?</h4>
+                <h3 style='color: #FFD700; margin-top: 0;'>✔️ Análise 1: Existe Viés entre Negociadores?</h3>
                 <p style='color: #aaa; margin-bottom: 10px;'><strong>A pergunta:</strong> "Os 'sucessos' vêm do método ou de alguns negociadores talentosos?"</p>
                 </div>
                 """, unsafe_allow_html=True)
@@ -2957,7 +2957,7 @@ else:
     </p>
     """, unsafe_allow_html=True)
 
-    if st.button("✔ GERAR RELATÓRIO ESTATÍSTICO COMPLETO (com IA)"):
+    if st.button("✔ GERAR RELATÓRIO ESTATÍSTICO ASSISTIDO POR IA"):
         with st.spinner("✔️ Processando análises e gerando interpretações..."):
             try:
                 import ia_estatistica 
