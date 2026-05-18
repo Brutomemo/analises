@@ -1407,10 +1407,7 @@ else:
                                         st.plotly_chart(fig_grafo, use_container_width=True)
                                         
                                         key_palavras = "show_palavras_similitude"
-                                        if st.button("📝 Palavras Compartilhadas", key="btn_palavras_similitude"):
-                                            st.session_state[key_palavras] = not st.session_state.get(key_palavras, False)
-                                        
-                                        if st.session_state.get(key_palavras, False):
+                                        with st.expander("📝 Entenda as Palavras Compartilhadas"):
                                             st.markdown("**Palavras que conectaram os dois lados:**")
                                             for palavra, freq in sorted(top_comuns.items(), key=lambda x: x[1], reverse=True):
                                                 st.markdown(f"- **{palavra}** — apareceu {freq} vezes")
