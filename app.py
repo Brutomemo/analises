@@ -1228,11 +1228,12 @@ else:
 
             # ============================================================
             # ANÁLISE DE SIMILITUDE — Versão Melhorada para Leigos
+            # Substitua a seção antiga por este código
             # ============================================================
 
             st.markdown("---")
             st.markdown("""
-            <h3 style='color: #378ADD;'>✔️ Análise de Similitude: Estão Falando a Mesma Linguagem?</h3>
+            <h3 style='color: #378ADD;'>🪞 Análise de Similitude: Estão Falando a Mesma Linguagem?</h3>
             <p style='color: #aaa; font-size: 0.95rem;'>
             Quando uma negociação está indo bem, negociador e causador naturalmente começam a usar as mesmas palavras.
             Isso se chama <strong>"espelhamento"</strong> e é sinal de que há sintonia entre eles.
@@ -1251,7 +1252,7 @@ else:
 
             st.markdown("""
             <div style='background: var(--color-background-secondary); border-left: 4px solid #378ADD; padding: 15px; border-radius: 8px; margin-bottom: 20px;'>
-            <h3 style='color: #378ADD; margin-top: 0;'>✔️ Como Ler o Gráfico de Palavras</h3>
+            <h4 style='color: #378ADD; margin-top: 0;'>📊 Como Ler o Gráfico de Palavras</h4>
             <p style='color: #aaa; margin-bottom: 10px;'><strong>O que você verá:</strong></p>
             <ul style='color: #bbb; line-height: 1.6;'>
             <li><strong style='color: #2196F3;'>● Azul (esquerda)</strong> = Negociador</li>
@@ -1267,7 +1268,7 @@ else:
             # ============================================================
             # BOTÃO PARA GERAR ANÁLISE
             # ============================================================
-            if st.button("✔️ Gerar Análise de Similitude"):
+            if st.button("📊 Gerar Análise de Similitude"):
                 col_causador = "TRANSCRIÇÃO DO CAUSADOR"
                 col_negociador = "TRANSCRIÇÃO DO NEGOCIADOR PRINCIPAL"
 
@@ -1407,7 +1408,7 @@ else:
                             # ============================================================
                             if sintonia_pct > 0:
                                 st.markdown("---")
-                                st.markdown("### ✔️ Grafo de Espelhamento Léxico")
+                                st.markdown("### 📊 Grafo de Espelhamento Léxico")
                                 st.markdown(
                                     "<p style='color: #aaa; font-size: 0.9rem;'>"
                                     "Visualização das palavras que conectaram negociador e causador. "
@@ -1509,8 +1510,12 @@ else:
                                         
                                         st.plotly_chart(fig_grafo, use_container_width=True)
                                         
-                                        # Lista as palavras principais
-                                        with st.expander("📝 Ver lista de palavras compartilhadas"):
+                                        # Lista as palavras principais com botão toggle
+                                        key_palavras = "show_palavras_similitude"
+                                        if st.button("📝 Palavras Compartilhadas", key="btn_palavras_similitude"):
+                                            st.session_state[key_palavras] = not st.session_state.get(key_palavras, False)
+                                        
+                                        if st.session_state.get(key_palavras, False):
                                             st.markdown("**Palavras que conectaram os dois lados:**\n")
                                             for palavra, freq in sorted(top_comuns.items(), key=lambda x: x[1], reverse=True):
                                                 st.markdown(f"- **{palavra}** — apareceu {freq} vezes no total")
@@ -1525,9 +1530,9 @@ else:
                             st.error(f"Erro no cálculo de similitude: {str(e)[:100]}")
                 else:
                     st.info("⚠️ Colunas de transcrição não encontradas. Verifique se existem:\n- 'TRANSCRIÇÃO DO CAUSADOR'\n- 'TRANSCRIÇÃO DO NEGOCIADOR PRINCIPAL'")
-                                
-            st.markdown("<div style='margin-bottom: 30px;'></div>", unsafe_allow_html=True)
-            st.markdown("</div>", unsafe_allow_html=True)
+                    
+st.markdown("<div style='margin-bottom: 30px;'></div>", unsafe_allow_html=True)
+
 
 
             #ETAPA 2
