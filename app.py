@@ -2693,7 +2693,7 @@ else:
                 else: st.info("Coluna de Data não encontrada.")
 
                 st.markdown("---")
-                st.markdown("<h4 style='color: #06C755;'>✔ Síntese Interpretativa Avançada (Interpretação descritiva dos resultados estatísticos assistida por modelo de linguagem (LLM – OpenAI GPT-4o-mini), com base em dados previamente processados por métodos estatísticos.)</h4>", unsafe_allow_html=True)
+                st.markdown("<h3 style='color: #06C755;'>✔ Síntese Interpretativa Avançada (Interpretação descritiva dos resultados estatísticos assistida por modelo de linguagem (LLM – OpenAI GPT-4o-mini), com base em dados previamente processados por métodos estatísticos.)</h3>", unsafe_allow_html=True)
                 st.markdown("<p style='color: #bbb;'>Este módulo traduz a matriz matemática gerada acima em um relatório estratégico que visa o aperfeiçoamento técnico contínuo do Negociador.</p>", unsafe_allow_html=True)
 
                 if st.button("✔ GERAR RELATÓRIO ESTATÍSTICO DESCRITIVO"):
