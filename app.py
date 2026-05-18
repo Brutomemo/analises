@@ -2292,9 +2292,9 @@ else:
                     """,
                     unsafe_allow_html=True,
                 )
-
+        
                 df_sp = df_quali_filt.copy()
-
+        
                 # --- Verificações de pré-requisito ---
                 colunas_ausentes = []
                 if not col_agr_c:
@@ -2303,13 +2303,13 @@ else:
                     colunas_ausentes.append("Agressividade no Encerramento")
                 if "Tempo de Negociação Real" not in df_sp.columns:
                     colunas_ausentes.append("Tempo de Negociação Real")
-
+        
                 if colunas_ausentes:
                     st.warning(
-                        f"✔ Colunas ausentes nos dados: {', '.join(colunas_ausentes)}. "
+                        f"⚠️ Colunas ausentes nos dados: {', '.join(colunas_ausentes)}. "
                         "Verifique o formulário de registro."
                     )
-
+        
                 else:
                     # Converte escalas e remove "Não Observado" (0)
                     # NOTA: zeros são descartados pois representam ausência de observação,
@@ -2323,15 +2323,15 @@ else:
                     df_sp["Tempo_Min"] = df_sp["Tempo de Negociação Real"].apply(
                         tempo_para_minutos
                     )
-
+        
                     # Remove linhas sem os três valores necessários
                     df_sp = df_sp.dropna(subset=["Agr_Inicio", "Agr_Fim", "Tempo_Min"])
-
+        
                     # Delta positivo = queda de agressividade (bom sinal)
                     df_sp["Delta_Agressividade"] = df_sp["Agr_Inicio"] - df_sp["Agr_Fim"]
-
+        
                     n_valido = len(df_sp)
-
+        
                     if n_valido < 5:
                         # Barra de progresso visual
                         progresso = int((n_valido / 5) * 100)
@@ -2342,72 +2342,120 @@ else:
                             "este indicador de forma confiável."
                         )
                         st.progress(progresso)
-
+        
                     else:
                         res_sp = analise.calcular_spearman(df_sp, "Tempo_Min", "Delta_Agressividade")
-
+        
                         if res_sp.get("valido", False):
                             rho = res_sp["rho"]
                             p = res_sp["p_value"]
                             significativo = p < 0.05
-
+        
                             # --- Veredito em linguagem clara ---
                             if significativo and rho > 0:
                                 icone = "✅"
-                                titulo_veredito = "Sim — ocorrências mais longas tendem a terminar com menos agressividade"
+                                titulo_veredito = "Sim — ocorrências mais longas terminam com menos agressividade"
                                 cor_veredito = "success"
+                                # Explicação narrativa para leigos
+                                forca_correlacao = "muito forte" if abs(rho) > 0.7 else "forte" if abs(rho) > 0.5 else "moderada"
                                 explicacao = (
-                                    f"Há uma associação **positiva e estatisticamente confirmada** "
-                                    f"(Rho = {rho:.2f}): quanto maior a duração, maior a queda de agressividade observada."
+                                    f"**O que isso significa:** Existe uma **relação {forca_correlacao}** entre duração e queda de agressividade. "
+                                    f"Em outras palavras: quanto mais tempo a negociação leva, maior a chance de o causador terminar menos agressivo.\n\n"
+                                    f"**Por que temos certeza?** Analisamos {n_valido} ocorrências e o padrão encontrado é tão consistente "
+                                    f"que a probabilidade de ser mera coincidência é menor que 5% (p < 0,05). Isso significa que o padrão é **real**.\n\n"
+                                    f"**Métrica técnica:** Rho = {rho:.2f} (escala de -1 a +1, onde +1 = relação perfeita)."
                                 )
                             elif significativo and rho < 0:
                                 icone = "⚠️"
-                                titulo_veredito = "Atenção — ocorrências mais longas tendem a terminar com *mais* agressividade"
+                                titulo_veredito = "Atenção — ocorrências mais longas terminam COM MAIS agressividade"
                                 cor_veredito = "warning"
+                                forca_correlacao = "muito forte" if abs(rho) > 0.7 else "forte" if abs(rho) > 0.5 else "moderada"
                                 explicacao = (
-                                    f"A correlação é **negativa e estatisticamente confirmada** "
-                                    f"(Rho = {rho:.2f}): ocorrências prolongadas estão associadas a *menor* queda de agressividade. "
-                                    "Isso pode indicar desgaste ou escalada em casos arrastados."
+                                    f"**O que isso significa:** Existe uma **relação {forca_correlacao} inversa**. "
+                                    f"Ocorrências que demoram mais tempo tendem a terminar com o causador **mais agressivo**, não menos.\n\n"
+                                    f"**Por que isso preocupa?** Isso pode indicar que:\n"
+                                    f"  • O tempo prolongado está gerando **desgaste ou frustração** no causador\n"
+                                    f"  • A estratégia de longa negociação pode não estar sendo efetiva em alguns cenários\n"
+                                    f"  • Pode haver um ponto de saturação após o qual continuar negociando piora as coisas\n\n"
+                                    f"**Por que temos certeza?** O padrão foi encontrado em {n_valido} ocorrências e é improvável ser coincidência (p < 0,05).\n\n"
+                                    f"**Métrica técnica:** Rho = {rho:.2f} (negativo indica relação inversa)."
                                 )
                             elif not significativo and abs(rho) > 0.3:
                                 icone = "🔎"
-                                titulo_veredito = "Tendência visível, mas ainda sem confirmação estatística"
+                                titulo_veredito = "Há uma tendência, mas ainda é cedo para confirmar"
                                 cor_veredito = "info"
+                                direcao = "positiva (mais tempo = menos agressividade)" if rho > 0 else "negativa (mais tempo = mais agressividade)"
                                 explicacao = (
-                                    f"Existe uma tendência (Rho = {rho:.2f}), mas com os dados atuais "
-                                    f"(N={n_valido}) não é possível afirmar que não é coincidência (p = {p:.4f}). "
-                                    "Mais ocorrências devem confirmar ou refutar o padrão."
+                                    f"**O que observamos:** Existe uma tendência {direcao}, mas com {n_valido} ocorrências, "
+                                    f"não podemos ter certeza se é um padrão real ou coincidência.\n\n"
+                                    f"**Por que não temos certeza?** A probabilidade de isso ser acaso é {p*100:.1f}% — acima do limite de 5% que os estatísticos usam como referência.\n\n"
+                                    f"**O que fazer?** Colete mais registros de negociações. Com 10-15 ocorrências a mais, essa tendência pode se confirmar ou se desfazer.\n\n"
+                                    f"**Métrica técnica:** Rho = {rho:.2f}, p = {p:.4f} (p > 0,05 = não significativo ainda)."
                                 )
                             else:
                                 icone = "➖"
-                                titulo_veredito = "Ainda sem evidência clara de relação"
+                                titulo_veredito = "Nenhuma relação detectada entre duração e agressividade"
                                 cor_veredito = "info"
                                 explicacao = (
-                                    f"Nos dados atuais (N={n_valido}), a duração da ocorrência "
-                                    f"não está associada à variação de agressividade (Rho = {rho:.2f}, p = {p:.4f}). "
-                                    "Isso pode mudar com mais registros."
+                                    f"**O que isso significa:** A duração da ocorrência **não está associada** à queda de agressividade. "
+                                    f"Ocorrências longas terminam com queda de agressividade tão frequentemente quanto as curtas.\n\n"
+                                    f"**O que fazer?** Isso não é necessariamente ruim — significa que o tempo não é o fator determinante. "
+                                    f"Procure investigar outros fatores: técnicas usadas, perfil do causador, contexto da ocorrência, etc.\n\n"
+                                    f"**Por que temos certeza?** A relação encontrada (Rho = {rho:.2f}) é tão fraca que não conseguimos descartar coincidência (p = {p:.4f}).\n\n"
+                                    f"**Próximo passo:** Se quiser, rode os outros testes abaixo para explorar quais fatores **realmente** influenciam o desfecho."
                                 )
-
+        
                             # Exibe o veredito
                             getattr(st, cor_veredito)(f"{icone} **{titulo_veredito}**\n\n{explicacao}")
-
-                            # Detalhes técnicos colapsáveis
-                            if st.button("✔ Ver detalhes técnicos (Spearman)"):
-                                st.info(
-                                    f"- **Teste:** Correlação de Spearman (não-paramétrico — "
-                                    "adequado para escalas ordinais e distribuições assimétricas)\n"
-                                    f"- **Coeficiente Rho:** `{rho:.4f}` "
-                                    "*(varia de -1 a +1; próximo de 0 = sem relação)*\n"
-                                    f"- **P-Value:** `{p:.4f}` "
-                                    "*(abaixo de 0,05 = resultado improvável por acaso)*\n"
-                                    f"- **N válido:** `{n_valido}` ocorrências "
-                                    "*(apenas com agressividade registrada nos dois momentos e tempo preenchido)*\n"
-                                    "- **Nota:** valores 'Não Observado' foram excluídos do cálculo — "
-                                    "representam ausência de registro, não agressividade zero."
+        
+                            # Detalhes técnicos colapsáveis com botão
+                            if st.button("🔬 Ver detalhes técnicos (Spearman)", key="btn_spearman_details"):
+                                st.markdown(
+                                    f"""
+                                    **📊 O que é a Correlação de Spearman?**
+                                    
+                                    É um teste que mede se duas variáveis "andam juntas". Se uma sobe, a outra sobe? Se uma desce, a outra desce?
+                                    Responde à pergunta: "Essas duas coisas estão relacionadas?"
+                                    
+                                    ---
+                                    
+                                    **📈 Interpretando o Coeficiente Rho: `{rho:.4f}`**
+                                    
+                                    Rho varia de **-1 a +1**:
+                                    - **+1.0** = relação perfeita positiva (quando uma sobe, outra sempre sobe)
+                                    - **0.0** = sem relação (variam independentemente)
+                                    - **-1.0** = relação perfeita negativa (quando uma sobe, outra sempre desce)
+                                    - **Seu resultado: {rho:.4f}** = {'relação positiva' if rho > 0 else 'relação negativa' if rho < 0 else 'sem relação'}
+                                    
+                                    ---
+                                    
+                                    **🎯 P-Value: `{p:.4f}` — O teste de "É realmente um padrão?"**
+                                    
+                                    O p-value responde: "Se não houvesse nenhuma relação real, qual a chance de eu ter encontrado isso por coincidência?"
+                                    
+                                    - **p < 0.05** (5%) = PADRÃO REAL ✅ Improvável ser coincidência
+                                    - **p ≥ 0.05** = SEM CONFIRMAÇÃO Ainda pode ser coincidência
+                                    - **Seu resultado: p = {p:.4f}** = {'✅ Padrão real' if p < 0.05 else '⚠️ Pode ser coincidência'}
+                                    
+                                    ---
+                                    
+                                    **📋 Dados analisados**
+                                    - **N válido:** {n_valido} ocorrências (com agressividade registrada nos dois momentos e tempo preenchido)
+                                    - **Valores excluídos:** Registros com "Não Observado" foram removidos — representam ausência de registro, não agressividade zero
+                                    
+                                    ---
+                                    
+                                    **💡 Resumo técnico**
+                                    
+                                    Spearman é não-paramétrico, adequado para:
+                                    • Escalas ordinais (como agressividade: baixa, média, alta)
+                                    • Distribuições assimétricas ou não-normais
+                                    • Relações monotônicas (consistentes na direção, mas não necessariamente lineares)
+                                    """
                                 )
                         else:
                             st.warning(res_sp.get("msg", "Dados insuficientes para o cálculo (N < 3)."))
-
+        
                 st.markdown("</div>", unsafe_allow_html=True)
 
                 # ==========================================================
