@@ -513,7 +513,7 @@ def analisar_crise_direcional(texto, resolucao_tipo="desconhecida"):
     resultados = sorted(resultados, key=lambda x: x["score"], reverse=True)
 
     # Normalização por densidade textual
-    risco_observado = round((risco_bruto / max(total_tokens, 1)) * 100, 2)
+    risco_observado = round((risco_bruto / carga_maxima_esperada) * 100, 2)
     abertura_observada = round((protecao_bruto / max(total_tokens, 1)) * 100, 2)
     raiz_observada = round((contexto_bruto / max(total_tokens, 1)) * 100, 2)
 
@@ -891,6 +891,29 @@ def gerar_radar_comparativo(texto_causador, texto_negociador, texto_negociador_s
         # MÉTRICA COMPLEMENTAR 1: Efetividade do Negociador
         # = quanto conseguiu reduzir o risco relativo (delta negativo = efetivo)
         efetividade = round(abs(delta_risco) if delta_risco < 0 else -delta_risco, 2)
+        efetividade_risco = delta_risco  # Quanto mudou o risco (-/+)
+        desescalada = 1 if delta_risco < 0 else 0  # Escalou ou desescalou?
+        tempo_contencao = duracao_negociacao  # Quanto tempo levou?
+        resultado_final = "resolvido|contido|escalado"  # Classificação manual
+
+        leitura_efetividade = f"""
+        Efetividade do Negociador: {efetividade:.2f}
+
+        ANÁLISE CONTEXTUAL:
+        - Delta de risco: {delta_risco:+.2f} (negativo = melhorou)
+        - Direção: {'Desescalada' if delta_risco < 0 else 'Escalada'}
+        - Tempo de contenção: {tempo_contencao} minutos
+        - Resultado: {resultado_final}
+
+        ⚠️ INTERPRETAÇÃO:
+        - Efetividade NEGATIVA NÃO significa "fracasso total"
+        Pode significar: "Validação sem resolução" (padrão válido)
+        - Efetividade ZERO NÃO significa "inefetivo"
+        Pode significar: "Contenção bem-sucedida" (sucesso tático)
+
+        RECOMENDAÇÃO:
+        Sempre triangule com avaliação qualitativa humana.
+        """
         
         # ✅ MÉTRICA COMPLEMENTAR 2: Rapport Alcançado
         # = sincronização em 3 dimensões: abertura + convergência + validação
@@ -919,7 +942,24 @@ def gerar_radar_comparativo(texto_causador, texto_negociador, texto_negociador_s
                     score_validacao = score_abertura  # Simplicado: abertura ≈ validação
                 
                 # Média ponderada:
-                rapport = (score_abertura * 0.4 + score_convergencia * 0.4 + score_validacao * 0.2)
+                rapport = 0.4*abertura + 0.4*convergência + 0.2*validacao
+
+                leitura_rapport = f"""
+                Rapport (Sincronização Temática): {rapport}/10
+
+                ⚠️ LIMITAÇÕES:
+                - Baseado APENAS em análise de palavras
+                - Não detecta: tom de voz, sarcasmo, ironia
+                - Não detecta: sincronização temporal (concordância de pausas)
+                - Não detecta: linguagem corporal
+                - Mede "aparência de rapport", não "rapport real"
+
+                RECOMENDAÇÃO:
+                - Rapport < 3: Não há sincronização verbal
+                - Rapport 3-6: Sincronização parcial (validar com análise humana)
+                - Rapport 6-8: Sincronização forte (PODE ser verdadeira ou performática)
+                - Rapport 8+: Sincronização muito forte (validar com análise humana)
+                """
                 
                 return round(min(10, max(0, rapport)), 2)  # Clamped 0-10
             except Exception as e:
