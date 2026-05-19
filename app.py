@@ -1501,7 +1501,7 @@ else:
             </div>
             """, unsafe_allow_html=True)
 
-            if st.button("📊 Gerar Análise de Similitude"):
+            if st.button("✔️ Gerar Análise de Similitude"):
                 col_causador = "TRANSCRIÇÃO DO CAUSADOR"
                 col_negociador = "TRANSCRIÇÃO DO NEGOCIADOR PRINCIPAL"
 
@@ -2348,8 +2348,9 @@ else:
 
                     else:
                         st.warning("⚠️ Nenhuma transcrição disponível para análise")
-
-                                
+                        
+                        </div>
+                                                        
                     # ===== PRÓXIMO BOTÃO (FORA DA TAB) =====
             if st.button("✔ 3. GERAR ANALYTICS E EXPORTAR ANÁLISE (PDF)"):
                 with st.spinner("Compilando dados técnicos, consultando IA e desenhando PDF..."):
