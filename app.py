@@ -2225,11 +2225,11 @@ else:
                         except Exception as e:
                             st.error(f"Erro ao gerar radar: {str(e)[:80]}")
 
-                # --- TAB 7: ESTADO DE CRISE ---
+                # --- TAB 7: ESTADO DO CAUSADOR ---
                 with tab_ng7:
                     st.markdown("""
                     <div class='info-card'>
-                    <h4 style='color:#FFD700; margin-top:0;'>🚨 ESTADO DE CRISE (APA)</h4>
+                    <h4 style='color:#FFD700; margin-top:0;'>✔️ ESTADO DO CAUSADOR (APA)</h5>
                     <p style='color:#ccc; font-size:0.9rem;'>
                     Análise estruturada do estado emocional/comportamental do causador.
                     </p>
