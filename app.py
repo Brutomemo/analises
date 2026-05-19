@@ -2213,8 +2213,8 @@ else:
 
                                 st.markdown("""
                                 <div style='background:rgba(255,68,68,0.1);padding:15px;border-radius:10px;border:1px solid #ef4444;margin:20px 0;'>
-                                <h4 style='color:#ef4444;margin-top:0;'>⚠️ PARADOXO: Similitude vs. Convergência</h4>
-                                <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
+                                <h5 style='color:#ef4444;margin-top:0;'>⚠️ PARADOXO: Similitude vs. Convergência</h5>
+                                <p style='font-size:0.92rem;color:#FFD700;line-height:1.6;'>
                                 O <strong>Grafo de Espelhamento</strong> mostra <strong>palavras compartilhadas</strong>.<br>
                                 O <strong>Radar de Convergência</strong> mostra <strong>temas/universos mentais</strong>.<br><br>
                                 <strong>Similitude alta + Convergência baixa</strong> = Falsa conexão (repetem palavras mas não estão sincronizados)
