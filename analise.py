@@ -1032,6 +1032,367 @@ def gerar_treemap(entrada):
 # ============================================================
 # 6. RADAR COMPARATIVO — CORRIGIDO
 # ============================================================
+# ============================================================
+# 6. RADAR COMPARATIVO — COM EFETIVIDADE TÁTICA GATE/PMESP
+# ============================================================
+
+def calcular_efetividade_negociador(
+    delta_risco,
+    resolucao_tipo,
+    tempo_negociacao_real=0,
+    tempo_negociacao_tatica=0
+):
+    """
+    Calcula efetividade do negociador — modelo GATE/PMESP.
+
+    REGRAS:
+    - "Negociação Real"   → usa delta_risco + tempo_real
+    - "Negociação Tática" → usa APENAS tempo_tatico (tempo_real ignorado)
+    - "Intervenção"       → efetividade N/A (negociador não participou)
+
+    Retorna: (score float 0-10 ou None, leitura str, detalhamento dict)
+    """
+
+    detalhamento = {
+        "componente_verbal":    0.0,
+        "componente_tatico":    0.0,
+        "componente_resultado": 0.0,
+        "penalidade":           0.0,
+        "score_final":          0.0,
+        "interpretacao":        ""
+    }
+
+    # ── INTERVENÇÃO: negociador não participou ───────────────
+    if resolucao_tipo == "Intervenção":
+        leitura = "— Ocorrência resolvida por intervenção. Efetividade do negociador não se aplica."
+        detalhamento["interpretacao"] = leitura
+        detalhamento["score_final"]   = None
+        return None, leitura, detalhamento
+
+    # ── NEGOCIAÇÃO TÁTICA: apenas tempo tático importa ───────
+    if resolucao_tipo == "Negociação Tática":
+        # Escala: 0 min = 0 | 15 min = 5.0 | 30 min+ = 10.0
+        score = min(10.0, (tempo_negociacao_tatica / 30.0) * 10.0)
+        score = round(score, 2)
+
+        if score >= 8:
+            leitura = (
+                f"✅ Alta participação tática ({tempo_negociacao_tatica} min). "
+                f"Negociador foi peça-chave na resolução — comprou tempo crítico para a ação."
+            )
+        elif score >= 5:
+            leitura = (
+                f"🔵 Participação tática moderada ({tempo_negociacao_tatica} min). "
+                f"Negociador contribuiu para a janela de resolução tática."
+            )
+        elif score >= 2:
+            leitura = (
+                f"⚠️ Participação tática baixa ({tempo_negociacao_tatica} min). "
+                f"Negociador comprou pouco tempo para a ação tática."
+            )
+        else:
+            leitura = (
+                f"❌ Participação tática mínima ({tempo_negociacao_tatica} min). "
+                f"Tempo de apoio insuficiente para impacto relevante."
+            )
+
+        detalhamento["componente_tatico"] = score
+        detalhamento["score_final"]       = score
+        detalhamento["interpretacao"]     = leitura
+        return score, leitura, detalhamento
+
+    # ── NEGOCIAÇÃO REAL: delta_risco + tempo real ─────────────
+    if resolucao_tipo == "Negociação Real":
+
+        # Componente 1: Redução de risco verbal (0-5 pts)
+        if delta_risco < 0:
+            comp_verbal = min(5.0, abs(delta_risco) * 0.5)
+        elif delta_risco == 0:
+            comp_verbal = 2.5
+        else:
+            comp_verbal = max(0.0, 2.5 - delta_risco * 0.3)
+
+        # Componente 2: Tempo de negociação real (0-3 pts)
+        comp_tempo = min(3.0, (tempo_negociacao_real / 60.0) * 3.0)
+
+        # Componente 3: Resultado fixo (resolveu verbalmente)
+        comp_resultado = 2.0
+
+        # Penalidade: risco subiu muito
+        penalidade = 0.0
+        if delta_risco > 5:
+            penalidade = min(2.0, delta_risco * 0.2)
+
+        score = round(
+            min(10.0, max(0.0,
+                comp_verbal + comp_tempo + comp_resultado - penalidade
+            )), 2
+        )
+
+        if score >= 8:
+            leitura = (
+                f"✅ Negociação real muito efetiva (score {score:.1f}). "
+                f"Causador cedeu verbalmente após {tempo_negociacao_real} min."
+            )
+        elif score >= 6:
+            leitura = (
+                f"🔵 Negociação real efetiva (score {score:.1f}). "
+                f"Boa condução em {tempo_negociacao_real} min com redução de tensão."
+            )
+        elif score >= 4:
+            leitura = (
+                f"⚠️ Negociação real moderada (score {score:.1f}). "
+                f"Resolução verbal alcançada mas com dificuldades."
+            )
+        else:
+            leitura = (
+                f"❌ Negociação real com baixa efetividade (score {score:.1f}). "
+                f"Resolução verbal obtida mas risco verbal aumentou no processo."
+            )
+
+        detalhamento["componente_verbal"]    = round(comp_verbal,    2)
+        detalhamento["componente_tatico"]    = 0.0
+        detalhamento["componente_resultado"] = round(comp_resultado, 2)
+        detalhamento["penalidade"]           = round(penalidade,     2)
+        detalhamento["score_final"]          = score
+        detalhamento["interpretacao"]        = leitura
+        return score, leitura, detalhamento
+
+    # ── FALLBACK ──────────────────────────────────────────────
+    # resolucao desconhecida: usa lógica simples de delta_risco
+    efetividade_fallback = round(abs(delta_risco) if delta_risco < 0 else -delta_risco, 2)
+    if efetividade_fallback > 5:
+        leitura = "✅ Atuação muito efetiva em reduzir carga de risco."
+    elif efetividade_fallback > 2:
+        leitura = "🔵 Efetividade moderada em gestão de risco."
+    else:
+        leitura = "⚠️ Atuação pouco efetiva ou sem redução de risco."
+    detalhamento["score_final"]       = efetividade_fallback
+    detalhamento["interpretacao"]     = leitura
+    return efetividade_fallback, leitura, detalhamento
+
+
+def gerar_radar_comparativo(
+    texto_causador,
+    texto_negociador,
+    texto_negociador_sec=None,
+    resolucao_tipo="desconhecida",
+    tempo_negociacao_real=0,
+    tempo_negociacao_tatica=0
+):
+    """
+    Gera radar comparativo entre causador e negociador(es).
+    Inclui métricas complementares: Efetividade, Rapport, Delta de Progresso.
+    """
+    analise_c  = analisar_crise_direcional(texto_causador,      resolucao_tipo="desconhecida")
+    analise_np = analisar_crise_direcional(texto_negociador,     resolucao_tipo="desconhecida")
+    analise_ns = analisar_crise_direcional(texto_negociador_sec, resolucao_tipo="desconhecida") if texto_negociador_sec else None
+
+    s_c  = analise_c.get("sumario")
+    s_np = analise_np.get("sumario")
+    s_ns = analise_ns.get("sumario") if analise_ns else None
+
+    vals_c = [
+        s_c.get("risco_observado",    0.0),
+        s_c.get("abertura_observada", 0.0),
+        s_c.get("raiz_observada",     0.0),
+        s_c.get("intensidade_index",  0.0),
+        s_c.get("volatilidade_index", 0.0),
+    ]
+    vals_np = [
+        s_np.get("risco_observado",    0.0),
+        s_np.get("abertura_observada", 0.0),
+        s_np.get("raiz_observada",     0.0),
+        s_np.get("intensidade_index",  0.0),
+        s_np.get("volatilidade_index", 0.0),
+    ]
+    vals_ns = [
+        s_ns.get("risco_observado",    0.0),
+        s_ns.get("abertura_observada", 0.0),
+        s_ns.get("raiz_observada",     0.0),
+        s_ns.get("intensidade_index",  0.0),
+        s_ns.get("volatilidade_index", 0.0),
+    ] if s_ns else None
+
+    categorias = [
+        "Risco Observado",
+        "Abertura Observada",
+        "Raiz Observada",
+        "Intensidade",
+        "Volatilidade",
+    ]
+
+    convergencia_vazia = {
+        "delta_risco":            None,
+        "delta_abertura":         None,
+        "efetividade_negociador": None,
+        "rapport_alcancado":      None,
+        "delta_progresso":        None,
+        "espelhamento_forma":     None,
+        "espelhamento":           None,
+        "leitura_risco":          None,
+        "leitura_abertura":       None,
+        "leitura_espelhamento":   None,
+        "leitura_efetividade":    None,
+        "falsa_conexao":          None,
+        "resolucao_tipo":         resolucao_tipo,
+        "debug_msg":              None,
+    }
+
+    try:
+        fig = go.Figure()
+
+        fig.add_trace(go.Scatterpolar(
+            r=vals_c, theta=categorias,
+            fill="toself", name="Causador",
+            line=dict(color="#ef4444", width=2),
+            fillcolor="rgba(239,68,68,0.12)"
+        ))
+        fig.add_trace(go.Scatterpolar(
+            r=vals_np, theta=categorias,
+            fill="toself", name="Neg. Principal",
+            line=dict(color="#10b981", width=2),
+            fillcolor="rgba(16,185,129,0.12)"
+        ))
+        if vals_ns:
+            fig.add_trace(go.Scatterpolar(
+                r=vals_ns, theta=categorias,
+                fill="toself", name="Neg. Secundário",
+                line=dict(color="#3b82f6", width=2),
+                fillcolor="rgba(59,130,246,0.12)"
+            ))
+
+        fig.update_layout(
+            polar=dict(
+                bgcolor="rgba(0,0,0,0)",
+                radialaxis=dict(
+                    visible=True, showticklabels=True,
+                    tickfont=dict(color="#aaa", size=10),
+                    gridcolor="#333", linecolor="#444"
+                ),
+                angularaxis=dict(
+                    tickfont=dict(color="#FFD700", size=12),
+                    gridcolor="#333", linecolor="#444"
+                )
+            ),
+            paper_bgcolor="rgba(0,0,0,0)",
+            plot_bgcolor="rgba(0,0,0,0)",
+            font=dict(color="#fff"),
+            legend=dict(
+                font=dict(color="#fff", size=12),
+                bgcolor="rgba(0,0,0,0.4)", bordercolor="#444"
+            ),
+            margin=dict(t=30, b=30, l=40, r=40),
+            height=420
+        )
+
+        convergencia = dict(convergencia_vazia)
+
+        if s_c is None or s_np is None:
+            convergencia["debug_msg"] = "Dados insuficientes."
+            return fig, convergencia
+
+        # ── Deltas ──────────────────────────────────────────────────────────
+        delta_risco    = round(s_c.get("risco_observado", 0.0)     - s_np.get("risco_observado", 0.0),   2)
+        delta_abertura = round(s_np.get("abertura_observada", 0.0) - s_c.get("abertura_observada", 0.0), 2)
+
+        # ── Efetividade — modelo GATE/PMESP ─────────────────────────────────
+        efetividade, leitura_efetividade, _ = calcular_efetividade_negociador(
+            delta_risco             = delta_risco,
+            resolucao_tipo          = resolucao_tipo,
+            tempo_negociacao_real   = tempo_negociacao_real,
+            tempo_negociacao_tatica = tempo_negociacao_tatica
+        )
+
+        # ── Espelhamento (cosine similarity) — calculado ANTES do rapport ───
+        def _normalizar_vetor(v):
+            arr   = np.array(v, dtype=float)
+            norma = np.linalg.norm(arr)
+            return arr if norma == 0 else arr / norma
+
+        v_c_norm  = _normalizar_vetor(vals_c)
+        v_np_norm = _normalizar_vetor(vals_np)
+
+        espelhamento_forma = 0.0
+        try:
+            if np.linalg.norm(v_c_norm) != 0 and np.linalg.norm(v_np_norm) != 0:
+                espelhamento_forma = float(
+                    cosine_similarity([v_c_norm], [v_np_norm])[0][0]
+                )
+        except Exception:
+            espelhamento_forma = 0.0
+
+        # ── Rapport ─────────────────────────────────────────────────────────
+        def calcular_rapport_real(s_c, s_np):
+            try:
+                diff_ab            = abs(s_np.get("abertura_observada", 0.0) - s_c.get("abertura_observada", 0.0))
+                score_abertura     = max(0.0, 10.0 - diff_ab)
+                score_convergencia = min(10.0, espelhamento_forma * 10)
+                score_validacao    = score_abertura  # fallback: abertura ≈ validação
+
+                rapport_calc = (
+                    0.4 * score_abertura +
+                    0.4 * score_convergencia +
+                    0.2 * score_validacao
+                )
+                return round(min(10.0, max(0.0, rapport_calc)), 2)
+            except Exception:
+                diff_ab = abs(s_np.get("abertura_observada", 0.0) - s_c.get("abertura_observada", 0.0))
+                return round(max(0.0, 10.0 - diff_ab), 2)
+
+        rapport         = calcular_rapport_real(s_c, s_np)
+        delta_progresso = round(delta_risco + delta_abertura, 2)
+
+        # ── Preencher convergencia ───────────────────────────────────────────
+        convergencia["delta_risco"]            = delta_risco
+        convergencia["delta_abertura"]         = delta_abertura
+        convergencia["efetividade_negociador"] = efetividade
+        convergencia["rapport_alcancado"]      = rapport
+        convergencia["delta_progresso"]        = delta_progresso
+        convergencia["espelhamento_forma"]     = round(float(espelhamento_forma), 2)
+        convergencia["espelhamento"]           = convergencia["espelhamento_forma"]
+        convergencia["resolucao_tipo"]         = resolucao_tipo
+
+        # ── Leituras ─────────────────────────────────────────────────────────
+        if delta_risco > 3:
+            leitura_risco = "⚠️ Causador com carga de risco significativamente maior."
+        elif delta_risco < -3:
+            leitura_risco = "✅ Negociador mantém risco equilibrado ou menor."
+        else:
+            leitura_risco = "🔵 Carga de risco equilibrada."
+
+        if delta_abertura > 3:
+            leitura_abertura = "✅ Negociador puxando ativamente para desescalada."
+        elif delta_abertura < -3:
+            leitura_abertura = "⚠️ Causador com mais sinais protetivos que negociador."
+        else:
+            leitura_abertura = "🔵 Linguagem protetiva similar entre os dois."
+
+        if espelhamento_forma >= 0.85:
+            leitura_espelhamento = "🔁 Alto espelhamento temático — forte convergência."
+        elif espelhamento_forma >= 0.65:
+            leitura_espelhamento = "🔁 Espelhamento moderado — convergência parcial."
+        else:
+            leitura_espelhamento = "⚡ Baixo espelhamento — padrões semânticos distintos."
+
+        convergencia["leitura_risco"]        = leitura_risco
+        convergencia["leitura_abertura"]     = leitura_abertura
+        convergencia["leitura_efetividade"]  = leitura_efetividade
+        convergencia["leitura_espelhamento"] = leitura_espelhamento
+
+        return fig, convergencia
+
+    except Exception as err:
+        fig_err = go.Figure()
+        fig_err.update_layout(
+            title="Erro ao gerar radar",
+            paper_bgcolor="rgba(0,0,0,0)",
+            plot_bgcolor="rgba(0,0,0,0)",
+            font=dict(color="#fff")
+        )
+        convergencia_vazia["debug_msg"] = f"Erro: {str(err)}"
+        return fig_err, convergencia_vazia
+
 
 def gerar_radar_comparativo(texto_causador, texto_negociador, texto_negociador_sec=None):
     """
@@ -1320,6 +1681,141 @@ def detectar_falsa_conexao(similitude_percent, convergencia_percent):
             "mensagem": None,
             "recomendacao": None
         }
+    
+def calcular_efetividade_negociador(
+delta_risco,
+resolucao_tipo,
+tempo_negociacao_real=0,
+tempo_negociacao_tatica=0
+):
+    """
+    Calcula efetividade do negociador — modelo GATE/PMESP.
+
+    REGRAS:
+    - "Negociação Real"   → usa delta_risco + tempo_real
+    - "Negociação Tática" → usa APENAS tempo_tatico (tempo_real ignorado)
+    - "Intervenção"       → efetividade N/A (negociador não participou)
+
+    Retorna: (score float 0-10, leitura str, detalhamento dict)
+    """
+
+    detalhamento = {
+        "componente_verbal":    0.0,
+        "componente_tatico":    0.0,
+        "componente_resultado": 0.0,
+        "penalidade":           0.0,
+        "score_final":          0.0,
+        "interpretacao":        ""
+    }
+
+    # ── INTERVENÇÃO: negociador não participou ───────────────
+    if resolucao_tipo == "Intervenção":
+        leitura = "— Ocorrência resolvida por intervenção. Efetividade do negociador não se aplica."
+        detalhamento["interpretacao"] = leitura
+        detalhamento["score_final"]   = None
+        return None, leitura, detalhamento
+
+    # ── NEGOCIAÇÃO TÁTICA: apenas tempo tático importa ───────
+    if resolucao_tipo == "Negociação Tática":
+        # Quanto mais tempo comprando = mais participou
+        # Escala: 0 min = 0 | 15 min = 5.0 | 30 min+ = 10.0
+        score = min(10.0, (tempo_negociacao_tatica / 30.0) * 10.0)
+        score = round(score, 2)
+
+        if score >= 8:
+            leitura = (
+                f"✅ Alta participação tática ({tempo_negociacao_tatica} min). "
+                f"Negociador foi peça-chave na resolução — comprou tempo crítico para a ação."
+            )
+        elif score >= 5:
+            leitura = (
+                f"🔵 Participação tática moderada ({tempo_negociacao_tatica} min). "
+                f"Negociador contribuiu para a janela de resolução tática."
+            )
+        elif score >= 2:
+            leitura = (
+                f"⚠️ Participação tática baixa ({tempo_negociacao_tatica} min). "
+                f"Negociador comprou pouco tempo para a ação tática."
+            )
+        else:
+            leitura = (
+                f"❌ Participação tática mínima ({tempo_negociacao_tatica} min). "
+                f"Tempo de apoio insuficiente para impacto relevante."
+            )
+
+        detalhamento["componente_tatico"]  = score
+        detalhamento["score_final"]        = score
+        detalhamento["interpretacao"]      = leitura
+        return score, leitura, detalhamento
+
+    # ── NEGOCIAÇÃO REAL: delta_risco + tempo real ─────────────
+    if resolucao_tipo == "Negociação Real":
+
+        # COMPONENTE 1: Redução de risco verbal (0-5 pts)
+        if delta_risco < 0:
+            # Risco caiu = efetivo
+            comp_verbal = min(5.0, abs(delta_risco) * 0.5)
+        elif delta_risco == 0:
+            # Risco estável = neutro (conteve)
+            comp_verbal = 2.5
+        else:
+            # Risco subiu = inefetivo
+            comp_verbal = max(0.0, 2.5 - delta_risco * 0.3)
+
+        # COMPONENTE 2: Tempo de negociação real (0-3 pts)
+        # Mais tempo = mais persistência = bônus
+        # 0 min = 0 | 30 min = 1.5 | 60 min+ = 3.0
+        comp_tempo = min(3.0, (tempo_negociacao_real / 60.0) * 3.0)
+
+        # COMPONENTE 3: Resultado (0-2 pts)
+        # Negociação Real que resolveu = bônus fixo
+        comp_resultado = 2.0
+
+        # PENALIDADE: risco subiu muito em negociação real
+        penalidade = 0.0
+        if delta_risco > 5:
+            penalidade = min(2.0, delta_risco * 0.2)
+
+        score = round(
+            min(10.0, max(0.0,
+                comp_verbal + comp_tempo + comp_resultado - penalidade
+            )), 2
+        )
+
+        if score >= 8:
+            leitura = (
+                f"✅ Negociação real muito efetiva (score {score:.1f}). "
+                f"Causador cedeu verbalmente após {tempo_negociacao_real} min de negociação."
+            )
+        elif score >= 6:
+            leitura = (
+                f"🔵 Negociação real efetiva (score {score:.1f}). "
+                f"Boa condução em {tempo_negociacao_real} min com redução de tensão."
+            )
+        elif score >= 4:
+            leitura = (
+                f"⚠️ Negociação real moderada (score {score:.1f}). "
+                f"Resolução verbal alcançada mas com dificuldades."
+            )
+        else:
+            leitura = (
+                f"❌ Negociação real com baixa efetividade (score {score:.1f}). "
+                f"Resolução verbal obtida mas o risco verbal aumentou no processo."
+            )
+
+        detalhamento["componente_verbal"]    = round(comp_verbal,    2)
+        detalhamento["componente_tatico"]    = 0.0
+        detalhamento["componente_resultado"] = round(comp_resultado, 2)
+        detalhamento["penalidade"]           = round(penalidade,     2)
+        detalhamento["score_final"]          = score
+        detalhamento["interpretacao"]        = leitura
+        return score, leitura, detalhamento
+
+    # ── FALLBACK: resolução não identificada ──────────────────
+    leitura = "— Tipo de resolução não identificado. Efetividade não calculada."
+    detalhamento["interpretacao"] = leitura
+    detalhamento["score_final"]   = None
+    return None, leitura, detalhamento
 
 def calcular_spearman(df_historico, col_x, col_y):
     df_limpo = df_historico[[col_x, col_y]].dropna().copy()
