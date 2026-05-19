@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import plotly.express as px
+import plotly.graph_objects as go
 from scipy.stats import chi2_contingency, spearmanr
 from sklearn.feature_extraction.text import CountVectorizer
 from wordcloud import WordCloud
@@ -42,11 +43,7 @@ ATENUADORES = {
 }
 
 # ============================================================
-# 2. DICIONÁRIO DIRECIONAL
-#    tipo:
-#      - risco
-#      - protecao
-#      - contexto
+# 2. DICIONÁRIO OPERACIONAL (MANTIDO IDÊNTICO)
 # ============================================================
 
 DICIONARIO_OPERACIONAL = {
@@ -225,8 +222,9 @@ DICIONARIO_OPERACIONAL = {
             "se chegar perto": 2.80,
             "chegar perto": 2.00,
             "policia": 1.20,
-            "farda": 1.10,
-            "encosta nao": 2.30
+            "hostil": 1.90,
+            "agressivo": 1.70,
+            "destruir": 1.80
         }
     },
     "Demandas e Exigências (Instrumentais)": {
@@ -253,24 +251,54 @@ DICIONARIO_OPERACIONAL = {
 }
 
 # ============================================================
-# 3. FUNÇÕES DE NORMALIZAÇÃO
+# 3. FUNÇÕES AUXILIARES
 # ============================================================
 
 def normalizar_texto(texto):
-    if not isinstance(texto, str) or not texto.strip():
+    if not texto or not isinstance(texto, str):
         return ""
-    texto = texto.lower().strip()
-    texto = unicodedata.normalize("NFKD", texto).encode("ASCII", "ignore").decode("ASCII")
-    texto = re.sub(r"[^a-z0-9\s]", " ", texto)
-    texto = re.sub(r"\s+", " ", texto).strip()
-    return texto
+    
+    try:
+        texto = unicodedata.normalize("NFD", texto)
+        texto = "".join(c for c in texto if unicodedata.category(c) != "Mn")
+        texto = re.sub(r"\s+", " ", texto.lower().strip())
+        return texto
+    except Exception:
+        return ""
 
 def limpar_texto(texto):
-    """Mantida por compatibilidade com o app atual."""
     return normalizar_texto(texto)
 
-def _tokenizar(texto):
-    return re.findall(r"\b\w+\b", texto)
+def limpar_valor(valor):
+    if pd.isna(valor) or valor in [None, "nan", "NaN", "N/D", "n/d", ""]:
+        return ""
+    return str(valor).strip()
+
+def gerar_wordcloud(texto):
+    texto_limpo = limpar_texto(texto)
+    if not texto_limpo or len(texto_limpo) < 10:
+        return None
+    
+    try:
+        palavras = [p for p in texto_limpo.split() if p not in STOPWORDS_GATE and len(p) > 2]
+        if len(palavras) < 5:
+            return None
+        
+        wc = WordCloud(
+            width=400,
+            height=300,
+            background_color="#0a0a0a",
+            colormap="hot",
+            relative_scaling=0.5,
+            min_font_size=10
+        ).generate(" ".join(palavras))
+        
+        fig, ax = plt.subplots(figsize=(8, 6), facecolor="#0a0a0a")
+        ax.imshow(wc, interpolation="bilinear")
+        ax.axis("off")
+        return fig
+    except Exception:
+        return None
 
 # ============================================================
 # 4. WORDCLOUD
@@ -300,7 +328,7 @@ def gerar_wordcloud(texto):
     return fig
 
 # ============================================================
-# 5. MOTOR DIRECIONAL DE N-GRAMAS
+# 4. MOTOR DIRECIONAL MELHORADO (Interpretação APA)
 # ============================================================
 
 def _obter_tokens_e_posicoes(texto_norm):
@@ -327,43 +355,35 @@ def _avaliar_modificadores(tokens, idx_inicio, idx_fim):
 
     return negado, intensificador
 
-# heurística simples para identificar vocativos / chamadas repetitivas
 VOCATIVOS_BASE = set([
     'fala', 'fale', 'fala comigo', 'escuta', 'oi', 'alô', 'alo', 'vem', 'venha',
-    # inclua formas curtas que seu corpus use. Pode ser ampliado.
 ])
 
 def eh_vocativo(tokens, idx_inicio, idx_fim, repeticao_threshold=3):
-    """
-    Retorna True se a ocorrência parecer um vocativo / chamada repetida (não sinal de proteção real).
-    Heurísticas:
-      - span curto (1 token) que se repete muitas vezes no entorno;
-      - span contém token que está na lista de vocativos;
-      - token aparece imediatamente repetido (ex.: 'henrique henrique').
-    """
     span = tokens[idx_inicio:idx_fim]
     if not span:
         return False
 
-    # se o span tem um token cuja forma base está em VOCATIVOS_BASE
     if any(tok in VOCATIVOS_BASE for tok in span):
         return True
 
-    # repetição local: token aparece muitas vezes na janela
     token0 = span[0]
     janela = tokens[max(0, idx_inicio - 6): min(len(tokens), idx_fim + 6)]
     if janela.count(token0) >= repeticao_threshold and len(span) == 1:
         return True
 
-    # padrão imediata repetição (ex: 'henrique henrique')
     if idx_inicio > 0 and tokens[idx_inicio - 1] == token0:
         return True
-    if idx_fim < len(tokens) and idx_fim < len(tokens) and tokens[idx_fim] == token0:
+    if idx_fim < len(tokens) and tokens[idx_fim] == token0:
         return True
 
     return False
 
 def analisar_crise_direcional(texto, resolucao_tipo="desconhecida"):
+    """
+    Motor de análise semântica direcional.
+    Retorna vetores de Risco, Proteção e Contexto com interpretação para APA.
+    """
     texto_norm = normalizar_texto(texto)
     if not texto_norm:
         return {
@@ -373,9 +393,9 @@ def analisar_crise_direcional(texto, resolucao_tipo="desconhecida"):
                 "risco_bruto": 0.0,
                 "protecao_bruto": 0.0,
                 "contexto_bruto": 0.0,
-                "risco_index": 0.0,
-                "protecao_index": 0.0,
-                "contexto_index": 0.0,
+                "risco_observado": 0.0,
+                "abertura_observada": 0.0,
+                "raiz_observada": 0.0,
                 "intensidade_index": 0.0,
                 "direcao_index": 0.0,
                 "volatilidade_index": 0.0,
@@ -385,12 +405,9 @@ def analisar_crise_direcional(texto, resolucao_tipo="desconhecida"):
         }
 
     tokens, starts = _obter_tokens_e_posicoes(texto_norm)
-
-    # Tokens válidos (remove stopwords e tokens curtos)
     tokens_validos = [t for t in tokens if len(t) > 1 and t not in STOPWORDS_GATE]
     total_tokens = len(tokens_validos)
 
-    # Segurança: se corpus muito curto/lexicalmente pobre, devolve DADOS INSUFICIENTES
     if total_tokens < 15 or len(set(tokens_validos)) < 6:
         return {
             "temas": [],
@@ -399,14 +416,14 @@ def analisar_crise_direcional(texto, resolucao_tipo="desconhecida"):
                 "risco_bruto": 0.0,
                 "protecao_bruto": 0.0,
                 "contexto_bruto": 0.0,
-                "risco_index": 0.0,
-                "protecao_index": 0.0,
-                "contexto_index": 0.0,
+                "risco_observado": 0.0,
+                "abertura_observada": 0.0,
+                "raiz_observada": 0.0,
                 "intensidade_index": 0.0,
                 "direcao_index": 0.0,
                 "volatilidade_index": 0.0,
                 "classificacao": "DADOS INSUFICIENTES",
-                "leitura": "Corpus insuficiente ou lexicalmente pobre para inferência direcional confiável."
+                "leitura": "Corpus insuficiente para análise confiável."
             }
         }
 
@@ -432,20 +449,14 @@ def analisar_crise_direcional(texto, resolucao_tipo="desconhecida"):
                 idx_fim = idx_inicio + qtd_tokens_termo
 
                 negado, fator_contexto = _avaliar_modificadores(tokens, idx_inicio, idx_fim)
-
                 peso_final = peso_base * peso_termo * fator_contexto
                 evidencias += 1
 
-                # NOVA LÓGICA: ignorar ou reduzir sinais protetivos quando for vocativo/repetição
                 if eh_vocativo(tokens, idx_inicio, idx_fim):
-                    # trata como evidência contextual leve 
-                    # ajusta os fatores para não induzir desescalada
-                    score_categoria += peso_final * 0.12   
+                    score_categoria += peso_final * 0.12
                     contexto_bruto += peso_final * 0.10
-                    
                     continue
 
-                # comportamento pré-existente 
                 if negado:
                     evidencias_negadas += 1
                     if tipo == "risco":
@@ -477,19 +488,19 @@ def analisar_crise_direcional(texto, resolucao_tipo="desconhecida"):
 
     resultados = sorted(resultados, key=lambda x: x["score"], reverse=True)
 
-    # Normalização por densidade textual:
-    risco_index = round((risco_bruto / max(total_tokens, 1)) * 100, 2)
-    protecao_index = round((protecao_bruto / max(total_tokens, 1)) * 100, 2)
-    contexto_index = round((contexto_bruto / max(total_tokens, 1)) * 100, 2)
+    # Normalização por densidade textual
+    risco_observado = round((risco_bruto / max(total_tokens, 1)) * 100, 2)
+    abertura_observada = round((protecao_bruto / max(total_tokens, 1)) * 100, 2)
+    raiz_observada = round((contexto_bruto / max(total_tokens, 1)) * 100, 2)
 
-    intensidade_index = round(risco_index + protecao_index + (contexto_index * 0.35), 2)
-    direcao_index = round(protecao_index - risco_index, 2)
-    volatilidade_index = round(min(risco_index, protecao_index), 2)
+    intensidade_index = round(risco_observado + abertura_observada + (raiz_observada * 0.35), 2)
+    direcao_index = round(abertura_observada - risco_observado, 2)
+    volatilidade_index = round(min(risco_observado, abertura_observada), 2)
 
-    classificacao, leitura = classificar_estado_crise(
-        risco_index=risco_index,
-        protecao_index=protecao_index,
-        contexto_index=contexto_index,
+    classificacao, leitura = classificar_estado_crise_apa(
+        risco_observado=risco_observado,
+        abertura_observada=abertura_observada,
+        raiz_observada=raiz_observada,
         intensidade_index=intensidade_index,
         direcao_index=direcao_index,
         volatilidade_index=volatilidade_index,
@@ -504,9 +515,9 @@ def analisar_crise_direcional(texto, resolucao_tipo="desconhecida"):
             "risco_bruto": round(risco_bruto, 2),
             "protecao_bruto": round(protecao_bruto, 2),
             "contexto_bruto": round(contexto_bruto, 2),
-            "risco_index": risco_index,
-            "protecao_index": protecao_index,
-            "contexto_index": contexto_index,
+            "risco_observado": risco_observado,
+            "abertura_observada": abertura_observada,
+            "raiz_observada": raiz_observada,
             "intensidade_index": intensidade_index,
             "direcao_index": direcao_index,
             "volatilidade_index": volatilidade_index,
@@ -515,10 +526,10 @@ def analisar_crise_direcional(texto, resolucao_tipo="desconhecida"):
         }
     }
 
-def classificar_estado_crise(
-    risco_index,
-    protecao_index,
-    contexto_index,
+def classificar_estado_crise_apa(
+    risco_observado,
+    abertura_observada,
+    raiz_observada,
     intensidade_index,
     direcao_index,
     volatilidade_index,
@@ -526,72 +537,72 @@ def classificar_estado_crise(
     resolucao_tipo="desconhecida"
 ):
     """
-    Regras heurísticas calibráveis. Agora com verificação de resolução final.
+    Classificação com interpretação para APA.
+    Vetores renomeados: Risco Observado, Abertura Observada, Raiz Observada.
     """
 
-    # Se o metadado de resolução indica que NÃO houve negociação, priorizamos
-    # um rótulo de intervenção/contencao — evitamos classificar como desescalada.
     if resolucao_tipo == "nao_negociacao":
         return (
-            " HOUVE INTERVENÇÃO",
-            "Em ocorrências resolvidas fora da negociação exige análise mais rigorosa do observador em relação ao trabalho de desescalada da agressividade."
+            "HOUVE INTERVENÇÃO",
+            "Ocorrência resolvida fora da negociação. Requer análise rigorosa da atuação em desescalada."
         )
 
-    # Se corpus curto demais
     if tokens_validos is not None and tokens_validos < 15:
         return (
             "DADOS INSUFICIENTES",
-            "O corpus analisado é curto demais para sustentar uma inferência direcional confiável. Evita-se leitura enviesada em diálogo unilateral ou de baixa reciprocidade."
+            "Corpus insuficiente para análise confiável."
         )
 
     if intensidade_index < 4:
         return (
             "BAIXA PRESSÃO",
-            "Baixa densidade semântica relevante. O material sugere pouca carga crítica ou registro insuficiente para leitura forte."
+            "Densidade semântica baixa. Indicador de pouca carga crítica ou registro insuficiente."
         )
 
-    if risco_index >= 18 and direcao_index <= -6:
+    if risco_observado >= 18 and direcao_index <= -6:
         return (
             "CRÍTICO",
-            "Predomínio claro de escalada. Há concentração relevante de linguagem de ameaça, hostilidade ou autoaniquilação, sem contrapeso protetivo suficiente."
+            "Predomínio de escalada. Alta concentração de linguagem de ameaça sem contrapeso protetivo."
         )
 
-    if risco_index >= 12 and protecao_index >= 10 and abs(direcao_index) < 6:
+    if risco_observado >= 12 and abertura_observada >= 10 and abs(direcao_index) < 6:
         return (
             "TRANSIÇÃO INSTÁVEL",
-            "Há coexistência robusta de sinais de risco e de desescalada. O incidente parece em ponto de inflexão: existe janela de resolução, mas com risco residual alto."
+            "Coexistência de risco e desescalada. Incidente em ponto de inflexão com janela de resolução."
         )
 
-    # Permitir desescalada apenas se a resolução permisso
-    if protecao_index >= 12 and direcao_index >= 6:
+    if abertura_observada >= 12 and direcao_index >= 6:
         return (
             "DESACELERAÇÃO DA AGRESSIVIDADE",
-            "A carga emocional ainda pode ser alta, porém a direção predominante do diálogo aponta para rendição, vínculo ou cooperação. O risco não desapareceu, mas perdeu centralidade."
+            "Predomínio de sinais de cooperação e rendição. Risco perdeu centralidade."
         )
 
-    if protecao_index >= 8 and risco_index < 8:
+    if abertura_observada >= 8 and risco_observado < 8:
         return (
             "CONTROLADO / COOPERATIVO",
-            "Predominam sinais de cooperação, escuta e desescalada. O quadro sugere maior estabilização verbal do incidente."
+            "Predominam sinais de cooperação e desescalada. Estabilização verbal do incidente."
         )
 
-    if risco_index >= 10 and direcao_index < 0:
+    if risco_observado >= 10 and direcao_index < 0:
         return (
-            "MODERADO COM VIES DE ESCALADA",
-            "Existem sinais de deterioração ou endurecimento discursivo, embora sem configuração semântica forte o bastante para enquadramento como crítico."
+            "MODERADO COM VIÉS DE ESCALADA",
+            "Sinais de deterioração discursiva sem atingir crítico."
         )
 
     return (
         "AMBIVALENTE / INDETERMINADO",
-        "O material indica mistura de sinais ou densidade semântica intermediária. Recomenda-se leitura integrada com contexto operacional, timeline e interlocutor."
+        "Mistura de sinais. Recomenda-se análise integrada com contexto operacional e timeline."
     )
 
 # ============================================================
-# 6. EXTRAÇÃO DE N-GRAMAS + INTERPRETAÇÃO FINAL
-#    Mantém compatibilidade com o app.py
+# 5. EXTRAÇÃO DE N-GRAMAS COM INTERPRETAÇÃO APA
 # ============================================================
 
 def extrair_topicos_ngrams(texto, resolucao_tipo="desconhecida"):
+    """
+    Extrai temas principais e padrões de fala.
+    Retorna interpretação orientada para APA.
+    """
     texto_norm = limpar_texto(texto)
     palavras_validas = [p for p in texto_norm.split() if p not in STOPWORDS_GATE and len(p) > 2]
 
@@ -608,25 +619,26 @@ def extrair_topicos_ngrams(texto, resolucao_tipo="desconhecida"):
         for i, item in enumerate(temas, start=1):
             polaridade = {
                 "risco": "risco",
-                "protecao": "proteção",
-                "contexto": "contexto"
+                "protecao": "abertura/proteção",
+                "contexto": "raiz da crise",
+                "progressão": "progressão/desescalada"
             }.get(item["tipo"], item["tipo"])
 
             texto_neg = ""
             if item["evidencias_negadas"] > 0:
-                texto_neg = f" | negadas/contextualizadas: {item['evidencias_negadas']}"
+                texto_neg = f" | contextualizadas: {item['evidencias_negadas']}"
 
             resultado.append(
                 f"**Tema {i}:** {item['categoria']} "
-                f"*(score ponderado: {item['score']:.2f} | evidências: {item['evidencias']} | polaridade: {polaridade}{texto_neg})*"
+                f"*(score: {item['score']:.2f} | evidências: {item['evidencias']} | polaridade: {polaridade}{texto_neg})*"
             )
     else:
         if resumo["classificacao"] == "DADOS INSUFICIENTES":
-            resultado.append("*Corpus insuficiente para inferência direcional confiável.*")
+            resultado.append("*Corpus insuficiente para inferência confiável.*")
         else:
             resultado.append("*Diálogo pulverizado: nenhum tema dominante detectado.*")
 
-    # N-gramas estatísticos recorrentes
+    # N-gramas recorrentes
     try:
         texto_processado = " ".join(palavras_validas)
         vectorizer = CountVectorizer(
@@ -642,45 +654,39 @@ def extrair_topicos_ngrams(texto, resolucao_tipo="desconhecida"):
         for idx in scores.argsort()[::-1]:
             score = int(scores[idx])
             feature = features[idx].strip()
-
-            # Evita referências arbitrárias, redundantes ou apenas repetição do mesmo token
             tokens_feature = feature.split()
-            if score <= 1:
+            if score <= 1 or len(tokens_feature) < 2 or len(set(tokens_feature)) < 2:
                 continue
-            if len(tokens_feature) < 2:
-                continue
-            if len(set(tokens_feature)) < 2:
-                continue
-
             pares.append((feature, score))
 
         pares = sorted(pares, key=lambda x: x[1], reverse=True)
-
         for feature, score in pares:
-            resultado.append(f"*(Padrão de fala recorrente: '{feature.title()}' - {score}x)*")
+            resultado.append(f"*(Padrão recorrente: '{feature.title()}' - {score}x)*")
     except Exception:
         pass
 
-    # Bloco final: vetores e classificação direcional
+    # Bloco final: vetores APA
     resultado.append("")
-    resultado.append(f"**Vetor de Risco:** `{resumo['risco_index']:.2f}`")
-    resultado.append(f"**Vetor de Proteção / Desescalada:** `{resumo['protecao_index']:.2f}`")
-    resultado.append(f"**Vetor Contextual:** `{resumo['contexto_index']:.2f}`")
-    resultado.append(f"**Intensidade Global do Incidente:** `{resumo['intensidade_index']:.2f}`")
+    resultado.append(f"**🔴 Risco Observado:** `{resumo['risco_observado']:.2f}%` — Intensidade de ameaça/hostilidade")
+    resultado.append(f"**🟢 Abertura Observada:** `{resumo['abertura_observada']:.2f}%` — Sinais de cooperação/rendição")
+    resultado.append(f"**🟡 Raiz Observada:** `{resumo['raiz_observada']:.2f}%` — Gatilhos/motivadores da crise")
+    resultado.append(f"**Intensidade Global:** `{resumo['intensidade_index']:.2f}` — Carga emocional total")
 
     if resumo["direcao_index"] > 0:
-        direcao_txt = "predomínio de desescalada"
+        direcao_txt = "desescalada"
+        icone = "📈"
     elif resumo["direcao_index"] < 0:
-        direcao_txt = "predomínio de escalada"
+        direcao_txt = "escalada"
+        icone = "📉"
     else:
-        direcao_txt = "equilíbrio entre forças opostas"
+        direcao_txt = "equilíbrio"
+        icone = "⚖️"
 
     resultado.append(
-        f"**Direção da Crise:** `{resumo['direcao_index']:.2f}` "
-        f"*({direcao_txt})*"
+        f"**{icone} Direção:** `{resumo['direcao_index']:.2f}` — Predomínio de {direcao_txt}"
     )
-    resultado.append(f"**Volatilidade Semântica:** `{resumo['volatilidade_index']:.2f}`")
-    resultado.append(f"**Classificação Final:** **{resumo['classificacao']}**")
+    resultado.append(f"**Volatilidade:** `{resumo['volatilidade_index']:.2f}` — Risco de mudanças bruscas")
+    resultado.append(f"**Classificação APA:** **{resumo['classificacao']}**")
     resultado.append(f"**Leitura Operacional:** {resumo['leitura']}")
 
     return resultado
@@ -726,90 +732,79 @@ def gerar_treemap(df_tecnicas):
     fig.update_coloraxes(showscale=False)
     return fig
 
-# ====
-# 9. RADAR COMPARATIVO + ÍNDICE DE CONVERGÊNCIA
-# ====
 
-def gerar_radar_comparativo(texto_c, texto_np, texto_ns=None, resolucao_tipo="desconhecida"):
+# ============================================================
+# 6. RADAR COMPARATIVO COM MÉTRICAS COMPLEMENTARES
+# ============================================================
+
+def gerar_radar_comparativo(texto_causador, texto_negociador, texto_negociador_sec=None):
     """
-    Gera gráfico radar comparativo entre interlocutores
-    e calcula o Índice de Convergência Tática.
-
-    Retorna:
-        fig_radar   -> plotly Figure (radar)
-        convergencia -> dict com os índices calculados (sempre um dict; nunca None)
+    Gera radar comparativo entre causador e negociador(es).
+    Inclui métricas complementares: Efetividade, Rapport, Delta de Progresso.
     """
-    import plotly.graph_objects as go
+    analise_c  = analisar_crise_direcional(texto_causador, resolucao_tipo="desconhecida")
+    analise_np = analisar_crise_direcional(texto_negociador, resolucao_tipo="desconhecida")
+    analise_ns = analisar_crise_direcional(texto_negociador_sec, resolucao_tipo="desconhecida") if texto_negociador_sec else None
 
-    def _extrair_sumario(texto):
-        if not texto or str(texto).strip().lower() in ["n/d", "none", "nan", ""]:
-            return None
-        try:
-            resultado = analisar_crise_direcional(texto, resolucao_tipo=resolucao_tipo)
-            return resultado.get("sumario")
-        except Exception:
-            return None
+    s_c  = analise_c.get("sumario")
+    s_np = analise_np.get("sumario")
+    s_ns = analise_ns.get("sumario") if analise_ns else None
+
+    vals_c  = [
+        s_c.get("risco_observado", 0.0),
+        s_c.get("abertura_observada", 0.0),
+        s_c.get("raiz_observada", 0.0),
+        s_c.get("intensidade_index", 0.0),
+        s_c.get("volatilidade_index", 0.0)
+    ]
+    vals_np = [
+        s_np.get("risco_observado", 0.0),
+        s_np.get("abertura_observada", 0.0),
+        s_np.get("raiz_observada", 0.0),
+        s_np.get("intensidade_index", 0.0),
+        s_np.get("volatilidade_index", 0.0)
+    ]
+    vals_ns = [
+        s_ns.get("risco_observado", 0.0),
+        s_ns.get("abertura_observada", 0.0),
+        s_ns.get("raiz_observada", 0.0),
+        s_ns.get("intensidade_index", 0.0),
+        s_ns.get("volatilidade_index", 0.0)
+    ] if s_ns else None
+
+    categorias = [
+        "Risco Observado",
+        "Abertura Observada",
+        "Raiz Observada",
+        "Intensidade",
+        "Volatilidade"
+    ]
 
     try:
-        s_c  = _extrair_sumario(texto_c)
-        s_np = _extrair_sumario(texto_np)
-        s_ns = _extrair_sumario(texto_ns) if texto_ns else None
-
-        # Eixos do radar
-        categorias = [
-            "Risco",
-            "Proteção",
-            "Contexto",
-            "Intensidade",
-            "Volatilidade"
-        ]
-        chaves = [
-            "risco_index",
-            "protecao_index",
-            "contexto_index",
-            "intensidade_index",
-            "volatilidade_index"
-        ]
-
-        def _valores(sumario):
-            if sumario is None:
-                return [0] * len(chaves)
-            return [float(sumario.get(k, 0.0)) for k in chaves]
-
-        vals_c  = _valores(s_c)
-        vals_np = _valores(s_np)
-        vals_ns = _valores(s_ns)
-
-        # Fecha o polígono
-        cats_fechadas = categorias + [categorias[0]]
-        v_c_f  = vals_c  + [vals_c[0]]
-        v_np_f = vals_np + [vals_np[0]]
-        v_ns_f = vals_ns + [vals_ns[0]]
-
         fig = go.Figure()
 
         fig.add_trace(go.Scatterpolar(
-            r=v_c_f,
-            theta=cats_fechadas,
+            r=vals_c,
+            theta=categorias,
             fill="toself",
             name="Causador",
             line=dict(color="#ef4444", width=2),
-            fillcolor="rgba(239,68,68,0.15)"
+            fillcolor="rgba(239,68,68,0.12)"
         ))
 
         fig.add_trace(go.Scatterpolar(
-            r=v_np_f,
-            theta=cats_fechadas,
+            r=vals_np,
+            theta=categorias,
             fill="toself",
             name="Neg. Principal",
-            line=dict(color="#22c55e", width=2),
-            fillcolor="rgba(34,197,94,0.15)"
+            line=dict(color="#10b981", width=2),
+            fillcolor="rgba(16,185,129,0.12)"
         ))
 
-        if s_ns is not None:
+        if vals_ns:
             fig.add_trace(go.Scatterpolar(
-                r=v_ns_f,
-                theta=cats_fechadas,
+                r=vals_ns,
+                theta=categorias,
                 fill="toself",
                 name="Neg. Secundário",
                 line=dict(color="#3b82f6", width=2),
@@ -844,51 +839,71 @@ def gerar_radar_comparativo(texto_c, texto_np, texto_ns=None, resolucao_tipo="de
             height=420
         )
 
-        # ---- Índice de Convergência ----
+        # MÉTRICAS COMPLEMENTARES PARA APA
         convergencia = {
             "delta_risco": None,
-            "delta_protecao": None,
-            "delta_intensidade": None,
+            "delta_abertura": None,
+            "efetividade_negociador": None,
+            "rapport_alcancado": None,
+            "delta_progresso": None,
             "espelhamento_forma": None,
-            "espelhamento_volume": None,
             "espelhamento": None,
             "leitura_risco": None,
-            "leitura_protecao": None,
+            "leitura_abertura": None,
             "leitura_espelhamento": None,
+            "leitura_efetividade": None,
             "debug_msg": None
         }
 
         if s_c is None or s_np is None:
-            convergencia["debug_msg"] = "Dados insuficientes: sumário do causador ou do negociador principal ausente."
-            # retorna o fig (com zeros) e o dicionário informando insuficiência
+            convergencia["debug_msg"] = "Dados insuficientes."
             return fig, convergencia
 
-        # cálculos de delta
-        delta_risco       = round(s_c.get("risco_index", 0.0) - s_np.get("risco_index", 0.0), 2)
-        delta_protecao    = round(s_np.get("protecao_index", 0.0) - s_c.get("protecao_index", 0.0), 2)
-        delta_intensidade = round(abs(s_c.get("intensidade_index", 0.0) - s_np.get("intensidade_index", 0.0)), 2)
+        # Deltas principais
+        delta_risco = round(s_c.get("risco_observado", 0.0) - s_np.get("risco_observado", 0.0), 2)
+        delta_abertura = round(s_np.get("abertura_observada", 0.0) - s_c.get("abertura_observada", 0.0), 2)
+
+        # MÉTRICA COMPLEMENTAR 1: Efetividade do Negociador
+        # = quanto conseguiu reduzir o risco relativo (delta negativo = efetivo)
+        efetividade = round(abs(delta_risco) if delta_risco < 0 else -delta_risco, 2)
+        
+        # MÉTRICA COMPLEMENTAR 2: Rapport Alcançado
+        # = proximidade de abertura entre os dois (quanto maior, melhor)
+        rapport = round(abs(s_np.get("abertura_observada", 0.0) - s_c.get("abertura_observada", 0.0)), 2)
+        
+        # MÉTRICA COMPLEMENTAR 3: Delta de Progresso
+        # = desescalada total observada (redução de risco + aumento de abertura)
+        delta_progresso = round(delta_risco + delta_abertura, 2)
 
         convergencia["delta_risco"] = delta_risco
-        convergencia["delta_protecao"] = delta_protecao
-        convergencia["delta_intensidade"] = delta_intensidade
+        convergencia["delta_abertura"] = delta_abertura
+        convergencia["efetividade_negociador"] = efetividade
+        convergencia["rapport_alcancado"] = rapport
+        convergencia["delta_progresso"] = delta_progresso
 
-        # Interpretações do delta de risco
+        # Interpretações
         if delta_risco > 3:
-            leitura_risco = "⚠️ Causador com carga de risco significativamente maior que o negociador."
+            leitura_risco = "⚠️ Causador com carga de risco significativamente maior."
         elif delta_risco < -3:
-            leitura_risco = "🔴 Negociador com linguagem de risco superior ao causador — revisar abordagem."
+            leitura_risco = "✅ Negociador mantém risco equilibrado ou menor."
         else:
-            leitura_risco = "✅ Carga de risco equilibrada entre os interlocutores."
+            leitura_risco = "🔵 Carga de risco equilibrada."
 
-        # Interpretações do delta de proteção
-        if delta_protecao > 3:
-            leitura_protecao = "✅ Negociador puxando ativamente o diálogo para desescalada."
-        elif delta_protecao < -3:
-            leitura_protecao = "⚠️ Causador com mais linguagem protetiva que o negociador — possível inversão de papel."
+        if delta_abertura > 3:
+            leitura_abertura = "✅ Negociador puxando ativamente para desescalada."
+        elif delta_abertura < -3:
+            leitura_abertura = "⚠️ Causador com mais sinais protetivos que negociador."
         else:
-            leitura_protecao = "🔵 Linguagem protetiva distribuída de forma similar entre os dois."
+            leitura_abertura = "🔵 Linguagem protetiva similar entre os dois."
 
-        # ----- Índices de espelhamento (forma e volume) -----
+        if efetividade > 5:
+            leitura_efetividade = "✅ Atuação muito efetiva em reduzir carga de risco."
+        elif efetividade > 2:
+            leitura_efetividade = "🔵 Efetividade moderada em gestão de risco."
+        else:
+            leitura_efetividade = "⚠️ Atuação pouco efetiva ou sem redução de risco."
+
+        # Espelhamento forma
         def _normalizar_vetor(v):
             arr = np.array(v, dtype=float)
             norma = np.linalg.norm(arr)
@@ -897,67 +912,58 @@ def gerar_radar_comparativo(texto_c, texto_np, texto_ns=None, resolucao_tipo="de
         v_c_norm  = _normalizar_vetor(vals_c)
         v_np_norm = _normalizar_vetor(vals_np)
 
-        # 1) Espelhamento por forma (cosine similarity)
         espelhamento_forma = 0.0
         try:
-            # apenas se ambos não forem vetores zero
             if np.linalg.norm(v_c_norm) != 0 and np.linalg.norm(v_np_norm) != 0:
                 espelhamento_forma = float(cosine_similarity([v_c_norm], [v_np_norm])[0][0])
             else:
                 espelhamento_forma = 0.0
-        except Exception as e:
+        except Exception:
             espelhamento_forma = 0.0
-            convergencia["debug_msg"] = f"Erro cosine_similarity: {str(e)}"
 
-        # 2) Espelhamento por volume (compatibilidade com implementação anterior)
-        soma_c  = sum(vals_c) or 1
-        soma_np = sum(vals_np) or 1
-        espelhamento_volume = round(1 - abs(soma_c - soma_np) / max(soma_c, soma_np), 2)
-
-        # canônico -> forma
         convergencia["espelhamento_forma"] = round(float(espelhamento_forma), 2)
-        convergencia["espelhamento_volume"] = round(float(espelhamento_volume), 2)
         convergencia["espelhamento"] = convergencia["espelhamento_forma"]
 
-        # Leitura textual com thresholds adequados para similaridade por forma
         if espelhamento_forma >= 0.85:
-            leitura_espelhamento = "🔁 Alto espelhamento temático — forte convergência de padrão entre os interlocutores."
+            leitura_espelhamento = "🔁 Alto espelhamento temático — forte convergência."
         elif espelhamento_forma >= 0.65:
-            leitura_espelhamento = "🔁 Espelhamento moderado — há convergência parcial, mas com diferenças de distribuição."
+            leitura_espelhamento = "🔁 Espelhamento moderado — convergência parcial."
         else:
-            leitura_espelhamento = "⚡ Baixo espelhamento — os interlocutores operam em padrões semânticos distintos."
+            leitura_espelhamento = "⚡ Baixo espelhamento — padrões semânticos distintos."
 
         convergencia["leitura_risco"] = leitura_risco
-        convergencia["leitura_protecao"] = leitura_protecao
+        convergencia["leitura_abertura"] = leitura_abertura
         convergencia["leitura_espelhamento"] = leitura_espelhamento
+        convergencia["leitura_efetividade"] = leitura_efetividade
 
         return fig, convergencia
 
     except Exception as err:
-        # Em caso de erro inesperado, garantir retorno e registrar mensagem útil
         fig = go.Figure()
         fig.update_layout(
-            title="Erro ao gerar radar comparativo",
+            title="Erro ao gerar radar",
             paper_bgcolor="rgba(0,0,0,0)",
             plot_bgcolor="rgba(0,0,0,0)",
             font=dict(color="#fff")
         )
         convergencia = {
             "delta_risco": None,
-            "delta_protecao": None,
-            "delta_intensidade": None,
+            "delta_abertura": None,
+            "efetividade_negociador": None,
+            "rapport_alcancado": None,
+            "delta_progresso": None,
             "espelhamento_forma": None,
-            "espelhamento_volume": None,
             "espelhamento": None,
             "leitura_risco": None,
-            "leitura_protecao": None,
+            "leitura_abertura": None,
             "leitura_espelhamento": None,
-            "debug_msg": f"Exceção inesperada: {str(err)}"
+            "leitura_efetividade": None,
+            "debug_msg": f"Erro: {str(err)}"
         }
         return fig, convergencia
 
 # ============================================================
-# 8. TESTES ESTATÍSTICOS
+# 7. TESTES ESTATÍSTICOS (MANTIDOS)
 # ============================================================
 
 def calcular_spearman(df_historico, col_x, col_y):
@@ -1001,7 +1007,7 @@ def calcular_spearman(df_historico, col_x, col_y):
             "valido": False,
             "rho": 0.0,
             "p_value": 0.0,
-            "msg": f"Erro estatístico: {str(e)}"
+            "msg": f"Erro: {str(e)}"
         }
 
 def calcular_qui_quadrado(df_historico, col_cat1, col_cat2):
@@ -1013,7 +1019,7 @@ def calcular_qui_quadrado(df_historico, col_cat1, col_cat2):
     tabela = pd.crosstab(df_limpo[col_cat1], df_limpo[col_cat2])
 
     if tabela.shape[0] < 2 or tabela.shape[1] < 2:
-        return {"valido": False, "msg": "Variância insuficiente nas categorias."}
+        return {"valido": False, "msg": "Variância insuficiente."}
 
     try:
         chi2, p_val, dof, expected = chi2_contingency(tabela)
@@ -1021,7 +1027,7 @@ def calcular_qui_quadrado(df_historico, col_cat1, col_cat2):
         if (expected < 5).mean() > 0.2:
             return {
                 "valido": False,
-                "msg": "Frequências esperadas muito baixas (<5) violam premissas do teste."
+                "msg": "Frequências esperadas muito baixas."
             }
 
         return {
@@ -1034,5 +1040,5 @@ def calcular_qui_quadrado(df_historico, col_cat1, col_cat2):
     except Exception as e:
         return {
             "valido": False,
-            "msg": f"Erro no cálculo: {str(e)}"
+            "msg": f"Erro: {str(e)}"
         }

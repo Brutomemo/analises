@@ -1439,13 +1439,14 @@ else:
 
 
 
-            #ETAPA 2 — ANÁLISE SEMÂNTICA MELHORADA
+            #ETAPA 2 — ANÁLISE SEMÂNTICA PRÁTICA (Para compreender o que REALMENTE está acontecendo)
 
             st.markdown("""
-            <h3 style='color: #FFD700;'>✔ Etapa 2: Análise Semântica — O que está sendo DITO (intenções, riscos, temas)</h3>
+            <h3 style='color: #FFD700;'>✔ Etapa 2: Análise Semântica — Decifrar a Crise Real</h3>
             <p style='color: #aaa; font-size: 0.95rem; margin-top: -10px;'>
-            <strong>Complementar à Similitude:</strong> Enquanto a Similitude mede se estão <u>falando as mesmas palavras</u>, 
-            a Semântica analisa <u>o que essas palavras significam</u> — intenções, riscos, emoções e temas dominantes.
+            <strong>O que o causador REALMENTE sente, quer e teme.</strong> 
+            Enquanto Similitude conta palavras repetidas, Semântica lê entre as linhas: intenções escondidas, 
+            gatilhos emocionais e pontos de alavanca para resolução.
             </p>
             """, unsafe_allow_html=True)
 
@@ -1453,134 +1454,179 @@ else:
             if "show_explicacao" not in st.session_state:
                 st.session_state["show_explicacao"] = False
 
-            label_btn = "▲ Ocultar Explicação" if st.session_state["show_explicacao"] else "▼ Entenda a Análise Semântica"
+            label_btn = "▲ Ocultar Guia" if st.session_state["show_explicacao"] else "▼ Entenda como ler a Análise"
             if st.button(label_btn, key="btn_explicacao_semantica"):
                 st.session_state["show_explicacao"] = not st.session_state["show_explicacao"]
 
             if st.session_state["show_explicacao"]:
 
-                tab_metodo, tab_convergencia, tab_ngramas, tab_limitacoes = st.tabs([
-                    "✔ Como funciona",
-                    "✔ Radar & Convergência",
-                    "✔ N-Gramas & Temas",
+                tab_pratica, tab_framework, tab_ngramas, tab_limitacoes = st.tabs([
+                    "✔ Aplicação Prática",
+                    "✔ Os Três Vetores",
+                    "✔ Padrões & Fixações",
                     "✔ Limitações"
                 ])
 
-                with tab_metodo:
+                with tab_pratica:
                     st.markdown("""
                     <div class='info-card'>
-                    <h5 style='color:#FFD700;margin-top:0;'>O que o sistema faz?</h5>
+                    <h5 style='color:#FFD700;margin-top:0;'>Como ler os dados na prática?</h5>
                     <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
-                    O sistema não conta palavras — ele <strong>lê intenções</strong>. Cada fala é analisada levando em conta o que foi dito, como foi dito e o que estava sendo discutido ao redor. É como um analista que lê nas entrelinhas.
+                    A análise semântica responde uma pergunta simples: <strong>"O que esse sujeito está vivendo agora?"</strong>
                     </p>
                     <hr style='border-color:#444;margin:12px 0;'>
-                    <h5 style='color:#FFD700;'>1. Peso das palavras</h5>
+                    <h5 style='color:#FFD700;'>📌 Passo 1: Identifique o ESTADO EMOCIONAL</h5>
                     <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
-                    Nem toda palavra vale o mesmo. O sistema atribui uma <strong>pontuação de gravidade</strong> a cada termo para evitar que palavras comuns inflem os resultados.<br><br>
-                    • <em>"dor"</em> → peso baixo — sinal de sofrimento, mas sem risco imediato de ação.<br>
-                    • <em>"vou me matar"</em> → peso alto — ação declarada com risco imediato.
+                    <strong>Procure por:</strong> Quanto de <strong>medo, raiva, desespero</strong> o causador está carregando?<br><br>
+                    • <em>"vou me matar"</em> + <em>"não aguento mais"</em> → Desespero acima do limite (risco iminente)<br>
+                    • <em>"ninguém entra aqui"</em> + <em>"vou atirar"</em> → Raiva/defesa (hostilidade)<br>
+                    • <em>"perdi tudo"</em> + <em>"ninguém se importa"</em> → Abandono/desesperança (depressão)<br><br>
+                    <strong>Por quê?</strong> Segundo William Ury (Harvard), antes de negociar, você precisa entender o <u>estado de espírito</u> 
+                    da outra parte. Emoção descontrolada = impossível raciocínio lógico.
                     </p>
                     <hr style='border-color:#444;margin:12px 0;'>
-                    <h5 style='color:#FFD700;'>2. O contexto muda tudo</h5>
+                    <h5 style='color:#FFD700;'>📌 Passo 2: Identifique as EXIGÊNCIAS REAIS</h5>
                     <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
-                    O sistema analisa as palavras ao redor de cada termo para entender a intenção real:<br><br>
-                    • <strong>Negação:</strong> <em>"não quero morrer"</em> → risco reduzido. Há ambivalência, não intenção.<br>
-                    • <strong>Intensificador:</strong> <em>"fortemente armado"</em> → risco aumentado. A ênfase eleva a gravidade.<br>
-                    • <strong>Atenuador:</strong> <em>"talvez eu faça isso"</em> → peso reduzido. Há hesitação.<br>
-                    • <strong>Urgência:</strong> <em>"quero isso agora"</em> → pressão temporal, risco instrumental maior.
+                    <strong>Procure por:</strong> O que esse sujeito <strong>quer concretamente</strong>? (não apenas ameaça)<br><br>
+                    • <em>"quero a imprensa aqui"</em> → Exigência instrumental (poder/reconhecimento)<br>
+                    • <em>"só saio se me reconhecerem"</em> → Exigência moral (dignidade)<br>
+                    • <em>"preciso de dinheiro"</em> → Exigência material (sobrevivência)<br><br>
+                    <strong>Por quê?</strong> Cialdini mostra que <u>reconhecer a legitimidade da exigência</u> 
+                    (mesmo que você não possa cumprir) reduz hostilidade. O causador quer ser OUVIDO, não necessariamente atendido.
                     </p>
                     <hr style='border-color:#444;margin:12px 0;'>
-                    <h5 style='color:#FFD700;'>3. Os três vetores do incidente</h5>
+                    <h5 style='color:#FFD700;'>📌 Passo 3: Encontre os GANCHOS PARA DESESCALADA</h5>
                     <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
-                    O diálogo é separado em <strong>três forças que se opõem</strong>, como um cabo de guerra:<br><br>
-                    🔴 <strong>Risco:</strong> ameaças, hostilidade, exigências, ideação suicida.<br>
-                    &nbsp;&nbsp;&nbsp;<em>Ex: "vou matar", "ninguém entra", "quero morrer"</em><br><br>
-                    🟢 <strong>Proteção:</strong> rendição, cooperação, pedido de ajuda, vínculo afetivo.<br>
-                    &nbsp;&nbsp;&nbsp;<em>Ex: "me entrego", "fala comigo", "minha filha"</em><br><br>
-                    🟡 <strong>Contexto:</strong> gatilhos que explicam a crise, mas sem risco direto imediato.<br>
-                    &nbsp;&nbsp;&nbsp;<em>Ex: "perdi tudo", "fui traído", "estou desempregado"</em>
+                    <strong>Procure por:</strong> Onde há <strong>abertura, ambivalência, vínculo</strong>?<br><br>
+                    • <em>"me ajuda"</em> (mesmo que velado) → Pedido de ajuda (ponto de conexão)<br>
+                    • <em>"fala comigo"</em> → Busca por contato (rapport possível)<br>
+                    • <em>"minha filha"</em> → Vínculo afetivo (alavanca para mudança de decisão)<br><br>
+                    <strong>Por quê?</strong> O Manual do FBI de Negociação enfatiza que <u>pequenos sinais de cooperação</u> 
+                    devem ser amplificados. "Minha filha" não é só uma palavra — é a ponte entre desespero e vida.
+                    </p>
+                    <hr style='border-color:#444;margin:12px 0;'>
+                    <h5 style='color:#FFD700;'>📌 Passo 4: Analise a ABORDAGEM DO NEGOCIADOR</h5>
+                    <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
+                    <strong>Procure por:</strong> Como o negociador respondeu? Conseguiu <strong>sincronizar?</strong><br><br>
+                    • Se Causador diz <em>"ninguém me entende"</em> e Negociador responde <em>"entendo sua dor"</em> → Conversa bem dirigida ✅<br>
+                    • Se Causador diz <em>"quero a imprensa"</em> e Negociador ignora → Falta de legitimação ❌<br>
+                    • Se Negociador repete <em>"fica calmo"</em> 10 vezes → Não está ouvindo, está impondo ❌<br><br>
+                    <strong>Por quê?</strong> Harvard explica que <u>validar a emoção da outra parte</u> 
+                    não significa concordar com a ação — é reconhecer o estado emocional como real.
                     </p>
                     </div>
                     """, unsafe_allow_html=True)
 
-                with tab_convergencia:
+                with tab_framework:
                     st.markdown("""
                     <div class='info-card'>
-                    <h5 style='color:#FFD700;margin-top:0;'>O que é Convergência Temática?</h5>
+                    <h5 style='color:#FFD700;margin-top:0;'>Os Três Vetores Explicados (e como interpretar)</h5>
                     <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
-                    <strong>Diferente da Similitude léxica:</strong> Mede o quanto o negociador e o causador estão <strong>falando sobre os mesmos TEMAS</strong> (não as mesmas palavras literais). 
-                    Alta convergência = o negociador entrou no universo do causador e ambos discutem a crise no mesmo nível.
+                    Pense nos vetores como três forças que estão em <strong>cabo de guerra</strong> dentro do causador.
                     </p>
                     <hr style='border-color:#444;margin:12px 0;'>
-                    <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'><strong>Exemplo prático:</strong></p>
-                    <p style='font-size:0.88rem;color:#bbb;line-height:1.6;margin-left:10px;'>
-                    <em>Causador:</em> "Perdi meu emprego, não tenho como pagar as contas"<br>
-                    <em>Negociador:</em> "Entendo que a situação financeira é difícil agora"<br>
-                    → <strong>Alta convergência:</strong> ambos discutem "situação financeira", mas com palavras diferentes
-                    </p>
-                    <hr style='border-color:#444;margin:12px 0;'>
-                    <div style='display:flex;flex-wrap:wrap;gap:10px;margin-top:8px;'>
-                    <div style='flex:1 1 30%;min-width:180px;padding:10px;border-radius:8px;background:rgba(255,255,255,0.02);'>
-                        <strong>Risco</strong><br><span style='font-size:0.88rem;color:#bbb;'>Linguagem ameaçadora. Quanto maior, mais hostil.</span>
-                    </div>
-                    <div style='flex:1 1 30%;min-width:180px;padding:10px;border-radius:8px;background:rgba(255,255,255,0.02);'>
-                        <strong>Proteção</strong><br><span style='font-size:0.88rem;color:#bbb;'>Sinais de desescalada. Quanto maior, mais acolhedor.</span>
-                    </div>
-                    <div style='flex:1 1 30%;min-width:180px;padding:10px;border-radius:8px;background:rgba(255,255,255,0.02);'>
-                        <strong>Contexto</strong><br><span style='font-size:0.88rem;color:#bbb;'>Gatilhos de fundo — perda, dívida, traição. Explicam o porquê.</span>
-                    </div>
-                    <div style='flex:1 1 30%;min-width:180px;padding:10px;border-radius:8px;background:rgba(255,255,255,0.02);'>
-                        <strong>Intensidade</strong><br><span style='font-size:0.88rem;color:#bbb;'>Força emocional. Alta = escalada rápida.</span>
-                    </div>
-                    <div style='flex:1 1 30%;min-width:180px;padding:10px;border-radius:8px;background:rgba(255,255,255,0.02);'>
-                        <strong>Volatilidade</strong><br><span style='font-size:0.88rem;color:#bbb;'>Mudanças de tom. Alta = impulsividade.</span>
-                    </div>
-                    <div style='flex:1 1 30%;min-width:180px;padding:10px;border-radius:8px;background:rgba(255,215,0,0.08);border:1px solid rgba(255,215,0,0.2);'>
-                        <strong style='color:#FFD700;'>Convergência</strong><br><span style='font-size:0.88rem;color:#bbb;'>Sobreposição temática. Quanto maior, melhor.</span>
-                    </div>
-                    </div>
-                    <div style='margin-top:12px;padding:12px;border-radius:10px;background:rgba(255,215,0,0.06);border:1px solid rgba(255,215,0,0.15);'>
-                    <p style='font-size:0.9rem;color:#ddd;margin:0;line-height:1.6;'>
-                    <strong>Dica de leitura:</strong> Risco alto + Proteção alta = tensão controlada. Risco alto + Proteção baixa = ação imediata.
-                    </p>
-                    </div>
-                    <hr style='border-color:#444;margin:12px 0;'>
-                    <h5 style='color:#FFD700;'>Radar vs. Similitude — Complementares, não contraditórios</h5>
+                    <div style='margin:12px 0;padding:12px;border-radius:10px;background:rgba(239,68,68,0.08);border-left:4px solid #ef4444;'>
+                    <h5 style='color:#ef4444;margin-top:0;'>🔴 RISCO OBSERVADO — "Quanto de ameaça real há aqui?"</h5>
                     <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
-                    <strong>Radar (Semântica):</strong> compara TEMAS e intenções.<br>
-                    <strong>Similitude:</strong> compara PALAVRAS literais compartilhadas.<br><br>
-                    Se um for alto e outro baixo, não é erro — é informação complementar:
+                    Mede a <strong>densidade de linguagem agressiva/suicida</strong> no discurso do causador.<br><br>
+                    <strong>Exemplos de alto risco:</strong><br>
+                    • <em>"vou matar você"</em> (declaração direta)<br>
+                    • <em>"tenho uma arma"</em> (capacidade + intenção)<br>
+                    • <em>"quero morrer"</em> (risco para si mesmo)<br><br>
+                    <strong>Interpretação para APA:</strong><br>
+                    Se Risco Observado = 15% → Ameaça verbalizada, mas sem densidade alta<br>
+                    Se Risco Observado = 25%+ → Linguagem carregada, escalada provável se negligenciada<br><br>
+                    <strong>O que o negociador deveria fazer?</strong><br>
+                    Alto risco = mudar de abordagem RÁPIDO. Deixar o causador falar (validar) antes de oferecer soluções.
                     </p>
-                    <div style='margin:10px 0;padding:10px;border-left:3px solid #FFD700;background:rgba(255,215,0,0.05);'>
-                    <p style='font-size:0.88rem;color:#bbb;margin:0;'><strong>Cenário 1:</strong> Convergência alta + Similitude baixa = Falando dos mesmos temas, vocabulários diferentes → Bom!</p>
-                    <p style='font-size:0.88rem;color:#bbb;margin:5px 0 0 0;'><strong>Cenário 2:</strong> Similitude alta + Convergência baixa = Mesmas palavras, assuntos diferentes → Superficial.</p>
                     </div>
+                    <hr style='border-color:#444;margin:12px 0;'>
+                    <div style='margin:12px 0;padding:12px;border-radius:10px;background:rgba(16,185,129,0.08);border-left:4px solid #10b981;'>
+                    <h5 style='color:#10b981;margin-top:0;'>🟢 ABERTURA OBSERVADA — "Tem esperança aqui? Há ponte de desescalada?"</h5>
+                    <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
+                    Mede <strong>sinais de cooperação, rendição, pedido de ajuda</strong> (velado ou não) no causador.<br><br>
+                    <strong>Exemplos de alta abertura:</strong><br>
+                    • <em>"me ajuda"</em> (pedido direto)<br>
+                    • <em>"minha filha está aqui"</em> (reconhecimento de terceiro, responsabilidade)<br>
+                    • <em>"pode entrar"</em> (permissão = abandono da posição hostil)<br><br>
+                    <strong>Interpretação para APA:</strong><br>
+                    Se Abertura = 5% → Causador muito fechado, difícil entrada. Precisa mais validação.<br>
+                    Se Abertura = 15%+ → Janela de oportunidade aberta. Negociador pode começar a propor.<br><br>
+                    <strong>O que o negociador deveria fazer?</strong><br>
+                    Sinais de abertura = AMPLIFICAR. "Você pediu ajuda? Estou aqui para isso." (FBI)
+                    </p>
+                    </div>
+                    <hr style='border-color:#444;margin:12px 0;'>
+                    <div style='margin:12px 0;padding:12px;border-radius:10px;background:rgba(251,146,60,0.08);border-left:4px solid #f97316;'>
+                    <h5 style='color:#f97316;margin-top:0;'>🟡 RAIZ OBSERVADA — "Por que ele está assim? Qual é a verdadeira causa?"</h5>
+                    <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
+                    Mede <strong>gatilhos emocionais, perdas, traumas</strong> que explicam o estado atual.<br><br>
+                    <strong>Exemplos de raiz clara:</strong><br>
+                    • <em>"perdi meu emprego"</em> (causa: desespero financeiro)<br>
+                    • <em>"ela me traiu"</em> (causa: abandono/humilhação)<br>
+                    • <em>"ninguém se importa comigo"</em> (causa: isolamento/rejeição)<br><br>
+                    <strong>Interpretação para APA:</strong><br>
+                    Se Raiz = 8% → Causador talvez tenha gatilho recente ou bem localizado.<br>
+                    If Raiz = 12%+ → Acúmulo de perdas, histórico de trauma. Mais difícil de resolver rápido.<br><br>
+                    <strong>O que o negociador deveria fazer?</strong><br>
+                    Ury diz: "Separe a pessoa do problema." A raiz é o PROBLEMA. Validá-la não é concordar, é RECONHECER.<br>
+                    Ex: "Entendo que perder o emprego é devastador. Mas matar não resolve. Vamos pensar em saídas."
+                    </p>
+                    </div>
+                    <hr style='border-color:#444;margin:12px 0;'>
+                    <h5 style='color:#FFD700;'>⚖️ COMO OS TRÊS TRABALHAM JUNTOS</h5>
+                    <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
+                    <strong>Cenário 1: Alto Risco + Baixa Abertura + Raiz Clara</strong><br>
+                    → Sujeito desesperado (raiz conhecida) mas barricado (nenhuma ponte). Técnica: Validar a raiz + oferecer saída.
+                    <br><br>
+                    <strong>Cenário 2: Alto Risco + Alta Abertura + Raiz Clara</strong><br>
+                    → Sujeito em crise mas aberto à ajuda. JANELA CRÍTICA. Técnica: Rápida proposição de alternativa.
+                    <br><br>
+                    <strong>Cenário 3: Baixo Risco + Alta Abertura + Raiz Clara</strong><br>
+                    → Sujeito já está em conversação. Técnica: Escuta ativa + proposição colaborativa.
+                    </p>
                     </div>
                     """, unsafe_allow_html=True)
 
                 with tab_ngramas:
                     st.markdown("""
                     <div class='info-card'>
-                    <h5 style='color:#FFD700;margin-top:0;'>O que são N-gramas e Temas Dominantes?</h5>
+                    <h5 style='color:#FFD700;margin-top:0;'>Padrões Repetidos & Loop Cognitivo</h5>
                     <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
-                    <strong>N-gramas:</strong> sequências de 2-3 palavras que se repetem. Pessoas sob estresse tendem a repetir as mesmas frases — <strong>loop cognitivo</strong>.
+                    <strong>N-gramas:</strong> Frases de 2-3 palavras que o sujeito repete obessivamente.
                     </p>
                     <hr style='border-color:#444;margin:12px 0;'>
-                    <h5 style='color:#FFD700;'>O que a repetição revela?</h5>
+                    <h5 style='color:#FFD700;'>O que significa?</h5>
                     <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
-                    • <em>"não aguento mais"</em> repetido → exaustão emocional severa. Risco iminente.<br>
-                    • <em>"cadê a imprensa"</em> repetido → foco instrumental. O causador tem um objetivo específico.<br>
-                    • <em>"fica calmo"</em> repetido pelo negociador → dificuldade de manter rapport.
+                    Sob estresse extremo, o cérebro entra em <strong>loop cognitivo</strong>. 
+                    A frase repetida é o <u>mantra da crise</u> — o que o sujeito está preso em pensar.<br><br>
+                    <strong>Exemplos e interpretações:</strong><br><br>
+                    • <em>"não aguento mais"</em> (repetido 5+ vezes)<br>
+                    &nbsp;&nbsp; → Estado: Exaustão emocional severa. Risco: Iminente (suicida ou agressivo descontrolado)<br>
+                    &nbsp;&nbsp; → Técnica: Validar o esgotamento, oferecer repouso/alívio imediato<br><br>
+                    • <em>"cadê a imprensa"</em> (repetido 3+ vezes)<br>
+                    &nbsp;&nbsp; → Estado: Fixação instrumental. O sujeito quer RECONHECIMENTO público<br>
+                    &nbsp;&nbsp; → Técnica: Negociar sobre o que pode ser oferecido (não prometa imprensa se não há)<br><br>
+                    • <em>"fica calmo"</em> (negociador repetindo)<br>
+                    &nbsp;&nbsp; → Estado: Negociador não está OUVINDO. Está tentando impor.<br>
+                    &nbsp;&nbsp; → Técnica: MUDAR DE ABORDAGEM. Perguntar em vez de ordenar<br><br>
                     </p>
                     <hr style='border-color:#444;margin:12px 0;'>
-                    <h5 style='color:#FFD700;'>Temas Dominantes</h5>
+                    <h5 style='color:#FFD700;'>Nuvem de Palavras — O que cada interlocutor REALMENTE está focando</h5>
                     <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
-                    A nuvem de palavras mostra visualmente os <strong>assuntos principais</strong> de cada interlocutor. 
-                    Palavras maiores = mais frequentes/importantes. Identifique rapidamente o <strong>foco de cada pessoa</strong>.
+                    A nuvem mostra visualmente o <strong>universo mental</strong> de cada um.<br><br>
+                    <strong>Leitura prática:</strong><br>
+                    Se a nuvem do Causador tem <em>"arma, polícia, morte"</em> gigantes → Fixação em escalada<br>
+                    Se a nuvem tem <em>"filha, família, vida"</em> grandes → Ambivalência (quer viver mas está preso no medo)<br>
+                    Se a nuvem do Negociador tem <em>"calma, tranquilo, relaxa"</em> → Talvez não esteja validando o real estado emocional<br><br>
+                    <strong>Comparação:</strong><br>
+                    Nuvem do Causador com "morte" grande + Nuvem do Negociador com "vida" grande = Boa direção<br>
+                    Nuvem do Causador com "morte" grande + Nuvem do Negociador com "relaxa" grande = Desconexão
                     </p>
                     <div style='margin-top:12px;padding:12px;border-radius:10px;background:rgba(255,215,0,0.06);border:1px solid rgba(255,215,0,0.15);'>
                     <p style='font-size:0.9rem;color:#ddd;margin:0;line-height:1.6;'>
-                    <strong>Atenção:</strong> repetição não é risco por si só — é fixação cognitiva interpretada junto com o tema dominante e contexto.
+                    <strong>Atenção:</strong> Um padrão repetido não é risco por si. É um <u>sinal de fixação mental</u>. 
+                    Pode ser esperança ("vou me entregar"), desespero ("vou morrer") ou instrumento ("exijo reconhecimento").
                     </p>
                     </div>
                     </div>
@@ -1589,20 +1635,23 @@ else:
                 with tab_limitacoes:
                     st.markdown("""
                     <div class='info-card'>
-                    <h5 style='color:#FFD700;margin-top:0;'>Limitações — Por que importa saber</h5>
+                    <h5 style='color:#FFD700;margin-top:0;'>Limitações — O que o sistema NÃO consegue ver</h5>
                     <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
-                    A análise semântica é uma <strong>ferramenta de apoio</strong>, não substitui julgamento. Os números orientam — quem decide é o profissional.
+                    Esta é uma <strong>ferramenta de leitura</strong>, não bola de cristal. Os números descrevem o que foi DITO, 
+                    não o que vai acontecer.
                     </p>
                     <hr style='border-color:#444;margin:12px 0;'>
                     <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
-                    ❌ <strong>Transcrições incompletas:</strong> erros reduzem precisão.<br>
-                    ❌ <strong>Gírias e ironia:</strong> expressões regionais podem não ser interpretadas corretamente.<br>
-                    ❌ <strong>Textos muito curtos:</strong> índices relativos ao volume — textos curtos geram resultados menos confiáveis.<br>
-                    ❌ <strong>Contexto externo:</strong> o sistema não sabe história pregressa ou perfil criminal.
+                    ❌ <strong>Não vê o histórico do sujeito:</strong> Esse é o 1º suicida ou o 5º? Faz diferença.<br>
+                    ❌ <strong>Não vê o contexto real:</strong> Há reféns? Há arma de verdade? O sistema não sabe.<br>
+                    ❌ <strong>Não vê gírias/ironia:</strong> <em>"Vou me matar de rir"</em> aparece como risco, mas é brincadeira.<br>
+                    ❌ <strong>Não vê o tom de voz:</strong> <em>"vou sair"</em> dito com calma é diferente de grito.<br>
+                    ❌ <strong>Não vê interrupções:</strong> Se o transcrição está quebrada, a análise fica incompleta.
                     </p>
                     <div style='margin-top:12px;padding:12px;border-radius:10px;background:rgba(255,215,0,0.06);border:1px solid rgba(255,215,0,0.15);'>
                     <p style='font-size:0.9rem;color:#ddd;margin:0;line-height:1.6;'>
-                    <strong>Regra de ouro:</strong> Sempre interprete junto com contexto operacional, timeline, perfil do causador e padrão histórico. O sistema ilumina — a decisão é humana.
+                    <strong>Regra de ouro para APA:</strong> Use estes dados + seu julgamento + contexto operacional. 
+                    O sistema ILUMINA. A decisão é HUMANA.
                     </p>
                     </div>
                     </div>
@@ -1610,21 +1659,68 @@ else:
 
             # --- FIM DO BLOCO DE EXPLICAÇÃO ---
 
-            # === N-GRAMAS E WORDCLOUD ===
-            if st.button("✔ 2. Gerar Nuvem de Palavras e N-Gramas", key="btn_ngramas_semantica"):
-                with st.spinner("Processando N-Gramas, temas dominantes e plotando gráficos..."):
+            # === SEÇÃO 1: TREEMAP DE TÉCNICAS ===
+            st.markdown("""
+            <div style='margin-top:20px;'>
+            <h4 style='color:#FFD700;'>📊 Técnicas Empregadas — Qual foi a estratégia?</h4>
+            <p style='color:#aaa;font-size:0.9rem;'>
+            Visualização das técnicas usadas pelo(s) negociador(es). Maior = mais usada. 
+            Permite identificar o padrão de abordagem e avaliar efetividade.
+            </p>
+            </div>
+            """, unsafe_allow_html=True)
+
+            if st.button("✔ 1. Gerar Análise de Técnicas", key="btn_tecnicas_semantica"):
+                with st.spinner("Processando técnicas empregadas..."):
                     try:
-                        texto_c = limpar_valor(df_apa.get('TRANSCRIÇÃO DO CAUSADOR', ''))
-                        texto_np = limpar_valor(df_apa.get('TRANSCRIÇÃO DO NEGOCIADOR PRINCIPAL', ''))
-                        texto_ns = limpar_valor(df_apa.get('TRANSCRIÇÃO DO NEGOCIADOR SECUNDÁRIO', ''))
+                        # Assumindo que df_apa contém coluna de TÉCNICAS
+                        if 'TÉCNICAS' in df_apa.columns or 'Técnicas' in df_apa.columns or 'tecnicas' in df_apa.columns:
+                            col_tecnicas = next((col for col in df_apa.columns if 'tecnica' in col.lower()), None)
+                            if col_tecnicas:
+                                df_tecnicas_temp = df_apa[[col_tecnicas]].copy()
+                                fig_treemap = analise.gerar_treemap(df_tecnicas_temp)
+                                st.session_state['treemap_gerado'] = fig_treemap
+                                st.success("✅ Treemap de técnicas gerado!")
+                            else:
+                                st.info("Coluna de técnicas não encontrada neste registro.")
+                        else:
+                            st.info("Este registro não possui informações de técnicas.")
+                    except Exception as e:
+                        st.error(f"Erro ao processar treemap: {str(e)[:80]}")
+
+            if st.session_state.get('treemap_gerado'):
+                st.plotly_chart(st.session_state['treemap_gerado'], use_container_width=True)
+                st.markdown("""
+                <p style='color:#aaa;font-size:0.85rem;margin-top:10px;'>
+                <strong>Interpretação para APA:</strong> 
+                Se uma técnica domina (grande retângulo), pode indicar foco estratégico ou falta de adaptação. 
+                Diversidade de técnicas = flexibilidade e adaptação ao estado do causador.
+                </p>
+                """, unsafe_allow_html=True)
+
+            # === SEÇÃO 2: N-GRAMAS E WORDCLOUD ===
+            st.markdown("""
+            <div style='margin-top:20px;'>
+            <h4 style='color:#FFD700;'>🧠 Padrões Mentais & Nuvem de Assuntos — O que cada um estava realmente PENSANDO?</h4>
+            <p style='color:#aaa;font-size:0.9rem;'>
+            Identifique fixações mentais (padrões repetidos) e foco temático (palavras maiores = mais frequentes).
+            </p>
+            </div>
+            """, unsafe_allow_html=True)
+
+            if st.button("✔ 2. Gerar Padrões Mentais & Nuvem de Palavras", key="btn_ngramas_semantica"):
+                with st.spinner("Processando padrões mentais, temas dominantes e gerando nuvens de palavras..."):
+                    try:
+                        texto_c = analise.limpar_valor(df_apa.get('TRANSCRIÇÃO DO CAUSADOR', ''))
+                        texto_np = analise.limpar_valor(df_apa.get('TRANSCRIÇÃO DO NEGOCIADOR PRINCIPAL', ''))
+                        texto_ns = analise.limpar_valor(df_apa.get('TRANSCRIÇÃO DO NEGOCIADOR SECUNDÁRIO', ''))
                         texto_total = f"{texto_c} {texto_np} {texto_ns}"
 
-                        resolucao_raw = limpar_valor(
+                        resolucao_raw = analise.limpar_valor(
                             df_apa.get('Resolução', df_apa.get('RESOLUÇÃO', df_apa.get('resolucao', '')))
                         ).strip()
 
                         resolucao_norm = resolucao_raw.lower()
-
                         if not resolucao_norm:
                             resolucao_tipo = "desconhecida"
                         elif "negocia" in resolucao_norm:
@@ -1646,100 +1742,161 @@ else:
                             "resolucao_tipo": resolucao_tipo,
                             "resolucao_raw": resolucao_raw
                         }
+                        st.success("✅ Padrões mentais processados!")
                     except Exception as e:
                         st.error(f"Erro ao processar: {str(e)[:80]}")
 
             if st.session_state.get('stats_calculados'):
                 stats = st.session_state['stats_calculados']
-                resolucao_tipo = stats.get('resolucao_tipo', 'desconhecida')
-                topicos_globais = stats.get('topicos', ["Sem dados"])
-                topicos_c  = stats.get('topicos_c', ["Análise individual ainda não gerada."])
-                topicos_np = stats.get('topicos_np', ["Análise individual ainda não gerada."])
-                topicos_ns = stats.get('topicos_ns', ["Análise individual ainda não gerada."])
-                wc_c  = stats.get('wc_c')
-                wc_np = stats.get('wc_np')
-                wc_ns = stats.get('wc_ns')
-                texto_c_raw  = stats.get('texto_c_raw', '')
-                texto_np_raw = stats.get('texto_np_raw', '')
-                texto_ns_raw = stats.get('texto_ns_raw', '')
 
-                tab_ng1, tab_ng2, tab_ng3, tab_ng4, tab_ng5 = st.tabs([
-                    "Causador",
-                    "Negociador Principal",
-                    "Negociador Secundário",
-                    "Visão Global",
-                    "✔ Radar & Convergência"
+                tab_ng1, tab_ng2, tab_ng3, tab_ng4, tab_ng5, tab_ng6 = st.tabs([
+                    "🔴 Causador",
+                    "🟢 Negociador Principal",
+                    "🔵 Negociador Secundário",
+                    "📊 Análise Global",
+                    "🔍 Mapas Comparativos",
+                    "📈 Convergência Temática"
                 ])
 
+                # --- TAB 1: CAUSADOR ---
                 with tab_ng1:
-                    st.markdown('<div class="info-card"><h5 style="color: #f97316; margin-top: 0;">✔ Temas Dominantes — Causador</h5>', unsafe_allow_html=True)
+                    st.markdown("""
+                    <div class='info-card'>
+                    <h5 style='color: #ef4444; margin-top: 0;'>🔴 CAUSADOR — O que ele estava REALMENTE focando?</h5>
+                    <p style='font-size:0.9rem;color:#ddd;'>
+                    Os temas dominantes abaixo revelam a <strong>obsessão mental</strong> do causador. 
+                    Se "morte" é tema 1, o risco estava alto. Se "filha" aparece, há ambivalência.
+                    </p>
+                    </div>
+                    """, unsafe_allow_html=True)
+                    
+                    topicos_c = stats.get('topicos_c', ["Análise individual ainda não gerada."])
                     for t in topicos_c:
                         st.markdown(t)
-                    st.markdown('</div>', unsafe_allow_html=True)
+                    
+                    wc_c = stats.get('wc_c')
                     if wc_c:
+                        st.markdown("#### Nuvem de Palavras — Foco Mental do Causador")
                         st.pyplot(wc_c)
                     else:
-                        st.info("Sem transcrição suficiente.")
+                        st.info("Sem transcrição suficiente para gerar nuvem.")
 
+                # --- TAB 2: NEGOCIADOR PRINCIPAL ---
                 with tab_ng2:
-                    st.markdown('<div class="info-card"><h5 style="color: #f97316; margin-top: 0;">✔ Temas Dominantes — Negociador Principal</h5>', unsafe_allow_html=True)
+                    st.markdown("""
+                    <div class='info-card'>
+                    <h5 style='color: #10b981; margin-top: 0;'>🟢 NEGOCIADOR PRINCIPAL — Qual foi a estratégia dele?</h5>
+                    <p style='font-size:0.9rem;color:#ddd;'>
+                    Os temas do negociador mostram <strong>em que ele está focando</strong>. 
+                    Compare com o causador: convergência = boa sintonia; divergência = falha de rapport.
+                    </p>
+                    </div>
+                    """, unsafe_allow_html=True)
+                    
+                    topicos_np = stats.get('topicos_np', ["Análise individual ainda não gerada."])
                     for t in topicos_np:
                         st.markdown(t)
-                    st.markdown('</div>', unsafe_allow_html=True)
+                    
+                    wc_np = stats.get('wc_np')
                     if wc_np:
+                        st.markdown("#### Nuvem de Palavras — Estratégia do Negociador")
                         st.pyplot(wc_np)
                     else:
-                        st.info("Sem transcrição suficiente.")
+                        st.info("Sem transcrição suficiente para gerar nuvem.")
 
+                # --- TAB 3: NEGOCIADOR SECUNDÁRIO ---
                 with tab_ng3:
-                    st.markdown('<div class="info-card"><h5 style="color: #f97316; margin-top: 0;">✔ Temas Dominantes — Negociador Secundário</h5>', unsafe_allow_html=True)
+                    st.markdown("""
+                    <div class='info-card'>
+                    <h5 style='color: #3b82f6; margin-top: 0;'>🔵 NEGOCIADOR SECUNDÁRIO — Qual era o papel dele?</h5>
+                    <p style='font-size:0.9rem;color:#ddd;'>
+                    Geralmente suporte. Seus temas indicam se estava reforçando a mensagem do principal ou dispersando esforços.
+                    </p>
+                    </div>
+                    """, unsafe_allow_html=True)
+                    
+                    topicos_ns = stats.get('topicos_ns', ["Análise individual ainda não gerada."])
                     for t in topicos_ns:
                         st.markdown(t)
-                    st.markdown('</div>', unsafe_allow_html=True)
+                    
+                    wc_ns = stats.get('wc_ns')
                     if wc_ns:
+                        st.markdown("#### Nuvem de Palavras — Atuação do Secundário")
                         st.pyplot(wc_ns)
                     else:
-                        st.info("Sem transcrição suficiente.")
+                        st.info("Sem transcrição suficiente para gerar nuvem.")
 
+                # --- TAB 4: ANÁLISE GLOBAL ---
                 with tab_ng4:
-                    st.markdown('<div class="info-card"><h5 style="color: #f97316; margin-top: 0;">✔ Temas Dominantes Globais</h5>', unsafe_allow_html=True)
+                    st.markdown("""
+                    <div class='info-card'>
+                    <h5 style='color: #f97316; margin-top: 0;'>📊 VISÃO GLOBAL — Os temas da CRISE TODA</h5>
+                    <p style='font-size:0.9rem;color:#ddd;'>
+                    Agregando causador + negociadores, quais eram os assuntos DOMINANTES na negociação?
+                    </p>
+                    </div>
+                    """, unsafe_allow_html=True)
+                    
+                    topicos_globais = stats.get('topicos', ["Sem dados"])
                     for t in topicos_globais:
                         st.markdown(t)
-                    st.markdown("<hr style='border-color: rgba(255,255,255,0.12); margin: 16px 0;'>", unsafe_allow_html=True)
-                    st.markdown("#### ✔ Mapas Comparativos", unsafe_allow_html=True)
+
+                # --- TAB 5: MAPAS COMPARATIVOS ---
+                with tab_ng5:
+                    st.markdown("""
+                    <div class='info-card'>
+                    <h5 style='color: #FFD700; margin-top: 0;'>🔍 MAPAS LADO-A-LADO — Sincronização Mental</h5>
+                    <p style='font-size:0.9rem;color:#ddd;'>
+                    Compare as nuvens visualmente. Se causador fala de "morte" e negociador de "vida", há conversação. 
+                    Se causador de "morte" e negociador de "calma", há desconexão.
+                    </p>
+                    </div>
+                    """, unsafe_allow_html=True)
+                    
                     col_wc_g1, col_wc_g2, col_wc_g3 = st.columns(3)
+                    
                     with col_wc_g1:
                         st.markdown("**Causador**")
+                        wc_c = stats.get('wc_c')
                         if wc_c:
                             st.pyplot(wc_c, clear_figure=True)
                         else:
                             st.info("Sem nuvem.")
+                    
                     with col_wc_g2:
                         st.markdown("**Negociador Principal**")
+                        wc_np = stats.get('wc_np')
                         if wc_np:
                             st.pyplot(wc_np, clear_figure=True)
                         else:
                             st.info("Sem nuvem.")
+                    
                     with col_wc_g3:
                         st.markdown("**Negociador Secundário**")
+                        wc_ns = stats.get('wc_ns')
                         if wc_ns:
                             st.pyplot(wc_ns, clear_figure=True)
                         else:
                             st.info("Sem nuvem.")
-                    st.markdown('</div>', unsafe_allow_html=True)
 
-                with tab_ng5:
-                    st.markdown(
-                        '<div class="info-card">'
-                        '<h4 style="color:#FFD700; margin-top:0;">✔ Radar Comparativo & Convergência Temática</h4>'
-                        '<p style="color:#ccc; font-size:0.9rem; margin-bottom:1rem;">'
-                        '<strong>Complementa Similitude:</strong> Similitude mede alinhamento de <u>palavras</u>. '
-                        'Radar mede alinhamento de <u>TEMAS</u>. Quanto mais sobrepostos, maior entendimento mútuo.</p>',
-                        unsafe_allow_html=True
-                    )
+                # --- TAB 6: CONVERGÊNCIA TEMÁTICA ---
+                with tab_ng6:
+                    st.markdown("""
+                    <div class='info-card'>
+                    <h4 style='color:#FFD700; margin-top:0;'>📈 RADAR SEMÂNTICO & ÍNDICES DE CONVERGÊNCIA</h4>
+                    <p style='color:#ccc; font-size:0.9rem; margin-bottom:1rem;'>
+                    <strong>Complementa Similitude:</strong> Similitude conta "palavras iguais". Radar mede "temas alinhados". 
+                    Um radar com polígonos sobrepostos = causador e negociador estão no MESMO universo mental.
+                    </p>
+                    </div>
+                    """, unsafe_allow_html=True)
+
+                    texto_c_raw  = stats.get('texto_c_raw', '')
+                    texto_np_raw = stats.get('texto_np_raw', '')
+                    texto_ns_raw = stats.get('texto_ns_raw', '')
 
                     if not texto_c_raw or not texto_np_raw:
-                        st.warning("Transcrições insuficientes para radar.")
+                        st.warning("⚠️ Transcrições insuficientes para gerar radar.")
                     else:
                         try:
                             fig_radar, conv = analise.gerar_radar_comparativo(
@@ -1752,40 +1909,81 @@ else:
 
                             if conv:
                                 st.markdown("---")
-                                st.markdown('<h5 style="color:#FFD700;">✔ Índices de Convergência Semântica</h5>', unsafe_allow_html=True)
+                                st.markdown("""
+                                <div style='background:rgba(255,215,0,0.06);padding:12px;border-radius:10px;border:1px solid rgba(255,215,0,0.15);margin-bottom:15px;'>
+                                <p style='font-size:0.9rem;color:#FFD700;font-weight:bold;margin:0;'>
+                                💡 Como ler os índices:
+                                </p>
+                                <p style='font-size:0.85rem;color:#ddd;margin:5px 0 0 0;line-height:1.5;'>
+                                <strong>Δ Risco:</strong> Se positivo = causador mais agressivo. Se negativo = negociador foi muito duro.<br>
+                                <strong>Δ Abertura:</strong> Se positivo = negociador foi acolhedor. Se negativo = barreira alta.<br>
+                                <strong>Efetividade:</strong> Se alta = negociador conseguiu reduzir tensão. Se baixa = sem progresso.<br>
+                                <strong>Rapport:</strong> Quão próximos ficaram em frequência de proteção/abertura.<br>
+                                <strong>Convergência Temática:</strong> 100% = perfeita sincronização. Abaixo de 50% = mundos diferentes.
+                                </p>
+                                </div>
+                                """, unsafe_allow_html=True)
+                                
                                 col_cv1, col_cv2, col_cv3 = st.columns(3)
 
                                 with col_cv1:
                                     delta_risco = conv.get('delta_risco')
                                     st.metric(
-                                        label="Δ Risco",
+                                        label="Δ Risco Observado",
                                         value=f"{delta_risco:+.2f}" if delta_risco is not None else "N/D",
-                                        help="Positivo = causador mais carregado em risco."
+                                        help="Causa-NegPrincipal. Positivo=causador mais carregado. Negativo=negociador foi agressivo."
                                     )
                                     st.caption(conv.get("leitura_risco") or "—")
 
                                 with col_cv2:
-                                    delta_protecao = conv.get('delta_protecao')
+                                    delta_abertura = conv.get('delta_abertura')
                                     st.metric(
-                                        label="Δ Proteção",
-                                        value=f"{delta_protecao:+.2f}" if delta_protecao is not None else "N/D",
-                                        help="Positivo = negociador mais acolhedor."
+                                        label="Δ Abertura Observada",
+                                        value=f"{delta_abertura:+.2f}" if delta_abertura is not None else "N/D",
+                                        help="NegPrincipal-Causa. Positivo=negociador mais acolhedor. Negativo=causador surpreendentemente aberto."
                                     )
-                                    st.caption(conv.get("leitura_protecao") or "—")
+                                    st.caption(conv.get("leitura_abertura") or "—")
 
                                 with col_cv3:
+                                    efetividade = conv.get('efetividade_negociador')
+                                    st.metric(
+                                        label="Efetividade do Negociador",
+                                        value=f"{efetividade:.2f}" if efetividade is not None else "N/D",
+                                        help="Capacidade de reduzir carga de risco. >5=muito efetiva. 2-5=moderada. <2=pouca efetividade."
+                                    )
+                                    st.caption(conv.get("leitura_efetividade") or "—")
+                                
+                                col_cv4, col_cv5, col_cv6 = st.columns(3)
+
+                                with col_cv4:
+                                    rapport = conv.get('rapport_alcancado')
+                                    st.metric(
+                                        label="Rapport Alcançado",
+                                        value=f"{rapport:.2f}" if rapport is not None else "N/D",
+                                        help="Proximidade emocional. Mais baixo = mais próximos (melhor)."
+                                    )
+
+                                with col_cv5:
+                                    delta_progresso = conv.get('delta_progresso')
+                                    st.metric(
+                                        label="Delta de Progresso",
+                                        value=f"{delta_progresso:+.2f}" if delta_progresso is not None else "N/D",
+                                        help="Desescalada total. Positivo=progresso. Negativo=escalada."
+                                    )
+
+                                with col_cv6:
                                     espelhamento = conv.get('espelhamento')
                                     st.metric(
                                         label="Convergência Temática",
                                         value=f"{espelhamento:.0%}" if espelhamento is not None else "N/D",
-                                        help="Proximidade 100% = mesmos temas."
+                                        help="Sincronização de temas. 100%=perfeita. <50%=universos diferentes."
                                     )
                                     st.caption(conv.get("leitura_espelhamento") or "—")
 
                         except Exception as e:
                             st.error(f"Erro ao gerar radar: {str(e)[:80]}")
 
-                    st.markdown('</div>', unsafe_allow_html=True)
+            st.markdown("---")
 
             
                     
