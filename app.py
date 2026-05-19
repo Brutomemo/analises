@@ -2048,9 +2048,13 @@ else:
                                 abertura_observada = sumario.get('abertura_observada')
                                 raiz_observada     = sumario.get('raiz_observada')
                                 volatilidade_index = sumario.get('volatilidade_index')
+                                intensidade_index  = sumario.get('intensidade_index')
+                                direcao_index      = sumario.get('direcao_index')
                                 classificacao      = sumario.get('classificacao')
                                 leitura            = sumario.get('leitura')
+                                resolucao_tipo     = stats.get('resolucao_tipo', 'desconhecida')
 
+                                # ── SCORECARD ──────────────────────────────
                                 st.markdown("### 📊 Resumo da Análise")
                                 col1, col2, col3 = st.columns(3)
 
@@ -2059,13 +2063,11 @@ else:
                                         "🔴 Risco Observado",
                                         f"{risco_observado:.1f}%" if risco_observado is not None else "N/D"
                                     )
-
                                 with col2:
                                     st.metric(
                                         "🟢 Abertura Observada",
                                         f"{abertura_observada:.1f}%" if abertura_observada is not None else "N/D"
                                     )
-
                                 with col3:
                                     st.metric(
                                         "🟡 Raiz Observada",
@@ -2075,29 +2077,29 @@ else:
                                 col4, col5, col6 = st.columns(3)
 
                                 with col4:
-                                    intensidade = sumario.get('intensidade_index')
                                     st.metric(
                                         "⚡ Intensidade Global",
-                                        f"{intensidade:.2f}" if intensidade is not None else "N/D"
+                                        f"{intensidade_index:.2f}" if intensidade_index is not None else "N/D"
                                     )
-
                                 with col5:
-                                    direcao = sumario.get('direcao_index')
                                     st.metric(
-                                        "📉 Direção",
-                                        f"{direcao:+.2f}" if direcao is not None else "N/D"
+                                        "➡️ Direção",
+                                        f"{direcao_index:+.2f}" if direcao_index is not None else "N/D"
                                     )
-
                                 with col6:
-                                    volatilidade = sumario.get('volatilidade_index')
                                     st.metric(
-                                        "🔄 Volatilidade",
-                                        f"{volatilidade:.2f}" if volatilidade is not None else "N/D"
+                                        "✔️ Volatilidade",
+                                        f"{volatilidade_index:.2f}" if volatilidade_index is not None else "N/D"
                                     )
 
+                                # ── CLASSIFICAÇÃO ───────────────────────────
                                 st.markdown("---")
-                                st.markdown("### 🎯 Padrão de Crise (Radar)")
+                                st.markdown(f"### 🚨 Classificação: `{classificacao}`")
+                                st.info(leitura)
 
+                                # ── RADAR ───────────────────────────────────
+                                st.markdown("---")
+                                st.markdown("### ✔️ Padrão de Crise (Radar)")
                                 try:
                                     fig_crise = analise.gerar_radar_crise_individual(
                                         risco_observado    if risco_observado    is not None else 0,
@@ -2107,13 +2109,32 @@ else:
                                     )
                                     st.plotly_chart(fig_crise, use_container_width=True)
                                 except Exception as e:
-                                    import traceback
-                                    st.error(f"Erro ao gerar radar: {str(e)}")
-                                    st.code(traceback.format_exc())
+                                    st.error(f"Erro ao gerar radar: {str(e)[:80]}")
 
+                                # ── NARRATIVA PARA LEIGOS ───────────────────
                                 st.markdown("---")
-                                st.markdown(f"### 🚨 Classificação: `{classificacao}`")
-                                st.info(leitura)
+                                st.markdown("### 📖 Leitura Operacional (Linguagem Acessível)")
+
+                                st.markdown("""
+                                <div style='background:rgba(255,215,0,0.04);padding:4px 12px;border-left:3px solid #FFD700;margin-bottom:12px;'>
+                                <p style='color:#aaa;font-size:0.82rem;margin:6px 0;'>
+                                Interpretação automática dos indicadores em linguagem acessível.
+                                Destinada a leitura rápida por gestores, auditores e instrutores.
+                                </p>
+                                </div>
+                                """, unsafe_allow_html=True)
+
+                                narrativa = analise.gerar_narrativa_crise(
+                                    risco_observado    = risco_observado    or 0,
+                                    abertura_observada = abertura_observada or 0,
+                                    raiz_observada     = raiz_observada     or 0,
+                                    intensidade_index  = intensidade_index  or 0,
+                                    direcao_index      = direcao_index      or 0,
+                                    volatilidade_index = volatilidade_index or 0,
+                                    classificacao      = classificacao      or "INDETERMINADO",
+                                    resolucao_tipo     = resolucao_tipo
+                                )
+                                st.markdown(narrativa)
 
                             else:
                                 st.warning("Não foi possível gerar análise de crise")
