@@ -1227,23 +1227,11 @@ else:
             st.markdown("---")
 
 
-
-
-            # === SEÇÃO 1: TREEMAP DE TÉCNICAS ===
-            st.markdown("""
-            <div style='margin-top:20px;'>
-            <h4 style='color:#FFD700;'>📊 Técnicas Empregadas — Qual foi a estratégia?</h4>
-            <p style='color:#aaa;font-size:0.9rem;'>
-            Visualização das técnicas usadas pelo(s) negociador(es). Maior = mais usada. 
-            Permite identificar o padrão de abordagem e avaliar efetividade.
-            </p>
-            </div>
-            """, unsafe_allow_html=True)
-
+            
             # === SEÇÃO 1: ANÁLISE DE TÉCNICAS × REAÇÃO DO CAUSADOR ===
             st.markdown("""
             <div style='margin-top:20px;'>
-            <h4 style='color:#FFD700;'>🎯 Efetividade das Técnicas — Qual técnica funcionou?</h4>
+            <h5 style='color:#FFD700;'>✔️ Efetividade das Técnicas — Qual técnica funcionou?</h5>
             <p style='color:#aaa;font-size:0.9rem;'>
             Cruza cada técnica usada com a reação do causador.
             Permite identificar quais abordagens foram efetivas nesta ocorrência.
@@ -1363,7 +1351,7 @@ else:
                 total_negativo = int(df_resumo["🔴 Negativa"].sum())
                 score_geral    = round(((total_positivo - total_negativo) / max(1, total_positivo + total_neutro + total_negativo)) * 100, 1)
 
-                st.markdown("### 📊 Resumo Geral")
+                st.markdown("### ✔️ Resumo Geral")
                 col1, col2, col3, col4 = st.columns(4)
                 with col1:
                     st.metric("Total de Usos", total_usos)
@@ -1375,7 +1363,7 @@ else:
                     st.metric("Score Geral", f"{score_geral:+.1f}%")
 
                 # ── TABELA DETALHADA ──────────────────────────────────────────
-                st.markdown("### 📋 Efetividade por Técnica")
+                st.markdown("### ✔️ Efetividade por Técnica")
                 st.dataframe(
                     df_resumo,
                     use_container_width=True,
@@ -1383,7 +1371,7 @@ else:
                 )
 
                 # ── GRÁFICO DE BARRAS EMPILHADAS ─────────────────────────────
-                st.markdown("### 📈 Distribuição de Reações por Técnica")
+                st.markdown("### ✔️ Distribuição de Reações por Técnica")
                 try:
                     import plotly.graph_objects as go
 
@@ -1438,7 +1426,7 @@ else:
 
                 # ── NARRATIVA AUTOMÁTICA ──────────────────────────────────────
                 st.markdown("---")
-                st.markdown("### 🧠 Leitura Operacional")
+                st.markdown("### ✔️ Leitura Operacional")
 
                 melhor = df_resumo.iloc[0] if not df_resumo.empty else None
                 pior   = df_resumo[df_resumo["Score (%)"].notna()].sort_values("Score (%)").iloc[0] if not df_resumo.empty else None
