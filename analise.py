@@ -354,6 +354,13 @@ def gerar_wordcloud(texto):
 # ============================================================
 # 4. MOTOR DIRECIONAL MELHORADO (Interpretação APA)
 # ============================================================
+def deve_mostrar_metricas_apa(nome_aba):
+    """Mostra métricas APA apenas em abas específicas"""
+    abas_com_metricas = [
+        "✔️ Convergência Temática",
+        "✔️ Estado de Crise"
+    ]
+    return nome_aba in abas_com_metricas
 
 def _obter_tokens_e_posicoes(texto_norm):
     matches = list(re.finditer(r"\b\w+\b", texto_norm))
@@ -1025,26 +1032,16 @@ def extrair_topicos_ngrams(texto, resolucao_tipo="desconhecida"):
         pass
 
     # Bloco final: vetores APA
-    resultado.append("")
-    resultado.append(f"**🔴 Risco Observado:** `{resumo['risco_observado']:.2f}%` — Intensidade de ameaça/hostilidade")
-    resultado.append(f"**🟢 Abertura Observada:** `{resumo['abertura_observada']:.2f}%` — Sinais de cooperação/rendição")
-    resultado.append(f"**🟡 Raiz Observada:** `{resumo['raiz_observada']:.2f}%` — Gatilhos/motivadores da crise")
-    resultado.append(f"**Intensidade Geral:** `{resumo['intensidade_index']:.2f}` — Carga emocional total")
-
-    if resumo["direcao_index"] > 0:
-        direcao_txt = "desescalada"
-        icone = "📈"
-    elif resumo["direcao_index"] < 0:
-        direcao_txt = "escalada"
-        icone = "📉"
-    else:
-        direcao_txt = "equilíbrio"
-        icone = "⚖️"
-
-    resultado.append(f"**{icone} Direção:** `{resumo['direcao_index']:.2f}` — Predomínio de {direcao_txt}")
-    resultado.append(f"**Volatilidade:** `{resumo['volatilidade_index']:.2f}` — Risco de mudanças bruscas")
-    resultado.append(f"**Classificação APA:** **{resumo['classificacao']}**")
-    resultado.append(f"**Leitura Operacional:** {resumo['leitura']}")
+    if mostrar_metricas_apa:  # ✅ NOVO: condicional
+        resultado.append("")
+        resultado.append(f"**🔴 Risco Observado:** `{resumo['risco_observado']:.2f}%` — ...")
+        resultado.append(f"**🟢 Abertura Observada:** `{resumo['abertura_observada']:.2f}%` — ...")
+        resultado.append(f"**🟡 Raiz Observada:** `{resumo['raiz_observada']:.2f}%` — ...")
+        resultado.append(f"**Intensidade Geral:** `{resumo['intensidade_index']:.2f}` — ...")
+        resultado.append(f"**{icone} Direção:** `{resumo['direcao_index']:.2f}` — ...")
+        resultado.append(f"**Volatilidade:** `{resumo['volatilidade_index']:.2f}` — ...")
+        resultado.append(f"**Classificação APA:** **{resumo['classificacao']}**")
+        resultado.append(f"**Leitura Operacional:** {resumo['leitura']}")
 
     return resultado
 

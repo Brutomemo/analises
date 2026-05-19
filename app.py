@@ -1648,7 +1648,7 @@ else:
                                         fig_grafo.update_layout(height=400)
                                         st.plotly_chart(fig_grafo, use_container_width=True)
                                         
-                                        tab1, tab2 = st.tabs(["📊 Resumo", "📝 Palavras Compartilhadas"])
+                                        tab1, tab2 = st.tabs(["✔️ Resumo", "✔️ Palavras Compartilhadas"])
 
                                         with tab1:
                                             st.markdown(f"""
@@ -1902,6 +1902,25 @@ else:
 
             # --- FIM DO BLOCO DE EXPLICAÇÃO ---
 
+
+            def extrair_temas_e_metricas(resultado_lista):
+                """
+                Separa os temas das métricas APA.
+                Métricas começam com ** e contêm: Risco, Abertura, Raiz, Intensidade, Direção, Volatilidade
+                """
+                temas = []
+                metricas = []
+                
+                for linha in resultado_lista:
+                    if any(keyword in linha for keyword in ['Risco Observado', 'Abertura Observada', 'Raiz Observada', 
+                                                            'Intensidade Geral', 'Direção:', 'Volatilidade', 
+                                                            'Classificação APA', 'Leitura Operacional']):
+                        metricas.append(linha)
+                    else:
+                        temas.append(linha)
+                
+                return temas, metricas
+
             
 
             if st.button("✔ 2. Gerar Padrões Mentais & Nuvem de Palavras", key="btn_ngramas_semantica"):
@@ -1947,11 +1966,22 @@ else:
                             df_apa.get('tempo_negociacao_tatica', 0)))
                         )
 
+                        # ✅ NOVO: Separar temas e métricas
+                        resultado_total = analise.extrair_topicos_ngrams(texto_total, resolucao_tipo=resolucao_tipo) if len(texto_total) > 10 else ["Texto insuficiente"]
+                        resultado_c = analise.extrair_topicos_ngrams(texto_c, resolucao_tipo=resolucao_tipo) if len(texto_c) > 10 else ["Texto insuficiente"]
+                        resultado_np = analise.extrair_topicos_ngrams(texto_np, resolucao_tipo=resolucao_tipo) if len(texto_np) > 10 else ["Texto insuficiente"]
+                        resultado_ns = analise.extrair_topicos_ngrams(texto_ns, resolucao_tipo=resolucao_tipo) if len(texto_ns) > 10 else ["Texto insuficiente"]
+
+                        temas_total, metricas_total = extrair_temas_e_metricas(resultado_total)
+                        temas_c, metricas_c = extrair_temas_e_metricas(resultado_c)
+                        temas_np, metricas_np = extrair_temas_e_metricas(resultado_np)
+                        temas_ns, metricas_ns = extrair_temas_e_metricas(resultado_ns)
+
                         st.session_state['stats_calculados'] = {
-                            "topicos":     analise.extrair_topicos_ngrams(texto_total, resolucao_tipo=resolucao_tipo) if len(texto_total) > 10 else ["Texto insuficiente"],
-                            "topicos_c":   analise.extrair_topicos_ngrams(texto_c,     resolucao_tipo=resolucao_tipo) if len(texto_c)     > 10 else ["Texto insuficiente"],
-                            "topicos_np":  analise.extrair_topicos_ngrams(texto_np,    resolucao_tipo=resolucao_tipo) if len(texto_np)    > 10 else ["Texto insuficiente"],
-                            "topicos_ns":  analise.extrair_topicos_ngrams(texto_ns,    resolucao_tipo=resolucao_tipo) if len(texto_ns)    > 10 else ["Texto insuficiente"],
+                            "temas":       temas_total,
+                            "temas_c":     temas_c,
+                            "temas_np":    temas_np,
+                            "temas_ns":    temas_ns,
                             "wc_c":        analise.gerar_wordcloud(texto_c)  if len(texto_c)  > 5 else None,
                             "wc_np":       analise.gerar_wordcloud(texto_np) if len(texto_np) > 5 else None,
                             "wc_ns":       analise.gerar_wordcloud(texto_ns) if len(texto_ns) > 5 else None,
@@ -1960,8 +1990,8 @@ else:
                             "texto_ns_raw":     texto_ns,
                             "resolucao_tipo":   resolucao_tipo,
                             "resolucao_raw":    resolucao_raw,
-                            "tempo_neg_real":   tempo_neg_real,    # ✅ NOVO
-                            "tempo_neg_tatica": tempo_neg_tatica,  # ✅ NOVO
+                            "tempo_neg_real":   tempo_neg_real,
+                            "tempo_neg_tatica": tempo_neg_tatica,
                         }
                         st.success("✅ Padrões mentais processados!")
                     except Exception as e:
@@ -1992,7 +2022,7 @@ else:
                     </div>
                     """, unsafe_allow_html=True)
 
-                    topicos_c = stats.get('topicos_c', ["Análise individual ainda não gerada."])
+                    topicos_c = stats.get('temas_c', ["Análise individual ainda não gerada."])
                     for t in topicos_c:
                         st.markdown(t)
 
@@ -2017,7 +2047,7 @@ else:
                     </div>
                     """, unsafe_allow_html=True)
 
-                    topicos_np = stats.get('topicos_np', ["Análise individual ainda não gerada."])
+                    topicos_np = stats.get('temas_np', ["Análise individual ainda não gerada."])
                     for t in topicos_np:
                         st.markdown(t)
 
@@ -2041,7 +2071,7 @@ else:
                     </div>
                     """, unsafe_allow_html=True)
 
-                    topicos_ns = stats.get('topicos_ns', ["Análise individual ainda não gerada."])
+                    topicos_ns = stats.get('temas_ns', ["Análise individual ainda não gerada."])
                     for t in topicos_ns:
                         st.markdown(t)
 
@@ -2065,7 +2095,7 @@ else:
                     </div>
                     """, unsafe_allow_html=True)
 
-                    topicos_globais = stats.get('topicos', ["Sem dados"])
+                    topicos_globais = stats.get('temas', ["Sem dados"])
                     for t in topicos_globais:
                         st.markdown(t)
                     
