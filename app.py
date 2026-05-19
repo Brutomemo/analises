@@ -2107,7 +2107,9 @@ else:
                                     )
                                     st.plotly_chart(fig_crise, use_container_width=True)
                                 except Exception as e:
-                                    st.error(f"Erro ao gerar radar: {str(e)[:80]}")
+                                    import traceback
+                                    st.error(f"Erro ao gerar radar: {str(e)}")
+                                    st.code(traceback.format_exc())
 
                                 st.markdown("---")
                                 st.markdown(f"### 🚨 Classificação: `{classificacao}`")
