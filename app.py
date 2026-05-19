@@ -2349,8 +2349,8 @@ else:
                     else:
                         st.warning("⚠️ Nenhuma transcrição disponível para análise")
                         
-                        </div>
-                                                        
+
+                                
                     # ===== PRÓXIMO BOTÃO (FORA DA TAB) =====
             if st.button("✔ 3. GERAR ANALYTICS E EXPORTAR ANÁLISE (PDF)"):
                 with st.spinner("Compilando dados técnicos, consultando IA e desenhando PDF..."):
