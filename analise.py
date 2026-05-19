@@ -11,7 +11,6 @@ from scipy.stats import chi2_contingency, spearmanr
 from sklearn.feature_extraction.text import CountVectorizer
 from wordcloud import WordCloud
 from sklearn.metrics.pairwise import cosine_similarity
-from analise import gerar_radar_crise_individual
 
 # ============================================================
 # 1. STOPWORDS E CONFIGURAÇÕES GERAIS
