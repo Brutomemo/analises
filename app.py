@@ -130,7 +130,7 @@ if not check_password():
 
 st.sidebar.success("Autenticação validada.")
 # =====================================================================
-# 🚨 INSERIR O CÓDIGO DE CARREGAMENTO GLOBAL AQUI (O "PORTEIRO")
+# 🚨 INSERIR O CÓDIGO DE CARREGAMENTO GERAL AQUI (O "PORTEIRO")
 # =====================================================================
 # 1. Tenta recuperar os dados do cofre (Session State)
 if "df_quali" in st.session_state and "df_tec" in st.session_state:
@@ -1489,7 +1489,7 @@ else:
 
             st.markdown("""
             <div style='background: var(--color-background-secondary); border-left: 4px solid #378ADD; padding: 15px; border-radius: 8px; margin-bottom: 20px;'>
-            <h4 style='color: #378ADD; margin-top: 0;'>📊 Como Ler o Gráfico de Palavras</h4>
+            <h5 style='color: #378ADD; margin-top: 0;'>✔️ Como Ler o Gráfico de Palavras</h5>
             <p style='color: #aaa; margin-bottom: 10px;'><strong>O que você verá:</strong></p>
             <ul style='color: #bbb; line-height: 1.6;'>
             <li><strong style='color: #2196F3;'>● Azul (esquerda)</strong> = Negociador</li>
@@ -2048,11 +2048,11 @@ else:
                     else:
                         st.info("Sem transcrição suficiente para gerar nuvem.")
 
-                # --- TAB 4: ANÁLISE GLOBAL ---
+                # --- TAB 4: ANÁLISE GERAL ---
                 with tab_ng4:
                     st.markdown("""
                     <div class='info-card'>
-                    <h5 style='color: #f97316; margin-top: 0;'>📊 VISÃO GLOBAL — Os temas da CRISE TODA</h5>
+                    <h5 style='color: #f97316; margin-top: 0;'>✔️ VISÃO GERAL — Os temas gerais do incidente</h5>
                     <p style='font-size:0.9rem;color:#ddd;'>
                     Agregando causador + negociadores, quais eram os assuntos DOMINANTES na negociação?
                     </p>
@@ -2067,7 +2067,7 @@ else:
                 with tab_ng5:
                     st.markdown("""
                     <div class='info-card'>
-                    <h5 style='color: #FFD700; margin-top: 0;'>🔍 MAPAS LADO-A-LADO — Sincronização Mental</h5>
+                    <h5 style='color: #FFD700; margin-top: 0;'>✔️ MAPAS LADO-A-LADO — Sincronização Mental</h5>
                     <p style='font-size:0.9rem;color:#ddd;'>
                     Compare as nuvens visualmente. Se causador fala de "morte" e negociador de "vida", há conversação. 
                     Se causador de "morte" e negociador de "calma", há desconexão.
@@ -2105,7 +2105,7 @@ else:
                 with tab_ng6:
                     st.markdown("""
                     <div class='info-card'>
-                    <h4 style='color:#FFD700; margin-top:0;'>📈 RADAR SEMÂNTICO & ÍNDICES DE CONVERGÊNCIA</h4>
+                    <h5 style='color:#FFD700; margin-top:0;'>✔️ RADAR SEMÂNTICO & ÍNDICES DE CONVERGÊNCIA</h5>
                     <p style='color:#ccc; font-size:0.9rem; margin-bottom:1rem;'>
                     <strong>Complementa Similitude:</strong> Similitude conta "palavras iguais". Radar mede "temas alinhados". 
                     Um radar com polígonos sobrepostos = causador e negociador estão no MESMO universo mental.
@@ -2259,7 +2259,7 @@ else:
                                 resolucao_tipo     = stats.get('resolucao_tipo', 'desconhecida')
 
                                 # ── SCORECARD ──────────────────────────────
-                                st.markdown("### 📊 Resumo da Análise")
+                                st.markdown("### ✔️ Resumo da Análise")
                                 col1, col2, col3 = st.columns(3)
 
                                 with col1:
@@ -2317,7 +2317,7 @@ else:
 
                                 # ── NARRATIVA PARA LEIGOS ───────────────────
                                 st.markdown("---")
-                                st.markdown("### 📖 Leitura Operacional (Linguagem Acessível)")
+                                st.markdown("### ✔️ Leitura Operacional (Linguagem Acessível)")
 
                                 st.markdown("""
                                 <div style='background:rgba(255,215,0,0.04);padding:4px 12px;border-left:3px solid #FFD700;margin-bottom:12px;'>
