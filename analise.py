@@ -1174,3 +1174,226 @@ def calcular_qui_quadrado(df_historico, col_cat1, col_cat2):
             "valido": False,
             "msg": f"Erro: {str(e)}"
         }
+    
+    def gerar_narrativa_crise(risco_observado, abertura_observada, raiz_observada,
+                          intensidade_index, direcao_index, volatilidade_index,
+                          classificacao, resolucao_tipo="desconhecida"):
+        """
+        Gera narrativa automática em linguagem simples para leitura por leigos.
+        Resposta flexível conforme os valores reais.
+        """
+
+    linhas = []
+
+    # ── 1. ABERTURA ──────────────────────────────────────────────────────────
+    if classificacao == "SEM DADOS":
+        return "⚠️ Sem dados suficientes para análise narrativa."
+    if classificacao == "DADOS INSUFICIENTES":
+        return "⚠️ Transcrição muito curta. Não é possível gerar narrativa confiável."
+    if classificacao == "HOUVE INTERVENÇÃO":
+        return ("🚨 Esta ocorrência foi resolvida fora da negociação verbal. "
+                "A análise narrativa não se aplica ao modelo de desescalada conversacional.")
+
+    # ── 2. RISCO ─────────────────────────────────────────────────────────────
+    if risco_observado >= 60:
+        txt_risco = (
+            f"🔴 **Risco extremamente elevado ({risco_observado:.1f}%):** "
+            "O causador utilizou linguagem predominantemente ameaçadora e hostil durante toda a ocorrência. "
+            "A carga de palavras ligadas à violência, morte ou dano foi muito intensa."
+        )
+    elif risco_observado >= 35:
+        txt_risco = (
+            f"🔴 **Risco alto ({risco_observado:.1f}%):** "
+            "O causador demonstrou linguagem claramente hostil e ameaçadora em grande parte do discurso. "
+            "Havia concentração significativa de palavras de perigo e agressão."
+        )
+    elif risco_observado >= 18:
+        txt_risco = (
+            f"🟡 **Risco moderado ({risco_observado:.1f}%):** "
+            "Havia sinais de hostilidade presentes, mas não dominantes. "
+            "O causador alternava entre linguagem agressiva e momentos de menor tensão."
+        )
+    elif risco_observado >= 8:
+        txt_risco = (
+            f"🟢 **Risco baixo ({risco_observado:.1f}%):** "
+            "Pouca linguagem ameaçadora detectada. "
+            "O causador não estava em escalada verbal clara."
+        )
+    else:
+        txt_risco = (
+            f"🟢 **Risco muito baixo ({risco_observado:.1f}%):** "
+            "Quase nenhuma linguagem hostil detectada no discurso do causador."
+        )
+    linhas.append(txt_risco)
+
+    # ── 3. ABERTURA ──────────────────────────────────────────────────────────
+    if abertura_observada >= 40:
+        txt_ab = (
+            f"🟢 **Abertura alta ({abertura_observada:.1f}%):** "
+            "O causador demonstrou muitos sinais de cooperação, rendição ou disposição para diálogo. "
+            "Havia ambivalência — apesar do risco, ele ainda sinalizava saída."
+        )
+    elif abertura_observada >= 20:
+        txt_ab = (
+            f"🟡 **Abertura moderada ({abertura_observada:.1f}%):** "
+            "Alguns sinais de cooperação foram detectados, mas não suficientes para caracterizar disposição clara para resolução."
+        )
+    elif abertura_observada >= 8:
+        txt_ab = (
+            f"🔴 **Abertura baixa ({abertura_observada:.1f}%):** "
+            "Poucos sinais de cooperação. O causador estava pouco receptivo ao diálogo neste momento."
+        )
+    else:
+        txt_ab = (
+            f"🔴 **Abertura muito baixa ({abertura_observada:.1f}%):** "
+            "Praticamente nenhum sinal de cooperação ou rendição detectado."
+        )
+    linhas.append(txt_ab)
+
+    # ── 4. RAIZ ──────────────────────────────────────────────────────────────
+    if raiz_observada >= 40:
+        txt_raiz = (
+            f"🟡 **Raiz muito presente ({raiz_observada:.1f}%):** "
+            "O causador estava fortemente focado na origem do problema — o motivo que o levou à crise. "
+            "Isso pode indicar fixação, dificultando avanço na negociação, "
+            "mas também revela o ponto central que precisa ser endereçado."
+        )
+    elif raiz_observada >= 20:
+        txt_raiz = (
+            f"🟡 **Raiz presente ({raiz_observada:.1f}%):** "
+            "O causador mencionou frequentemente os gatilhos e motivos da crise. "
+            "Há clareza sobre a origem do conflito."
+        )
+    elif raiz_observada >= 8:
+        txt_raiz = (
+            f"🟢 **Raiz moderada ({raiz_observada:.1f}%):** "
+            "O causador tocou na origem da crise, mas sem obsessão. "
+            "Ponto de entrada para o negociador trabalhar."
+        )
+    else:
+        txt_raiz = (
+            f"⚠️ **Raiz pouco articulada ({raiz_observada:.1f}%):** "
+            "O causador não verbalizou claramente a origem da crise. "
+            "Pode haver dificuldade em identificar o motivo real ou resistência em expressá-lo."
+        )
+    linhas.append(txt_raiz)
+
+    # ── 5. DIREÇÃO ───────────────────────────────────────────────────────────
+    if direcao_index <= -30:
+        txt_dir = (
+            f"📉 **Direção: escalada intensa ({direcao_index:.1f}):** "
+            "O discurso do causador estava predominantemente em escalada. "
+            "A tensão verbal era muito superior aos sinais de cooperação."
+        )
+    elif direcao_index <= -10:
+        txt_dir = (
+            f"📉 **Direção: tendência de escalada ({direcao_index:.1f}):** "
+            "Havia mais hostilidade do que cooperação, indicando que a crise ainda estava em curso."
+        )
+    elif direcao_index <= 0:
+        txt_dir = (
+            f"⚖️ **Direção: levemente negativa ({direcao_index:.1f}):** "
+            "Crise no limiar — risco e abertura quase empatados, com leve predomínio de tensão."
+        )
+    elif direcao_index <= 10:
+        txt_dir = (
+            f"📈 **Direção: leve desescalada ({direcao_index:.1f}):** "
+            "Sinais de cooperação ligeiramente superiores ao risco. Tendência positiva."
+        )
+    else:
+        txt_dir = (
+            f"📈 **Direção: desescalada clara ({direcao_index:.1f}):** "
+            "Cooperação predominante. O causador estava visivelmente se acalmando."
+        )
+    linhas.append(txt_dir)
+
+    # ── 6. INTENSIDADE ───────────────────────────────────────────────────────
+    if intensidade_index >= 100:
+        txt_int = (
+            f"⚡ **Intensidade extrema ({intensidade_index:.1f}):** "
+            "Carga emocional muito elevada. Ocorrência de alta complexidade."
+        )
+    elif intensidade_index >= 60:
+        txt_int = (
+            f"⚡ **Intensidade alta ({intensidade_index:.1f}):** "
+            "Ocorrência com carga emocional significativa."
+        )
+    elif intensidade_index >= 30:
+        txt_int = (
+            f"⚡ **Intensidade moderada ({intensidade_index:.1f}):** "
+            "Carga emocional presente mas controlável."
+        )
+    else:
+        txt_int = (
+            f"⚡ **Intensidade baixa ({intensidade_index:.1f}):** "
+            "Baixa carga emocional global."
+        )
+    linhas.append(txt_int)
+
+    # ── 7. VOLATILIDADE ──────────────────────────────────────────────────────
+    if volatilidade_index >= 30:
+        txt_vol = (
+            f"🔄 **Volatilidade alta ({volatilidade_index:.1f}):** "
+            "Alto risco de mudanças bruscas de comportamento. "
+            "Qualquer estímulo pode provocar escalada ou desescalada súbita."
+        )
+    elif volatilidade_index >= 15:
+        txt_vol = (
+            f"🔄 **Volatilidade moderada ({volatilidade_index:.1f}):** "
+            "Algum risco de mudança brusca. Negociador deve manter atenção constante."
+        )
+    else:
+        txt_vol = (
+            f"🔄 **Volatilidade baixa ({volatilidade_index:.1f}):** "
+            "Comportamento relativamente previsível neste momento."
+        )
+    linhas.append(txt_vol)
+
+    # ── 8. SÍNTESE FINAL ─────────────────────────────────────────────────────
+    linhas.append("")
+    linhas.append("---")
+    linhas.append("### 🧠 Síntese Operacional")
+
+    # Combinações de padrão para síntese
+    if risco_observado >= 35 and abertura_observada >= 20:
+        sintese = (
+            "O causador apresentou **perfil ambivalente** — alta hostilidade coexistindo com sinais de cooperação. "
+            "Este é o padrão típico de crise com **janela de resolução**: há sofrimento real, mas também abertura. "
+            "O negociador deve explorar os sinais de abertura sem ignorar o risco."
+        )
+    elif risco_observado >= 35 and abertura_observada < 10:
+        sintese = (
+            "O causador estava em **estado de alta hostilidade com mínima abertura**. "
+            "Padrão de crise fechada — resistência ao diálogo era dominante. "
+            "Prioridade: construir abertura antes de qualquer tentativa de resolução."
+        )
+    elif risco_observado < 15 and abertura_observada >= 20:
+        sintese = (
+            "O causador demonstrou **baixo risco com boa abertura**. "
+            "Padrão favorável à resolução — havia disposição para diálogo. "
+            "Negociador estava em posição confortável para conduzir a desescalada."
+        )
+    elif raiz_observada >= 40 and risco_observado >= 20:
+        sintese = (
+            "O causador estava **muito fixado na origem da crise** com alto risco. "
+            "Padrão de ruminação — ele repetia o motivo da crise continuamente. "
+            "Estratégia recomendada: validar a causa sem concordar com a forma."
+        )
+    else:
+        sintese = (
+            f"Padrão classificado como **{classificacao}**. "
+            "Os indicadores sugerem uma ocorrência de complexidade mista. "
+            "Recomenda-se análise integrada com o contexto operacional completo."
+        )
+    linhas.append(sintese)
+
+    # Alerta de resolução
+    if resolucao_tipo == "nao_negociacao":
+        linhas.append("")
+        linhas.append(
+            "⚠️ **Atenção:** Esta ocorrência foi resolvida por intervenção, não por negociação. "
+            "Os indicadores acima refletem o estado do causador durante o processo, "
+            "mas a resolução dependeu de outros fatores operacionais."
+        )
+
+    return "\n\n".join(linhas)
