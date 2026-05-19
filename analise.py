@@ -404,6 +404,7 @@ def eh_vocativo(tokens, idx_inicio, idx_fim, repeticao_threshold=3):
     return False
 
 def analisar_crise_direcional(texto, resolucao_tipo="desconhecida"):
+    carga_maxima_esperada = 100
     """
     Motor de análise semântica direcional.
     Retorna vetores de Risco, Proteção e Contexto com interpretação para APA.
@@ -617,6 +618,32 @@ def classificar_estado_crise_apa(
         "AMBIVALENTE / INDETERMINADO",
         "Mistura de sinais. Recomenda-se análise integrada com contexto operacional e timeline."
     )
+
+def gerar_radar_crise_individual(risco, abertura, raiz, volatilidade):
+    """Gera radar de crise individual"""
+    import plotly.graph_objects as go
+    
+    fig = go.Figure(data=go.Scatterpolar(
+        r=[risco, abertura, raiz, volatilidade],
+        theta=['Risco Observado', 'Abertura Observada', 'Raiz Observada', 'Volatilidade'],
+        fill='toself',
+        name='Estado da Crise',
+        line=dict(color='#ef4444', width=2),
+        fillcolor='rgba(239,68,68,0.25)'
+    ))
+    
+    fig.update_layout(
+        polar=dict(
+            radialaxis=dict(visible=True, range=[0, 30]),
+            bgcolor='rgba(0,0,0,0)'
+        ),
+        paper_bgcolor='rgba(0,0,0,0)',
+        plot_bgcolor='rgba(0,0,0,0)',
+        font=dict(color='#fff'),
+        height=400
+    )
+    
+    return fig
 
 # ============================================================
 # 5. EXTRAÇÃO DE N-GRAMAS COM INTERPRETAÇÃO APA
