@@ -1961,21 +1961,24 @@ else:
                                 with col_cv4:
                                     rapport = conv.get('rapport_alcancado')
                                     
-                                    st.metric(
-                                        label="Diferença de Abertura",
-                                        value=f"{rapport:.2f}" if rapport is not None else "N/D",
-                                        help="Quanto menor este número, melhor a sincronização emocional entre negociador e causador."
-                                    )
-                                    
                                     if rapport is not None:
-                                        if rapport < 2:
-                                            st.caption("✅ Excelente sincronização")
-                                        elif rapport < 5:
-                                            st.caption("🔵 Boa sincronização")
-                                        elif rapport < 10:
-                                            st.caption("⚠️ Sincronização moderada")
+                                        if rapport >= 9:
+                                            status = "✅ Excelente"
+                                        elif rapport >= 7:
+                                            status = "🔵 Bom"
+                                        elif rapport >= 5:
+                                            status = "⚠️ Moderado"
                                         else:
-                                            st.caption("❌ Sincronização fraca")
+                                            status = "❌ Fraco"
+                                    else:
+                                        status = "N/D"
+                                    
+                                    st.metric(
+                                        label="Rapport Alcançado",
+                                        value=f"{rapport:.1f}/10" if rapport is not None else "N/D",
+                                        help="Sincronização emocional (0-10). Quanto mais perto de 10, melhor."
+                                    )
+                                    st.caption(status)
 
                                 with col_cv5:
                                     delta_progresso = conv.get('delta_progresso')
