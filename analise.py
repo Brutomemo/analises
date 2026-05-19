@@ -358,7 +358,7 @@ def deve_mostrar_metricas_apa(nome_aba):
     """Mostra métricas APA apenas em abas específicas"""
     abas_com_metricas = [
         "✔️ Convergência Temática",
-        "✔️ Estado de Crise"
+        "✔️ Estado da Crise"
     ]
     return nome_aba in abas_com_metricas
 

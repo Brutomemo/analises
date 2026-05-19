@@ -2007,7 +2007,7 @@ else:
                     "✔️ Análise Global",
                     "✔️ Comparativo das Nuvens de Palavras",
                     "✔️ Convergência Temática",
-                    "✔️ Estado de Crise"
+                    "✔️ Estado da Crise"
                 ])
               
                 # --- TAB 1: CAUSADOR ---
@@ -2386,6 +2386,9 @@ else:
 
                     else:
                         st.warning("⚠️ Nenhuma transcrição disponível para análise")
+
+
+                        st.markdown("---")
 
                                 
                     # ===== PRÓXIMO BOTÃO (FORA DA TAB) =====
