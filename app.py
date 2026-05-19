@@ -1887,168 +1887,157 @@ else:
                         else:
                             st.info("Sem nuvem.")
 
-                # --- TAB 6: CONVERGÊNCIA TEMÁTICA ---
-                with tab_ng6:
-                    st.markdown("""
-                    <div class='info-card'>
-                    <h4 style='color:#FFD700; margin-top:0;'>📈 RADAR SEMÂNTICO & ÍNDICES DE CONVERGÊNCIA</h4>
-                    <p style='color:#ccc; font-size:0.9rem; margin-bottom:1rem;'>
-                    <strong>Complementa Similitude:</strong> Similitude conta "palavras iguais". Radar mede "temas alinhados". 
-                    Um radar com polígonos sobrepostos = causador e negociador estão no MESMO universo mental.
-                    </p>
-                    </div>
-                    """, unsafe_allow_html=True)
-
-                    texto_c_raw  = stats.get('texto_c_raw', '')
-                    texto_np_raw = stats.get('texto_np_raw', '')
-                    texto_ns_raw = stats.get('texto_ns_raw', '')
-
-                    if not texto_c_raw or not texto_np_raw:
-                        st.warning("⚠️ Transcrições insuficientes para gerar radar.")
-                    else:
-                        try:
-                            fig_radar, conv = analise.gerar_radar_comparativo(
-                                texto_c_raw,
-                                texto_np_raw,
-                                texto_ns_raw if texto_ns_raw else None
-                            )
-                            if fig_radar:
-                                st.plotly_chart(fig_radar, use_container_width=True)
-
-                                st.markdown("""
-                                <div style='background:rgba(255,68,68,0.1);padding:15px;border-radius:10px;border:1px solid #ef4444;margin:20px 0;'>
-                                <h4 style='color:#ef4444;margin-top:0;'>⚠️ PARADOXO: Similitude vs. Convergência (LEITURA INTEGRADA)</h4>
-                                <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
-                                O <strong>Grafo de Espelhamento</strong> (Similitude) mostra <strong>palavras compartilhadas</strong>.<br>
-                                O <strong>Radar de Convergência</strong> mostra <strong>temas/universos mentais</strong>.<br><br>
+                    # --- TAB 6: CONVERGÊNCIA TEMÁTICA ---
+                    with tab_ng6:
+                        st.markdown("""
+                        <div class='info-card'>
+                        <h4 style='color:#FFD700; margin-top:0;'>📈 RADAR SEMÂNTICO & ÍNDICES DE CONVERGÊNCIA</h4>
+                        <p style='color:#ccc; font-size:0.9rem; margin-bottom:1rem;'>
+                        <strong>Complementa Similitude:</strong> Similitude conta "palavras iguais". Radar mede "temas alinhados". 
+                        Um radar com polígonos sobrepostos = causador e negociador estão no MESMO universo mental.
+                        </p>
+                        </div>
+                        """, unsafe_allow_html=True)
+    
+                        texto_c_raw  = stats.get('texto_c_raw', '')
+                        texto_np_raw = stats.get('texto_np_raw', '')
+                        texto_ns_raw = stats.get('texto_ns_raw', '')
+    
+                        if not texto_c_raw or not texto_np_raw:
+                            st.warning("⚠️ Transcrições insuficientes para gerar radar.")
+                        else:
+                            try:
+                                fig_radar, conv = analise.gerar_radar_comparativo(
+                                    texto_c_raw,
+                                    texto_np_raw,
+                                    texto_ns_raw if texto_ns_raw else None
+                                )
                                 
-                                <strong>🔴 Cenário de Risco - Quando divergem:</strong><br>
-                                • <strong>Similitude alta + Convergência baixa</strong> = Negociador repetindo vícios/preenchedores sem validar a emoção real<br>
-                                &nbsp;&nbsp; <em>Exemplo: Ambos dizem "mano" (similitude), mas um foca em "calma" e outro em "morte" (convergência baixa)</em><br>
-                                &nbsp;&nbsp; <strong>Resultado:</strong> Falsa conexão - parecem se entender mas não estão sincronizados<br><br>
+                                # ✅ EXIBIR O RADAR
+                                if fig_radar:
+                                    st.plotly_chart(fig_radar, use_container_width=True)
                                 
-                                • <strong>Similitude baixa + Convergência alta</strong> = Negociador fala diferente mas ENTENDE o causador ✅<br>
-                                &nbsp;&nbsp; <em>Exemplo: Negociador: "Entendo sua dor" | Causador: "Tô sofrendo demais"</em><br>
-                                &nbsp;&nbsp; <strong>Resultado:</strong> Boa sincronização temática mesmo com palavras diferentes<br><br>
-                                
-                                <strong>💡 Regra de Ouro para APA:</strong><br>
-                                Não confunda "usar as mesmas palavras" com "estar sincronizado emocionalmente".<br>
-                                Se similitude é alta MAS efetividade é negativa, procure por palavras SEM significado temático (vícios como "mano", "tipo", "cara").
-                                </p>
-                                </div>
-                                """, unsafe_allow_html=True)
-                                                       
-                            
-                            if conv:
-                                st.markdown("---")
-                                st.markdown("""
-                                <div style='background:rgba(255,215,0,0.06);padding:12px;border-radius:10px;border:1px solid rgba(255,215,0,0.15);margin-bottom:15px;'>
-                                <p style='font-size:0.9rem;color:#FFD700;font-weight:bold;margin:0;'>
-                                💡 Como ler os índices:
-                                </p>
-                                <p style='font-size:0.85rem;color:#ddd;margin:5px 0 0 0;line-height:1.5;'>
-                                <strong>Δ Risco:</strong> Se positivo = causador mais agressivo. Se negativo = negociador foi muito duro.<br>
-                                <strong>Δ Abertura:</strong> Se positivo = negociador foi acolhedor. Se negativo = barreira alta.<br>
-                                <strong>Efetividade:</strong> Se alta = negociador conseguiu reduzir tensão. Se baixa = sem progresso.<br>
-                                <strong>Rapport:</strong> Quão próximos ficaram em frequência de proteção/abertura.<br>
-                                <strong>Convergência Temática:</strong> 100% = perfeita sincronização. Abaixo de 50% = mundos diferentes.
-                                </p>
-                                </div>
-                                """, unsafe_allow_html=True)
-                                
-                                col_cv1, col_cv2, col_cv3 = st.columns(3)
-
-                                with col_cv1:
-                                    delta_risco = conv.get('delta_risco')
-                                    st.metric(
-                                        label="Δ Risco Observado",
-                                        value=f"{delta_risco:+.2f}" if delta_risco is not None else "N/D",
-                                        help="Causa-NegPrincipal. Positivo=causador mais carregado. Negativo=negociador foi agressivo."
-                                    )
-                                    st.caption(conv.get("leitura_risco") or "—")
-
-                                with col_cv2:
-                                    delta_abertura = conv.get('delta_abertura')
-                                    st.metric(
-                                        label="Δ Abertura Observada",
-                                        value=f"{delta_abertura:+.2f}" if delta_abertura is not None else "N/D",
-                                        help="NegPrincipal-Causa. Positivo=negociador mais acolhedor. Negativo=causador surpreendentemente aberto."
-                                    )
-                                    st.caption(conv.get("leitura_abertura") or "—")
-
-                                with col_cv3:
-                                    efetividade = conv.get('efetividade_negociador')
-                                    st.metric(
-                                        label="Efetividade do Negociador",
-                                        value=f"{efetividade:.2f}" if efetividade is not None else "N/D",
-                                        help="Capacidade de reduzir carga de risco. >5=muito efetiva. 2-5=moderada. <2=pouca efetividade."
-                                    )
-                                    st.caption(conv.get("leitura_efetividade") or "—")
-                                
-                                col_cv4, col_cv5, col_cv6 = st.columns(3)
-
-                                with col_cv4:
-                                    rapport = conv.get('rapport_alcancado')
+                                # ✅ MÉTRICAS E EXPLICAÇÃO
+                                if conv:
+                                    # Separador
+                                    st.markdown("---")
                                     
-                                    if rapport is not None:
-                                        if rapport >= 9:
-                                            status = "✅ Excelente"
-                                        elif rapport >= 7:
-                                            status = "🔵 Bom"
-                                        elif rapport >= 5:
-                                            status = "⚠️ Moderado"
+                                    # Bloco "Como ler os índices"
+                                    st.markdown("""
+                                    <div style='background:rgba(255,215,0,0.06);padding:12px;border-radius:10px;border:1px solid rgba(255,215,0,0.15);margin-bottom:15px;'>
+                                    <p style='font-size:0.9rem;color:#FFD700;font-weight:bold;margin:0;'>
+                                    💡 Como ler os índices:
+                                    </p>
+                                    <p style='font-size:0.85rem;color:#ddd;margin:5px 0 0 0;line-height:1.5;'>
+                                    <strong>Δ Risco:</strong> Se positivo = causador mais agressivo. Se negativo = negociador foi muito duro.<br>
+                                    <strong>Δ Abertura:</strong> Se positivo = negociador foi acolhedor. Se negativo = barreira alta.<br>
+                                    <strong>Efetividade:</strong> Se alta = negociador conseguiu reduzir tensão. Se baixa = sem progresso.<br>
+                                    <strong>Rapport:</strong> Quão próximos ficaram em frequência de proteção/abertura.<br>
+                                    <strong>Convergência Temática:</strong> 100% = perfeita sincronização. Abaixo de 50% = mundos diferentes.
+                                    </p>
+                                    </div>
+                                    """, unsafe_allow_html=True)
+                                    
+                                    # ===== PRIMEIRA LINHA DE MÉTRICAS (3 colunas) =====
+                                    col_cv1, col_cv2, col_cv3 = st.columns(3)
+    
+                                    with col_cv1:
+                                        delta_risco = conv.get('delta_risco')
+                                        st.metric(
+                                            label="Δ Risco Observado",
+                                            value=f"{delta_risco:+.2f}" if delta_risco is not None else "N/D",
+                                            help="Causa-NegPrincipal. Positivo=causador mais carregado. Negativo=negociador foi agressivo."
+                                        )
+                                        st.caption(conv.get("leitura_risco") or "—")
+    
+                                    with col_cv2:
+                                        delta_abertura = conv.get('delta_abertura')
+                                        st.metric(
+                                            label="Δ Abertura Observada",
+                                            value=f"{delta_abertura:+.2f}" if delta_abertura is not None else "N/D",
+                                            help="NegPrincipal-Causa. Positivo=negociador mais acolhedor. Negativo=causador surpreendentemente aberto."
+                                        )
+                                        st.caption(conv.get("leitura_abertura") or "—")
+    
+                                    with col_cv3:
+                                        efetividade = conv.get('efetividade_negociador')
+                                        st.metric(
+                                            label="Efetividade do Negociador",
+                                            value=f"{efetividade:.2f}" if efetividade is not None else "N/D",
+                                            help="Capacidade de reduzir carga de risco. >5=muito efetiva. 2-5=moderada. <2=pouca efetividade."
+                                        )
+                                        st.caption(conv.get("leitura_efetividade") or "—")
+                                    
+                                    # ===== SEGUNDA LINHA DE MÉTRICAS (3 colunas) =====
+                                    col_cv4, col_cv5, col_cv6 = st.columns(3)
+    
+                                    with col_cv4:
+                                        rapport = conv.get('rapport_alcancado')
+                                        
+                                        if rapport is not None:
+                                            if rapport >= 9:
+                                                status = "✅ Excelente"
+                                            elif rapport >= 7:
+                                                status = "🔵 Bom"
+                                            elif rapport >= 5:
+                                                status = "⚠️ Moderado"
+                                            else:
+                                                status = "❌ Fraco"
                                         else:
-                                            status = "❌ Fraco"
-                                    else:
-                                        status = "N/D"
+                                            status = "N/D"
+                                        
+                                        st.metric(
+                                            label="Rapport Alcançado",
+                                            value=f"{rapport:.1f}/10" if rapport is not None else "N/D",
+                                            help="Sincronização emocional (0-10). Quanto mais próximo de 10, melhor."
+                                        )
+                                        st.caption(status)
+    
+                                    with col_cv5:
+                                        delta_progresso = conv.get('delta_progresso')
+                                        st.metric(
+                                            label="Delta de Progresso",
+                                            value=f"{delta_progresso:+.2f}" if delta_progresso is not None else "N/D",
+                                            help="Desescalada total. Positivo=progresso. Negativo=escalada."
+                                        )
+    
+                                    with col_cv6:
+                                        espelhamento = conv.get('espelhamento')
+                                        st.metric(
+                                            label="Convergência Temática",
+                                            value=f"{espelhamento:.0%}" if espelhamento is not None else "N/D",
+                                            help="Sincronização de temas. 100%=perfeita. <50%=universos diferentes."
+                                        )
+                                        st.caption(conv.get("leitura_espelhamento") or "—")
+    
+                                    # ===== BLOCO DE PARADOXO (UMA ÚNICA VEZ, DEPOIS DAS MÉTRICAS) =====
+                                    st.markdown("""
+                                    <div style='background:rgba(255,68,68,0.1);padding:15px;border-radius:10px;border:1px solid #ef4444;margin:20px 0;'>
+                                    <h4 style='color:#ef4444;margin-top:0;'>⚠️ PARADOXO: Similitude vs. Convergência (LEITURA INTEGRADA)</h4>
+                                    <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
+                                    O <strong>Grafo de Espelhamento</strong> (Similitude) mostra <strong>palavras compartilhadas</strong>.<br>
+                                    O <strong>Radar de Convergência</strong> mostra <strong>temas/universos mentais</strong>.<br><br>
                                     
-                                    st.metric(
-                                        label="Rapport Alcançado",
-                                        value=f"{rapport:.1f}/10" if rapport is not None else "N/D",
-                                        help="Sincronização emocional (0-10). Quanto mais próximo de 10, melhor."
-                                    )
-                                    st.caption(status)
-
-                                with col_cv5:
-                                    delta_progresso = conv.get('delta_progresso')
-                                    st.metric(
-                                        label="Delta de Progresso",
-                                        value=f"{delta_progresso:+.2f}" if delta_progresso is not None else "N/D",
-                                        help="Desescalada total. Positivo=progresso. Negativo=escalada."
-                                    )
-
-                                with col_cv6:
-                                    espelhamento = conv.get('espelhamento')
-                                    st.metric(
-                                        label="Convergência Temática",
-                                        value=f"{espelhamento:.0%}" if espelhamento is not None else "N/D",
-                                        help="Sincronização de temas. 100%=perfeita. <50%=universos diferentes."
-                                    )
-                                    st.caption(conv.get("leitura_espelhamento") or "—")
-
-                                # ✅ AGORA SIM, ADICIONE O BLOCO DE PARADOXO (DEPOIS DAS MÉTRICAS)
-                                st.markdown("""
-                                <div style='background:rgba(255,68,68,0.1);padding:15px;border-radius:10px;border:1px solid #ef4444;margin:20px 0;'>
-                                <h4 style='color:#ef4444;margin-top:0;'>⚠️ PARADOXO: Similitude vs. Convergência (LEITURA INTEGRADA)</h4>
-                                <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
-                                O <strong>Grafo de Espelhamento</strong> (Similitude) mostra <strong>palavras compartilhadas</strong>.<br>
-                                O <strong>Radar de Convergência</strong> mostra <strong>temas/universos mentais</strong>.<br><br>
-                                
-                                <strong>🔴 Cenário de Risco - Quando divergem:</strong><br>
-                                • <strong>Similitude alta + Convergência baixa</strong> = Negociador repetindo vícios/preenchedores sem validar a emoção real<br>
-                                &nbsp;&nbsp; <em>Exemplo: Ambos dizem "mano" (similitude), mas um foca em "calma" e outro em "morte" (convergência baixa)</em><br>
-                                &nbsp;&nbsp; <strong>Resultado:</strong> Falsa conexão - parecem se entender mas não estão sincronizados<br><br>
-                                
-                                • <strong>Similitude baixa + Convergência alta</strong> = Negociador fala diferente mas ENTENDE o causador ✅<br>
-                                &nbsp;&nbsp; <em>Exemplo: Negociador: "Entendo sua dor" | Causador: "Tô sofrendo demais"</em><br>
-                                &nbsp;&nbsp; <strong>Resultado:</strong> Boa sincronização temática mesmo com palavras diferentes<br><br>
-                                
-                                <strong>💡 Regra de Ouro para APA:</strong><br>
-                                Não confunda "usar as mesmas palavras" com "estar sincronizado emocionalmente".<br>
-                                Se similitude é alta MAS efetividade é negativa, procure por palavras SEM significado temático (vícios como "mano", "tipo", "cara").
-                                </p>
-                                </div>
-                                """, unsafe_allow_html=True)
+                                    <strong>🔴 Cenário de Risco - Quando divergem:</strong><br>
+                                    • <strong>Similitude alta + Convergência baixa</strong> = Negociador repetindo vícios/preenchedores sem validar a emoção real<br>
+                                    &nbsp;&nbsp; <em>Exemplo: Ambos dizem "mano" (similitude), mas um foca em "calma" e outro em "morte" (convergência baixa)</em><br>
+                                    &nbsp;&nbsp; <strong>Resultado:</strong> Falsa conexão - parecem se entender mas não estão sincronizados<br><br>
+                                    
+                                    • <strong>Similitude baixa + Convergência alta</strong> = Negociador fala diferente mas ENTENDE o causador ✅<br>
+                                    &nbsp;&nbsp; <em>Exemplo: Negociador: "Entendo sua dor" | Causador: "Tô sofrendo demais"</em><br>
+                                    &nbsp;&nbsp; <strong>Resultado:</strong> Boa sincronização temática mesmo com palavras diferentes<br><br>
+                                    
+                                    <strong>💡 Regra de Ouro para APA:</strong><br>
+                                    Não confunda "usar as mesmas palavras" com "estar sincronizado emocionalmente".<br>
+                                    Se similitude é alta MAS efetividade é negativa, procure por palavras SEM significado temático (vícios como "mano", "tipo", "cara").
+                                    </p>
+                                    </div>
+                                    """, unsafe_allow_html=True)
+    
+                            except Exception as e:
+                                st.error(f"Erro ao gerar radar: {str(e)[:80]}")
+    
+                    # ===== PRÓXIMO BOTÃO (FORA DA TAB) =====
             
                     
             if st.button("✔ 3. GERAR ANALYTICS E EXPORTAR ANÁLISE (PDF)"):
