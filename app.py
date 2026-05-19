@@ -1678,37 +1678,239 @@ else:
             </div>
             """, unsafe_allow_html=True)
 
-            if st.button("✔ 1. Gerar Análise de Técnicas", key="btn_tecnicas_semantica"):
-                with st.spinner("Processando técnicas empregadas..."):
-                    try:
-                        # DEBUG: mostrar todos os campos disponíveis
-                        st.write("Campos disponíveis:", list(df_apa.index))
-                        
-                        val_tecnicas = df_apa.get('TABELA DE FREQUÊNCIAS DAS TÉCNICAS')
-                        st.write("Valor encontrado:", val_tecnicas)
-                        
-                    except Exception as e:
-                        st.error(f"Erro: {str(e)[:80]}")
-
-            if st.session_state.get('treemap_gerado'):
-                st.plotly_chart(st.session_state['treemap_gerado'], use_container_width=True)
-                st.markdown("""
-                <p style='color:#aaa;font-size:0.85rem;margin-top:10px;'>
-                <strong>Interpretação para APA:</strong> 
-                Se uma técnica domina (grande retângulo), pode indicar foco estratégico ou falta de adaptação. 
-                Diversidade de técnicas = flexibilidade e adaptação ao estado do causador.
-                </p>
-                """, unsafe_allow_html=True)
-
-            # === SEÇÃO 2: N-GRAMAS E WORDCLOUD ===
+            # === SEÇÃO 1: ANÁLISE DE TÉCNICAS × REAÇÃO DO CAUSADOR ===
             st.markdown("""
             <div style='margin-top:20px;'>
-            <h4 style='color:#FFD700;'>🧠 Padrões Mentais & Nuvem de Assuntos — O que cada um estava realmente PENSANDO?</h4>
+            <h4 style='color:#FFD700;'>🎯 Efetividade das Técnicas — Qual técnica funcionou?</h4>
             <p style='color:#aaa;font-size:0.9rem;'>
-            Identifique fixações mentais (padrões repetidos) e foco temático (palavras maiores = mais frequentes).
+            Cruza cada técnica usada com a reação do causador.
+            Permite identificar quais abordagens foram efetivas nesta ocorrência.
             </p>
             </div>
             """, unsafe_allow_html=True)
+
+            if st.button("✔ 1. Analisar Efetividade das Técnicas", key="btn_tecnicas_semantica"):
+                with st.spinner("Cruzando técnicas com reação do causador..."):
+                    try:
+                        # ── Buscar ID do registro atual ──────────────────────
+                        record_id_atual = df_apa.get('Airtable_Record_ID')
+
+                        if not record_id_atual:
+                            st.warning("⚠️ ID do registro não encontrado.")
+                        else:
+                            # ── Buscar df_tec do session_state ───────────────
+                            df_tec = st.session_state.get("df_tec", pd.DataFrame())
+
+                            if df_tec.empty:
+                                st.warning("⚠️ Tabela de técnicas não carregada. Atualize os dados.")
+                            else:
+                                # ── Filtrar técnicas desta APA ────────────────
+                                # Coluna Vinculo_APA pode conter lista ou string
+                                def vinculo_contem(val, record_id):
+                                    if isinstance(val, list):
+                                        return record_id in val
+                                    return str(val) == record_id
+
+                                mask = df_tec['Vinculo_APA'].apply(
+                                    lambda x: vinculo_contem(x, record_id_atual)
+                                )
+                                df_tec_apa = df_tec[mask].copy()
+
+                                if df_tec_apa.empty:
+                                    st.info("Nenhuma técnica registrada para esta ocorrência.")
+                                else:
+                                    # ── Normalizar coluna de reação ───────────
+                                    # Mapear para valor numérico
+                                    def normalizar_reacao(val):
+                                        if val is None:
+                                            return None
+                                        s = str(val).strip()
+                                        if s in ["-1", "-1.0", "🔴 Reação Negativa", "Reação Negativa"]:
+                                            return -1
+                                        elif s in ["0", "0.0", "⚪ Reação Neutra", "Reação Neutra"]:
+                                            return 0
+                                        elif s in ["1", "1.0", "🟢 Reação Positiva", "Reação Positiva"]:
+                                            return 1
+                                        else:
+                                            return None  # Inaudível / Não observado
+
+                                    # Detectar coluna de reação
+                                    col_reacao = None
+                                    for c in ['ATITUDE DO CAUSADOR', 'Atitude do Causador', 'atitude_causador']:
+                                        if c in df_tec_apa.columns:
+                                            col_reacao = c
+                                            break
+
+                                    col_tecnica = None
+                                    for c in ['TÉCNICAS', 'Técnicas', 'tecnicas']:
+                                        if c in df_tec_apa.columns:
+                                            col_tecnica = c
+                                            break
+
+                                    if not col_tecnica:
+                                        st.warning("⚠️ Coluna TÉCNICAS não encontrada.")
+                                    else:
+                                        if col_reacao:
+                                            df_tec_apa['_reacao_num'] = df_tec_apa[col_reacao].apply(normalizar_reacao)
+                                        else:
+                                            df_tec_apa['_reacao_num'] = None
+
+                                        # ── Agrupar por técnica ───────────────
+                                        resumo = []
+                                        for tecnica, grupo in df_tec_apa.groupby(col_tecnica):
+                                            total    = len(grupo)
+                                            positivo = (grupo['_reacao_num'] == 1).sum()
+                                            neutro   = (grupo['_reacao_num'] == 0).sum()
+                                            negativo = (grupo['_reacao_num'] == -1).sum()
+                                            inaud    = grupo['_reacao_num'].isna().sum()
+
+                                            # Score: (positivos - negativos) / observados
+                                            observados = positivo + neutro + negativo
+                                            if observados > 0:
+                                                score = round(((positivo - negativo) / observados) * 100, 1)
+                                            else:
+                                                score = None
+
+                                            resumo.append({
+                                                "Técnica":        tecnica,
+                                                "Total":          total,
+                                                "🟢 Positiva":    int(positivo),
+                                                "⚪ Neutra":      int(neutro),
+                                                "🔴 Negativa":    int(negativo),
+                                                "❓ Inaudível":   int(inaud),
+                                                "Score (%)":      score
+                                            })
+
+                                        df_resumo = pd.DataFrame(resumo)
+                                        df_resumo = df_resumo.sort_values("Score (%)", ascending=False)
+
+                                        st.session_state['tecnicas_analisadas'] = df_resumo
+                                        st.success(f"✅ {len(df_resumo)} técnicas analisadas!")
+
+                    except Exception as e:
+                        st.error(f"Erro ao analisar técnicas: {str(e)[:80]}")
+
+            # ── Exibição dos resultados ───────────────────────────────────────
+            if st.session_state.get('tecnicas_analisadas') is not None:
+                df_resumo = st.session_state['tecnicas_analisadas']
+
+                # ── SCORECARD GERAL ───────────────────────────────────────────
+                total_usos     = int(df_resumo["Total"].sum())
+                total_positivo = int(df_resumo["🟢 Positiva"].sum())
+                total_neutro   = int(df_resumo["⚪ Neutra"].sum())
+                total_negativo = int(df_resumo["🔴 Negativa"].sum())
+                score_geral    = round(((total_positivo - total_negativo) / max(1, total_positivo + total_neutro + total_negativo)) * 100, 1)
+
+                st.markdown("### 📊 Resumo Geral")
+                col1, col2, col3, col4 = st.columns(4)
+                with col1:
+                    st.metric("Total de Usos", total_usos)
+                with col2:
+                    st.metric("🟢 Positivas", total_positivo)
+                with col3:
+                    st.metric("🔴 Negativas", total_negativo)
+                with col4:
+                    st.metric("Score Geral", f"{score_geral:+.1f}%")
+
+                # ── TABELA DETALHADA ──────────────────────────────────────────
+                st.markdown("### 📋 Efetividade por Técnica")
+                st.dataframe(
+                    df_resumo,
+                    use_container_width=True,
+                    hide_index=True
+                )
+
+                # ── GRÁFICO DE BARRAS EMPILHADAS ─────────────────────────────
+                st.markdown("### 📈 Distribuição de Reações por Técnica")
+                try:
+                    import plotly.graph_objects as go
+
+                    tecnicas   = df_resumo["Técnica"].tolist()
+                    positivos  = df_resumo["🟢 Positiva"].tolist()
+                    neutros    = df_resumo["⚪ Neutra"].tolist()
+                    negativos  = df_resumo["🔴 Negativa"].tolist()
+
+                    fig_barras = go.Figure()
+
+                    fig_barras.add_trace(go.Bar(
+                        name="🟢 Positiva",
+                        x=tecnicas, y=positivos,
+                        marker_color="#10b981"
+                    ))
+                    fig_barras.add_trace(go.Bar(
+                        name="⚪ Neutra",
+                        x=tecnicas, y=neutros,
+                        marker_color="#6b7280"
+                    ))
+                    fig_barras.add_trace(go.Bar(
+                        name="🔴 Negativa",
+                        x=tecnicas, y=negativos,
+                        marker_color="#ef4444"
+                    ))
+
+                    fig_barras.update_layout(
+                        barmode="stack",
+                        paper_bgcolor="rgba(0,0,0,0)",
+                        plot_bgcolor="rgba(0,0,0,0)",
+                        font=dict(color="#fff"),
+                        legend=dict(
+                            font=dict(color="#fff"),
+                            bgcolor="rgba(0,0,0,0.4)"
+                        ),
+                        xaxis=dict(
+                            tickfont=dict(color="#FFD700"),
+                            gridcolor="#333"
+                        ),
+                        yaxis=dict(
+                            tickfont=dict(color="#aaa"),
+                            gridcolor="#333"
+                        ),
+                        height=420,
+                        margin=dict(t=20, b=120, l=40, r=40)
+                    )
+
+                    st.plotly_chart(fig_barras, use_container_width=True)
+
+                except Exception as e:
+                    st.error(f"Erro ao gerar gráfico: {str(e)[:80]}")
+
+                # ── NARRATIVA AUTOMÁTICA ──────────────────────────────────────
+                st.markdown("---")
+                st.markdown("### 🧠 Leitura Operacional")
+
+                melhor = df_resumo.iloc[0] if not df_resumo.empty else None
+                pior   = df_resumo[df_resumo["Score (%)"].notna()].sort_values("Score (%)").iloc[0] if not df_resumo.empty else None
+
+                if melhor is not None:
+                    st.markdown(f"""
+                    <div style='background:rgba(16,185,129,0.08);padding:12px;border-radius:8px;border-left:3px solid #10b981;margin-bottom:10px;'>
+                    <p style='color:#ddd;font-size:0.9rem;margin:0;'>
+                    ✅ <strong>Técnica mais efetiva:</strong> {melhor['Técnica']} 
+                    — Score {melhor['Score (%)']:+.1f}% 
+                    ({melhor['🟢 Positiva']}x positivo / {melhor['Total']}x usada)
+                    </p>
+                    </div>
+                    """, unsafe_allow_html=True)
+
+                if pior is not None and pior['Técnica'] != melhor['Técnica']:
+                    st.markdown(f"""
+                    <div style='background:rgba(239,68,68,0.08);padding:12px;border-radius:8px;border-left:3px solid #ef4444;margin-bottom:10px;'>
+                    <p style='color:#ddd;font-size:0.9rem;margin:0;'>
+                    ⚠️ <strong>Técnica menos efetiva:</strong> {pior['Técnica']} 
+                    — Score {pior['Score (%)']:+.1f}% 
+                    ({pior['🔴 Negativa']}x negativo / {pior['Total']}x usada)
+                    </p>
+                    </div>
+                    """, unsafe_allow_html=True)
+
+                if score_geral >= 50:
+                    txt_geral = "✅ Repertório técnico com boa efetividade geral nesta ocorrência."
+                elif score_geral >= 0:
+                    txt_geral = "⚠️ Repertório técnico com efetividade moderada — oportunidade de melhoria."
+                else:
+                    txt_geral = "🔴 Repertório técnico com baixa efetividade — maioria das técnicas gerou reação negativa."
+
+                st.info(txt_geral)
 
             if st.button("✔ 2. Gerar Padrões Mentais & Nuvem de Palavras", key="btn_ngramas_semantica"):
                 with st.spinner("Processando padrões mentais, temas dominantes e gerando nuvens de palavras..."):
