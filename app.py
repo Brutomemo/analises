@@ -2348,37 +2348,53 @@ else:
 
                     else:
                         st.warning("⚠️ Nenhuma transcrição disponível para análise")
-
-                        st.markdown("""
-                            <div class="divider-glow"></div>
-
-                            <style>
-                            .divider-glow{
-                                width: 100%;
-                                height: 2px;
-
-                                background: linear-gradient(
-                                    90deg,
-                                    rgba(255,140,0,0) 0%,
-                                    rgba(255,140,0,0.25) 15%,
-                                    rgba(255,140,0,1) 50%,
-                                    rgba(255,140,0,0.25) 85%,
-                                    rgba(255,140,0,0) 100%
-                                );
-
-                                margin-top: 25px;
-                                margin-bottom: 25px;
-
-                                box-shadow:
-                                    0 0 8px rgba(255,140,0,0.7),
-                                    0 0 16px rgba(255,140,0,0.4),
-                                    0 0 24px rgba(255,140,0,0.2);
-
-                                border-radius: 999px;
-                            }
-                            </style>
-                            """, unsafe_allow_html=True)
                         
+                        st.markdown("""
+                        <div class="divider-tech"></div>
+
+                        <style>
+                        .divider-tech{
+                            position: relative;
+                            width: 100%;
+                            height: 2px;
+
+                            background: linear-gradient(
+                                to right,
+                                transparent,
+                                #ff6a00,
+                                #ffae00,
+                                #ff6a00,
+                                transparent
+                            );
+
+                            margin: 35px 0;
+
+                            box-shadow:
+                                0 0 5px #ff6a00,
+                                0 0 12px rgba(255,106,0,0.8),
+                                0 0 20px rgba(255,106,0,0.5);
+                        }
+
+                        .divider-tech::before{
+                            content: "";
+                            position: absolute;
+                            top: -4px;
+                            left: 50%;
+                            transform: translateX(-50%);
+
+                            width: 120px;
+                            height: 10px;
+
+                            background: radial-gradient(
+                                ellipse,
+                                rgba(255,170,0,0.35) 0%,
+                                rgba(255,170,0,0) 80%
+                            );
+
+                            filter: blur(4px);
+                        }
+                        </style>
+                        """, unsafe_allow_html=True)
                                 
                     # ===== PRÓXIMO BOTÃO (FORA DA TAB) =====
             if st.button("✔ 3. GERAR ANALYTICS E EXPORTAR ANÁLISE (PDF)"):
