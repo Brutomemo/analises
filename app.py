@@ -1258,8 +1258,7 @@ else:
             <li><strong style='color: #2196F3;'>● Azul (esquerda)</strong> = Negociador</li>
             <li><strong style='color: #F44336;'>● Vermelho (direita)</strong> = Causador</li>
             <li><strong style='color: #FFC107;'>● Amarelo (meio)</strong> = Palavras que AMBOS usaram = <u>Conexão</u></li>
-            <li><strong>Linhas</strong> = Mostram como cada parte se conecta às palavras compartilhadas</li>
-            <li><strong>Tamanho da bolinha</strong> = Quanto maior, mais vezes usaram essa palavra</li>
+            <li><strong>Linhas</strong> = Mostram como cada parte se conecta às palavras compartilhadas</li>            
             </ul>
             <p style='color: #aaa; margin-top: 10px;'><strong>Interpretação rápida:</strong> Quanto mais bolinhas amarelas e mais linhas ligadas a elas, melhor a sintonia!</p>
             </div>
@@ -1915,10 +1914,7 @@ else:
                             )
                             if fig_radar:
                                 st.plotly_chart(fig_radar, use_container_width=True)
-
-                                if fig_radar:
-                                    st.plotly_chart(fig_radar, use_container_width=True)
-
+                                
                             # ✅ PARADOXO DE SIMILITUDE:
                             st.markdown("""
                             <div style='background:rgba(255,68,68,0.1);padding:15px;border-radius:10px;border:1px solid #ef4444;margin:20px 0;'>
