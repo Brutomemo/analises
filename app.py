@@ -1667,6 +1667,10 @@ else:
 
             # --- FIM DO BLOCO DE EXPLICAÇÃO ---
 
+            # ============================================================
+# BLOCO FINAL CORRIGIDO: TREEMAP + TAB 6 + TAB 7
+# ============================================================
+
             # === SEÇÃO 1: TREEMAP DE TÉCNICAS ===
             st.markdown("""
             <div style='margin-top:20px;'>
@@ -1681,18 +1685,25 @@ else:
             if st.button("✔ 1. Gerar Análise de Técnicas", key="btn_tecnicas_semantica"):
                 with st.spinner("Processando técnicas empregadas..."):
                     try:
-                        # Assumindo que df_apa contém coluna de TÉCNICAS
-                        if 'TÉCNICAS' in df_apa.columns or 'Técnicas' in df_apa.columns or 'tecnicas' in df_apa.columns:
-                            col_tecnicas = next((col for col in df_apa.columns if 'tecnica' in col.lower()), None)
-                            if col_tecnicas:
-                                df_tecnicas_temp = df_apa[[col_tecnicas]].copy()
-                                fig_treemap = analise.gerar_treemap(df_tecnicas_temp)
+                        # ✅ CORRIGIDO: Procurar coluna de técnicas e extrair TEXT, não DataFrame
+                        col_tecnicas = None
+                        for col in df_apa.columns:
+                            if 'tecnica' in col.lower():
+                                col_tecnicas = col
+                                break
+                        
+                        if col_tecnicas:
+                            # ✅ CORRIGIDO: Converter para string e passar texto puro
+                            tecnicas_texto = str(df_apa[col_tecnicas]).replace('\n', ' ')
+                            
+                            if tecnicas_texto and len(tecnicas_texto) > 10:
+                                fig_treemap = analise.gerar_treemap(tecnicas_texto)
                                 st.session_state['treemap_gerado'] = fig_treemap
                                 st.success("✅ Treemap de técnicas gerado!")
                             else:
-                                st.info("Coluna de técnicas não encontrada neste registro.")
+                                st.info("Coluna de técnicas vazia ou insuficiente.")
                         else:
-                            st.info("Este registro não possui informações de técnicas.")
+                            st.info("Coluna de técnicas não encontrada neste registro.")
                     except Exception as e:
                         st.error(f"Erro ao processar treemap: {str(e)[:80]}")
 
@@ -1889,272 +1900,230 @@ else:
                         else:
                             st.info("Sem nuvem.")
 
-                    # ============================================================
-# BLOCO CORRETO: TAB 6 (CONVERGÊNCIA) + TAB 7 (ESTADO DE CRISE)
-# ============================================================
+                # --- TAB 6: CONVERGÊNCIA TEMÁTICA ---
+                with tab_ng6:
+                    st.markdown("""
+                    <div class='info-card'>
+                    <h4 style='color:#FFD700; margin-top:0;'>📈 RADAR SEMÂNTICO & ÍNDICES DE CONVERGÊNCIA</h4>
+                    <p style='color:#ccc; font-size:0.9rem; margin-bottom:1rem;'>
+                    <strong>Complementa Similitude:</strong> Similitude conta "palavras iguais". Radar mede "temas alinhados". 
+                    Um radar com polígonos sobrepostos = causador e negociador estão no MESMO universo mental.
+                    </p>
+                    </div>
+                    """, unsafe_allow_html=True)
 
-                    # --- TAB 6: CONVERGÊNCIA TEMÁTICA ---
-                    with tab_ng6:
-                        st.markdown("""
-                        <div class='info-card'>
-                        <h4 style='color:#FFD700; margin-top:0;'>📈 RADAR SEMÂNTICO & ÍNDICES DE CONVERGÊNCIA</h4>
-                        <p style='color:#ccc; font-size:0.9rem; margin-bottom:1rem;'>
-                        <strong>Complementa Similitude:</strong> Similitude conta "palavras iguais". Radar mede "temas alinhados". 
-                        Um radar com polígonos sobrepostos = causador e negociador estão no MESMO universo mental.
-                        </p>
-                        </div>
-                        """, unsafe_allow_html=True)
+                    texto_c_raw  = stats.get('texto_c_raw', '')
+                    texto_np_raw = stats.get('texto_np_raw', '')
+                    texto_ns_raw = stats.get('texto_ns_raw', '')
 
-                        texto_c_raw  = stats.get('texto_c_raw', '')
-                        texto_np_raw = stats.get('texto_np_raw', '')
-                        texto_ns_raw = stats.get('texto_ns_raw', '')
-
-                        if not texto_c_raw or not texto_np_raw:
-                            st.warning("⚠️ Transcrições insuficientes para gerar radar.")
-                        else:
-                            try:
-                                fig_radar, conv = analise.gerar_radar_comparativo(
-                                    texto_c_raw,
-                                    texto_np_raw,
-                                    texto_ns_raw if texto_ns_raw else None
-                                )
-                                                                
-                                # ✅ EXIBIR O RADAR
-                                if fig_radar:
-                                    st.plotly_chart(fig_radar, use_container_width=True)
+                    if not texto_c_raw or not texto_np_raw:
+                        st.warning("⚠️ Transcrições insuficientes para gerar radar.")
+                    else:
+                        try:
+                            fig_radar, conv = analise.gerar_radar_comparativo(
+                                texto_c_raw,
+                                texto_np_raw,
+                                texto_ns_raw if texto_ns_raw else None
+                            )
+                            
+                            if fig_radar:
+                                st.plotly_chart(fig_radar, use_container_width=True)
+                            
+                            if conv:
+                                st.markdown("---")
                                 
-                                # ✅ MÉTRICAS E EXPLICAÇÃO
-                                if conv:
-                                    # Separador
-                                    st.markdown("---")
-                                    
-                                    # Bloco "Como ler os índices"
-                                    st.markdown("""
-                                    <div style='background:rgba(255,215,0,0.06);padding:12px;border-radius:10px;border:1px solid rgba(255,215,0,0.15);margin-bottom:15px;'>
-                                    <p style='font-size:0.9rem;color:#FFD700;font-weight:bold;margin:0;'>
-                                    💡 Como ler os índices:
-                                    </p>
-                                    <p style='font-size:0.85rem;color:#ddd;margin:5px 0 0 0;line-height:1.5;'>
-                                    <strong>Δ Risco:</strong> Se positivo = causador mais agressivo. Se negativo = negociador foi muito duro.<br>
-                                    <strong>Δ Abertura:</strong> Se positivo = negociador foi acolhedor. Se negativo = barreira alta.<br>
-                                    <strong>Efetividade:</strong> Se alta = negociador conseguiu reduzir tensão. Se baixa = sem progresso.<br>
-                                    <strong>Rapport:</strong> Quão próximos ficaram em frequência de proteção/abertura.<br>
-                                    <strong>Convergência Temática:</strong> 100% = perfeita sincronização. Abaixo de 50% = mundos diferentes.
-                                    </p>
-                                    </div>
-                                    """, unsafe_allow_html=True)
-                                    
-                                    # ===== PRIMEIRA LINHA DE MÉTRICAS (3 colunas) =====
-                                    col_cv1, col_cv2, col_cv3 = st.columns(3)
-
-                                    with col_cv1:
-                                        delta_risco = conv.get('delta_risco')
-                                        st.metric(
-                                            label="Δ Risco Observado",
-                                            value=f"{delta_risco:+.2f}" if delta_risco is not None else "N/D",
-                                            help="Causa-NegPrincipal. Positivo=causador mais carregado. Negativo=negociador foi agressivo."
-                                        )
-                                        st.caption(conv.get("leitura_risco") or "—")
-
-                                    with col_cv2:
-                                        delta_abertura = conv.get('delta_abertura')
-                                        st.metric(
-                                            label="Δ Abertura Observada",
-                                            value=f"{delta_abertura:+.2f}" if delta_abertura is not None else "N/D",
-                                            help="NegPrincipal-Causa. Positivo=negociador mais acolhedor. Negativo=causador surpreendentemente aberto."
-                                        )
-                                        st.caption(conv.get("leitura_abertura") or "—")
-
-                                    with col_cv3:
-                                        efetividade = conv.get('efetividade_negociador')
-                                        st.metric(
-                                            label="Efetividade do Negociador",
-                                            value=f"{efetividade:.2f}" if efetividade is not None else "N/D",
-                                            help="Capacidade de reduzir carga de risco. >5=muito efetiva. 2-5=moderada. <2=pouca efetividade."
-                                        )
-                                        st.caption(conv.get("leitura_efetividade") or "—")
-                                    
-                                    # ===== SEGUNDA LINHA DE MÉTRICAS (3 colunas) =====
-                                    col_cv4, col_cv5, col_cv6 = st.columns(3)
-
-                                    with col_cv4:
-                                        rapport = conv.get('rapport_alcancado')
-                                        
-                                        if rapport is not None:
-                                            if rapport >= 9:
-                                                status = "✅ Excelente"
-                                            elif rapport >= 7:
-                                                status = "🔵 Bom"
-                                            elif rapport >= 5:
-                                                status = "⚠️ Moderado"
-                                            else:
-                                                status = "❌ Fraco"
-                                        else:
-                                            status = "N/D"
-                                        
-                                        st.metric(
-                                            label="Rapport Alcançado",
-                                            value=f"{rapport:.1f}/10" if rapport is not None else "N/D",
-                                            help="Sincronização emocional (0-10). Quanto mais próximo de 10, melhor."
-                                        )
-                                        st.caption(status)
-
-                                    with col_cv5:
-                                        delta_progresso = conv.get('delta_progresso')
-                                        st.metric(
-                                            label="Delta de Progresso",
-                                            value=f"{delta_progresso:+.2f}" if delta_progresso is not None else "N/D",
-                                            help="Desescalada total. Positivo=progresso. Negativo=escalada."
-                                        )
-
-                                    with col_cv6:
-                                        espelhamento = conv.get('espelhamento')
-                                        st.metric(
-                                            label="Convergência Temática",
-                                            value=f"{espelhamento:.0%}" if espelhamento is not None else "N/D",
-                                            help="Sincronização de temas. 100%=perfeita. <50%=universos diferentes."
-                                        )
-                                        st.caption(conv.get("leitura_espelhamento") or "—")
-
-                                    # ===== BLOCO DE PARADOXO =====
-                                    st.markdown("""
-                                    <div style='background:rgba(255,68,68,0.1);padding:15px;border-radius:10px;border:1px solid #ef4444;margin:20px 0;'>
-                                    <h4 style='color:#ef4444;margin-top:0;'>⚠️ PARADOXO: Similitude vs. Convergência (LEITURA INTEGRADA)</h4>
-                                    <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
-                                    O <strong>Grafo de Espelhamento</strong> (Similitude) mostra <strong>palavras compartilhadas</strong>.<br>
-                                    O <strong>Radar de Convergência</strong> mostra <strong>temas/universos mentais</strong>.<br><br>
-                                    
-                                    <strong>🔴 Cenário de Risco - Quando divergem:</strong><br>
-                                    • <strong>Similitude alta + Convergência baixa</strong> = Negociador repetindo vícios/preenchedores sem validar a emoção real<br>
-                                    &nbsp;&nbsp; <em>Exemplo: Ambos dizem "mano" (similitude), mas um foca em "calma" e outro em "morte" (convergência baixa)</em><br>
-                                    &nbsp;&nbsp; <strong>Resultado:</strong> Falsa conexão - parecem se entender mas não estão sincronizados<br><br>
-                                    
-                                    • <strong>Similitude baixa + Convergência alta</strong> = Negociador fala diferente mas ENTENDE o causador ✅<br>
-                                    &nbsp;&nbsp; <em>Exemplo: Negociador: "Entendo sua dor" | Causador: "Tô sofrendo demais"</em><br>
-                                    &nbsp;&nbsp; <strong>Resultado:</strong> Boa sincronização temática mesmo com palavras diferentes<br><br>
-                                    
-                                    <strong>💡 Regra de Ouro para APA:</strong><br>
-                                    Não confunda "usar as mesmas palavras" com "estar sincronizado emocionalmente".<br>
-                                    Se similitude é alta MAS efetividade é negativa, procure por palavras SEM significado temático (vícios como "mano", "tipo", "cara").
-                                    </p>
-                                    </div>
-                                    """, unsafe_allow_html=True)
-
-                            except Exception as e:
-                                st.error(f"Erro ao gerar radar: {str(e)[:80]}")
-
-                    # ===== TAB 7: ESTADO DE CRISE (FORA DAS OUTRAS ABAS) =====
-                            with tab_ng7:
                                 st.markdown("""
-                                <div class='info-card'>
-                                <h4 style='color:#FFD700; margin-top:0;'>🚨 ESTADO DE CRISE (APA)</h4>
-                                <p style='color:#ccc; font-size:0.9rem;'>
-                                Análise estruturada do estado emocional/comportamental do causador.
+                                <div style='background:rgba(255,215,0,0.06);padding:12px;border-radius:10px;border:1px solid rgba(255,215,0,0.15);margin-bottom:15px;'>
+                                <p style='font-size:0.9rem;color:#FFD700;font-weight:bold;margin:0;'>
+                                💡 Como ler os índices:
+                                </p>
+                                <p style='font-size:0.85rem;color:#ddd;margin:5px 0 0 0;line-height:1.5;'>
+                                <strong>Δ Risco:</strong> Se positivo = causador mais agressivo. Se negativo = negociador foi muito duro.<br>
+                                <strong>Δ Abertura:</strong> Se positivo = negociador foi acolhedor. Se negativo = barreira alta.<br>
+                                <strong>Efetividade:</strong> Se alta = negociador conseguiu reduzir tensão. Se baixa = sem progresso.<br>
+                                <strong>Rapport:</strong> Quão próximos ficaram em frequência de proteção/abertura.<br>
+                                <strong>Convergência Temática:</strong> 100% = perfeita sincronização. Abaixo de 50% = mundos diferentes.
                                 </p>
                                 </div>
                                 """, unsafe_allow_html=True)
                                 
-                                # Extrair dados da análise de crise
-                                texto_c_raw = stats.get('texto_c_raw', '')
+                                col_cv1, col_cv2, col_cv3 = st.columns(3)
+
+                                with col_cv1:
+                                    delta_risco = conv.get('delta_risco')
+                                    st.metric(
+                                        label="Δ Risco Observado",
+                                        value=f"{delta_risco:+.2f}" if delta_risco is not None else "N/D"
+                                    )
+                                    st.caption(conv.get("leitura_risco") or "—")
+
+                                with col_cv2:
+                                    delta_abertura = conv.get('delta_abertura')
+                                    st.metric(
+                                        label="Δ Abertura Observada",
+                                        value=f"{delta_abertura:+.2f}" if delta_abertura is not None else "N/D"
+                                    )
+                                    st.caption(conv.get("leitura_abertura") or "—")
+
+                                with col_cv3:
+                                    efetividade = conv.get('efetividade_negociador')
+                                    st.metric(
+                                        label="Efetividade do Negociador",
+                                        value=f"{efetividade:.2f}" if efetividade is not None else "N/D"
+                                    )
+                                    st.caption(conv.get("leitura_efetividade") or "—")
                                 
-                                if texto_c_raw:
-                                    try:
-                                        # Gerar análise de crise individual
-                                        analise_crise = analise.analisar_crise_direcional(
-                                            texto_c_raw,
-                                            resolucao_tipo=stats.get('resolucao_tipo', 'desconhecida')
-                                        )
-                                        
-                                        if analise_crise and 'sumario' in analise_crise:
-                                            sumario = analise_crise['sumario']
-                                            
-                                            risco_observado = sumario.get('risco_observado')
-                                            abertura_observada = sumario.get('abertura_observada')
-                                            raiz_observada = sumario.get('raiz_observada')
-                                            volatilidade_index = sumario.get('volatilidade_index')
-                                            classificacao = sumario.get('classificacao')
-                                            leitura = sumario.get('leitura')
-                                            
-                                            # SCORECARD (3 métricas principais)
-                                            st.markdown("### 📊 Resumo da Análise")
-                                            col1, col2, col3 = st.columns(3)
-                                            
-                                            with col1:
-                                                st.metric(
-                                                    "🔴 Risco Observado",
-                                                    f"{risco_observado:.1f}%" if risco_observado is not None else "N/D",
-                                                    help="Frequência de palavras ameaçadoras/agressivas"
-                                                )
-                                            
-                                            with col2:
-                                                st.metric(
-                                                    "🟢 Abertura Observada",
-                                                    f"{abertura_observada:.1f}%" if abertura_observada is not None else "N/D",
-                                                    help="Frequência de palavras colaborativas/protetivas"
-                                                )
-                                            
-                                            with col3:
-                                                st.metric(
-                                                    "🟡 Raiz Observada",
-                                                    f"{raiz_observada:.1f}%" if raiz_observada is not None else "N/D",
-                                                    help="Frequência de palavras sobre origem/gatilho da crise"
-                                                )
-                                            
-                                            # SEGUNDA LINHA
-                                            col4, col5, col6 = st.columns(3)
-                                            
-                                            with col4:
-                                                intensidade = sumario.get('intensidade_index')
-                                                st.metric(
-                                                    "⚡ Intensidade Global",
-                                                    f"{intensidade:.2f}" if intensidade is not None else "N/D",
-                                                    help="Carga emocional total"
-                                                )
-                                            
-                                            with col5:
-                                                direcao = sumario.get('direcao_index')
-                                                st.metric(
-                                                    "📉 Direção",
-                                                    f"{direcao:+.2f}" if direcao is not None else "N/D",
-                                                    help="Predomínio de escalada (-) ou desescalada (+)"
-                                                )
-                                            
-                                            with col6:
-                                                volatilidade = sumario.get('volatilidade_index')
-                                                st.metric(
-                                                    "🔄 Volatilidade",
-                                                    f"{volatilidade:.2f}" if volatilidade is not None else "N/D",
-                                                    help="Risco de mudanças bruscas"
-                                                )
-                                            
-                                            # RADAR
-                                            st.markdown("---")
-                                            st.markdown("### 🎯 Padrão de Crise (Radar)")
-                                            
-                                            try:
-                                                fig_crise = analise.gerar_radar_crise_individual(
-                                                    risco_observado if risco_observado is not None else 0,
-                                                    abertura_observada if abertura_observada is not None else 0,
-                                                    raiz_observada if raiz_observada is not None else 0,
-                                                    volatilidade_index if volatilidade_index is not None else 0
-                                                )
-                                                st.plotly_chart(fig_crise, use_container_width=True)
-                                            except Exception as e:
-                                                st.error(f"Erro ao gerar radar: {str(e)[:80]}")
-                                            
-                                            # CLASSIFICAÇÃO
-                                            st.markdown("---")
-                                            st.markdown(f"### 🚨 Classificação: `{classificacao}`")
-                                            st.info(leitura)
-                                            
+                                col_cv4, col_cv5, col_cv6 = st.columns(3)
+
+                                with col_cv4:
+                                    rapport = conv.get('rapport_alcancado')
+                                    if rapport is not None:
+                                        if rapport >= 9:
+                                            status = "✅ Excelente"
+                                        elif rapport >= 7:
+                                            status = "🔵 Bom"
+                                        elif rapport >= 5:
+                                            status = "⚠️ Moderado"
                                         else:
-                                            st.warning("Não foi possível gerar análise de crise")
-                                            
-                                    except Exception as e:
-                                        st.error(f"Erro ao analisar crise: {str(e)[:80]}")
+                                            status = "❌ Fraco"
+                                    else:
+                                        status = "N/D"
+                                    
+                                    st.metric(
+                                        label="Rapport Alcançado",
+                                        value=f"{rapport:.1f}/10" if rapport is not None else "N/D"
+                                    )
+                                    st.caption(status)
+
+                                with col_cv5:
+                                    delta_progresso = conv.get('delta_progresso')
+                                    st.metric(
+                                        label="Delta de Progresso",
+                                        value=f"{delta_progresso:+.2f}" if delta_progresso is not None else "N/D"
+                                    )
+
+                                with col_cv6:
+                                    espelhamento = conv.get('espelhamento')
+                                    st.metric(
+                                        label="Convergência Temática",
+                                        value=f"{espelhamento:.0%}" if espelhamento is not None else "N/D"
+                                    )
+                                    st.caption(conv.get("leitura_espelhamento") or "—")
+
+                                st.markdown("""
+                                <div style='background:rgba(255,68,68,0.1);padding:15px;border-radius:10px;border:1px solid #ef4444;margin:20px 0;'>
+                                <h4 style='color:#ef4444;margin-top:0;'>⚠️ PARADOXO: Similitude vs. Convergência</h4>
+                                <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
+                                O <strong>Grafo de Espelhamento</strong> mostra <strong>palavras compartilhadas</strong>.<br>
+                                O <strong>Radar de Convergência</strong> mostra <strong>temas/universos mentais</strong>.<br><br>
+                                <strong>Similitude alta + Convergência baixa</strong> = Falsa conexão (repetem palavras mas não estão sincronizados)
+                                </p>
+                                </div>
+                                """, unsafe_allow_html=True)
+
+                        except Exception as e:
+                            st.error(f"Erro ao gerar radar: {str(e)[:80]}")
+
+                # --- TAB 7: ESTADO DE CRISE ---
+                with tab_ng7:
+                    st.markdown("""
+                    <div class='info-card'>
+                    <h4 style='color:#FFD700; margin-top:0;'>🚨 ESTADO DE CRISE (APA)</h4>
+                    <p style='color:#ccc; font-size:0.9rem;'>
+                    Análise estruturada do estado emocional/comportamental do causador.
+                    </p>
+                    </div>
+                    """, unsafe_allow_html=True)
+                    
+                    texto_c_raw = stats.get('texto_c_raw', '')
+                    
+                    if texto_c_raw:
+                        try:
+                            analise_crise = analise.analisar_crise_direcional(
+                                texto_c_raw,
+                                resolucao_tipo=stats.get('resolucao_tipo', 'desconhecida')
+                            )
+                            
+                            if analise_crise and 'sumario' in analise_crise:
+                                sumario = analise_crise['sumario']
                                 
-                                else:
-                                    st.warning("⚠️ Nenhuma transcrição disponível para análise")
+                                risco_observado = sumario.get('risco_observado')
+                                abertura_observada = sumario.get('abertura_observada')
+                                raiz_observada = sumario.get('raiz_observada')
+                                volatilidade_index = sumario.get('volatilidade_index')
+                                classificacao = sumario.get('classificacao')
+                                leitura = sumario.get('leitura')
+                                
+                                st.markdown("### 📊 Resumo da Análise")
+                                col1, col2, col3 = st.columns(3)
+                                
+                                with col1:
+                                    st.metric(
+                                        "🔴 Risco Observado",
+                                        f"{risco_observado:.1f}%" if risco_observado is not None else "N/D"
+                                    )
+                                
+                                with col2:
+                                    st.metric(
+                                        "🟢 Abertura Observada",
+                                        f"{abertura_observada:.1f}%" if abertura_observada is not None else "N/D"
+                                    )
+                                
+                                with col3:
+                                    st.metric(
+                                        "🟡 Raiz Observada",
+                                        f"{raiz_observada:.1f}%" if raiz_observada is not None else "N/D"
+                                    )
+                                
+                                col4, col5, col6 = st.columns(3)
+                                
+                                with col4:
+                                    intensidade = sumario.get('intensidade_index')
+                                    st.metric(
+                                        "⚡ Intensidade Global",
+                                        f"{intensidade:.2f}" if intensidade is not None else "N/D"
+                                    )
+                                
+                                with col5:
+                                    direcao = sumario.get('direcao_index')
+                                    st.metric(
+                                        "📉 Direção",
+                                        f"{direcao:+.2f}" if direcao is not None else "N/D"
+                                    )
+                                
+                                with col6:
+                                    volatilidade = sumario.get('volatilidade_index')
+                                    st.metric(
+                                        "🔄 Volatilidade",
+                                        f"{volatilidade:.2f}" if volatilidade is not None else "N/D"
+                                    )
+                                
+                                st.markdown("---")
+                                st.markdown("### 🎯 Padrão de Crise (Radar)")
+                                
+                                try:
+                                    fig_crise = analise.gerar_radar_crise_individual(
+                                        risco_observado if risco_observado is not None else 0,
+                                        abertura_observada if abertura_observada is not None else 0,
+                                        raiz_observada if raiz_observada is not None else 0,
+                                        volatilidade_index if volatilidade_index is not None else 0
+                                    )
+                                    st.plotly_chart(fig_crise, use_container_width=True)
+                                except Exception as e:
+                                    st.error(f"Erro ao gerar radar: {str(e)[:80]}")
+                                
+                                st.markdown("---")
+                                st.markdown(f"### 🚨 Classificação: `{classificacao}`")
+                                st.info(leitura)
+                                
+                            else:
+                                st.warning("Não foi possível gerar análise de crise")
+                                
+                        except Exception as e:
+                            st.error(f"Erro ao analisar crise: {str(e)[:80]}")
+                    
+                    else:
+                        st.warning("⚠️ Nenhuma transcrição disponível para análise")
 
                                 
                     # ===== PRÓXIMO BOTÃO (FORA DA TAB) =====
