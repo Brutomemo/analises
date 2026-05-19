@@ -26,7 +26,9 @@ STOPWORDS_GATE = {
     "quando", "onde", "quem", "qual", "porque", "pra", "pro", "ta", "tá", "to", "tô", "vai",
     "vou", "tem", "tudo", "nada", "coisa", "ai", "aí", "ne", "né", "acho", "gente", "dá",
     "causador", "negociador", "principal", "secundario", "secundário", "lider", "líder",
-    "equipe", "ocorrencia", "ocorrência", "incidente", "forma"
+    "equipe", "ocorrencia", "ocorrência", "incidente", "forma",  "mano", "manow", "meu", "meu filho",
+    "cara", "parça", "bixo", "porra", "tipo", "tipo assim", "tipo ó", "saca", "saquei", "entende", "tá ligado",
+    "fica", "calma", "tranquilo", "relaxa", "né", "fico", "tá", "ta", "tô", "to", "cara", "parça", "tipo assim", 
 }
 
 NEGADORES = {
@@ -179,7 +181,7 @@ DICIONARIO_OPERACIONAL = {
             "acidente": 1.00
         }
     },
-    "Ideação Suicida / Desesperança (Crise Interna)": {
+    "Ideação Suicida / Desesperança (Pensamento Suicida Declarado)": {
         "tipo": "risco",
         "peso_base": 1.70,
         "termos": {
@@ -201,6 +203,28 @@ DICIONARIO_OPERACIONAL = {
             "dor": 1.10
         }
     },
+            "Sinais de Despedida / Comportamento Terminal Iminente": {
+            "tipo": "risco",
+            "peso_base": 3.80,  # PESO MÁXIMO - crítico!
+            "termos": {
+                "quero falar com": 3.20,
+                "preciso falar com": 3.20,
+                "última vez": 3.50,
+                "despedir de": 3.40,
+                "antes disso": 3.30,
+                "antes de fazer": 1.80,
+                "antes de partir": 3.60,
+                "quando trouxer": 1.20,
+                "se trazer": 1.10,
+                "uma última": 3.50,
+                "me despeço": 3.60,
+                "deixa eu falar com": 2.90,
+                "preciso ver minha/meu": 2.10,
+                "uma última conversa": 3.50,
+                "fechar assuntos": 1.20
+            }
+        },
+
     "Risco à Integridade / Hostilidade (Crise Externa)": {
         "tipo": "risco",
         "peso_base": 1.80,
@@ -869,7 +893,30 @@ def gerar_radar_comparativo(texto_causador, texto_negociador, texto_negociador_s
         
         # MÉTRICA COMPLEMENTAR 2: Rapport Alcançado
         # = proximidade de abertura entre os dois (quanto maior, melhor)
-        rapport = round(abs(s_np.get("abertura_observada", 0.0) - s_c.get("abertura_observada", 0.0)), 2)
+        def calcular_rapport_real(s_c, s_np):
+            """
+            Rapport real = sincronização em 3 dimensões:
+            1. Abertura emocional (já temos)
+            2. Convergência temática (já temos)
+            3. Validação (novo)
+            """
+            
+            # 1. Diferença de abertura (quanto mais próximos, melhor)
+            diff_abertura = abs(s_np.get("abertura_observada") - s_c.get("abertura_observada"))
+            score_abertura = max(0, 10 - diff_abertura)  # 0-10
+            
+            # 2. Convergência temática (quanto mais sobrepostos, melhor)
+            convergencia = s_np.get("convergencia_tematica", 0)  # 0-1
+            score_convergencia = convergencia * 10  # 0-10
+            
+            # 3. Validação (negociador reconhece razão do causador?)
+            # Detectar se negociador mencionou gatilhos que causador mencionou
+            score_validacao = detectar_validacao_emocional(s_np, s_c)
+            
+            # Média ponderada:
+            rapport = (score_abertura * 0.4 + score_convergencia * 0.4 + score_validacao * 0.2)
+            
+            return round(rapport, 2)  # 0-10, onde 10 = rapport perfeito
         
         # MÉTRICA COMPLEMENTAR 3: Delta de Progresso
         # = desescalada total observada (redução de risco + aumento de abertura)
@@ -921,6 +968,16 @@ def gerar_radar_comparativo(texto_causador, texto_negociador, texto_negociador_s
         except Exception:
             espelhamento_forma = 0.0
 
+            # ✅ Calcular convergência para detector de falsa conexão
+        convergencia_percent = espelhamento_forma * 100  # Converte para %
+        
+        # ✅ Chamar detector
+        analise_falsa_conexao = detectar_falsa_conexao(
+            convergencia.get("espelhamento_forma", 0) * 100,
+            convergencia_percent
+        )
+        convergencia["falsa_conexao"] = analise_falsa_conexao
+
         convergencia["espelhamento_forma"] = round(float(espelhamento_forma), 2)
         convergencia["espelhamento"] = convergencia["espelhamento_forma"]
 
@@ -933,8 +990,16 @@ def gerar_radar_comparativo(texto_causador, texto_negociador, texto_negociador_s
 
         convergencia["leitura_risco"] = leitura_risco
         convergencia["leitura_abertura"] = leitura_abertura
-        convergencia["leitura_espelhamento"] = leitura_espelhamento
         convergencia["leitura_efetividade"] = leitura_efetividade
+        convergencia["leitura_espelhamento"] = leitura_espelhamento
+        
+        # ✅ PARA CASO DE FALSA CONEXÃO):
+        analise_falsa_conexao = detectar_falsa_conexao(
+            convergencia.get("espelhamento_forma", 0) * 100,  # Converte de 0-1 para 0-100
+            convergencia_calc if 'convergencia_calc' in locals() else 50  # % de convergência
+        )
+        convergencia["falsa_conexao"] = analise_falsa_conexao
+                
 
         return fig, convergencia
 
@@ -961,10 +1026,79 @@ def gerar_radar_comparativo(texto_causador, texto_negociador, texto_negociador_s
             "debug_msg": f"Erro: {str(err)}"
         }
         return fig, convergencia
-
+    
+    
 # ============================================================
 # 7. TESTES ESTATÍSTICOS (MANTIDOS)
 # ============================================================
+# ============================================================
+# DETECTOR DE FALSA CONEXÃO (Adicionar antes de calcular_spearman)
+# ============================================================
+
+def detectar_falsa_conexao(similitude_percent, convergencia_percent):
+    """
+    Identifica quando há similitude alta mas convergência baixa
+    = falsa conexão, negociador não está realmente sincronizado.
+    
+    Args:
+        similitude_percent: Índice de similitude (0-100)
+        convergencia_percent: Convergência temática (0-100)
+    
+    Returns:
+        dict com análise de falsa conexão
+    """
+    
+    if similitude_percent is None or convergencia_percent is None:
+        return {
+            "alerta": False,
+            "severidade": None,
+            "mensagem": None,
+            "recomendacao": None
+        }
+    
+    # Padrão crítico: similitude alta + convergência baixa
+    if similitude_percent > 40 and convergencia_percent < 50:
+        return {
+            "alerta": True,
+            "severidade": "Crítica",
+            "mensagem": "Desconexão severa: ambos usam palavras similares mas temas radicalmente diferentes",
+            "recomendacao": "Negociador repetindo vícios sem validar realidade do causador. Efetividade reduzida. Mudar estratégia IMEDIATAMENTE."
+        }
+    
+    # Padrão de risco: similitude alta + convergência moderada-baixa
+    elif similitude_percent > 35 and convergencia_percent < 70:
+        return {
+            "alerta": True,
+            "severidade": "Alta",
+            "mensagem": "Falsa conexão detectada: palavras compartilhadas mascarando falta de sincronização temática",
+            "recomendacao": "Possível vício de linguagem (ex: 'mano') inflando similitude. Validar se convergência temática real existe."
+        }
+    
+    # Padrão positivo: ambas altas = real conexão
+    elif similitude_percent > 30 and convergencia_percent >= 70:
+        return {
+            "alerta": False,
+            "severidade": None,
+            "mensagem": "Sincronização saudável: palavras E temas alinhados",
+            "recomendacao": None
+        }
+    
+    # Padrão também positivo: similitude baixa + convergência alta = bom
+    elif similitude_percent <= 30 and convergencia_percent >= 60:
+        return {
+            "alerta": False,
+            "severidade": None,
+            "mensagem": "Convergência temática forte apesar de vocabulários diferentes: bom rapport",
+            "recomendacao": None
+        }
+    
+    else:
+        return {
+            "alerta": False,
+            "severidade": None,
+            "mensagem": None,
+            "recomendacao": None
+        }
 
 def calcular_spearman(df_historico, col_x, col_y):
     df_limpo = df_historico[[col_x, col_y]].dropna().copy()

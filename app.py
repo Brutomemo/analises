@@ -1290,13 +1290,19 @@ else:
                             txt_neg_limpo = limpar_texto(txt_neg)
 
                             stopwords_pt = [
-                                'o', 'a', 'os', 'as', 'um', 'uma', 'de', 'do', 'da', 'em', 'no', 'na', 'para', 'com', 
-                                'que', 'é', 'e', 'se', 'por', 'como', 'pra', 'ta', 'tá', 'eu', 'vc', 'você', 'me', 
-                                'meu', 'minha', 'aqui', 'vou', 'isso', 'mas', 'não', 'nao', 'sim', 'só', 'ele', 'ela', 
-                                'eles', 'elas', 'vai', 'foi', 'fui', 'tudo', 'bem', 'tem', 'têm', 'bom', 'pode', 'então', 
-                                'gente', 'muito', 'mais', 'já', 'agora', 'quando', 'onde', 'quem', 'qual', 'ser', 'fazer', 
-                                'ter', 'estar', 'dizer', 'falar', 'quer', 'quero', 'sei', 'sabe', 'ver', 'lá', 'aí', 
-                                'pro', 'pra', 'dos', 'das', 'nas', 'nos', 'ou', 'nem', 'até', 'mesmo', 'porque', 'pq', 'mim', 'assim', 'falou', 'dele', 'comigo', 'faz', 'ficar'
+                                "o", "a", "os", "as", "um", "uma", "de", "do", "da", "em", "no", "na", "nos", "nas",
+                                "para", "com", "por", "que", "se", "e", "ou", "mas", "como", "ao", "aos", "dos", "das",
+                                "é", "foi", "ser", "ter", "estar", "fazer", "houve", "isso", "esse", "essa", "aquele",
+                                "aquela", "ele", "ela", "eles", "elas", "eu", "voce", "você", "vocês", "voces", "nos", "nós", "me", "te",
+                                "lhe", "minha", "meu", "seu", "sua", "dele", "dela", "daqui", "aqui", "ali", "la", "lá",
+                                "ja", "já", "so", "só", "mais", "muito", "pouco", "bem", "bom", "entao", "então", "agora",
+                                "quando", "onde", "quem", "qual", "porque", "pra", "pro", "ta", "tá", "to", "tô", "vai",
+                                "vou", "tem", "tudo", "nada", "coisa", "ai", "aí", "ne", "né", "acho", "gente", "dá",
+                                "causador", "negociador", "principal", "secundario", "secundário", "lider", "líder",
+                                "equipe", "ocorrencia", "ocorrência", "incidente", "forma",  "mano", "manow", "meu", "meu filho",
+                                "cara", "parça", "bixo", "porra", "tipo", "tipo assim", "tipo ó", "saca", "saquei", "entende", "tá ligado",
+                                "fica", "calma", "tranquilo", "relaxa", "né", "fico", "tá", "ta", "tô", "to", "cara", "parça", "tipo assim", 
+
                             ]
                             
                             vectorizer = TfidfVectorizer(stop_words=stopwords_pt)
@@ -1910,6 +1916,34 @@ else:
                             if fig_radar:
                                 st.plotly_chart(fig_radar, use_container_width=True)
 
+                                if fig_radar:
+                                st.plotly_chart(fig_radar, use_container_width=True)
+
+                            # ✅ PARADOXO DE SIMILITUDE:
+                            st.markdown("""
+                            <div style='background:rgba(255,68,68,0.1);padding:15px;border-radius:10px;border:1px solid #ef4444;margin:20px 0;'>
+                            <h4 style='color:#ef4444;margin-top:0;'>⚠️ PARADOXO: Similitude vs. Convergência (LEITURA INTEGRADA)</h4>
+                            <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
+                            O <strong>Grafo de Espelhamento</strong> (Similitude) mostra <strong>palavras compartilhadas</strong>.<br>
+                            O <strong>Radar de Convergência</strong> mostra <strong>temas/universos mentais</strong>.<br><br>
+                            
+                            <strong>🔴 Cenário de Risco - Quando divergem:</strong><br>
+                            • <strong>Similitude alta + Convergência baixa</strong> = Negociador repetindo vícios/preenchedores sem validar a emoção real<br>
+                            &nbsp;&nbsp; <em>Exemplo: Ambos dizem "mano" (similitude), mas um foca em "calma" e outro em "morte" (convergência baixa)</em><br>
+                            &nbsp;&nbsp; <strong>Resultado:</strong> Falsa conexão - parecem se entender mas não estão sincronizados<br><br>
+                            
+                            • <strong>Similitude baixa + Convergência alta</strong> = Negociador fala diferente mas ENTENDE o causador ✅<br>
+                            &nbsp;&nbsp; <em>Exemplo: Negociador: "Entendo sua dor" | Causador: "Tô sofrendo demais"</em><br>
+                            &nbsp;&nbsp; <strong>Resultado:</strong> Boa sincronização temática mesmo com palavras diferentes<br><br>
+                            
+                            <strong>💡 Regra de Ouro para APA:</strong><br>
+                            Não confunda "usar as mesmas palavras" com "estar sincronizado emocionalmente".<br>
+                            Se similitude é alta MAS efetividade é negativa, procure por palavras SEM significado temático (vícios como "mano", "tipo", "cara").
+                            </p>
+                            </div>
+                            """, unsafe_allow_html=True)
+                            
+                            
                             if conv:
                                 st.markdown("---")
                                 st.markdown("""
