@@ -1917,7 +1917,7 @@ else:
                                 st.plotly_chart(fig_radar, use_container_width=True)
 
                                 if fig_radar:
-                                st.plotly_chart(fig_radar, use_container_width=True)
+                                    st.plotly_chart(fig_radar, use_container_width=True)
 
                             # ✅ PARADOXO DE SIMILITUDE:
                             st.markdown("""
