@@ -2348,8 +2348,37 @@ else:
 
                     else:
                         st.warning("⚠️ Nenhuma transcrição disponível para análise")
-                        
 
+                        st.markdown("""
+                            <div class="divider-glow"></div>
+
+                            <style>
+                            .divider-glow{
+                                width: 100%;
+                                height: 2px;
+
+                                background: linear-gradient(
+                                    90deg,
+                                    rgba(255,140,0,0) 0%,
+                                    rgba(255,140,0,0.25) 15%,
+                                    rgba(255,140,0,1) 50%,
+                                    rgba(255,140,0,0.25) 85%,
+                                    rgba(255,140,0,0) 100%
+                                );
+
+                                margin-top: 25px;
+                                margin-bottom: 25px;
+
+                                box-shadow:
+                                    0 0 8px rgba(255,140,0,0.7),
+                                    0 0 16px rgba(255,140,0,0.4),
+                                    0 0 24px rgba(255,140,0,0.2);
+
+                                border-radius: 999px;
+                            }
+                            </style>
+                            """, unsafe_allow_html=True)
+                        
                                 
                     # ===== PRÓXIMO BOTÃO (FORA DA TAB) =====
             if st.button("✔ 3. GERAR ANALYTICS E EXPORTAR ANÁLISE (PDF)"):
