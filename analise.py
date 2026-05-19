@@ -515,6 +515,7 @@ def analisar_crise_direcional(texto, resolucao_tipo="desconhecida"):
     resultados = sorted(resultados, key=lambda x: x["score"], reverse=True)
 
     # Normalização por densidade textual
+    # ✅ CORRETO — todos dividem pela mesma base
     risco_observado    = round((risco_bruto    / carga_maxima_esperada) * 100, 2)
     abertura_observada = round((protecao_bruto / carga_maxima_esperada) * 100, 2)
     raiz_observada     = round((contexto_bruto / carga_maxima_esperada) * 100, 2)
