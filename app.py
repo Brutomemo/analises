@@ -1300,7 +1300,7 @@ else:
                                 "causador", "negociador", "principal", "secundario", "secundário", "lider", "líder",
                                 "equipe", "ocorrencia", "ocorrência", "incidente", "forma",  "mano", "manow", "meu", "meu filho",
                                 "cara", "parça", "bixo", "porra", "tipo", "tipo assim", "tipo ó", "saca", "saquei", "entende", "tá ligado",
-                                "fica", "calma", "tranquilo", "relaxa", "né", "fico", "tá", "ta", "tô", "to", "cara", "parça", "tipo assim", 
+                                "fica", "calma", "tranquilo", "relaxa", "né", "fico", "tá", "ta", "tô", "to", "cara", "parça", "tipo assim", "Não", "não", 
 
                             ]
                             
