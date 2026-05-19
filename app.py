@@ -1681,27 +1681,23 @@ else:
             if st.button("✔ 1. Gerar Análise de Técnicas", key="btn_tecnicas_semantica"):
                 with st.spinner("Processando técnicas empregadas..."):
                     try:
+                        # ✅ df_apa é uma Series — usar .get() direto
                         col_tecnicas = None
-                        for col in df_apa.columns:
-                            if 'tecnica' in col.lower():
-                                col_tecnicas = col
+                        for campo in ['TÉCNICAS', 'Técnicas', 'tecnicas', 'TECNICAS']:
+                            val = df_apa.get(campo)
+                            if val and str(val).strip():
+                                col_tecnicas = str(val).strip()
                                 break
 
                         if col_tecnicas:
-                            # ✅ CORRIGIDO: passa string pura, gerar_treemap decide o que fazer
-                            tecnicas_texto = str(df_apa[col_tecnicas]).replace('\n', ' ')
-
-                            if tecnicas_texto and len(tecnicas_texto) > 10:
-                                fig_treemap = analise.gerar_treemap(tecnicas_texto)
-                                if fig_treemap:
-                                    st.session_state['treemap_gerado'] = fig_treemap
-                                    st.success("✅ Treemap de técnicas gerado!")
-                                else:
-                                    st.info("Não foi possível gerar treemap com os dados disponíveis.")
+                            fig_treemap = analise.gerar_treemap(col_tecnicas)
+                            if fig_treemap:
+                                st.session_state['treemap_gerado'] = fig_treemap
+                                st.success("✅ Treemap de técnicas gerado!")
                             else:
-                                st.info("Coluna de técnicas vazia ou insuficiente.")
+                                st.info("Não foi possível gerar treemap com os dados disponíveis.")
                         else:
-                            st.info("Coluna de técnicas não encontrada neste registro.")
+                            st.info("Campo de técnicas não encontrado neste registro.")
                     except Exception as e:
                         st.error(f"Erro ao processar treemap: {str(e)[:80]}")
 
