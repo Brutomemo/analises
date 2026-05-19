@@ -379,6 +379,39 @@ def _avaliar_modificadores(tokens, idx_inicio, idx_fim):
 
     return negado, intensificador
 
+def _clamp(valor, minimo=0.0, maximo=100.0):
+    return max(minimo, min(maximo, float(valor or 0)))
+
+
+def _confianca_amostral(tokens_validos, vocabulario_unico):
+    """
+    Confiança simples da análise textual.
+    Evita dar aparência de precisão para transcrições curtas/repetitivas.
+    """
+    if tokens_validos <= 0:
+        return 0.0
+
+    fator_volume = min(1.0, tokens_validos / 120)
+    fator_diversidade = min(1.0, vocabulario_unico / 45)
+
+    return round((0.65 * fator_volume) + (0.35 * fator_diversidade), 2)
+
+
+def _normalizar_score_percentual(score_bruto, total_tokens, carga_maxima_esperada=100):
+    """
+    Normaliza score bruto combinando carga absoluta e densidade textual.
+    Mantém compatibilidade com o modelo antigo, mas reduz distorções por corpus longo/curto.
+    """
+    if total_tokens <= 0:
+        return 0.0
+
+    carga_absoluta = (score_bruto / carga_maxima_esperada) * 100
+    densidade_100_tokens = (score_bruto / total_tokens) * 100
+
+    score = (0.55 * carga_absoluta) + (0.45 * densidade_100_tokens)
+
+    return round(_clamp(score, 0, 100), 2)
+
 VOCATIVOS_BASE = set([
     'fala', 'fale', 'fala comigo', 'escuta', 'oi', 'alô', 'alo', 'vem', 'venha',
 ])
@@ -388,16 +421,23 @@ def eh_vocativo(tokens, idx_inicio, idx_fim, repeticao_threshold=3):
     if not span:
         return False
 
+    texto_span = " ".join(span)
+
+    if texto_span in VOCATIVOS_BASE:
+        return True
+
     if any(tok in VOCATIVOS_BASE for tok in span):
         return True
 
     token0 = span[0]
     janela = tokens[max(0, idx_inicio - 6): min(len(tokens), idx_fim + 6)]
+
     if janela.count(token0) >= repeticao_threshold and len(span) == 1:
         return True
 
     if idx_inicio > 0 and tokens[idx_inicio - 1] == token0:
         return True
+
     if idx_fim < len(tokens) and tokens[idx_fim] == token0:
         return True
 
@@ -425,6 +465,8 @@ def analisar_crise_direcional(texto, resolucao_tipo="desconhecida"):
                 "intensidade_index": 0.0,
                 "direcao_index": 0.0,
                 "volatilidade_index": 0.0,
+                "vocabulario_unico": vocabulario_unico,
+                "confianca_amostral": confianca_amostral,
                 "classificacao": "SEM DADOS",
                 "leitura": "Texto insuficiente para análise."
             }
@@ -433,8 +475,10 @@ def analisar_crise_direcional(texto, resolucao_tipo="desconhecida"):
     tokens, starts = _obter_tokens_e_posicoes(texto_norm)
     tokens_validos = [t for t in tokens if len(t) > 1 and t not in STOPWORDS_GATE]
     total_tokens = len(tokens_validos)
+    vocabulario_unico = len(set(tokens_validos))
+    confianca_amostral = _confianca_amostral(total_tokens, vocabulario_unico)
 
-    if total_tokens < 15 or len(set(tokens_validos)) < 6:
+    if total_tokens < 20 or vocabulario_unico < 8:
         return {
             "temas": [],
             "sumario": {
@@ -448,7 +492,8 @@ def analisar_crise_direcional(texto, resolucao_tipo="desconhecida"):
                 "intensidade_index": 0.0,
                 "direcao_index": 0.0,
                 "volatilidade_index": 0.0,
-                "classificacao": "DADOS INSUFICIENTES",
+                "classificacao": "DADOS INSUFICIENTES", 
+                "confianca_amostral": confianca_amostral,
                 "leitura": "Corpus insuficiente para análise confiável."
             }
         }
@@ -516,9 +561,25 @@ def analisar_crise_direcional(texto, resolucao_tipo="desconhecida"):
 
     # Normalização por densidade textual
     # ✅ CORRETO — todos dividem pela mesma base
-    risco_observado    = round((risco_bruto    / carga_maxima_esperada) * 100, 2)
-    abertura_observada = round((protecao_bruto / carga_maxima_esperada) * 100, 2)
-    raiz_observada     = round((contexto_bruto / carga_maxima_esperada) * 100, 2)
+    # Normalização híbrida: carga absoluta + densidade por volume textual.
+    # Evita que textos longos diluam risco e que textos curtos inflem conclusões.
+    risco_observado = _normalizar_score_percentual(
+        risco_bruto,
+        total_tokens,
+        carga_maxima_esperada
+    )
+
+    abertura_observada = _normalizar_score_percentual(
+        protecao_bruto,
+        total_tokens,
+        carga_maxima_esperada
+    )
+
+    raiz_observada = _normalizar_score_percentual(
+        contexto_bruto,
+        total_tokens,
+        carga_maxima_esperada
+    )
 
     intensidade_index  = round(risco_observado + abertura_observada + (raiz_observada * 0.35), 2)
     direcao_index      = round(abertura_observada - risco_observado, 2)
@@ -567,11 +628,15 @@ def classificar_estado_crise_apa(
     Classificação com interpretação para APA.
     Vetores renomeados: Risco Observado, Abertura Observada, Raiz Observada.
     """
+    resolucao_norm = str(resolucao_tipo or "").strip().lower()
 
-    if resolucao_tipo == "nao_negociacao":
+    if (
+        resolucao_norm in {"nao_negociacao", "não negociação"}
+        or "interven" in resolucao_norm
+    ):
         return (
             "HOUVE INTERVENÇÃO",
-            "Ocorrência resolvida fora da negociação. Requer análise rigorosa da atuação em desescalada."
+            "Ocorrência resolvida fora da negociação verbal. Requer análise rigorosa da atuação em desescalada."
         )
 
     if tokens_validos is not None and tokens_validos < 15:
@@ -753,28 +818,28 @@ def gerar_narrativa_crise(risco_observado, abertura_observada, raiz_observada,
     # ── 5. DIREÇÃO ───────────────────────────────────────────────────────────
     if direcao_index <= -30:
         txt_dir = (
-            f"📉 **Direção: escalada intensa ({direcao_index:.1f}):** "
+            f"✔️ **Direção: escalada intensa ({direcao_index:.1f}):** "
             "O discurso do causador estava predominantemente em escalada. "
             "A tensão verbal era muito superior aos sinais de cooperação."
         )
     elif direcao_index <= -10:
         txt_dir = (
-            f"📉 **Direção: tendência de escalada ({direcao_index:.1f}):** "
+            f"✔️ **Direção: tendência de escalada ({direcao_index:.1f}):** "
             "Havia mais hostilidade do que cooperação, indicando que a crise ainda estava em curso."
         )
     elif direcao_index <= 0:
         txt_dir = (
-            f"⚖️ **Direção: levemente negativa ({direcao_index:.1f}):** "
+            f"✔️ **Direção: levemente negativa ({direcao_index:.1f}):** "
             "Crise no limiar — risco e abertura quase empatados, com leve predomínio de tensão."
         )
     elif direcao_index <= 10:
         txt_dir = (
-            f"📈 **Direção: leve desescalada ({direcao_index:.1f}):** "
+            f"✔️ **Direção: leve desescalada ({direcao_index:.1f}):** "
             "Sinais de cooperação ligeiramente superiores ao risco. Tendência positiva."
         )
     else:
         txt_dir = (
-            f"📈 **Direção: desescalada clara ({direcao_index:.1f}):** "
+            f"✔️ **Direção: desescalada clara ({direcao_index:.1f}):** "
             "Cooperação predominante. O causador estava visivelmente se acalmando."
         )
     linhas.append(txt_dir)
@@ -798,7 +863,7 @@ def gerar_narrativa_crise(risco_observado, abertura_observada, raiz_observada,
     else:
         txt_int = (
             f"⚡ **Intensidade baixa ({intensidade_index:.1f}):** "
-            "Baixa carga emocional global."
+            "Baixa carga emocional geral."
         )
     linhas.append(txt_int)
 
@@ -824,7 +889,7 @@ def gerar_narrativa_crise(risco_observado, abertura_observada, raiz_observada,
     # ── 8. SÍNTESE FINAL ─────────────────────────────────────────────────────
     linhas.append("")
     linhas.append("---")
-    linhas.append("### 🧠 Síntese Operacional")
+    linhas.append("### ✔️ Síntese Operacional")
 
     # Combinações de padrão para síntese
     if risco_observado >= 35 and abertura_observada >= 20:
@@ -947,7 +1012,7 @@ def extrair_topicos_ngrams(texto, resolucao_tipo="desconhecida"):
     resultado.append(f"**🔴 Risco Observado:** `{resumo['risco_observado']:.2f}%` — Intensidade de ameaça/hostilidade")
     resultado.append(f"**🟢 Abertura Observada:** `{resumo['abertura_observada']:.2f}%` — Sinais de cooperação/rendição")
     resultado.append(f"**🟡 Raiz Observada:** `{resumo['raiz_observada']:.2f}%` — Gatilhos/motivadores da crise")
-    resultado.append(f"**Intensidade Global:** `{resumo['intensidade_index']:.2f}` — Carga emocional total")
+    resultado.append(f"**Intensidade Geral:** `{resumo['intensidade_index']:.2f}` — Carga emocional total")
 
     if resumo["direcao_index"] > 0:
         direcao_txt = "desescalada"
