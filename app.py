@@ -2005,7 +2005,7 @@ else:
                                     st.metric(
                                         label="Rapport Alcançado",
                                         value=f"{rapport:.1f}/10" if rapport is not None else "N/D",
-                                        help="Sincronização emocional (0-10). Quanto mais perto de 10, melhor."
+                                        help="Sincronização emocional (0-10). Quanto mais próximo de 10, melhor."
                                     )
                                     st.caption(status)
 
@@ -2026,11 +2026,29 @@ else:
                                     )
                                     st.caption(conv.get("leitura_espelhamento") or "—")
 
-                        except Exception as e:
-                            st.error(f"Erro ao gerar radar: {str(e)[:80]}")
-
-            st.markdown("---")
-
+                                # ✅ AGORA SIM, ADICIONE O BLOCO DE PARADOXO (DEPOIS DAS MÉTRICAS)
+                                st.markdown("""
+                                <div style='background:rgba(255,68,68,0.1);padding:15px;border-radius:10px;border:1px solid #ef4444;margin:20px 0;'>
+                                <h4 style='color:#ef4444;margin-top:0;'>⚠️ PARADOXO: Similitude vs. Convergência (LEITURA INTEGRADA)</h4>
+                                <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
+                                O <strong>Grafo de Espelhamento</strong> (Similitude) mostra <strong>palavras compartilhadas</strong>.<br>
+                                O <strong>Radar de Convergência</strong> mostra <strong>temas/universos mentais</strong>.<br><br>
+                                
+                                <strong>🔴 Cenário de Risco - Quando divergem:</strong><br>
+                                • <strong>Similitude alta + Convergência baixa</strong> = Negociador repetindo vícios/preenchedores sem validar a emoção real<br>
+                                &nbsp;&nbsp; <em>Exemplo: Ambos dizem "mano" (similitude), mas um foca em "calma" e outro em "morte" (convergência baixa)</em><br>
+                                &nbsp;&nbsp; <strong>Resultado:</strong> Falsa conexão - parecem se entender mas não estão sincronizados<br><br>
+                                
+                                • <strong>Similitude baixa + Convergência alta</strong> = Negociador fala diferente mas ENTENDE o causador ✅<br>
+                                &nbsp;&nbsp; <em>Exemplo: Negociador: "Entendo sua dor" | Causador: "Tô sofrendo demais"</em><br>
+                                &nbsp;&nbsp; <strong>Resultado:</strong> Boa sincronização temática mesmo com palavras diferentes<br><br>
+                                
+                                <strong>💡 Regra de Ouro para APA:</strong><br>
+                                Não confunda "usar as mesmas palavras" com "estar sincronizado emocionalmente".<br>
+                                Se similitude é alta MAS efetividade é negativa, procure por palavras SEM significado temático (vícios como "mano", "tipo", "cara").
+                                </p>
+                                </div>
+                                """, unsafe_allow_html=True)
             
                     
             if st.button("✔ 3. GERAR ANALYTICS E EXPORTAR ANÁLISE (PDF)"):
