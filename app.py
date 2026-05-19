@@ -1737,13 +1737,36 @@ else:
                             df_apa.get('Resolução', df_apa.get('RESOLUÇÃO', df_apa.get('resolucao', '')))
                         ).strip()
 
+                        # ✅ CORRIGIDO: detecta os 3 tipos reais GATE/PMESP
                         resolucao_norm = resolucao_raw.lower()
                         if not resolucao_norm:
                             resolucao_tipo = "desconhecida"
-                        elif "negocia" in resolucao_norm:
-                            resolucao_tipo = "negociacao"
+                        elif "tática" in resolucao_norm or "tatica" in resolucao_norm:
+                            resolucao_tipo = "Negociação Tática"
+                        elif "real" in resolucao_norm or "negocia" in resolucao_norm:
+                            resolucao_tipo = "Negociação Real"
+                        elif "interven" in resolucao_norm:
+                            resolucao_tipo = "Intervenção"
                         else:
-                            resolucao_tipo = "nao_negociacao"
+                            resolucao_tipo = "desconhecida"
+
+                        # ✅ NOVO: extrair tempos do Airtable com segurança
+                        def extrair_tempo(valor):
+                            try:
+                                return int(float(str(analise.limpar_valor(valor)).replace(',', '.') or 0))
+                            except Exception:
+                                return 0
+
+                        tempo_neg_real = extrair_tempo(
+                            df_apa.get('TEMPO NEGOCIAÇÃO REAL',
+                            df_apa.get('Tempo Negociação Real',
+                            df_apa.get('tempo_negociacao_real', 0)))
+                        )
+                        tempo_neg_tatica = extrair_tempo(
+                            df_apa.get('TEMPO NEGOCIAÇÃO TÁTICA',
+                            df_apa.get('Tempo Negociação Tática',
+                            df_apa.get('tempo_negociacao_tatica', 0)))
+                        )
 
                         st.session_state['stats_calculados'] = {
                             "topicos":     analise.extrair_topicos_ngrams(texto_total, resolucao_tipo=resolucao_tipo) if len(texto_total) > 10 else ["Texto insuficiente"],
@@ -1753,11 +1776,13 @@ else:
                             "wc_c":        analise.gerar_wordcloud(texto_c)  if len(texto_c)  > 5 else None,
                             "wc_np":       analise.gerar_wordcloud(texto_np) if len(texto_np) > 5 else None,
                             "wc_ns":       analise.gerar_wordcloud(texto_ns) if len(texto_ns) > 5 else None,
-                            "texto_c_raw":  texto_c,
-                            "texto_np_raw": texto_np,
-                            "texto_ns_raw": texto_ns,
-                            "resolucao_tipo": resolucao_tipo,
-                            "resolucao_raw":  resolucao_raw
+                            "texto_c_raw":      texto_c,
+                            "texto_np_raw":     texto_np,
+                            "texto_ns_raw":     texto_ns,
+                            "resolucao_tipo":   resolucao_tipo,
+                            "resolucao_raw":    resolucao_raw,
+                            "tempo_neg_real":   tempo_neg_real,    # ✅ NOVO
+                            "tempo_neg_tatica": tempo_neg_tatica,  # ✅ NOVO
                         }
                         st.success("✅ Padrões mentais processados!")
                     except Exception as e:
