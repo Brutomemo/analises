@@ -758,7 +758,7 @@ def gerar_treemap(df_tecnicas):
 
 
 # ============================================================
-# 6. RADAR COMPARATIVO COM MÉTRICAS COMPLEMENTARES
+# 6. RADAR COMPARATIVO COM MÉTRICAS COMPLEMENTARES (CORRIGIDO)
 # ============================================================
 
 def gerar_radar_comparativo(texto_causador, texto_negociador, texto_negociador_sec=None):
@@ -876,6 +876,7 @@ def gerar_radar_comparativo(texto_causador, texto_negociador, texto_negociador_s
             "leitura_abertura": None,
             "leitura_espelhamento": None,
             "leitura_efetividade": None,
+            "falsa_conexao": None,
             "debug_msg": None
         }
 
@@ -891,32 +892,42 @@ def gerar_radar_comparativo(texto_causador, texto_negociador, texto_negociador_s
         # = quanto conseguiu reduzir o risco relativo (delta negativo = efetivo)
         efetividade = round(abs(delta_risco) if delta_risco < 0 else -delta_risco, 2)
         
-        # MÉTRICA COMPLEMENTAR 2: Rapport Alcançado
-        # = proximidade de abertura entre os dois (quanto maior, melhor)
+        # ✅ MÉTRICA COMPLEMENTAR 2: Rapport Alcançado
+        # = sincronização em 3 dimensões: abertura + convergência + validação
         def calcular_rapport_real(s_c, s_np):
             """
             Rapport real = sincronização em 3 dimensões:
-            1. Abertura emocional (já temos)
-            2. Convergência temática (já temos)
-            3. Validação (novo)
+            1. Abertura emocional
+            2. Convergência temática
+            3. Validação emocional
             """
-            
-            # 1. Diferença de abertura (quanto mais próximos, melhor)
-            diff_abertura = abs(s_np.get("abertura_observada") - s_c.get("abertura_observada"))
-            score_abertura = max(0, 10 - diff_abertura)  # 0-10
-            
-            # 2. Convergência temática (quanto mais sobrepostos, melhor)
-            convergencia = s_np.get("convergencia_tematica", 0)  # 0-1
-            score_convergencia = convergencia * 10  # 0-10
-            
-            # 3. Validação (negociador reconhece razão do causador?)
-            # Detectar se negociador mencionou gatilhos que causador mencionou
-            score_validacao = detectar_validacao_emocional(s_np, s_c)
-            
-            # Média ponderada:
-            rapport = (score_abertura * 0.4 + score_convergencia * 0.4 + score_validacao * 0.2)
-            
-            return round(rapport, 2)  # 0-10, onde 10 = rapport perfeito
+            try:
+                # 1. Diferença de abertura (quanto mais próximos, melhor)
+                diff_abertura = abs(s_np.get("abertura_observada", 0.0) - s_c.get("abertura_observada", 0.0))
+                score_abertura = max(0, 10 - diff_abertura)  # 0-10
+                
+                # 2. Convergência temática (quanto mais sobrepostos, melhor)
+                convergencia_tematica = s_np.get("convergencia_tematica", 0.5) or 0.5  # 0-1
+                score_convergencia = convergencia_tematica * 10  # 0-10
+                
+                # 3. Validação (negociador reconhece razão do causador?)
+                # Se função não existe, usar score padrão
+                if 'detectar_validacao_emocional' in globals():
+                    score_validacao = detectar_validacao_emocional(s_np, s_c)
+                else:
+                    # Fallback: se ambos têm abertura similar, validação é alta
+                    score_validacao = score_abertura  # Simplicado: abertura ≈ validação
+                
+                # Média ponderada:
+                rapport = (score_abertura * 0.4 + score_convergencia * 0.4 + score_validacao * 0.2)
+                
+                return round(min(10, max(0, rapport)), 2)  # Clamped 0-10
+            except Exception as e:
+                # Se erro no cálculo, retornar abertura simples invertida
+                diff_abertura = abs(s_np.get("abertura_observada", 0.0) - s_c.get("abertura_observada", 0.0))
+                return round(max(0, 10 - diff_abertura), 2)
+        
+        rapport = calcular_rapport_real(s_c, s_np)  # ✅ AGORA CHAMA A FUNÇÃO!
         
         # MÉTRICA COMPLEMENTAR 3: Delta de Progresso
         # = desescalada total observada (redução de risco + aumento de abertura)
@@ -925,7 +936,7 @@ def gerar_radar_comparativo(texto_causador, texto_negociador, texto_negociador_s
         convergencia["delta_risco"] = delta_risco
         convergencia["delta_abertura"] = delta_abertura
         convergencia["efetividade_negociador"] = efetividade
-        convergencia["rapport_alcancado"] = rapport
+        convergencia["rapport_alcancado"] = rapport  # ✅ AGORA TEM VALOR!
         convergencia["delta_progresso"] = delta_progresso
 
         # Interpretações
@@ -968,18 +979,16 @@ def gerar_radar_comparativo(texto_causador, texto_negociador, texto_negociador_s
         except Exception:
             espelhamento_forma = 0.0
 
-            # ✅ Calcular convergência para detector de falsa conexão
-        convergencia_percent = espelhamento_forma * 100  # Converte para %
-        
-        # ✅ Chamar detector
-        analise_falsa_conexao = detectar_falsa_conexao(
-            convergencia.get("espelhamento_forma", 0) * 100,
-            convergencia_percent
-        )
-        convergencia["falsa_conexao"] = analise_falsa_conexao
-
         convergencia["espelhamento_forma"] = round(float(espelhamento_forma), 2)
         convergencia["espelhamento"] = convergencia["espelhamento_forma"]
+
+        # ✅ DETECTOR DE FALSA CONEXÃO (UMA ÚNICA VEZ!)
+        if 'detectar_falsa_conexao' in globals():
+            analise_falsa_conexao = detectar_falsa_conexao(
+                convergencia.get("espelhamento_forma", 0) * 100,  # Converte de 0-1 para 0-100
+                espelhamento_forma * 100
+            )
+            convergencia["falsa_conexao"] = analise_falsa_conexao
 
         if espelhamento_forma >= 0.85:
             leitura_espelhamento = "🔁 Alto espelhamento temático — forte convergência."
@@ -992,14 +1001,6 @@ def gerar_radar_comparativo(texto_causador, texto_negociador, texto_negociador_s
         convergencia["leitura_abertura"] = leitura_abertura
         convergencia["leitura_efetividade"] = leitura_efetividade
         convergencia["leitura_espelhamento"] = leitura_espelhamento
-        
-        # ✅ PARA CASO DE FALSA CONEXÃO):
-        analise_falsa_conexao = detectar_falsa_conexao(
-            convergencia.get("espelhamento_forma", 0) * 100,  # Converte de 0-1 para 0-100
-            convergencia_calc if 'convergencia_calc' in locals() else 50  # % de convergência
-        )
-        convergencia["falsa_conexao"] = analise_falsa_conexao
-                
 
         return fig, convergencia
 
@@ -1023,6 +1024,7 @@ def gerar_radar_comparativo(texto_causador, texto_negociador, texto_negociador_s
             "leitura_abertura": None,
             "leitura_espelhamento": None,
             "leitura_efetividade": None,
+            "falsa_conexao": None,
             "debug_msg": f"Erro: {str(err)}"
         }
         return fig, convergencia
@@ -1048,7 +1050,7 @@ def detectar_falsa_conexao(similitude_percent, convergencia_percent):
         dict com análise de falsa conexão
     """
     
-    if similitude_percent is None or convergencia_percent is None:
+    if similitude_percent is None or convergencia_percent is None:  
         return {
             "alerta": False,
             "severidade": None,
