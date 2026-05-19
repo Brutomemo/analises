@@ -2229,7 +2229,7 @@ else:
                 with tab_ng7:
                     st.markdown("""
                     <div class='info-card'>
-                    <h4 style='color:#FFD700; margin-top:0;'>✔️ ESTADO DO CAUSADOR (APA)</h5>
+                    <h5 style='color:#FFD700; margin-top:0;'>✔️ ESTADO DO CAUSADOR (APA)</h5>
                     <p style='color:#ccc; font-size:0.9rem;'>
                     Análise estruturada do estado emocional/comportamental do causador.
                     </p>
