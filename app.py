@@ -1491,7 +1491,10 @@ else:
                     • <em>"quero a imprensa aqui"</em> → Exigência instrumental (poder/reconhecimento)<br>
                     • <em>"só saio se me reconhecerem"</em> → Exigência moral (dignidade)<br>
                     • <em>"preciso de dinheiro"</em> → Exigência material (sobrevivência)<br><br>
-                    <strong>Por quê?</strong> Cialdini mostra que <u>reconhecer a legitimidade da exigência</u> 
+                    <strong>Por quê?</strong> Segundo William Ury (Harvard Negotiation Project), 
+                    reconhecer a legitimidade da exigência (mesmo que você não possa cumprir) 
+                    reduz hostilidade. O FBI e Chris Voss confirmam isso através de 
+                    <u>active listening tático</u> em negociações críticas. 
                     (mesmo que você não possa cumprir) reduz hostilidade. O causador quer ser OUVIDO, não necessariamente atendido.
                     </p>
                     <hr style='border-color:#444;margin:12px 0;'>
