@@ -1975,7 +1975,7 @@ else:
                     "🟢 Negociador Principal",
                     "🔵 Negociador Secundário",
                     "✔️ Análise Global",
-                    "✔️ Mapas Comparativos",
+                    "✔️ Comparativo das Nuvens de Palavras",
                     "✔️ Convergência Temática",
                     "✔️ Estado de Crise"
                 ])
@@ -2067,7 +2067,7 @@ else:
                 with tab_ng5:
                     st.markdown("""
                     <div class='info-card'>
-                    <h5 style='color: #FFD700; margin-top: 0;'>✔️ MAPAS LADO-A-LADO — Sincronização Mental</h5>
+                    <h5 style='color: #FFD700; margin-top: 0;'>✔️ NUVEM DE PALAVRAS LADO-A-LADO — Sincronização Mental</h5>
                     <p style='font-size:0.9rem;color:#ddd;'>
                     Compare as nuvens visualmente. Se causador fala de "morte" e negociador de "vida", há conversação. 
                     Se causador de "morte" e negociador de "calma", há desconexão.
