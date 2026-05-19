@@ -1032,7 +1032,7 @@ def extrair_topicos_ngrams(texto, resolucao_tipo="desconhecida"):
         pass
 
     # Bloco final: vetores APA
-    if mostrar_metricas_apa:  # ✅ NOVO: condicional
+    
         resultado.append("")
         resultado.append(f"**🔴 Risco Observado:** `{resumo['risco_observado']:.2f}%` — ...")
         resultado.append(f"**🟢 Abertura Observada:** `{resumo['abertura_observada']:.2f}%` — ...")
