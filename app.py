@@ -1231,7 +1231,7 @@ else:
             # === SEÇÃO 1: ANÁLISE DE TÉCNICAS × REAÇÃO DO CAUSADOR ===
             st.markdown("""
             <div style='margin-top:20px;'>
-            <h5 style='color:#FFD700;'>✔️ Efetividade das Técnicas — Qual técnica funcionou?</h5>
+            <h5 style='color:#FFD700;'>✔️ Efetividade das Técnicas</h5>
             <p style='color:#aaa;font-size:0.9rem;'>
             Cruza cada técnica usada com a reação do causador.
             Permite identificar quais abordagens foram efetivas nesta ocorrência.
