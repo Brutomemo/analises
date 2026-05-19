@@ -1912,10 +1912,7 @@ else:
                                     texto_np_raw,
                                     texto_ns_raw if texto_ns_raw else None
                                 )
-                                # DEBUG
-                                st.write("### DEBUG - Conteúdo de conv:")
-                                st.json(conv)
-                                
+                                                                
                                 # ✅ EXIBIR O RADAR
                                 if fig_radar:
                                     st.plotly_chart(fig_radar, use_container_width=True)
