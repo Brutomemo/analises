@@ -1488,7 +1488,8 @@ else:
                     <h5 style='color:#FFD700;'>📌 Passo 2: Identifique as EXIGÊNCIAS REAIS</h5>
                     <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
                     <strong>Procure por:</strong> O que esse sujeito <strong>quer concretamente</strong>? (não apenas ameaça)<br><br>
-                    • <em>"quero a imprensa aqui"</em> → Exigência instrumental (segurança/poder/reconhecimento)<br>                    
+                    • <em>"quero a imprensa aqui"</em> → Exigência instrumental (segurança/poder/reconhecimento)<br>
+                    • <em>"Quero que a imprensa saiba o que aconteceu"</em> → Exigência moral (dignidade)<br>
                     • <em>"preciso de dinheiro"</em> → Exigência material (sobrevivência)<br><br>
                     <strong>Por quê?</strong> Segundo William Ury (Harvard Negotiation Project), 
                     reconhecer a legitimidade da exigência (mesmo que você não possa cumprir) 
@@ -1959,11 +1960,22 @@ else:
 
                                 with col_cv4:
                                     rapport = conv.get('rapport_alcancado')
+                                    
                                     st.metric(
-                                        label="Rapport Alcançado",
+                                        label="Diferença de Abertura",
                                         value=f"{rapport:.2f}" if rapport is not None else "N/D",
-                                        help="Proximidade emocional. Mais baixo = mais próximos (melhor)."
+                                        help="Quanto menor este número, melhor a sincronização emocional entre negociador e causador."
                                     )
+                                    
+                                    if rapport is not None:
+                                        if rapport < 2:
+                                            st.caption("✅ Excelente sincronização")
+                                        elif rapport < 5:
+                                            st.caption("🔵 Boa sincronização")
+                                        elif rapport < 10:
+                                            st.caption("⚠️ Sincronização moderada")
+                                        else:
+                                            st.caption("❌ Sincronização fraca")
 
                                 with col_cv5:
                                     delta_progresso = conv.get('delta_progresso')
