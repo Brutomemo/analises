@@ -1758,15 +1758,16 @@ else:
                 stats = st.session_state['stats_calculados']
 
                 tab_ngramas, tab_ng1, tab_ng2, tab_ng3, tab_ng4, tab_ng5, tab_ng6, tab_ng7 = st.tabs([
-                        "📝 N-gramas",
-                        "🔴 Causador",
-                        "🟢 Negociador Principal",
-                        "🔵 Negociador Secundário",
-                        "📊 Análise Global",
-                        "🔍 Mapas Comparativos",
-                        "📈 Convergência Temática",
-                        "🚨 Estado de Crise"
-                    ])
+                    st.tabs([
+                            "📝 N-gramas",              # 1
+                            "🔴 Causador",              # 2
+                            "🟢 Negociador Principal",   # 3
+                            "🔵 Negociador Secundário",  # 4
+                            "📊 Análise Global",         # 5
+                            "🔍 Mapas Comparativos",     # 6
+                            "📈 Convergência Temática",  # 7
+                            "🚨 Estado de Crise"         # 8 ← ADICIONE
+                        ])
 
                 # --- TAB 1: CAUSADOR ---
                 with tab_ng1:
