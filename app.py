@@ -2388,8 +2388,8 @@ else:
                         st.warning("⚠️ Nenhuma transcrição disponível para análise")
 
 
-                        st.markdown("---")
-
+            
+            st.markdown("---")
                                 
                     # ===== PRÓXIMO BOTÃO (FORA DA TAB) =====
             if st.button("✔ 3. GERAR ANALYTICS E EXPORTAR ANÁLISE (PDF)"):
