@@ -1898,11 +1898,11 @@ else:
                         </p>
                         </div>
                         """, unsafe_allow_html=True)
-    
+
                         texto_c_raw  = stats.get('texto_c_raw', '')
                         texto_np_raw = stats.get('texto_np_raw', '')
                         texto_ns_raw = stats.get('texto_ns_raw', '')
-    
+
                         if not texto_c_raw or not texto_np_raw:
                             st.warning("⚠️ Transcrições insuficientes para gerar radar.")
                         else:
@@ -1940,7 +1940,7 @@ else:
                                     
                                     # ===== PRIMEIRA LINHA DE MÉTRICAS (3 colunas) =====
                                     col_cv1, col_cv2, col_cv3 = st.columns(3)
-    
+
                                     with col_cv1:
                                         delta_risco = conv.get('delta_risco')
                                         st.metric(
@@ -1949,7 +1949,7 @@ else:
                                             help="Causa-NegPrincipal. Positivo=causador mais carregado. Negativo=negociador foi agressivo."
                                         )
                                         st.caption(conv.get("leitura_risco") or "—")
-    
+
                                     with col_cv2:
                                         delta_abertura = conv.get('delta_abertura')
                                         st.metric(
@@ -1958,7 +1958,7 @@ else:
                                             help="NegPrincipal-Causa. Positivo=negociador mais acolhedor. Negativo=causador surpreendentemente aberto."
                                         )
                                         st.caption(conv.get("leitura_abertura") or "—")
-    
+
                                     with col_cv3:
                                         efetividade = conv.get('efetividade_negociador')
                                         st.metric(
@@ -1970,7 +1970,7 @@ else:
                                     
                                     # ===== SEGUNDA LINHA DE MÉTRICAS (3 colunas) =====
                                     col_cv4, col_cv5, col_cv6 = st.columns(3)
-    
+
                                     with col_cv4:
                                         rapport = conv.get('rapport_alcancado')
                                         
@@ -1992,7 +1992,7 @@ else:
                                             help="Sincronização emocional (0-10). Quanto mais próximo de 10, melhor."
                                         )
                                         st.caption(status)
-    
+
                                     with col_cv5:
                                         delta_progresso = conv.get('delta_progresso')
                                         st.metric(
@@ -2000,7 +2000,7 @@ else:
                                             value=f"{delta_progresso:+.2f}" if delta_progresso is not None else "N/D",
                                             help="Desescalada total. Positivo=progresso. Negativo=escalada."
                                         )
-    
+
                                     with col_cv6:
                                         espelhamento = conv.get('espelhamento')
                                         st.metric(
@@ -2009,7 +2009,7 @@ else:
                                             help="Sincronização de temas. 100%=perfeita. <50%=universos diferentes."
                                         )
                                         st.caption(conv.get("leitura_espelhamento") or "—")
-    
+
                                     # ===== BLOCO DE PARADOXO (UMA ÚNICA VEZ, DEPOIS DAS MÉTRICAS) =====
                                     st.markdown("""
                                     <div style='background:rgba(255,68,68,0.1);padding:15px;border-radius:10px;border:1px solid #ef4444;margin:20px 0;'>
@@ -2033,13 +2033,11 @@ else:
                                     </p>
                                     </div>
                                     """, unsafe_allow_html=True)
-    
+
                             except Exception as e:
                                 st.error(f"Erro ao gerar radar: {str(e)[:80]}")
-    
+
                     # ===== PRÓXIMO BOTÃO (FORA DA TAB) =====
-            
-                    
             if st.button("✔ 3. GERAR ANALYTICS E EXPORTAR ANÁLISE (PDF)"):
                 with st.spinner("Compilando dados técnicos, consultando IA e desenhando PDF..."):
                     try:
