@@ -1981,6 +1981,7 @@ else:
                 ])
 
                 # --- TAB 1: CAUSADOR ---
+                # --- TAB 1: CAUSADOR ---
                 with tab_ng1:
                     st.markdown("""
                     <div class='info-card'>
@@ -2002,6 +2003,8 @@ else:
                         st.pyplot(wc_c)
                     else:
                         st.info("Sem transcrição suficiente para gerar nuvem.")
+                    
+                    # ❌ REMOVIDO: métricas de Risco, Abertura, Raiz, etc.
 
                 # --- TAB 2: NEGOCIADOR PRINCIPAL ---
                 with tab_ng2:
@@ -2025,6 +2028,8 @@ else:
                         st.pyplot(wc_np)
                     else:
                         st.info("Sem transcrição suficiente para gerar nuvem.")
+                    
+                    # ❌ REMOVIDO: métricas de Risco, Abertura, Raiz, etc.
 
                 # --- TAB 3: NEGOCIADOR SECUNDÁRIO ---
                 with tab_ng3:
@@ -2047,6 +2052,8 @@ else:
                         st.pyplot(wc_ns)
                     else:
                         st.info("Sem transcrição suficiente para gerar nuvem.")
+                    
+                    # ❌ REMOVIDO: métricas de Risco, Abertura, Raiz, etc.
 
                 # --- TAB 4: ANÁLISE GERAL ---
                 with tab_ng4:
@@ -2062,6 +2069,8 @@ else:
                     topicos_globais = stats.get('topicos', ["Sem dados"])
                     for t in topicos_globais:
                         st.markdown(t)
+                    
+                    # ❌ REMOVIDO: métricas de Risco, Abertura, Raiz, etc.
 
                 # --- TAB 5: MAPAS COMPARATIVOS ---
                 with tab_ng5:
