@@ -1667,10 +1667,6 @@ else:
 
             # --- FIM DO BLOCO DE EXPLICAÇÃO ---
 
-            # ============================================================
-# BLOCO FINAL CORRIGIDO: TREEMAP + TAB 6 + TAB 7
-# ============================================================
-
             # === SEÇÃO 1: TREEMAP DE TÉCNICAS ===
             st.markdown("""
             <div style='margin-top:20px;'>
@@ -1685,21 +1681,23 @@ else:
             if st.button("✔ 1. Gerar Análise de Técnicas", key="btn_tecnicas_semantica"):
                 with st.spinner("Processando técnicas empregadas..."):
                     try:
-                        # ✅ CORRIGIDO: Procurar coluna de técnicas e extrair TEXT, não DataFrame
                         col_tecnicas = None
                         for col in df_apa.columns:
                             if 'tecnica' in col.lower():
                                 col_tecnicas = col
                                 break
-                        
+
                         if col_tecnicas:
-                            # ✅ CORRIGIDO: Converter para string e passar texto puro
+                            # ✅ CORRIGIDO: passa string pura, gerar_treemap decide o que fazer
                             tecnicas_texto = str(df_apa[col_tecnicas]).replace('\n', ' ')
-                            
+
                             if tecnicas_texto and len(tecnicas_texto) > 10:
                                 fig_treemap = analise.gerar_treemap(tecnicas_texto)
-                                st.session_state['treemap_gerado'] = fig_treemap
-                                st.success("✅ Treemap de técnicas gerado!")
+                                if fig_treemap:
+                                    st.session_state['treemap_gerado'] = fig_treemap
+                                    st.success("✅ Treemap de técnicas gerado!")
+                                else:
+                                    st.info("Não foi possível gerar treemap com os dados disponíveis.")
                             else:
                                 st.info("Coluna de técnicas vazia ou insuficiente.")
                         else:
@@ -1730,7 +1728,7 @@ else:
             if st.button("✔ 2. Gerar Padrões Mentais & Nuvem de Palavras", key="btn_ngramas_semantica"):
                 with st.spinner("Processando padrões mentais, temas dominantes e gerando nuvens de palavras..."):
                     try:
-                        texto_c = analise.limpar_valor(df_apa.get('TRANSCRIÇÃO DO CAUSADOR', ''))
+                        texto_c  = analise.limpar_valor(df_apa.get('TRANSCRIÇÃO DO CAUSADOR', ''))
                         texto_np = analise.limpar_valor(df_apa.get('TRANSCRIÇÃO DO NEGOCIADOR PRINCIPAL', ''))
                         texto_ns = analise.limpar_valor(df_apa.get('TRANSCRIÇÃO DO NEGOCIADOR SECUNDÁRIO', ''))
                         texto_total = f"{texto_c} {texto_np} {texto_ns}"
@@ -1748,18 +1746,18 @@ else:
                             resolucao_tipo = "nao_negociacao"
 
                         st.session_state['stats_calculados'] = {
-                            "topicos": analise.extrair_topicos_ngrams(texto_total, resolucao_tipo=resolucao_tipo) if len(texto_total) > 10 else ["Texto insuficiente"],
-                            "topicos_c": analise.extrair_topicos_ngrams(texto_c, resolucao_tipo=resolucao_tipo) if len(texto_c) > 10 else ["Texto insuficiente"],
-                            "topicos_np": analise.extrair_topicos_ngrams(texto_np, resolucao_tipo=resolucao_tipo) if len(texto_np) > 10 else ["Texto insuficiente"],
-                            "topicos_ns": analise.extrair_topicos_ngrams(texto_ns, resolucao_tipo=resolucao_tipo) if len(texto_ns) > 10 else ["Texto insuficiente"],
-                            "wc_c": analise.gerar_wordcloud(texto_c) if len(texto_c) > 5 else None,
-                            "wc_np": analise.gerar_wordcloud(texto_np) if len(texto_np) > 5 else None,
-                            "wc_ns": analise.gerar_wordcloud(texto_ns) if len(texto_ns) > 5 else None,
-                            "texto_c_raw": texto_c,
+                            "topicos":     analise.extrair_topicos_ngrams(texto_total, resolucao_tipo=resolucao_tipo) if len(texto_total) > 10 else ["Texto insuficiente"],
+                            "topicos_c":   analise.extrair_topicos_ngrams(texto_c,     resolucao_tipo=resolucao_tipo) if len(texto_c)     > 10 else ["Texto insuficiente"],
+                            "topicos_np":  analise.extrair_topicos_ngrams(texto_np,    resolucao_tipo=resolucao_tipo) if len(texto_np)    > 10 else ["Texto insuficiente"],
+                            "topicos_ns":  analise.extrair_topicos_ngrams(texto_ns,    resolucao_tipo=resolucao_tipo) if len(texto_ns)    > 10 else ["Texto insuficiente"],
+                            "wc_c":        analise.gerar_wordcloud(texto_c)  if len(texto_c)  > 5 else None,
+                            "wc_np":       analise.gerar_wordcloud(texto_np) if len(texto_np) > 5 else None,
+                            "wc_ns":       analise.gerar_wordcloud(texto_ns) if len(texto_ns) > 5 else None,
+                            "texto_c_raw":  texto_c,
                             "texto_np_raw": texto_np,
                             "texto_ns_raw": texto_ns,
                             "resolucao_tipo": resolucao_tipo,
-                            "resolucao_raw": resolucao_raw
+                            "resolucao_raw":  resolucao_raw
                         }
                         st.success("✅ Padrões mentais processados!")
                     except Exception as e:
@@ -1768,16 +1766,15 @@ else:
             if st.session_state.get('stats_calculados'):
                 stats = st.session_state['stats_calculados']
 
-                tab_ngramas, tab_ng1, tab_ng2, tab_ng3, tab_ng4, tab_ng5, tab_ng6, tab_ng7 = st.tabs([
-                        "📝 N-gramas",
-                        "🔴 Causador",
-                        "🟢 Negociador Principal",
-                        "🔵 Negociador Secundário",
-                        "📊 Análise Global",
-                        "🔍 Mapas Comparativos",
-                        "📈 Convergência Temática",
-                        "🚨 Estado de Crise"
-                    ])
+                tab_ng1, tab_ng2, tab_ng3, tab_ng4, tab_ng5, tab_ng6, tab_ng7 = st.tabs([
+                    "🔴 Causador",
+                    "🟢 Negociador Principal",
+                    "🔵 Negociador Secundário",
+                    "📊 Análise Global",
+                    "🔍 Mapas Comparativos",
+                    "📈 Convergência Temática",
+                    "🚨 Estado de Crise"
+                ])
 
                 # --- TAB 1: CAUSADOR ---
                 with tab_ng1:
@@ -1790,11 +1787,11 @@ else:
                     </p>
                     </div>
                     """, unsafe_allow_html=True)
-                    
+
                     topicos_c = stats.get('topicos_c', ["Análise individual ainda não gerada."])
                     for t in topicos_c:
                         st.markdown(t)
-                    
+
                     wc_c = stats.get('wc_c')
                     if wc_c:
                         st.markdown("#### Nuvem de Palavras — Foco Mental do Causador")
@@ -1813,11 +1810,11 @@ else:
                     </p>
                     </div>
                     """, unsafe_allow_html=True)
-                    
+
                     topicos_np = stats.get('topicos_np', ["Análise individual ainda não gerada."])
                     for t in topicos_np:
                         st.markdown(t)
-                    
+
                     wc_np = stats.get('wc_np')
                     if wc_np:
                         st.markdown("#### Nuvem de Palavras — Estratégia do Negociador")
@@ -1835,11 +1832,11 @@ else:
                     </p>
                     </div>
                     """, unsafe_allow_html=True)
-                    
+
                     topicos_ns = stats.get('topicos_ns', ["Análise individual ainda não gerada."])
                     for t in topicos_ns:
                         st.markdown(t)
-                    
+
                     wc_ns = stats.get('wc_ns')
                     if wc_ns:
                         st.markdown("#### Nuvem de Palavras — Atuação do Secundário")
@@ -1857,7 +1854,7 @@ else:
                     </p>
                     </div>
                     """, unsafe_allow_html=True)
-                    
+
                     topicos_globais = stats.get('topicos', ["Sem dados"])
                     for t in topicos_globais:
                         st.markdown(t)
@@ -1873,9 +1870,9 @@ else:
                     </p>
                     </div>
                     """, unsafe_allow_html=True)
-                    
+
                     col_wc_g1, col_wc_g2, col_wc_g3 = st.columns(3)
-                    
+
                     with col_wc_g1:
                         st.markdown("**Causador**")
                         wc_c = stats.get('wc_c')
@@ -1883,7 +1880,7 @@ else:
                             st.pyplot(wc_c, clear_figure=True)
                         else:
                             st.info("Sem nuvem.")
-                    
+
                     with col_wc_g2:
                         st.markdown("**Negociador Principal**")
                         wc_np = stats.get('wc_np')
@@ -1891,7 +1888,7 @@ else:
                             st.pyplot(wc_np, clear_figure=True)
                         else:
                             st.info("Sem nuvem.")
-                    
+
                     with col_wc_g3:
                         st.markdown("**Negociador Secundário**")
                         wc_ns = stats.get('wc_ns')
@@ -1925,13 +1922,13 @@ else:
                                 texto_np_raw,
                                 texto_ns_raw if texto_ns_raw else None
                             )
-                            
+
                             if fig_radar:
                                 st.plotly_chart(fig_radar, use_container_width=True)
-                            
+
                             if conv:
                                 st.markdown("---")
-                                
+
                                 st.markdown("""
                                 <div style='background:rgba(255,215,0,0.06);padding:12px;border-radius:10px;border:1px solid rgba(255,215,0,0.15);margin-bottom:15px;'>
                                 <p style='font-size:0.9rem;color:#FFD700;font-weight:bold;margin:0;'>
@@ -1946,7 +1943,7 @@ else:
                                 </p>
                                 </div>
                                 """, unsafe_allow_html=True)
-                                
+
                                 col_cv1, col_cv2, col_cv3 = st.columns(3)
 
                                 with col_cv1:
@@ -1972,7 +1969,7 @@ else:
                                         value=f"{efetividade:.2f}" if efetividade is not None else "N/D"
                                     )
                                     st.caption(conv.get("leitura_efetividade") or "—")
-                                
+
                                 col_cv4, col_cv5, col_cv6 = st.columns(3)
 
                                 with col_cv4:
@@ -1988,7 +1985,7 @@ else:
                                             status = "❌ Fraco"
                                     else:
                                         status = "N/D"
-                                    
+
                                     st.metric(
                                         label="Rapport Alcançado",
                                         value=f"{rapport:.1f}/10" if rapport is not None else "N/D"
@@ -2034,94 +2031,94 @@ else:
                     </p>
                     </div>
                     """, unsafe_allow_html=True)
-                    
+
                     texto_c_raw = stats.get('texto_c_raw', '')
-                    
+
                     if texto_c_raw:
                         try:
                             analise_crise = analise.analisar_crise_direcional(
                                 texto_c_raw,
                                 resolucao_tipo=stats.get('resolucao_tipo', 'desconhecida')
                             )
-                            
+
                             if analise_crise and 'sumario' in analise_crise:
                                 sumario = analise_crise['sumario']
-                                
-                                risco_observado = sumario.get('risco_observado')
+
+                                risco_observado    = sumario.get('risco_observado')
                                 abertura_observada = sumario.get('abertura_observada')
-                                raiz_observada = sumario.get('raiz_observada')
+                                raiz_observada     = sumario.get('raiz_observada')
                                 volatilidade_index = sumario.get('volatilidade_index')
-                                classificacao = sumario.get('classificacao')
-                                leitura = sumario.get('leitura')
-                                
+                                classificacao      = sumario.get('classificacao')
+                                leitura            = sumario.get('leitura')
+
                                 st.markdown("### 📊 Resumo da Análise")
                                 col1, col2, col3 = st.columns(3)
-                                
+
                                 with col1:
                                     st.metric(
                                         "🔴 Risco Observado",
                                         f"{risco_observado:.1f}%" if risco_observado is not None else "N/D"
                                     )
-                                
+
                                 with col2:
                                     st.metric(
                                         "🟢 Abertura Observada",
                                         f"{abertura_observada:.1f}%" if abertura_observada is not None else "N/D"
                                     )
-                                
+
                                 with col3:
                                     st.metric(
                                         "🟡 Raiz Observada",
                                         f"{raiz_observada:.1f}%" if raiz_observada is not None else "N/D"
                                     )
-                                
+
                                 col4, col5, col6 = st.columns(3)
-                                
+
                                 with col4:
                                     intensidade = sumario.get('intensidade_index')
                                     st.metric(
                                         "⚡ Intensidade Global",
                                         f"{intensidade:.2f}" if intensidade is not None else "N/D"
                                     )
-                                
+
                                 with col5:
                                     direcao = sumario.get('direcao_index')
                                     st.metric(
                                         "📉 Direção",
                                         f"{direcao:+.2f}" if direcao is not None else "N/D"
                                     )
-                                
+
                                 with col6:
                                     volatilidade = sumario.get('volatilidade_index')
                                     st.metric(
                                         "🔄 Volatilidade",
                                         f"{volatilidade:.2f}" if volatilidade is not None else "N/D"
                                     )
-                                
+
                                 st.markdown("---")
                                 st.markdown("### 🎯 Padrão de Crise (Radar)")
-                                
+
                                 try:
                                     fig_crise = analise.gerar_radar_crise_individual(
-                                        risco_observado if risco_observado is not None else 0,
+                                        risco_observado    if risco_observado    is not None else 0,
                                         abertura_observada if abertura_observada is not None else 0,
-                                        raiz_observada if raiz_observada is not None else 0,
+                                        raiz_observada     if raiz_observada     is not None else 0,
                                         volatilidade_index if volatilidade_index is not None else 0
                                     )
                                     st.plotly_chart(fig_crise, use_container_width=True)
                                 except Exception as e:
                                     st.error(f"Erro ao gerar radar: {str(e)[:80]}")
-                                
+
                                 st.markdown("---")
                                 st.markdown(f"### 🚨 Classificação: `{classificacao}`")
                                 st.info(leitura)
-                                
+
                             else:
                                 st.warning("Não foi possível gerar análise de crise")
-                                
+
                         except Exception as e:
                             st.error(f"Erro ao analisar crise: {str(e)[:80]}")
-                    
+
                     else:
                         st.warning("⚠️ Nenhuma transcrição disponível para análise")
 

@@ -404,12 +404,12 @@ def eh_vocativo(tokens, idx_inicio, idx_fim, repeticao_threshold=3):
     return False
 
 def analisar_crise_direcional(texto, resolucao_tipo="desconhecida"):
-    """..."""
-    carga_maxima_esperada = 100
     """
     Motor de análise semântica direcional.
     Retorna vetores de Risco, Proteção e Contexto com interpretação para APA.
     """
+    carga_maxima_esperada = 100
+
     texto_norm = normalizar_texto(texto)
     if not texto_norm:
         return {
@@ -515,12 +515,12 @@ def analisar_crise_direcional(texto, resolucao_tipo="desconhecida"):
     resultados = sorted(resultados, key=lambda x: x["score"], reverse=True)
 
     # Normalização por densidade textual
-    risco_observado = round((risco_bruto / carga_maxima_esperada) * 100, 2)
-    abertura_observada = round((protecao_bruto / max(total_tokens, 1)) * 100, 2)
-    raiz_observada = round((contexto_bruto / max(total_tokens, 1)) * 100, 2)
+    risco_observado    = round((risco_bruto    / carga_maxima_esperada) * 100, 2)
+    abertura_observada = round((protecao_bruto / carga_maxima_esperada) * 100, 2)
+    raiz_observada     = round((contexto_bruto / carga_maxima_esperada) * 100, 2)
 
-    intensidade_index = round(risco_observado + abertura_observada + (raiz_observada * 0.35), 2)
-    direcao_index = round(abertura_observada - risco_observado, 2)
+    intensidade_index  = round(risco_observado + abertura_observada + (raiz_observada * 0.35), 2)
+    direcao_index      = round(abertura_observada - risco_observado, 2)
     volatilidade_index = round(min(risco_observado, abertura_observada), 2)
 
     classificacao, leitura = classificar_estado_crise_apa(
@@ -623,7 +623,7 @@ def classificar_estado_crise_apa(
 def gerar_radar_crise_individual(risco, abertura, raiz, volatilidade):
     """Gera radar de crise individual"""
     import plotly.graph_objects as go
-    
+
     fig = go.Figure(data=go.Scatterpolar(
         r=[risco, abertura, raiz, volatilidade],
         theta=['Risco Observado', 'Abertura Observada', 'Raiz Observada', 'Volatilidade'],
@@ -632,10 +632,10 @@ def gerar_radar_crise_individual(risco, abertura, raiz, volatilidade):
         line=dict(color='#ef4444', width=2),
         fillcolor='rgba(239,68,68,0.25)'
     ))
-    
+
     fig.update_layout(
         polar=dict(
-            radialaxis=dict(visible=True, range=[0, 30]),
+            radialaxis=dict(visible=True, range=[0, max(30, risco * 1.2, abertura * 1.2, raiz * 1.2, volatilidade * 1.2)]),
             bgcolor='rgba(0,0,0,0)'
         ),
         paper_bgcolor='rgba(0,0,0,0)',
@@ -643,8 +643,9 @@ def gerar_radar_crise_individual(risco, abertura, raiz, volatilidade):
         font=dict(color='#fff'),
         height=400
     )
-    
+
     return fig
+
 
 # ============================================================
 # 5. EXTRAÇÃO DE N-GRAMAS COM INTERPRETAÇÃO APA
@@ -662,18 +663,18 @@ def extrair_topicos_ngrams(texto, resolucao_tipo="desconhecida"):
         return ["*Texto insuficiente para análise semântica.*"]
 
     analise = analisar_crise_direcional(texto, resolucao_tipo=resolucao_tipo)
-    temas = analise["temas"]
-    resumo = analise["sumario"]
+    temas   = analise["temas"]
+    resumo  = analise["sumario"]
 
     resultado = []
 
     if temas:
         for i, item in enumerate(temas, start=1):
             polaridade = {
-                "risco": "risco",
-                "protecao": "abertura/proteção",
-                "contexto": "raiz da crise",
-                "progressão": "progressão/desescalada"
+                "risco":       "risco",
+                "protecao":    "abertura/proteção",
+                "contexto":    "raiz da crise",
+                "progressão":  "progressão/desescalada"
             }.get(item["tipo"], item["tipo"])
 
             texto_neg = ""
@@ -698,13 +699,13 @@ def extrair_topicos_ngrams(texto, resolucao_tipo="desconhecida"):
             max_features=5,
             stop_words=list(STOPWORDS_GATE)
         )
-        counts = vectorizer.fit_transform([texto_processado])
+        counts   = vectorizer.fit_transform([texto_processado])
         features = vectorizer.get_feature_names_out()
-        scores = counts.toarray()[0]
+        scores   = counts.toarray()[0]
 
         pares = []
         for idx in scores.argsort()[::-1]:
-            score = int(scores[idx])
+            score   = int(scores[idx])
             feature = features[idx].strip()
             tokens_feature = feature.split()
             if score <= 1 or len(tokens_feature) < 2 or len(set(tokens_feature)) < 2:
@@ -734,36 +735,55 @@ def extrair_topicos_ngrams(texto, resolucao_tipo="desconhecida"):
         direcao_txt = "equilíbrio"
         icone = "⚖️"
 
-    resultado.append(
-        f"**{icone} Direção:** `{resumo['direcao_index']:.2f}` — Predomínio de {direcao_txt}"
-    )
+    resultado.append(f"**{icone} Direção:** `{resumo['direcao_index']:.2f}` — Predomínio de {direcao_txt}")
     resultado.append(f"**Volatilidade:** `{resumo['volatilidade_index']:.2f}` — Risco de mudanças bruscas")
     resultado.append(f"**Classificação APA:** **{resumo['classificacao']}**")
     resultado.append(f"**Leitura Operacional:** {resumo['leitura']}")
 
     return resultado
 
+
 # ============================================================
-# 7. TREEMAP
+# 7. TREEMAP — CORRIGIDO (aceita string OU DataFrame)
 # ============================================================
 
-def gerar_treemap(df_tecnicas):
+def gerar_treemap(entrada):
+    """
+    Aceita string de texto OU DataFrame com coluna TÉCNICAS.
+    """
+    import pandas as pd
+    import re as _re
+    from collections import Counter
+
     col_alvo = "TÉCNICAS"
 
-    if df_tecnicas.empty or col_alvo not in df_tecnicas.columns:
-        return None
+    # ✅ Se recebeu STRING
+    if isinstance(entrada, str):
+        if not entrada or len(entrada.strip()) < 5:
+            return None
+        itens = _re.split(r'[,;\n]+', entrada)
+        itens = [i.strip() for i in itens if len(i.strip()) > 2]
+        if not itens:
+            return None
+        contagem = Counter(itens)
+        df_tecnicas = pd.DataFrame(contagem.items(), columns=[col_alvo, "frequencia"])
 
-    df_tecnicas = df_tecnicas.copy()
-
-    if "frequencia" not in df_tecnicas.columns:
-        if col_alvo in df_tecnicas.columns:
+    # ✅ Se recebeu DATAFRAME
+    elif isinstance(entrada, pd.DataFrame):
+        if entrada.empty or col_alvo not in entrada.columns:
+            return None
+        df_tecnicas = entrada.copy()
+        if "frequencia" not in df_tecnicas.columns:
             df_tecnicas = df_tecnicas[col_alvo].value_counts().reset_index()
             df_tecnicas.columns = [col_alvo, "frequencia"]
-        else:
-            return None
+    else:
+        return None
+
+    if df_tecnicas.empty:
+        return None
 
     df_tecnicas["label_treemap"] = (
-        df_tecnicas[col_alvo].astype(str) + " - " + df_tecnicas["frequencia"].astype(str)
+        df_tecnicas[col_alvo].astype(str) + " — " + df_tecnicas["frequencia"].astype(str) + "x"
     )
 
     fig = px.treemap(
@@ -779,14 +799,14 @@ def gerar_treemap(df_tecnicas):
         margin=dict(t=30, b=10, l=10, r=10),
         paper_bgcolor="rgba(0,0,0,0)",
         plot_bgcolor="rgba(0,0,0,0)",
-        font_color="#FFFF"
+        font_color="#FFFFFF"
     )
     fig.update_coloraxes(showscale=False)
     return fig
 
 
 # ============================================================
-# 6. RADAR COMPARATIVO COM MÉTRICAS COMPLEMENTARES (CORRIGIDO)
+# 6. RADAR COMPARATIVO — CORRIGIDO
 # ============================================================
 
 def gerar_radar_comparativo(texto_causador, texto_negociador, texto_negociador_sec=None):
@@ -794,34 +814,34 @@ def gerar_radar_comparativo(texto_causador, texto_negociador, texto_negociador_s
     Gera radar comparativo entre causador e negociador(es).
     Inclui métricas complementares: Efetividade, Rapport, Delta de Progresso.
     """
-    analise_c  = analisar_crise_direcional(texto_causador, resolucao_tipo="desconhecida")
-    analise_np = analisar_crise_direcional(texto_negociador, resolucao_tipo="desconhecida")
-    analise_ns = analisar_crise_direcional(texto_negociador_sec, resolucao_tipo="desconhecida") if texto_negociador_sec else None
+    analise_c  = analisar_crise_direcional(texto_causador,       resolucao_tipo="desconhecida")
+    analise_np = analisar_crise_direcional(texto_negociador,      resolucao_tipo="desconhecida")
+    analise_ns = analisar_crise_direcional(texto_negociador_sec,  resolucao_tipo="desconhecida") if texto_negociador_sec else None
 
     s_c  = analise_c.get("sumario")
     s_np = analise_np.get("sumario")
     s_ns = analise_ns.get("sumario") if analise_ns else None
 
-    vals_c  = [
-        s_c.get("risco_observado", 0.0),
+    vals_c = [
+        s_c.get("risco_observado",    0.0),
         s_c.get("abertura_observada", 0.0),
-        s_c.get("raiz_observada", 0.0),
-        s_c.get("intensidade_index", 0.0),
-        s_c.get("volatilidade_index", 0.0)
+        s_c.get("raiz_observada",     0.0),
+        s_c.get("intensidade_index",  0.0),
+        s_c.get("volatilidade_index", 0.0),
     ]
     vals_np = [
-        s_np.get("risco_observado", 0.0),
+        s_np.get("risco_observado",    0.0),
         s_np.get("abertura_observada", 0.0),
-        s_np.get("raiz_observada", 0.0),
-        s_np.get("intensidade_index", 0.0),
-        s_np.get("volatilidade_index", 0.0)
+        s_np.get("raiz_observada",     0.0),
+        s_np.get("intensidade_index",  0.0),
+        s_np.get("volatilidade_index", 0.0),
     ]
     vals_ns = [
-        s_ns.get("risco_observado", 0.0),
+        s_ns.get("risco_observado",    0.0),
         s_ns.get("abertura_observada", 0.0),
-        s_ns.get("raiz_observada", 0.0),
-        s_ns.get("intensidade_index", 0.0),
-        s_ns.get("volatilidade_index", 0.0)
+        s_ns.get("raiz_observada",     0.0),
+        s_ns.get("intensidade_index",  0.0),
+        s_ns.get("volatilidade_index", 0.0),
     ] if s_ns else None
 
     categorias = [
@@ -829,36 +849,44 @@ def gerar_radar_comparativo(texto_causador, texto_negociador, texto_negociador_s
         "Abertura Observada",
         "Raiz Observada",
         "Intensidade",
-        "Volatilidade"
+        "Volatilidade",
     ]
+
+    convergencia_vazia = {
+        "delta_risco":            None,
+        "delta_abertura":         None,
+        "efetividade_negociador": None,
+        "rapport_alcancado":      None,
+        "delta_progresso":        None,
+        "espelhamento_forma":     None,
+        "espelhamento":           None,
+        "leitura_risco":          None,
+        "leitura_abertura":       None,
+        "leitura_espelhamento":   None,
+        "leitura_efetividade":    None,
+        "falsa_conexao":          None,
+        "debug_msg":              None,
+    }
 
     try:
         fig = go.Figure()
 
         fig.add_trace(go.Scatterpolar(
-            r=vals_c,
-            theta=categorias,
-            fill="toself",
-            name="Causador",
+            r=vals_c, theta=categorias,
+            fill="toself", name="Causador",
             line=dict(color="#ef4444", width=2),
             fillcolor="rgba(239,68,68,0.12)"
         ))
-
         fig.add_trace(go.Scatterpolar(
-            r=vals_np,
-            theta=categorias,
-            fill="toself",
-            name="Neg. Principal",
+            r=vals_np, theta=categorias,
+            fill="toself", name="Neg. Principal",
             line=dict(color="#10b981", width=2),
             fillcolor="rgba(16,185,129,0.12)"
         ))
-
         if vals_ns:
             fig.add_trace(go.Scatterpolar(
-                r=vals_ns,
-                theta=categorias,
-                fill="toself",
-                name="Neg. Secundário",
+                r=vals_ns, theta=categorias,
+                fill="toself", name="Neg. Secundário",
                 line=dict(color="#3b82f6", width=2),
                 fillcolor="rgba(59,130,246,0.12)"
             ))
@@ -867,16 +895,13 @@ def gerar_radar_comparativo(texto_causador, texto_negociador, texto_negociador_s
             polar=dict(
                 bgcolor="rgba(0,0,0,0)",
                 radialaxis=dict(
-                    visible=True,
-                    showticklabels=True,
+                    visible=True, showticklabels=True,
                     tickfont=dict(color="#aaa", size=10),
-                    gridcolor="#333",
-                    linecolor="#444"
+                    gridcolor="#333", linecolor="#444"
                 ),
                 angularaxis=dict(
                     tickfont=dict(color="#FFD700", size=12),
-                    gridcolor="#333",
-                    linecolor="#444"
+                    gridcolor="#333", linecolor="#444"
                 )
             ),
             paper_bgcolor="rgba(0,0,0,0)",
@@ -884,130 +909,75 @@ def gerar_radar_comparativo(texto_causador, texto_negociador, texto_negociador_s
             font=dict(color="#fff"),
             legend=dict(
                 font=dict(color="#fff", size=12),
-                bgcolor="rgba(0,0,0,0.4)",
-                bordercolor="#444"
+                bgcolor="rgba(0,0,0,0.4)", bordercolor="#444"
             ),
             margin=dict(t=30, b=30, l=40, r=40),
             height=420
         )
 
-        # MÉTRICAS COMPLEMENTARES PARA APA
-        convergencia = {
-            "delta_risco": None,
-            "delta_abertura": None,
-            "efetividade_negociador": None,
-            "rapport_alcancado": None,
-            "delta_progresso": None,
-            "espelhamento_forma": None,
-            "espelhamento": None,
-            "leitura_risco": None,
-            "leitura_abertura": None,
-            "leitura_espelhamento": None,
-            "leitura_efetividade": None,
-            "falsa_conexao": None,
-            "debug_msg": None
-        }
+        convergencia = dict(convergencia_vazia)
 
         if s_c is None or s_np is None:
             convergencia["debug_msg"] = "Dados insuficientes."
             return fig, convergencia
 
-        # Deltas principais
-        delta_risco = round(s_c.get("risco_observado", 0.0) - s_np.get("risco_observado", 0.0), 2)
-        delta_abertura = round(s_np.get("abertura_observada", 0.0) - s_c.get("abertura_observada", 0.0), 2)
+        # ── Deltas ──────────────────────────────────────────────────────────
+        delta_risco    = round(s_c.get("risco_observado", 0.0)     - s_np.get("risco_observado", 0.0),    2)
+        delta_abertura = round(s_np.get("abertura_observada", 0.0) - s_c.get("abertura_observada", 0.0),  2)
 
-        # MÉTRICA COMPLEMENTAR 1: Efetividade do Negociador
-        # = quanto conseguiu reduzir o risco relativo (delta negativo = efetivo)
+        # ── Efetividade ──────────────────────────────────────────────────────
         efetividade = round(abs(delta_risco) if delta_risco < 0 else -delta_risco, 2)
-        efetividade_risco = delta_risco  # Quanto mudou o risco (-/+)
-        desescalada = 1 if delta_risco < 0 else 0  # Escalou ou desescalou?
-        tempo_contencao = duracao_negociacao  # Quanto tempo levou?
-        resultado_final = "resolvido|contido|escalado"  # Classificação manual
 
-        leitura_efetividade = f"""
-        Efetividade do Negociador: {efetividade:.2f}
+        # ── Espelhamento (cosine similarity) — calculado ANTES do rapport ───
+        def _normalizar_vetor(v):
+            arr   = np.array(v, dtype=float)
+            norma = np.linalg.norm(arr)
+            return arr if norma == 0 else arr / norma
 
-        ANÁLISE CONTEXTUAL:
-        - Delta de risco: {delta_risco:+.2f} (negativo = melhorou)
-        - Direção: {'Desescalada' if delta_risco < 0 else 'Escalada'}
-        - Tempo de contenção: {tempo_contencao} minutos
-        - Resultado: {resultado_final}
+        v_c_norm  = _normalizar_vetor(vals_c)
+        v_np_norm = _normalizar_vetor(vals_np)
 
-        ⚠️ INTERPRETAÇÃO:
-        - Efetividade NEGATIVA NÃO significa "fracasso total"
-        Pode significar: "Validação sem resolução" (padrão válido)
-        - Efetividade ZERO NÃO significa "inefetivo"
-        Pode significar: "Contenção bem-sucedida" (sucesso tático)
+        espelhamento_forma = 0.0
+        try:
+            if np.linalg.norm(v_c_norm) != 0 and np.linalg.norm(v_np_norm) != 0:
+                espelhamento_forma = float(
+                    cosine_similarity([v_c_norm], [v_np_norm])[0][0]
+                )
+        except Exception:
+            espelhamento_forma = 0.0
 
-        RECOMENDAÇÃO:
-        Sempre triangule com avaliação qualitativa humana.
-        """
-        
-        # ✅ MÉTRICA COMPLEMENTAR 2: Rapport Alcançado
-        # = sincronização em 3 dimensões: abertura + convergência + validação
+        # ── Rapport ─────────────────────────────────────────────────────────
+        # ✅ CORRIGIDO: variáveis com nomes corretos, usa espelhamento_forma já calculado
         def calcular_rapport_real(s_c, s_np):
-            """
-            Rapport real = sincronização em 3 dimensões:
-            1. Abertura emocional
-            2. Convergência temática
-            3. Validação emocional
-            """
             try:
-                # 1. Diferença de abertura (quanto mais próximos, melhor)
-                diff_abertura = abs(s_np.get("abertura_observada", 0.0) - s_c.get("abertura_observada", 0.0))
-                score_abertura = max(0, 10 - diff_abertura)  # 0-10
-                
-                # 2. Convergência temática (quanto mais sobrepostos, melhor)
-                convergencia_tematica = s_np.get("convergencia_tematica", 0.5) or 0.5  # 0-1
-                score_convergencia = convergencia_tematica * 10  # 0-10
-                
-                # 3. Validação (negociador reconhece razão do causador?)
-                # Se função não existe, usar score padrão
-                if 'detectar_validacao_emocional' in globals():
-                    score_validacao = detectar_validacao_emocional(s_np, s_c)
-                else:
-                    # Fallback: se ambos têm abertura similar, validação é alta
-                    score_validacao = score_abertura  # Simplicado: abertura ≈ validação
-                
-                # Média ponderada:
-                rapport = 0.4*abertura + 0.4*convergência + 0.2*validacao
+                diff_ab            = abs(s_np.get("abertura_observada", 0.0) - s_c.get("abertura_observada", 0.0))
+                score_abertura     = max(0.0, 10.0 - diff_ab)
+                score_convergencia = min(10.0, espelhamento_forma * 10)
+                score_validacao    = score_abertura  # fallback: abertura ≈ validação
 
-                leitura_rapport = f"""
-                Rapport (Sincronização Temática): {rapport}/10
+                rapport_calc = (
+                    0.4 * score_abertura +
+                    0.4 * score_convergencia +
+                    0.2 * score_validacao
+                )
+                return round(min(10.0, max(0.0, rapport_calc)), 2)
+            except Exception:
+                diff_ab = abs(s_np.get("abertura_observada", 0.0) - s_c.get("abertura_observada", 0.0))
+                return round(max(0.0, 10.0 - diff_ab), 2)
 
-                ⚠️ LIMITAÇÕES:
-                - Baseado APENAS em análise de palavras
-                - Não detecta: tom de voz, sarcasmo, ironia
-                - Não detecta: sincronização temporal (concordância de pausas)
-                - Não detecta: linguagem corporal
-                - Mede "aparência de rapport", não "rapport real"
-
-                RECOMENDAÇÃO:
-                - Rapport < 3: Não há sincronização verbal
-                - Rapport 3-6: Sincronização parcial (validar com análise humana)
-                - Rapport 6-8: Sincronização forte (PODE ser verdadeira ou performática)
-                - Rapport 8+: Sincronização muito forte (validar com análise humana)
-                """
-                
-                return round(min(10, max(0, rapport)), 2)  # Clamped 0-10
-            except Exception as e:
-                # Se erro no cálculo, retornar abertura simples invertida
-                diff_abertura = abs(s_np.get("abertura_observada", 0.0) - s_c.get("abertura_observada", 0.0))
-                return round(max(0, 10 - diff_abertura), 2)
-        
-        rapport = calcular_rapport_real(s_c, s_np)  # ✅ AGORA CHAMA A FUNÇÃO!
-        
-        # MÉTRICA COMPLEMENTAR 3: Delta de Progresso
-        # = desescalada total observada (redução de risco + aumento de abertura)
+        rapport         = calcular_rapport_real(s_c, s_np)
         delta_progresso = round(delta_risco + delta_abertura, 2)
 
-        convergencia["delta_risco"] = delta_risco
-        convergencia["delta_abertura"] = delta_abertura
+        # ── Preencher convergencia ───────────────────────────────────────────
+        convergencia["delta_risco"]            = delta_risco
+        convergencia["delta_abertura"]         = delta_abertura
         convergencia["efetividade_negociador"] = efetividade
-        convergencia["rapport_alcancado"] = rapport  # ✅ AGORA TEM VALOR!
-        convergencia["delta_progresso"] = delta_progresso
+        convergencia["rapport_alcancado"]      = rapport
+        convergencia["delta_progresso"]        = delta_progresso
+        convergencia["espelhamento_forma"]     = round(float(espelhamento_forma), 2)
+        convergencia["espelhamento"]           = convergencia["espelhamento_forma"]
 
-        # Interpretações
+        # ── Leituras ─────────────────────────────────────────────────────────
         if delta_risco > 3:
             leitura_risco = "⚠️ Causador com carga de risco significativamente maior."
         elif delta_risco < -3:
@@ -1029,35 +999,6 @@ def gerar_radar_comparativo(texto_causador, texto_negociador, texto_negociador_s
         else:
             leitura_efetividade = "⚠️ Atuação pouco efetiva ou sem redução de risco."
 
-        # Espelhamento forma
-        def _normalizar_vetor(v):
-            arr = np.array(v, dtype=float)
-            norma = np.linalg.norm(arr)
-            return arr if norma == 0 else arr / norma
-
-        v_c_norm  = _normalizar_vetor(vals_c)
-        v_np_norm = _normalizar_vetor(vals_np)
-
-        espelhamento_forma = 0.0
-        try:
-            if np.linalg.norm(v_c_norm) != 0 and np.linalg.norm(v_np_norm) != 0:
-                espelhamento_forma = float(cosine_similarity([v_c_norm], [v_np_norm])[0][0])
-            else:
-                espelhamento_forma = 0.0
-        except Exception:
-            espelhamento_forma = 0.0
-
-        convergencia["espelhamento_forma"] = round(float(espelhamento_forma), 2)
-        convergencia["espelhamento"] = convergencia["espelhamento_forma"]
-
-        # ✅ DETECTOR DE FALSA CONEXÃO (UMA ÚNICA VEZ!)
-        if 'detectar_falsa_conexao' in globals():
-            analise_falsa_conexao = detectar_falsa_conexao(
-                convergencia.get("espelhamento_forma", 0) * 100,  # Converte de 0-1 para 0-100
-                espelhamento_forma * 100
-            )
-            convergencia["falsa_conexao"] = analise_falsa_conexao
-
         if espelhamento_forma >= 0.85:
             leitura_espelhamento = "🔁 Alto espelhamento temático — forte convergência."
         elif espelhamento_forma >= 0.65:
@@ -1065,37 +1006,23 @@ def gerar_radar_comparativo(texto_causador, texto_negociador, texto_negociador_s
         else:
             leitura_espelhamento = "⚡ Baixo espelhamento — padrões semânticos distintos."
 
-        convergencia["leitura_risco"] = leitura_risco
-        convergencia["leitura_abertura"] = leitura_abertura
-        convergencia["leitura_efetividade"] = leitura_efetividade
+        convergencia["leitura_risco"]        = leitura_risco
+        convergencia["leitura_abertura"]     = leitura_abertura
+        convergencia["leitura_efetividade"]  = leitura_efetividade
         convergencia["leitura_espelhamento"] = leitura_espelhamento
 
         return fig, convergencia
 
     except Exception as err:
-        fig = go.Figure()
-        fig.update_layout(
+        fig_err = go.Figure()
+        fig_err.update_layout(
             title="Erro ao gerar radar",
             paper_bgcolor="rgba(0,0,0,0)",
             plot_bgcolor="rgba(0,0,0,0)",
             font=dict(color="#fff")
         )
-        convergencia = {
-            "delta_risco": None,
-            "delta_abertura": None,
-            "efetividade_negociador": None,
-            "rapport_alcancado": None,
-            "delta_progresso": None,
-            "espelhamento_forma": None,
-            "espelhamento": None,
-            "leitura_risco": None,
-            "leitura_abertura": None,
-            "leitura_espelhamento": None,
-            "leitura_efetividade": None,
-            "falsa_conexao": None,
-            "debug_msg": f"Erro: {str(err)}"
-        }
-        return fig, convergencia
+        convergencia_vazia["debug_msg"] = f"Erro: {str(err)}"
+        return fig_err, convergencia_vazia
     
     
 # ============================================================
