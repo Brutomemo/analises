@@ -1226,446 +1226,8 @@ else:
 
             st.markdown("---")
 
-            # ============================================================
-            # ANÁLISE DE SIMILITUDE — Versão Limpa para Copiar
-            # Indentação: Ajuste conforme seu código (adicione espaços no início)
-            # ============================================================
-
-            st.markdown("---")
-            st.markdown("""
-            <h3 style='color: #378ADD;'>🪞 Análise de Similitude: Estão Falando a Mesma Linguagem?</h3>
-            <p style='color: #aaa; font-size: 0.95rem;'>
-            Quando uma negociação está indo bem, negociador e causador naturalmente começam a usar as mesmas palavras.
-            Isso se chama <strong>"espelhamento"</strong> e é sinal de que há sintonia entre eles.
-            </p>
-            """, unsafe_allow_html=True)
-
-            st.markdown("""
-            **Como interpretar os resultados:**
-            - **Índice baixo (< 10%)** → Linguagens muito diferentes → Pouca sintonia
-            - **Índice moderado (10-25%)** → Começaram a se sincronizar → Boa progressão  
-            - **Índice alto (> 25%)** → Muito alinhados → Desfecho positivo provável
-
-            **Exemplo prático:** Se o negociador diz "entender" e o causador passa a dizer "entendo" também, 
-            há uma conexão sendo formada.
-            """)
-
-            st.markdown("""
-            <div style='background: var(--color-background-secondary); border-left: 4px solid #378ADD; padding: 15px; border-radius: 8px; margin-bottom: 20px;'>
-            <h4 style='color: #378ADD; margin-top: 0;'>📊 Como Ler o Gráfico de Palavras</h4>
-            <p style='color: #aaa; margin-bottom: 10px;'><strong>O que você verá:</strong></p>
-            <ul style='color: #bbb; line-height: 1.6;'>
-            <li><strong style='color: #2196F3;'>● Azul (esquerda)</strong> = Negociador</li>
-            <li><strong style='color: #F44336;'>● Vermelho (direita)</strong> = Causador</li>
-            <li><strong style='color: #FFC107;'>● Amarelo (meio)</strong> = Palavras que AMBOS usaram = <u>Conexão</u></li>
-            <li><strong>Linhas</strong> = Mostram como cada parte se conecta às palavras compartilhadas</li>            
-            </ul>
-            <p style='color: #aaa; margin-top: 10px;'><strong>Interpretação rápida:</strong> Quanto mais bolinhas amarelas e mais linhas ligadas a elas, melhor a sintonia!</p>
-            </div>
-            """, unsafe_allow_html=True)
-
-            if st.button("📊 Gerar Análise de Similitude"):
-                col_causador = "TRANSCRIÇÃO DO CAUSADOR"
-                col_negociador = "TRANSCRIÇÃO DO NEGOCIADOR PRINCIPAL"
-
-                if col_causador in df_apa and col_negociador in df_apa:
-                    txt_caus = str(df_apa[col_causador]).strip()
-                    txt_neg = str(df_apa[col_negociador]).strip()
-                    
-                    if txt_caus.lower() in ['nan', 'none', '', 'inaudível', 'n/d'] or txt_neg.lower() in ['nan', 'none', '', 'inaudível', 'n/d']:
-                        st.warning("⚠️ **Diálogo Unilateral ou Ausente** — Uma ou ambas as partes não deixou registros de fala clara.")
-                    elif len(txt_caus.split()) < 5 or len(txt_neg.split()) < 5:
-                        st.warning("⏱️ **Fala Muito Breve** — Pelo menos uma parte falou menos de 5 palavras. Precisamos de mais dados.")
-                    else:
-                        try:
-                            from sklearn.feature_extraction.text import TfidfVectorizer
-                            from sklearn.metrics.pairwise import cosine_similarity
-                            import re
-
-                            def limpar_texto(t):
-                                return re.sub(r'[^\w\s]', '', t.lower())
-
-                            txt_caus_limpo = limpar_texto(txt_caus)
-                            txt_neg_limpo = limpar_texto(txt_neg)
-
-                            stopwords_pt = [
-                                "o", "a", "os", "as", "um", "uma", "de", "do", "da", "em", "no", "na", "nos", "nas",
-                                "para", "com", "por", "que", "se", "e", "ou", "mas", "como", "ao", "aos", "dos", "das",
-                                "é", "foi", "ser", "ter", "estar", "fazer", "houve", "isso", "esse", "essa", "aquele",
-                                "aquela", "ele", "ela", "eles", "elas", "eu", "voce", "você", "vocês", "voces", "nos", "nós", "me", "te",
-                                "lhe", "minha", "meu", "seu", "sua", "dele", "dela", "daqui", "aqui", "ali", "la", "lá",
-                                "ja", "já", "so", "só", "mais", "muito", "pouco", "bem", "bom", "entao", "então", "agora",
-                                "quando", "onde", "quem", "qual", "porque", "pra", "pro", "ta", "tá", "to", "tô", "vai",
-                                "vou", "tem", "tudo", "nada", "coisa", "ai", "aí", "ne", "né", "acho", "gente", "dá",
-                                "causador", "negociador", "principal", "secundario", "secundário", "lider", "líder",
-                                "equipe", "ocorrencia", "ocorrência", "incidente", "forma",  "mano", "manow", "meu", "meu filho",
-                                "cara", "parça", "bixo", "porra", "tipo", "tipo assim", "tipo ó", "saca", "saquei", "entende", "tá ligado",
-                                "fica", "calma", "tranquilo", "relaxa", "né", "fico", "tá", "ta", "tô", "to", "cara", "parça", "tipo assim", "Não", "não", 
-
-                            ]
-                            
-                            vectorizer = TfidfVectorizer(stop_words=stopwords_pt)
-                            tfidf_matrix = vectorizer.fit_transform([txt_neg_limpo, txt_caus_limpo])
-                            similaridade = cosine_similarity(tfidf_matrix[0:1], tfidf_matrix[1:2])[0][0]
-                            sintonia_pct = similaridade * 100
-
-                            col_sin1, col_sin2 = st.columns([1, 3])
-                            
-                            with col_sin1:
-                                st.metric(label="Grau de Espelhamento", value=f"{sintonia_pct:.1f}%")
-                            
-                            with col_sin2:
-                                if sintonia_pct >= 25:
-                                    cor_barra = "#28a745"
-                                    veredito = "✅ FORTE VÍNCULO"
-                                    explicacao = "Negociador e causador estão muito alinhados. A sintonia é excelente!"
-                                elif sintonia_pct >= 10:
-                                    cor_barra = "#ffc107"
-                                    veredito = "⚠️ VÍNCULO MODERADO"
-                                    explicacao = "Há sintonia, mas ainda há espaço para melhoria. Comunicação em progresso."
-                                else:
-                                    cor_barra = "#dc3545"
-                                    veredito = "❌ POUCA SINTONIA"
-                                    explicacao = "Linguagens bem diferentes. Negociador precisa se adaptar mais."
-                                
-                                st.markdown(f"""
-                                <div style='background-color: #333; border-radius: 5px; width: 100%; height: 25px; margin-top: 15px;'>
-                                <div style='background-color: {cor_barra}; width: {sintonia_pct}%; height: 100%; border-radius: 5px;'></div>
-                                </div>
-                                <p style='color: {cor_barra}; font-weight: bold; margin-top: 10px;'>{veredito}</p>
-                                <p style='color: #bbb; font-size: 0.95rem;'>{explicacao}</p>
-                                """, unsafe_allow_html=True)
-                            
-                            st.markdown("### 💡 O Que Fazer Com Isso")
-                            
-                            if sintonia_pct >= 25:
-                                st.success("✅ **Atuação Tática Excelente:** Continue com a estratégia atual. Aproveite a sintonia para negociar soluções.")
-                            elif sintonia_pct >= 10:
-                                st.info("⚠️ **Progredindo Bem:** Reforce as palavras que o causador usa. Valide emocionalmente as falas dele.")
-                            else:
-                                st.warning("❌ **Comunicação Desalinhada:** Escute mais o causador. Repita expressões que ele usa.")
-
-                            if sintonia_pct > 0:
-                                st.markdown("---")
-                                st.markdown("### 📊 Grafo de Espelhamento Léxico")
-                                st.markdown("<p style='color: #aaa; font-size: 0.9rem;'>Visualização das palavras que conectaram negociador e causador.</p>", unsafe_allow_html=True)
-                                
-                                try:
-                                    import plotly.graph_objects as go
-                                    from collections import Counter
-
-                                    palavras_neg = [w for w in txt_neg_limpo.split() if w not in stopwords_pt and len(w) > 2]
-                                    palavras_caus = [w for w in txt_caus_limpo.split() if w not in stopwords_pt and len(w) > 2]
-                                    
-                                    set_comuns = set(palavras_neg).intersection(set(palavras_caus))
-                                    
-                                    if set_comuns:
-                                        contagem_comuns = Counter({w: palavras_neg.count(w) + palavras_caus.count(w) for w in set_comuns})
-                                        top_comuns = dict(contagem_comuns.most_common(12))
-                                        
-                                        node_x = []
-                                        node_y = []
-                                        node_text = []
-                                        node_color = []
-                                        node_size = []
-
-                                        node_x.append(-2)
-                                        node_y.append(0)
-                                        node_text.append("<b>NEGOCIADOR</b>")
-                                        node_color.append("#2196F3") 
-                                        node_size.append(40)
-
-                                        node_x.append(2)
-                                        node_y.append(0)
-                                        node_text.append("<b>CAUSADOR</b>")
-                                        node_color.append("#F44336") 
-                                        node_size.append(40)
-
-                                        edge_x = []
-                                        edge_y = []
-                                        
-                                        y_pos = 1.5 
-                                        passo_y = 3 / max(len(top_comuns), 1) 
-                                        
-                                        for palavra, peso in top_comuns.items():
-                                            node_x.append(0)
-                                            node_y.append(y_pos)
-                                            node_text.append(palavra)
-                                            node_color.append("#FFC107") 
-                                            tamanho_calc = min(max(peso * 3, 15), 35) 
-                                            node_size.append(tamanho_calc)
-                                            
-                                            edge_x.extend([-2, 0, None])
-                                            edge_y.extend([0, y_pos, None])
-                                            
-                                            edge_x.extend([0, 2, None])
-                                            edge_y.extend([y_pos, 0, None])
-                                            
-                                            y_pos -= passo_y
-
-                                        edge_trace = go.Scatter(x=edge_x, y=edge_y, line=dict(width=1, color='#555'), hoverinfo='none', mode='lines')
-                                        node_trace = go.Scatter(x=node_x, y=node_y, mode='markers+text', text=node_text, textposition="bottom center", hoverinfo='text', marker=dict(color=node_color, size=node_size, line=dict(width=2, color='white')), textfont=dict(color='white', size=12))
-
-                                        fig_grafo = go.Figure(data=[edge_trace, node_trace], layout=go.Layout(showlegend=False, hovermode='closest', margin=dict(b=20,l=5,r=5,t=40), paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", xaxis=dict(showgrid=False, zeroline=False, showticklabels=False), yaxis=dict(showgrid=False, zeroline=False, showticklabels=False)))
-                                        
-                                        fig_grafo.update_layout(height=400)
-                                        st.plotly_chart(fig_grafo, use_container_width=True)
-                                        
-                                        tab1, tab2 = st.tabs(["📊 Resumo", "📝 Palavras Compartilhadas"])
-
-                                        with tab1:
-                                            st.markdown(f"""
-                                            **Análise de Similitude**
-                                            
-                                            - **Índice encontrado:** {sintonia_pct:.1f}%
-                                            - **Interpretação:** {'Forte vínculo ✅' if sintonia_pct >= 25 else 'Vínculo moderado ⚠️' if sintonia_pct >= 10 else 'Pouca sintonia ❌'}
-                                            - **Total de palavras compartilhadas:** {len(top_comuns)}
-                                            - **Palavra mais frequente:** {max(top_comuns.items(), key=lambda x: x[1])[0]} ({max(top_comuns.values())}x)
-                                            """)
-
-                                        with tab2:
-                                            st.markdown("**Palavras que conectaram os dois lados:**")
-                                            for palavra, freq in sorted(top_comuns.items(), key=lambda x: x[1], reverse=True):
-                                                st.markdown(f"- **{palavra}** — {freq}x")
-                                                            
-                                    else:
-                                        st.info("⚠️ **Sem palavras compartilhadas.**")
-
-                                except Exception as e:
-                                    st.error(f"Erro ao desenhar grafo: {str(e)[:80]}")
-                                    
-                        except Exception as e:
-                            st.error(f"Erro no cálculo: {str(e)[:80]}")
-                else:
-                    st.info("⚠️ Colunas de transcrição não encontradas.")
-
-            st.markdown("<div style='margin-bottom: 30px;'></div>", unsafe_allow_html=True)
 
 
-
-
-            #ETAPA 2 — ANÁLISE SEMÂNTICA PRÁTICA (Para compreender o que REALMENTE está acontecendo)
-
-            st.markdown("""
-            <h3 style='color: #FFD700;'>✔ Etapa 2: Análise Semântica — Decifrar a Crise Real</h3>
-            <p style='color: #aaa; font-size: 0.95rem; margin-top: -10px;'>
-            <strong>O que o causador REALMENTE sente, quer e teme.</strong> 
-            Enquanto Similitude conta palavras repetidas, Semântica lê entre as linhas: intenções escondidas, 
-            gatilhos emocionais e pontos de alavanca para resolução.
-            </p>
-            """, unsafe_allow_html=True)
-
-            # --- INÍCIO DO BLOCO DE EXPLICAÇÃO ---
-            if "show_explicacao" not in st.session_state:
-                st.session_state["show_explicacao"] = False
-
-            label_btn = "▲ Ocultar Guia" if st.session_state["show_explicacao"] else "▼ Entenda como ler a Análise"
-            if st.button(label_btn, key="btn_explicacao_semantica"):
-                st.session_state["show_explicacao"] = not st.session_state["show_explicacao"]
-
-            if st.session_state["show_explicacao"]:
-
-                tab_pratica, tab_framework, tab_ngramas, tab_limitacoes = st.tabs([
-                    "✔ Aplicação Prática",
-                    "✔ Os Três Vetores",
-                    "✔ Padrões & Fixações",
-                    "✔ Limitações"
-                ])
-
-                with tab_pratica:
-                    st.markdown("""
-                    <div class='info-card'>
-                    <h5 style='color:#FFD700;margin-top:0;'>Como ler os dados na prática?</h5>
-                    <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
-                    A análise semântica responde uma pergunta simples: <strong>"O que esse sujeito está vivendo agora?"</strong>
-                    </p>
-                    <hr style='border-color:#444;margin:12px 0;'>
-                    <h5 style='color:#FFD700;'>📌 Passo 1: Identifique o ESTADO EMOCIONAL</h5>
-                    <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
-                    <strong>Procure por:</strong> Quanto de <strong>medo, raiva, desespero</strong> o causador está carregando?<br><br>
-                    • <em>"vou me matar"</em> + <em>"não aguento mais"</em> → Desespero acima do limite (risco iminente)<br>
-                    • <em>"ninguém entra aqui"</em> + <em>"vou atirar"</em> → Raiva/defesa (hostilidade)<br>
-                    • <em>"perdi tudo"</em> + <em>"ninguém se importa"</em> → Abandono/desesperança (depressão)<br><br>
-                    <strong>Por quê?</strong> Segundo William Ury (Harvard), antes de negociar, você precisa entender o <u>estado de espírito</u> 
-                    da outra parte. Emoção descontrolada = impossível raciocínio lógico.
-                    </p>
-                    <hr style='border-color:#444;margin:12px 0;'>
-                    <h5 style='color:#FFD700;'>📌 Passo 2: Identifique as EXIGÊNCIAS REAIS</h5>
-                    <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
-                    <strong>Procure por:</strong> O que esse sujeito <strong>quer concretamente</strong>? (não apenas ameaça)<br><br>
-                    • <em>"quero a imprensa aqui"</em> → Exigência instrumental (segurança/poder/reconhecimento)<br>
-                    • <em>"Quero que a imprensa saiba o que aconteceu"</em> → Exigência moral (dignidade)<br>
-                    • <em>"preciso de dinheiro"</em> → Exigência material (sobrevivência)<br><br>
-                    <strong>Por quê?</strong> Segundo William Ury (Harvard Negotiation Project), 
-                    reconhecer a legitimidade da exigência (mesmo que você não possa cumprir) 
-                    reduz hostilidade. O FBI e Chris Voss confirmam isso através de 
-                    <u>escuta ativa</u> em negociações críticas. 
-                    (mesmo que você não possa cumprir) reduz hostilidade. O causador quer ser OUVIDO, não necessariamente atendido.
-                    </p>
-                    <hr style='border-color:#444;margin:12px 0;'>
-                    <h5 style='color:#FFD700;'>📌 Passo 3: Encontre os GANCHOS PARA DESESCALADA</h5>
-                    <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
-                    <strong>Procure por:</strong> Onde há <strong>abertura, ambivalência, vínculo</strong>?<br><br>
-                    • <em>"me ajuda"</em> (mesmo que velado) → Pedido de ajuda (ponto de conexão)<br>
-                    • <em>"fala comigo"</em> → Busca por contato (rapport possível)<br>
-                    • <em>"minha filha"</em> → Vínculo afetivo (alavanca para mudança de decisão)<br><br>
-                    <strong>Por quê?</strong> O Manual do FBI de Negociação enfatiza que <u>pequenos sinais de cooperação</u> 
-                    devem ser amplificados. "Minha filha" não é só uma palavra — é a ponte entre desespero e vida.
-                    </p>
-                    <hr style='border-color:#444;margin:12px 0;'>
-                    <h5 style='color:#FFD700;'>📌 Passo 4: Analise a ABORDAGEM DO NEGOCIADOR</h5>
-                    <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
-                    <strong>Procure por:</strong> Como o negociador respondeu? Conseguiu <strong>sincronizar?</strong><br><br>
-                    • Se Causador diz <em>"ninguém me entende"</em> e Negociador responde <em>"entendo sua dor"</em> → Conversa bem dirigida ✅<br>
-                    • Se Causador diz <em>"quero a imprensa"</em> e Negociador ignora → Falta de legitimação ❌<br>
-                    • Se Negociador repete <em>"fica calmo"</em> 10 vezes → Não está ouvindo, está impondo ❌<br><br>
-                    <strong>Por quê?</strong> Harvard explica que <u>validar a emoção da outra parte</u> 
-                    não significa concordar com a ação — é reconhecer o estado emocional como real.
-                    </p>
-                    </div>
-                    """, unsafe_allow_html=True)
-
-                with tab_framework:
-                    st.markdown("""
-                    <div class='info-card'>
-                    <h5 style='color:#FFD700;margin-top:0;'>Os Três Vetores Explicados (e como interpretar)</h5>
-                    <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
-                    Pense nos vetores como três forças que estão em <strong>cabo de guerra</strong> dentro do causador.
-                    </p>
-                    <hr style='border-color:#444;margin:12px 0;'>
-                    <div style='margin:12px 0;padding:12px;border-radius:10px;background:rgba(239,68,68,0.08);border-left:4px solid #ef4444;'>
-                    <h5 style='color:#ef4444;margin-top:0;'>🔴 RISCO OBSERVADO — "Quanto de ameaça real há aqui?"</h5>
-                    <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
-                    Mede a <strong>densidade de linguagem agressiva/suicida</strong> no discurso do causador.<br><br>
-                    <strong>Exemplos de alto risco:</strong><br>
-                    • <em>"vou matar você"</em> (declaração direta)<br>
-                    • <em>"tenho uma arma"</em> (capacidade + intenção)<br>
-                    • <em>"quero morrer"</em> (risco para si mesmo)<br><br>
-                    <strong>Interpretação para APA:</strong><br>
-                    Se Risco Observado = 15% → Ameaça verbalizada, mas sem densidade alta<br>
-                    Se Risco Observado = 25%+ → Linguagem carregada, escalada provável se negligenciada<br><br>
-                    <strong>O que o negociador deveria fazer?</strong><br>
-                    Alto risco = mudar de abordagem RÁPIDO. Deixar o causador falar (validar) antes de oferecer soluções.
-                    </p>
-                    </div>
-                    <hr style='border-color:#444;margin:12px 0;'>
-                    <div style='margin:12px 0;padding:12px;border-radius:10px;background:rgba(16,185,129,0.08);border-left:4px solid #10b981;'>
-                    <h5 style='color:#10b981;margin-top:0;'>🟢 ABERTURA OBSERVADA — "Tem esperança aqui? Há ponte de desescalada?"</h5>
-                    <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
-                    Mede <strong>sinais de cooperação, rendição, pedido de ajuda</strong> (velado ou não) no causador.<br><br>
-                    <strong>Exemplos de alta abertura:</strong><br>
-                    • <em>"me ajuda"</em> (pedido direto)<br>
-                    • <em>"minha filha está aqui"</em> (reconhecimento de terceiro, responsabilidade)<br>
-                    • <em>"pode entrar"</em> (permissão = abandono da posição hostil)<br><br>
-                    <strong>Interpretação para APA:</strong><br>
-                    Se Abertura = 5% → Causador muito fechado, difícil entrada. Precisa mais validação.<br>
-                    Se Abertura = 15%+ → Janela de oportunidade aberta. Negociador pode começar a propor.<br><br>
-                    <strong>O que o negociador deveria fazer?</strong><br>
-                    Sinais de abertura = AMPLIFICAR. "Você pediu ajuda? Estou aqui para isso." (FBI)
-                    </p>
-                    </div>
-                    <hr style='border-color:#444;margin:12px 0;'>
-                    <div style='margin:12px 0;padding:12px;border-radius:10px;background:rgba(251,146,60,0.08);border-left:4px solid #f97316;'>
-                    <h5 style='color:#f97316;margin-top:0;'>🟡 RAIZ OBSERVADA — "Por que ele está assim? Qual é a verdadeira causa?"</h5>
-                    <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
-                    Mede <strong>gatilhos emocionais, perdas, traumas</strong> que explicam o estado atual.<br><br>
-                    <strong>Exemplos de raiz clara:</strong><br>
-                    • <em>"perdi meu emprego"</em> (causa: desespero financeiro)<br>
-                    • <em>"ela me traiu"</em> (causa: abandono/humilhação)<br>
-                    • <em>"ninguém se importa comigo"</em> (causa: isolamento/rejeição)<br><br>
-                    <strong>Interpretação para APA:</strong><br>
-                    Se Raiz = 8% → Causador talvez tenha gatilho recente ou bem localizado.<br>
-                    If Raiz = 12%+ → Acúmulo de perdas, histórico de trauma. Mais difícil de resolver rápido.<br><br>
-                    <strong>O que o negociador deveria fazer?</strong><br>
-                    Ury diz: "Separe a pessoa do problema." A raiz é o PROBLEMA. Validá-la não é concordar, é RECONHECER.<br>
-                    Ex: "Entendo que perder o emprego é devastador. Mas matar não resolve. Vamos pensar em saídas."
-                    </p>
-                    </div>
-                    <hr style='border-color:#444;margin:12px 0;'>
-                    <h5 style='color:#FFD700;'>⚖️ COMO OS TRÊS TRABALHAM JUNTOS</h5>
-                    <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
-                    <strong>Cenário 1: Alto Risco + Baixa Abertura + Raiz Clara</strong><br>
-                    → Sujeito desesperado (raiz conhecida) mas barricado (nenhuma ponte). Técnica: Validar a raiz + oferecer saída.
-                    <br><br>
-                    <strong>Cenário 2: Alto Risco + Alta Abertura + Raiz Clara</strong><br>
-                    → Sujeito em crise mas aberto à ajuda. JANELA CRÍTICA. Técnica: Rápida proposição de alternativa.
-                    <br><br>
-                    <strong>Cenário 3: Baixo Risco + Alta Abertura + Raiz Clara</strong><br>
-                    → Sujeito já está em conversação. Técnica: Escuta ativa + proposição colaborativa.
-                    </p>
-                    </div>
-                    """, unsafe_allow_html=True)
-
-                with tab_ngramas:
-                    st.markdown("""
-                    <div class='info-card'>
-                    <h5 style='color:#FFD700;margin-top:0;'>Padrões Repetidos & Loop Cognitivo</h5>
-                    <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
-                    <strong>N-gramas:</strong> Frases de 2-3 palavras que o sujeito repete obessivamente.
-                    </p>
-                    <hr style='border-color:#444;margin:12px 0;'>
-                    <h5 style='color:#FFD700;'>O que significa?</h5>
-                    <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
-                    Sob estresse extremo, o cérebro entra em <strong>loop cognitivo</strong>. 
-                    A frase repetida é o <u>mantra da crise</u> — o que o sujeito está preso em pensar.<br><br>
-                    <strong>Exemplos e interpretações:</strong><br><br>
-                    • <em>"não aguento mais"</em> (repetido 5+ vezes)<br>
-                    &nbsp;&nbsp; → Estado: Exaustão emocional severa. Risco: Iminente (suicida ou agressivo descontrolado)<br>
-                    &nbsp;&nbsp; → Técnica: Validar o esgotamento, oferecer repouso/alívio imediato<br><br>
-                    • <em>"cadê a imprensa"</em> (repetido 3+ vezes)<br>
-                    &nbsp;&nbsp; → Estado: Fixação instrumental. O sujeito quer RECONHECIMENTO público<br>
-                    &nbsp;&nbsp; → Técnica: Negociar sobre o que pode ser oferecido (não prometa imprensa se não há)<br><br>
-                    • <em>"fica calmo"</em> (negociador repetindo)<br>
-                    &nbsp;&nbsp; → Estado: Negociador não está OUVINDO. Está tentando impor.<br>
-                    &nbsp;&nbsp; → Técnica: MUDAR DE ABORDAGEM. Perguntar em vez de ordenar<br><br>
-                    </p>
-                    <hr style='border-color:#444;margin:12px 0;'>
-                    <h5 style='color:#FFD700;'>Nuvem de Palavras — O que cada interlocutor REALMENTE está focando</h5>
-                    <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
-                    A nuvem mostra visualmente o <strong>universo mental</strong> de cada um.<br><br>
-                    <strong>Leitura prática:</strong><br>
-                    Se a nuvem do Causador tem <em>"arma, polícia, morte"</em> gigantes → Fixação em escalada<br>
-                    Se a nuvem tem <em>"filha, família, vida"</em> grandes → Ambivalência (quer viver mas está preso no medo)<br>
-                    Se a nuvem do Negociador tem <em>"calma, tranquilo, relaxa"</em> → Talvez não esteja validando o real estado emocional<br><br>
-                    <strong>Comparação:</strong><br>
-                    Nuvem do Causador com "morte" grande + Nuvem do Negociador com "vida" grande = Boa direção<br>
-                    Nuvem do Causador com "morte" grande + Nuvem do Negociador com "relaxa" grande = Desconexão
-                    </p>
-                    <div style='margin-top:12px;padding:12px;border-radius:10px;background:rgba(255,215,0,0.06);border:1px solid rgba(255,215,0,0.15);'>
-                    <p style='font-size:0.9rem;color:#ddd;margin:0;line-height:1.6;'>
-                    <strong>Atenção:</strong> Um padrão repetido não é risco por si. É um <u>sinal de fixação mental</u>. 
-                    Pode ser esperança ("vou me entregar"), desespero ("vou morrer") ou instrumento ("exijo reconhecimento").
-                    </p>
-                    </div>
-                    </div>
-                    """, unsafe_allow_html=True)
-
-                with tab_limitacoes:
-                    st.markdown("""
-                    <div class='info-card'>
-                    <h5 style='color:#FFD700;margin-top:0;'>Limitações — O que o sistema NÃO consegue ver</h5>
-                    <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
-                    Esta é uma <strong>ferramenta de leitura</strong>, não bola de cristal. Os números descrevem o que foi DITO, 
-                    não o que vai acontecer.
-                    </p>
-                    <hr style='border-color:#444;margin:12px 0;'>
-                    <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
-                    ❌ <strong>Não vê o histórico do sujeito:</strong> Esse é o 1º suicida ou o 5º? Faz diferença.<br>
-                    ❌ <strong>Não vê o contexto real:</strong> Há reféns? Há arma de verdade? O sistema não sabe.<br>
-                    ❌ <strong>Não vê gírias/ironia:</strong> <em>"Vou me matar de rir"</em> aparece como risco, mas é brincadeira.<br>
-                    ❌ <strong>Não vê o tom de voz:</strong> <em>"vou sair"</em> dito com calma é diferente de grito.<br>
-                    ❌ <strong>Não vê interrupções:</strong> Se o transcrição está quebrada, a análise fica incompleta.
-                    </p>
-                    <div style='margin-top:12px;padding:12px;border-radius:10px;background:rgba(255,215,0,0.06);border:1px solid rgba(255,215,0,0.15);'>
-                    <p style='font-size:0.9rem;color:#ddd;margin:0;line-height:1.6;'>
-                    <strong>Regra de ouro para APA:</strong> Use estes dados + seu julgamento + contexto operacional. 
-                    O sistema ILUMINA. A decisão é HUMANA.
-                    </p>
-                    </div>
-                    </div>
-                    """, unsafe_allow_html=True)
-
-            # --- FIM DO BLOCO DE EXPLICAÇÃO ---
 
             # === SEÇÃO 1: TREEMAP DE TÉCNICAS ===
             st.markdown("""
@@ -1911,6 +1473,448 @@ else:
                     txt_geral = "🔴 Repertório técnico com baixa efetividade — maioria das técnicas gerou reação negativa."
 
                 st.info(txt_geral)
+
+
+            # ============================================================
+            # ANÁLISE DE SIMILITUDE — Versão Limpa para Copiar
+            # Indentação: Ajuste conforme seu código (adicione espaços no início)
+            # ============================================================
+
+            st.markdown("---")
+            st.markdown("""
+            <h3 style='color: #378ADD;'>🪞 Análise de Similitude: Estão Falando a Mesma Linguagem?</h3>
+            <p style='color: #aaa; font-size: 0.95rem;'>
+            Quando uma negociação está indo bem, negociador e causador naturalmente começam a usar as mesmas palavras.
+            Isso se chama <strong>"espelhamento"</strong> e é sinal de que há sintonia entre eles.
+            </p>
+            """, unsafe_allow_html=True)
+
+            st.markdown("""
+            **Como interpretar os resultados:**
+            - **Índice baixo (< 10%)** → Linguagens muito diferentes → Pouca sintonia
+            - **Índice moderado (10-25%)** → Começaram a se sincronizar → Boa progressão  
+            - **Índice alto (> 25%)** → Muito alinhados → Desfecho positivo provável
+
+            **Exemplo prático:** Se o negociador diz "entender" e o causador passa a dizer "entendo" também, 
+            há uma conexão sendo formada.
+            """)
+
+            st.markdown("""
+            <div style='background: var(--color-background-secondary); border-left: 4px solid #378ADD; padding: 15px; border-radius: 8px; margin-bottom: 20px;'>
+            <h4 style='color: #378ADD; margin-top: 0;'>📊 Como Ler o Gráfico de Palavras</h4>
+            <p style='color: #aaa; margin-bottom: 10px;'><strong>O que você verá:</strong></p>
+            <ul style='color: #bbb; line-height: 1.6;'>
+            <li><strong style='color: #2196F3;'>● Azul (esquerda)</strong> = Negociador</li>
+            <li><strong style='color: #F44336;'>● Vermelho (direita)</strong> = Causador</li>
+            <li><strong style='color: #FFC107;'>● Amarelo (meio)</strong> = Palavras que AMBOS usaram = <u>Conexão</u></li>
+            <li><strong>Linhas</strong> = Mostram como cada parte se conecta às palavras compartilhadas</li>            
+            </ul>
+            <p style='color: #aaa; margin-top: 10px;'><strong>Interpretação rápida:</strong> Quanto mais bolinhas amarelas e mais linhas ligadas a elas, melhor a sintonia!</p>
+            </div>
+            """, unsafe_allow_html=True)
+
+            if st.button("📊 Gerar Análise de Similitude"):
+                col_causador = "TRANSCRIÇÃO DO CAUSADOR"
+                col_negociador = "TRANSCRIÇÃO DO NEGOCIADOR PRINCIPAL"
+
+                if col_causador in df_apa and col_negociador in df_apa:
+                    txt_caus = str(df_apa[col_causador]).strip()
+                    txt_neg = str(df_apa[col_negociador]).strip()
+                    
+                    if txt_caus.lower() in ['nan', 'none', '', 'inaudível', 'n/d'] or txt_neg.lower() in ['nan', 'none', '', 'inaudível', 'n/d']:
+                        st.warning("⚠️ **Diálogo Unilateral ou Ausente** — Uma ou ambas as partes não deixou registros de fala clara.")
+                    elif len(txt_caus.split()) < 5 or len(txt_neg.split()) < 5:
+                        st.warning("⏱️ **Fala Muito Breve** — Pelo menos uma parte falou menos de 5 palavras. Precisamos de mais dados.")
+                    else:
+                        try:
+                            from sklearn.feature_extraction.text import TfidfVectorizer
+                            from sklearn.metrics.pairwise import cosine_similarity
+                            import re
+
+                            def limpar_texto(t):
+                                return re.sub(r'[^\w\s]', '', t.lower())
+
+                            txt_caus_limpo = limpar_texto(txt_caus)
+                            txt_neg_limpo = limpar_texto(txt_neg)
+
+                            stopwords_pt = [
+                                "o", "a", "os", "as", "um", "uma", "de", "do", "da", "em", "no", "na", "nos", "nas",
+                                "para", "com", "por", "que", "se", "e", "ou", "mas", "como", "ao", "aos", "dos", "das",
+                                "é", "foi", "ser", "ter", "estar", "fazer", "houve", "isso", "esse", "essa", "aquele",
+                                "aquela", "ele", "ela", "eles", "elas", "eu", "voce", "você", "vocês", "voces", "nos", "nós", "me", "te",
+                                "lhe", "minha", "meu", "seu", "sua", "dele", "dela", "daqui", "aqui", "ali", "la", "lá",
+                                "ja", "já", "so", "só", "mais", "muito", "pouco", "bem", "bom", "entao", "então", "agora",
+                                "quando", "onde", "quem", "qual", "porque", "pra", "pro", "ta", "tá", "to", "tô", "vai",
+                                "vou", "tem", "tudo", "nada", "coisa", "ai", "aí", "ne", "né", "acho", "gente", "dá",
+                                "causador", "negociador", "principal", "secundario", "secundário", "lider", "líder",
+                                "equipe", "ocorrencia", "ocorrência", "incidente", "forma",  "mano", "manow", "meu", "meu filho",
+                                "cara", "parça", "bixo", "porra", "tipo", "tipo assim", "tipo ó", "saca", "saquei", "entende", "tá ligado",
+                                "fica", "calma", "tranquilo", "relaxa", "né", "fico", "tá", "ta", "tô", "to", "cara", "parça", "tipo assim", "Não", "não",
+
+                            ]
+                            
+                            vectorizer = TfidfVectorizer(stop_words=stopwords_pt)
+                            tfidf_matrix = vectorizer.fit_transform([txt_neg_limpo, txt_caus_limpo])
+                            similaridade = cosine_similarity(tfidf_matrix[0:1], tfidf_matrix[1:2])[0][0]
+                            sintonia_pct = similaridade * 100
+
+                            col_sin1, col_sin2 = st.columns([1, 3])
+                            
+                            with col_sin1:
+                                st.metric(label="Grau de Espelhamento", value=f"{sintonia_pct:.1f}%")
+                            
+                            with col_sin2:
+                                if sintonia_pct >= 25:
+                                    cor_barra = "#28a745"
+                                    veredito = "✅ FORTE VÍNCULO"
+                                    explicacao = "Negociador e causador estão muito alinhados. A sintonia é excelente!"
+                                elif sintonia_pct >= 10:
+                                    cor_barra = "#ffc107"
+                                    veredito = "⚠️ VÍNCULO MODERADO"
+                                    explicacao = "Há sintonia, mas ainda há espaço para melhoria. Comunicação em progresso."
+                                else:
+                                    cor_barra = "#dc3545"
+                                    veredito = "❌ POUCA SINTONIA"
+                                    explicacao = "Linguagens bem diferentes. Negociador precisa se adaptar mais."
+                                
+                                st.markdown(f"""
+                                <div style='background-color: #333; border-radius: 5px; width: 100%; height: 25px; margin-top: 15px;'>
+                                <div style='background-color: {cor_barra}; width: {sintonia_pct}%; height: 100%; border-radius: 5px;'></div>
+                                </div>
+                                <p style='color: {cor_barra}; font-weight: bold; margin-top: 10px;'>{veredito}</p>
+                                <p style='color: #bbb; font-size: 0.95rem;'>{explicacao}</p>
+                                """, unsafe_allow_html=True)
+                            
+                            st.markdown("### 💡 O Que Fazer Com Isso")
+                            
+                            if sintonia_pct >= 25:
+                                st.success("✅ **Atuação Tática Excelente:** Continue com a estratégia atual. Aproveite a sintonia para negociar soluções.")
+                            elif sintonia_pct >= 10:
+                                st.info("⚠️ **Progredindo Bem:** Reforce as palavras que o causador usa. Valide emocionalmente as falas dele.")
+                            else:
+                                st.warning("❌ **Comunicação Desalinhada:** Escute mais o causador. Repita expressões que ele usa.")
+
+                            if sintonia_pct > 0:
+                                st.markdown("---")
+                                st.markdown("### 📊 Grafo de Espelhamento Léxico")
+                                st.markdown("<p style='color: #aaa; font-size: 0.9rem;'>Visualização das palavras que conectaram negociador e causador.</p>", unsafe_allow_html=True)
+                                
+                                try:
+                                    import plotly.graph_objects as go
+                                    from collections import Counter
+
+                                    palavras_neg = [w for w in txt_neg_limpo.split() if w not in stopwords_pt and len(w) > 2]
+                                    palavras_caus = [w for w in txt_caus_limpo.split() if w not in stopwords_pt and len(w) > 2]
+                                    
+                                    set_comuns = set(palavras_neg).intersection(set(palavras_caus))
+                                    
+                                    if set_comuns:
+                                        contagem_comuns = Counter({w: palavras_neg.count(w) + palavras_caus.count(w) for w in set_comuns})
+                                        top_comuns = dict(contagem_comuns.most_common(12))
+                                        
+                                        node_x = []
+                                        node_y = []
+                                        node_text = []
+                                        node_color = []
+                                        node_size = []
+
+                                        node_x.append(-2)
+                                        node_y.append(0)
+                                        node_text.append("<b>NEGOCIADOR</b>")
+                                        node_color.append("#2196F3") 
+                                        node_size.append(40)
+
+                                        node_x.append(2)
+                                        node_y.append(0)
+                                        node_text.append("<b>CAUSADOR</b>")
+                                        node_color.append("#F44336") 
+                                        node_size.append(40)
+
+                                        edge_x = []
+                                        edge_y = []
+                                        
+                                        y_pos = 1.5 
+                                        passo_y = 3 / max(len(top_comuns), 1) 
+                                        
+                                        for palavra, peso in top_comuns.items():
+                                            node_x.append(0)
+                                            node_y.append(y_pos)
+                                            node_text.append(palavra)
+                                            node_color.append("#FFC107") 
+                                            tamanho_calc = min(max(peso * 3, 15), 35) 
+                                            node_size.append(tamanho_calc)
+                                            
+                                            edge_x.extend([-2, 0, None])
+                                            edge_y.extend([0, y_pos, None])
+                                            
+                                            edge_x.extend([0, 2, None])
+                                            edge_y.extend([y_pos, 0, None])
+                                            
+                                            y_pos -= passo_y
+
+                                        edge_trace = go.Scatter(x=edge_x, y=edge_y, line=dict(width=1, color='#555'), hoverinfo='none', mode='lines')
+                                        node_trace = go.Scatter(x=node_x, y=node_y, mode='markers+text', text=node_text, textposition="bottom center", hoverinfo='text', marker=dict(color=node_color, size=node_size, line=dict(width=2, color='white')), textfont=dict(color='white', size=12))
+
+                                        fig_grafo = go.Figure(data=[edge_trace, node_trace], layout=go.Layout(showlegend=False, hovermode='closest', margin=dict(b=20,l=5,r=5,t=40), paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", xaxis=dict(showgrid=False, zeroline=False, showticklabels=False), yaxis=dict(showgrid=False, zeroline=False, showticklabels=False)))
+                                        
+                                        fig_grafo.update_layout(height=400)
+                                        st.plotly_chart(fig_grafo, use_container_width=True)
+                                        
+                                        tab1, tab2 = st.tabs(["📊 Resumo", "📝 Palavras Compartilhadas"])
+
+                                        with tab1:
+                                            st.markdown(f"""
+                                            **Análise de Similitude**
+                                            
+                                            - **Índice encontrado:** {sintonia_pct:.1f}%
+                                            - **Interpretação:** {'Forte vínculo ✅' if sintonia_pct >= 25 else 'Vínculo moderado ⚠️' if sintonia_pct >= 10 else 'Pouca sintonia ❌'}
+                                            - **Total de palavras compartilhadas:** {len(top_comuns)}
+                                            - **Palavra mais frequente:** {max(top_comuns.items(), key=lambda x: x[1])[0]} ({max(top_comuns.values())}x)
+                                            """)
+
+                                        with tab2:
+                                            st.markdown("**Palavras que conectaram os dois lados:**")
+                                            for palavra, freq in sorted(top_comuns.items(), key=lambda x: x[1], reverse=True):
+                                                st.markdown(f"- **{palavra}** — {freq}x")
+                                                            
+                                    else:
+                                        st.info("⚠️ **Sem palavras compartilhadas.**")
+
+                                except Exception as e:
+                                    st.error(f"Erro ao desenhar grafo: {str(e)[:80]}")
+                                    
+                        except Exception as e:
+                            st.error(f"Erro no cálculo: {str(e)[:80]}")
+                else:
+                    st.info("⚠️ Colunas de transcrição não encontradas.")
+
+            st.markdown("<div style='margin-bottom: 30px;'></div>", unsafe_allow_html=True)
+
+
+            #ETAPA 2 — ANÁLISE SEMÂNTICA PRÁTICA (Para compreender o que REALMENTE está acontecendo)
+
+            st.markdown("""
+            <h3 style='color: #FFD700;'>✔ Etapa 2: Análise Semântica — Decifrar a Crise Real</h3>
+            <p style='color: #aaa; font-size: 0.95rem; margin-top: -10px;'>
+            <strong>O que o causador REALMENTE sente, quer e teme.</strong> 
+            Enquanto Similitude conta palavras repetidas, Semântica lê entre as linhas: intenções escondidas, 
+            gatilhos emocionais e pontos de alavanca para resolução.
+            </p>
+            """, unsafe_allow_html=True)
+
+            # --- INÍCIO DO BLOCO DE EXPLICAÇÃO ---
+            if "show_explicacao" not in st.session_state:
+                st.session_state["show_explicacao"] = False
+
+            label_btn = "▲ Ocultar Guia" if st.session_state["show_explicacao"] else "▼ Entenda como ler a Análise"
+            if st.button(label_btn, key="btn_explicacao_semantica"):
+                st.session_state["show_explicacao"] = not st.session_state["show_explicacao"]
+
+            if st.session_state["show_explicacao"]:
+
+                tab_pratica, tab_framework, tab_ngramas, tab_limitacoes = st.tabs([
+                    "✔ Aplicação Prática",
+                    "✔ Os Três Vetores",
+                    "✔ Padrões & Fixações",
+                    "✔ Limitações"
+                ])
+
+                with tab_pratica:
+                    st.markdown("""
+                    <div class='info-card'>
+                    <h5 style='color:#FFD700;margin-top:0;'>Como ler os dados na prática?</h5>
+                    <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
+                    A análise semântica responde uma pergunta simples: <strong>"O que esse sujeito está vivendo agora?"</strong>
+                    </p>
+                    <hr style='border-color:#444;margin:12px 0;'>
+                    <h5 style='color:#FFD700;'>📌 Passo 1: Identifique o ESTADO EMOCIONAL</h5>
+                    <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
+                    <strong>Procure por:</strong> Quanto de <strong>medo, raiva, desespero</strong> o causador está carregando?<br><br>
+                    • <em>"vou me matar"</em> + <em>"não aguento mais"</em> → Desespero acima do limite (risco iminente)<br>
+                    • <em>"ninguém entra aqui"</em> + <em>"vou atirar"</em> → Raiva/defesa (hostilidade)<br>
+                    • <em>"perdi tudo"</em> + <em>"ninguém se importa"</em> → Abandono/desesperança (depressão)<br><br>
+                    <strong>Por quê?</strong> Segundo William Ury (Harvard), antes de negociar, você precisa entender o <u>estado de espírito</u> 
+                    da outra parte. Emoção descontrolada = impossível raciocínio lógico.
+                    </p>
+                    <hr style='border-color:#444;margin:12px 0;'>
+                    <h5 style='color:#FFD700;'>📌 Passo 2: Identifique as EXIGÊNCIAS REAIS</h5>
+                    <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
+                    <strong>Procure por:</strong> O que esse sujeito <strong>quer concretamente</strong>? (não apenas ameaça)<br><br>
+                    • <em>"quero a imprensa aqui"</em> → Exigência instrumental (segurança/poder/reconhecimento)<br>
+                    • <em>"Quero que a imprensa saiba o que aconteceu"</em> → Exigência moral (dignidade)<br>
+                    • <em>"preciso de dinheiro"</em> → Exigência material (sobrevivência)<br><br>
+                    <strong>Por quê?</strong> Segundo William Ury (Harvard Negotiation Project), 
+                    reconhecer a legitimidade da exigência (mesmo que você não possa cumprir) 
+                    reduz hostilidade. O FBI e Chris Voss confirmam isso através de 
+                    <u>escuta ativa</u> em negociações críticas. 
+                    (mesmo que você não possa cumprir) reduz hostilidade. O causador quer ser OUVIDO, não necessariamente atendido.
+                    </p>
+                    <hr style='border-color:#444;margin:12px 0;'>
+                    <h5 style='color:#FFD700;'>📌 Passo 3: Encontre os GANCHOS PARA DESESCALADA</h5>
+                    <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
+                    <strong>Procure por:</strong> Onde há <strong>abertura, ambivalência, vínculo</strong>?<br><br>
+                    • <em>"me ajuda"</em> (mesmo que velado) → Pedido de ajuda (ponto de conexão)<br>
+                    • <em>"fala comigo"</em> → Busca por contato (rapport possível)<br>
+                    • <em>"minha filha"</em> → Vínculo afetivo (alavanca para mudança de decisão)<br><br>
+                    <strong>Por quê?</strong> O Manual do FBI de Negociação enfatiza que <u>pequenos sinais de cooperação</u> 
+                    devem ser amplificados. "Minha filha" não é só uma palavra — é a ponte entre desespero e vida.
+                    </p>
+                    <hr style='border-color:#444;margin:12px 0;'>
+                    <h5 style='color:#FFD700;'>📌 Passo 4: Analise a ABORDAGEM DO NEGOCIADOR</h5>
+                    <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
+                    <strong>Procure por:</strong> Como o negociador respondeu? Conseguiu <strong>sincronizar?</strong><br><br>
+                    • Se Causador diz <em>"ninguém me entende"</em> e Negociador responde <em>"entendo sua dor"</em> → Conversa bem dirigida ✅<br>
+                    • Se Causador diz <em>"quero a imprensa"</em> e Negociador ignora → Falta de legitimação ❌<br>
+                    • Se Negociador repete <em>"fica calmo"</em> 10 vezes → Não está ouvindo, está impondo ❌<br><br>
+                    <strong>Por quê?</strong> Harvard explica que <u>validar a emoção da outra parte</u> 
+                    não significa concordar com a ação — é reconhecer o estado emocional como real.
+                    </p>
+                    </div>
+                    """, unsafe_allow_html=True)
+
+                with tab_framework:
+                    st.markdown("""
+                    <div class='info-card'>
+                    <h5 style='color:#FFD700;margin-top:0;'>Os Três Vetores Explicados (e como interpretar)</h5>
+                    <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
+                    Pense nos vetores como três forças que estão em <strong>cabo de guerra</strong> dentro do causador.
+                    </p>
+                    <hr style='border-color:#444;margin:12px 0;'>
+                    <div style='margin:12px 0;padding:12px;border-radius:10px;background:rgba(239,68,68,0.08);border-left:4px solid #ef4444;'>
+                    <h5 style='color:#ef4444;margin-top:0;'>🔴 RISCO OBSERVADO — "Quanto de ameaça real há aqui?"</h5>
+                    <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
+                    Mede a <strong>densidade de linguagem agressiva/suicida</strong> no discurso do causador.<br><br>
+                    <strong>Exemplos de alto risco:</strong><br>
+                    • <em>"vou matar você"</em> (declaração direta)<br>
+                    • <em>"tenho uma arma"</em> (capacidade + intenção)<br>
+                    • <em>"quero morrer"</em> (risco para si mesmo)<br><br>
+                    <strong>Interpretação para APA:</strong><br>
+                    Se Risco Observado = 15% → Ameaça verbalizada, mas sem densidade alta<br>
+                    Se Risco Observado = 25%+ → Linguagem carregada, escalada provável se negligenciada<br><br>
+                    <strong>O que o negociador deveria fazer?</strong><br>
+                    Alto risco = mudar de abordagem RÁPIDO. Deixar o causador falar (validar) antes de oferecer soluções.
+                    </p>
+                    </div>
+                    <hr style='border-color:#444;margin:12px 0;'>
+                    <div style='margin:12px 0;padding:12px;border-radius:10px;background:rgba(16,185,129,0.08);border-left:4px solid #10b981;'>
+                    <h5 style='color:#10b981;margin-top:0;'>🟢 ABERTURA OBSERVADA — "Tem esperança aqui? Há ponte de desescalada?"</h5>
+                    <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
+                    Mede <strong>sinais de cooperação, rendição, pedido de ajuda</strong> (velado ou não) no causador.<br><br>
+                    <strong>Exemplos de alta abertura:</strong><br>
+                    • <em>"me ajuda"</em> (pedido direto)<br>
+                    • <em>"minha filha está aqui"</em> (reconhecimento de terceiro, responsabilidade)<br>
+                    • <em>"pode entrar"</em> (permissão = abandono da posição hostil)<br><br>
+                    <strong>Interpretação para APA:</strong><br>
+                    Se Abertura = 5% → Causador muito fechado, difícil entrada. Precisa mais validação.<br>
+                    Se Abertura = 15%+ → Janela de oportunidade aberta. Negociador pode começar a propor.<br><br>
+                    <strong>O que o negociador deveria fazer?</strong><br>
+                    Sinais de abertura = AMPLIFICAR. "Você pediu ajuda? Estou aqui para isso." (FBI)
+                    </p>
+                    </div>
+                    <hr style='border-color:#444;margin:12px 0;'>
+                    <div style='margin:12px 0;padding:12px;border-radius:10px;background:rgba(251,146,60,0.08);border-left:4px solid #f97316;'>
+                    <h5 style='color:#f97316;margin-top:0;'>🟡 RAIZ OBSERVADA — "Por que ele está assim? Qual é a verdadeira causa?"</h5>
+                    <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
+                    Mede <strong>gatilhos emocionais, perdas, traumas</strong> que explicam o estado atual.<br><br>
+                    <strong>Exemplos de raiz clara:</strong><br>
+                    • <em>"perdi meu emprego"</em> (causa: desespero financeiro)<br>
+                    • <em>"ela me traiu"</em> (causa: abandono/humilhação)<br>
+                    • <em>"ninguém se importa comigo"</em> (causa: isolamento/rejeição)<br><br>
+                    <strong>Interpretação para APA:</strong><br>
+                    Se Raiz = 8% → Causador talvez tenha gatilho recente ou bem localizado.<br>
+                    If Raiz = 12%+ → Acúmulo de perdas, histórico de trauma. Mais difícil de resolver rápido.<br><br>
+                    <strong>O que o negociador deveria fazer?</strong><br>
+                    Ury diz: "Separe a pessoa do problema." A raiz é o PROBLEMA. Validá-la não é concordar, é RECONHECER.<br>
+                    Ex: "Entendo que perder o emprego é devastador. Mas matar não resolve. Vamos pensar em saídas."
+                    </p>
+                    </div>
+                    <hr style='border-color:#444;margin:12px 0;'>
+                    <h5 style='color:#FFD700;'>⚖️ COMO OS TRÊS TRABALHAM JUNTOS</h5>
+                    <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
+                    <strong>Cenário 1: Alto Risco + Baixa Abertura + Raiz Clara</strong><br>
+                    → Sujeito desesperado (raiz conhecida) mas barricado (nenhuma ponte). Técnica: Validar a raiz + oferecer saída.
+                    <br><br>
+                    <strong>Cenário 2: Alto Risco + Alta Abertura + Raiz Clara</strong><br>
+                    → Sujeito em crise mas aberto à ajuda. JANELA CRÍTICA. Técnica: Rápida proposição de alternativa.
+                    <br><br>
+                    <strong>Cenário 3: Baixo Risco + Alta Abertura + Raiz Clara</strong><br>
+                    → Sujeito já está em conversação. Técnica: Escuta ativa + proposição colaborativa.
+                    </p>
+                    </div>
+                    """, unsafe_allow_html=True)
+
+                with tab_ngramas:
+                    st.markdown("""
+                    <div class='info-card'>
+                    <h5 style='color:#FFD700;margin-top:0;'>Padrões Repetidos & Loop Cognitivo</h5>
+                    <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
+                    <strong>N-gramas:</strong> Frases de 2-3 palavras que o sujeito repete obessivamente.
+                    </p>
+                    <hr style='border-color:#444;margin:12px 0;'>
+                    <h5 style='color:#FFD700;'>O que significa?</h5>
+                    <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
+                    Sob estresse extremo, o cérebro entra em <strong>loop cognitivo</strong>. 
+                    A frase repetida é o <u>mantra da crise</u> — o que o sujeito está preso em pensar.<br><br>
+                    <strong>Exemplos e interpretações:</strong><br><br>
+                    • <em>"não aguento mais"</em> (repetido 5+ vezes)<br>
+                    &nbsp;&nbsp; → Estado: Exaustão emocional severa. Risco: Iminente (suicida ou agressivo descontrolado)<br>
+                    &nbsp;&nbsp; → Técnica: Validar o esgotamento, oferecer repouso/alívio imediato<br><br>
+                    • <em>"cadê a imprensa"</em> (repetido 3+ vezes)<br>
+                    &nbsp;&nbsp; → Estado: Fixação instrumental. O sujeito quer RECONHECIMENTO público<br>
+                    &nbsp;&nbsp; → Técnica: Negociar sobre o que pode ser oferecido (não prometa imprensa se não há)<br><br>
+                    • <em>"fica calmo"</em> (negociador repetindo)<br>
+                    &nbsp;&nbsp; → Estado: Negociador não está OUVINDO. Está tentando impor.<br>
+                    &nbsp;&nbsp; → Técnica: MUDAR DE ABORDAGEM. Perguntar em vez de ordenar<br><br>
+                    </p>
+                    <hr style='border-color:#444;margin:12px 0;'>
+                    <h5 style='color:#FFD700;'>Nuvem de Palavras — O que cada interlocutor REALMENTE está focando</h5>
+                    <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
+                    A nuvem mostra visualmente o <strong>universo mental</strong> de cada um.<br><br>
+                    <strong>Leitura prática:</strong><br>
+                    Se a nuvem do Causador tem <em>"arma, polícia, morte"</em> gigantes → Fixação em escalada<br>
+                    Se a nuvem tem <em>"filha, família, vida"</em> grandes → Ambivalência (quer viver mas está preso no medo)<br>
+                    Se a nuvem do Negociador tem <em>"calma, tranquilo, relaxa"</em> → Talvez não esteja validando o real estado emocional<br><br>
+                    <strong>Comparação:</strong><br>
+                    Nuvem do Causador com "morte" grande + Nuvem do Negociador com "vida" grande = Boa direção<br>
+                    Nuvem do Causador com "morte" grande + Nuvem do Negociador com "relaxa" grande = Desconexão
+                    </p>
+                    <div style='margin-top:12px;padding:12px;border-radius:10px;background:rgba(255,215,0,0.06);border:1px solid rgba(255,215,0,0.15);'>
+                    <p style='font-size:0.9rem;color:#ddd;margin:0;line-height:1.6;'>
+                    <strong>Atenção:</strong> Um padrão repetido não é risco por si. É um <u>sinal de fixação mental</u>. 
+                    Pode ser esperança ("vou me entregar"), desespero ("vou morrer") ou instrumento ("exijo reconhecimento").
+                    </p>
+                    </div>
+                    </div>
+                    """, unsafe_allow_html=True)
+
+                with tab_limitacoes:
+                    st.markdown("""
+                    <div class='info-card'>
+                    <h5 style='color:#FFD700;margin-top:0;'>Limitações — O que o sistema NÃO consegue ver</h5>
+                    <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
+                    Esta é uma <strong>ferramenta de leitura</strong>, não bola de cristal. Os números descrevem o que foi DITO, 
+                    não o que vai acontecer.
+                    </p>
+                    <hr style='border-color:#444;margin:12px 0;'>
+                    <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
+                    ❌ <strong>Não vê o histórico do sujeito:</strong> Esse é o 1º suicida ou o 5º? Faz diferença.<br>
+                    ❌ <strong>Não vê o contexto real:</strong> Há reféns? Há arma de verdade? O sistema não sabe.<br>
+                    ❌ <strong>Não vê gírias/ironia:</strong> <em>"Vou me matar de rir"</em> aparece como risco, mas é brincadeira.<br>
+                    ❌ <strong>Não vê o tom de voz:</strong> <em>"vou sair"</em> dito com calma é diferente de grito.<br>
+                    ❌ <strong>Não vê interrupções:</strong> Se o transcrição está quebrada, a análise fica incompleta.
+                    </p>
+                    <div style='margin-top:12px;padding:12px;border-radius:10px;background:rgba(255,215,0,0.06);border:1px solid rgba(255,215,0,0.15);'>
+                    <p style='font-size:0.9rem;color:#ddd;margin:0;line-height:1.6;'>
+                    <strong>Regra de ouro para APA:</strong> Use estes dados + seu julgamento + contexto operacional. 
+                    O sistema ILUMINA. A decisão é HUMANA.
+                    </p>
+                    </div>
+                    </div>
+                    """, unsafe_allow_html=True)
+
+            # --- FIM DO BLOCO DE EXPLICAÇÃO ---
+
+            
 
             if st.button("✔ 2. Gerar Padrões Mentais & Nuvem de Palavras", key="btn_ngramas_semantica"):
                 with st.spinner("Processando padrões mentais, temas dominantes e gerando nuvens de palavras..."):
