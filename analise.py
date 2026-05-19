@@ -443,12 +443,20 @@ def eh_vocativo(tokens, idx_inicio, idx_fim, repeticao_threshold=3):
 
     return False
 
+def _eh_resolucao_intervencao(resolucao_tipo):
+    resolucao_norm = str(resolucao_tipo or "").strip().lower()
+    return (
+        resolucao_norm in {"nao_negociacao", "não negociação"}
+        or "interven" in resolucao_norm
+    )
+
 def analisar_crise_direcional(texto, resolucao_tipo="desconhecida"):
     """
     Motor de análise semântica direcional.
     Retorna vetores de Risco, Proteção e Contexto com interpretação para APA.
     """
     carga_maxima_esperada = 100
+    houve_intervencao = _eh_resolucao_intervencao(resolucao_tipo)
 
     texto_norm = normalizar_texto(texto)
     if not texto_norm:
@@ -467,8 +475,12 @@ def analisar_crise_direcional(texto, resolucao_tipo="desconhecida"):
                 "volatilidade_index": 0.0,
                 "vocabulario_unico": vocabulario_unico,
                 "confianca_amostral": confianca_amostral,
-                "classificacao": "SEM DADOS",
-                "leitura": "Texto insuficiente para análise."
+                "classificacao": "HOUVE INTERVENÇÃO" if houve_intervencao else "SEM DADOS",
+                "leitura": (
+                    "Ocorrência resolvida por intervenção. Não há corpus verbal suficiente para medir desescalada conversacional."
+                    if houve_intervencao
+                    else "Texto insuficiente para análise."
+                )
             }
         }
 
@@ -492,9 +504,14 @@ def analisar_crise_direcional(texto, resolucao_tipo="desconhecida"):
                 "intensidade_index": 0.0,
                 "direcao_index": 0.0,
                 "volatilidade_index": 0.0,
-                "classificacao": "DADOS INSUFICIENTES", 
+                "classificacao": "HOUVE INTERVENÇÃO" if houve_intervencao else "DADOS INSUFICIENTES",
                 "confianca_amostral": confianca_amostral,
-                "leitura": "Corpus insuficiente para análise confiável."
+                "vocabulario_unico": vocabulario_unico,
+                "leitura": (
+                    "Ocorrência resolvida por intervenção. Corpus verbal curto; os indicadores linguísticos devem ser lidos apenas como apoio contextual."
+                    if houve_intervencao
+                    else "Corpus insuficiente para análise confiável."
+                )
             }
         }
 
