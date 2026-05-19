@@ -1682,12 +1682,12 @@ else:
             #ETAPA 2 — ANÁLISE SEMÂNTICA PRÁTICA (Para compreender o que REALMENTE está acontecendo)
 
             st.markdown("""
-            <h3 style='color: #FFD700;'>✔ Etapa 2: Análise Semântica — Decifrar a Crise Real</h3>
+            <h3 style='color: #FFD700;'>✔ Etapa 2: Análise Semântica </h3>
             <p style='color: #aaa; font-size: 0.95rem; margin-top: -10px;'>
             <strong>O que o causador REALMENTE sente, quer e teme.</strong> 
             Enquanto Similitude conta palavras repetidas, Semântica lê entre as linhas: intenções escondidas, 
             gatilhos emocionais e pontos de alavanca para resolução.
-            </p>
+            </p></p>
             """, unsafe_allow_html=True)
 
             # --- INÍCIO DO BLOCO DE EXPLICAÇÃO ---
@@ -1974,10 +1974,10 @@ else:
                     "🔴 Causador",
                     "🟢 Negociador Principal",
                     "🔵 Negociador Secundário",
-                    "📊 Análise Global",
-                    "🔍 Mapas Comparativos",
-                    "📈 Convergência Temática",
-                    "🚨 Estado de Crise"
+                    "✔️ Análise Global",
+                    "✔️ Mapas Comparativos",
+                    "✔️ Convergência Temática",
+                    "✔️ Estado de Crise"
                 ])
 
                 # --- TAB 1: CAUSADOR ---
