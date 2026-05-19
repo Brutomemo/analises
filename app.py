@@ -1681,25 +1681,14 @@ else:
             if st.button("✔ 1. Gerar Análise de Técnicas", key="btn_tecnicas_semantica"):
                 with st.spinner("Processando técnicas empregadas..."):
                     try:
-                        # ✅ df_apa é uma Series — usar .get() direto
-                        col_tecnicas = None
-                        for campo in ['TÉCNICAS', 'Técnicas', 'tecnicas', 'TECNICAS']:
-                            val = df_apa.get(campo)
-                            if val and str(val).strip():
-                                col_tecnicas = str(val).strip()
-                                break
-
-                        if col_tecnicas:
-                            fig_treemap = analise.gerar_treemap(col_tecnicas)
-                            if fig_treemap:
-                                st.session_state['treemap_gerado'] = fig_treemap
-                                st.success("✅ Treemap de técnicas gerado!")
-                            else:
-                                st.info("Não foi possível gerar treemap com os dados disponíveis.")
-                        else:
-                            st.info("Campo de técnicas não encontrado neste registro.")
+                        # DEBUG: mostrar todos os campos disponíveis
+                        st.write("Campos disponíveis:", list(df_apa.index))
+                        
+                        val_tecnicas = df_apa.get('TABELA DE FREQUÊNCIAS DAS TÉCNICAS')
+                        st.write("Valor encontrado:", val_tecnicas)
+                        
                     except Exception as e:
-                        st.error(f"Erro ao processar treemap: {str(e)[:80]}")
+                        st.error(f"Erro: {str(e)[:80]}")
 
             if st.session_state.get('treemap_gerado'):
                 st.plotly_chart(st.session_state['treemap_gerado'], use_container_width=True)
