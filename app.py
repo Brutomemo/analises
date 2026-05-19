@@ -1757,13 +1757,14 @@ else:
             if st.session_state.get('stats_calculados'):
                 stats = st.session_state['stats_calculados']
 
-                tab_ng1, tab_ng2, tab_ng3, tab_ng4, tab_ng5, tab_ng6 = st.tabs([
+                tab_ng1, tab_ng2, tab_ng3, tab_ng4, tab_ng5, tab_ng6, tab_ng7 = st.tabs([
                     "🔴 Causador",
                     "🟢 Negociador Principal",
                     "🔵 Negociador Secundário",
                     "📊 Análise Global",
                     "🔍 Mapas Comparativos",
                     "📈 Convergência Temática"
+                    "🚨 Estado de Crise"
                 ])
 
                 # --- TAB 1: CAUSADOR ---
@@ -1967,6 +1968,26 @@ else:
                                             help="Capacidade de reduzir carga de risco. >5=muito efetiva. 2-5=moderada. <2=pouca efetividade."
                                         )
                                         st.caption(conv.get("leitura_efetividade") or "—")
+
+                                        with tab_ng7:  # ← NOVA ABA
+                                            st.markdown("### 🚨 Estado de Crise")
+                                            
+                                            if stats:
+                                                col1, col2, col3 = st.columns(3)
+                                                with col1:
+                                                    st.metric("🔴 Risco", f"{stats['risco_observado']:.1f}%")
+                                                with col2:
+                                                    st.metric("🟢 Abertura", f"{stats['abertura_observada']:.1f}%")
+                                                with col3:
+                                                    st.metric("🟡 Raiz", f"{stats['raiz_observada']:.1f}%")
+                                                
+                                                # Radar
+                                                fig = gerar_radar_crise_individual(...)
+                                                st.plotly_chart(fig, use_container_width=True)
+                                                
+                                                # Classificação
+                                                st.markdown(f"**{stats['classificacao']}**")
+                                                st.info(stats['leitura'])
                                     
                                     # ===== SEGUNDA LINHA DE MÉTRICAS (3 colunas) =====
                                     col_cv4, col_cv5, col_cv6 = st.columns(3)

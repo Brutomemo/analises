@@ -11,6 +11,7 @@ from scipy.stats import chi2_contingency, spearmanr
 from sklearn.feature_extraction.text import CountVectorizer
 from wordcloud import WordCloud
 from sklearn.metrics.pairwise import cosine_similarity
+from analise import gerar_radar_crise_individual
 
 # ============================================================
 # 1. STOPWORDS E CONFIGURAÇÕES GERAIS
@@ -404,6 +405,7 @@ def eh_vocativo(tokens, idx_inicio, idx_fim, repeticao_threshold=3):
     return False
 
 def analisar_crise_direcional(texto, resolucao_tipo="desconhecida"):
+    """..."""
     carga_maxima_esperada = 100
     """
     Motor de análise semântica direcional.
