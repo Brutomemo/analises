@@ -1889,6 +1889,10 @@ else:
                         else:
                             st.info("Sem nuvem.")
 
+                    # ============================================================
+# BLOCO CORRETO: TAB 6 (CONVERGÊNCIA) + TAB 7 (ESTADO DE CRISE)
+# ============================================================
+
                     # --- TAB 6: CONVERGÊNCIA TEMÁTICA ---
                     with tab_ng6:
                         st.markdown("""
@@ -1969,26 +1973,6 @@ else:
                                             help="Capacidade de reduzir carga de risco. >5=muito efetiva. 2-5=moderada. <2=pouca efetividade."
                                         )
                                         st.caption(conv.get("leitura_efetividade") or "—")
-
-                                    with tab_ng7:  # ← NOVA ABA
-                                        st.markdown("### 🚨 Estado de Crise")
-                                        
-                                        if stats:
-                                            col1, col2, col3 = st.columns(3)
-                                            with col1:
-                                                st.metric("🔴 Risco", f"{stats['risco_observado']:.1f}%")
-                                            with col2:
-                                                st.metric("🟢 Abertura", f"{stats['abertura_observada']:.1f}%")
-                                            with col3:
-                                                st.metric("🟡 Raiz", f"{stats['raiz_observada']:.1f}%")
-                                            
-                                            # Radar
-                                            fig = gerar_radar_crise_individual(...)
-                                            st.plotly_chart(fig, use_container_width=True)
-                                            
-                                            # Classificação
-                                            st.markdown(f"**{stats['classificacao']}**")
-                                            st.info(stats['leitura'])
                                     
                                     # ===== SEGUNDA LINHA DE MÉTRICAS (3 colunas) =====
                                     col_cv4, col_cv5, col_cv6 = st.columns(3)
@@ -2032,7 +2016,7 @@ else:
                                         )
                                         st.caption(conv.get("leitura_espelhamento") or "—")
 
-                                    # ===== BLOCO DE PARADOXO (UMA ÚNICA VEZ, DEPOIS DAS MÉTRICAS) =====
+                                    # ===== BLOCO DE PARADOXO =====
                                     st.markdown("""
                                     <div style='background:rgba(255,68,68,0.1);padding:15px;border-radius:10px;border:1px solid #ef4444;margin:20px 0;'>
                                     <h4 style='color:#ef4444;margin-top:0;'>⚠️ PARADOXO: Similitude vs. Convergência (LEITURA INTEGRADA)</h4>
@@ -2058,6 +2042,119 @@ else:
 
                             except Exception as e:
                                 st.error(f"Erro ao gerar radar: {str(e)[:80]}")
+
+                    # ===== TAB 7: ESTADO DE CRISE (FORA DAS OUTRAS ABAS) =====
+                            with tab_ng7:
+                                st.markdown("""
+                                <div class='info-card'>
+                                <h4 style='color:#FFD700; margin-top:0;'>🚨 ESTADO DE CRISE (APA)</h4>
+                                <p style='color:#ccc; font-size:0.9rem;'>
+                                Análise estruturada do estado emocional/comportamental do causador.
+                                </p>
+                                </div>
+                                """, unsafe_allow_html=True)
+                                
+                                # Extrair dados da análise de crise
+                                texto_c_raw = stats.get('texto_c_raw', '')
+                                
+                                if texto_c_raw:
+                                    try:
+                                        # Gerar análise de crise individual
+                                        analise_crise = analise.analisar_crise_direcional(
+                                            texto_c_raw,
+                                            resolucao_tipo=stats.get('resolucao_tipo', 'desconhecida')
+                                        )
+                                        
+                                        if analise_crise and 'sumario' in analise_crise:
+                                            sumario = analise_crise['sumario']
+                                            
+                                            risco_observado = sumario.get('risco_observado')
+                                            abertura_observada = sumario.get('abertura_observada')
+                                            raiz_observada = sumario.get('raiz_observada')
+                                            volatilidade_index = sumario.get('volatilidade_index')
+                                            classificacao = sumario.get('classificacao')
+                                            leitura = sumario.get('leitura')
+                                            
+                                            # SCORECARD (3 métricas principais)
+                                            st.markdown("### 📊 Resumo da Análise")
+                                            col1, col2, col3 = st.columns(3)
+                                            
+                                            with col1:
+                                                st.metric(
+                                                    "🔴 Risco Observado",
+                                                    f"{risco_observado:.1f}%" if risco_observado is not None else "N/D",
+                                                    help="Frequência de palavras ameaçadoras/agressivas"
+                                                )
+                                            
+                                            with col2:
+                                                st.metric(
+                                                    "🟢 Abertura Observada",
+                                                    f"{abertura_observada:.1f}%" if abertura_observada is not None else "N/D",
+                                                    help="Frequência de palavras colaborativas/protetivas"
+                                                )
+                                            
+                                            with col3:
+                                                st.metric(
+                                                    "🟡 Raiz Observada",
+                                                    f"{raiz_observada:.1f}%" if raiz_observada is not None else "N/D",
+                                                    help="Frequência de palavras sobre origem/gatilho da crise"
+                                                )
+                                            
+                                            # SEGUNDA LINHA
+                                            col4, col5, col6 = st.columns(3)
+                                            
+                                            with col4:
+                                                intensidade = sumario.get('intensidade_index')
+                                                st.metric(
+                                                    "⚡ Intensidade Global",
+                                                    f"{intensidade:.2f}" if intensidade is not None else "N/D",
+                                                    help="Carga emocional total"
+                                                )
+                                            
+                                            with col5:
+                                                direcao = sumario.get('direcao_index')
+                                                st.metric(
+                                                    "📉 Direção",
+                                                    f"{direcao:+.2f}" if direcao is not None else "N/D",
+                                                    help="Predomínio de escalada (-) ou desescalada (+)"
+                                                )
+                                            
+                                            with col6:
+                                                volatilidade = sumario.get('volatilidade_index')
+                                                st.metric(
+                                                    "🔄 Volatilidade",
+                                                    f"{volatilidade:.2f}" if volatilidade is not None else "N/D",
+                                                    help="Risco de mudanças bruscas"
+                                                )
+                                            
+                                            # RADAR
+                                            st.markdown("---")
+                                            st.markdown("### 🎯 Padrão de Crise (Radar)")
+                                            
+                                            try:
+                                                fig_crise = analise.gerar_radar_crise_individual(
+                                                    risco_observado if risco_observado is not None else 0,
+                                                    abertura_observada if abertura_observada is not None else 0,
+                                                    raiz_observada if raiz_observada is not None else 0,
+                                                    volatilidade_index if volatilidade_index is not None else 0
+                                                )
+                                                st.plotly_chart(fig_crise, use_container_width=True)
+                                            except Exception as e:
+                                                st.error(f"Erro ao gerar radar: {str(e)[:80]}")
+                                            
+                                            # CLASSIFICAÇÃO
+                                            st.markdown("---")
+                                            st.markdown(f"### 🚨 Classificação: `{classificacao}`")
+                                            st.info(leitura)
+                                            
+                                        else:
+                                            st.warning("Não foi possível gerar análise de crise")
+                                            
+                                    except Exception as e:
+                                        st.error(f"Erro ao analisar crise: {str(e)[:80]}")
+                                
+                                else:
+                                    st.warning("⚠️ Nenhuma transcrição disponível para análise")
 
                                 
                     # ===== PRÓXIMO BOTÃO (FORA DA TAB) =====
