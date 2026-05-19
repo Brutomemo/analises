@@ -1992,12 +1992,7 @@ else:
                     </div>
                     """, unsafe_allow_html=True)
 
-                    # ✅ Regenera os tópicos SEM métricas na hora
-                    topicos_c = analise.extrair_topicos_ngrams(
-                        stats.get('texto_c_raw', ''),
-                        resolucao_tipo=stats.get('resolucao_tipo', 'desconhecida'),
-                        mostrar_metricas_apa=False  # ← DESATIVA MÉTRICAS
-                    )
+                    topicos_c = stats.get('topicos_c', ["Análise individual ainda não gerada."])
                     for t in topicos_c:
                         st.markdown(t)
 
