@@ -1914,31 +1914,30 @@ else:
                             )
                             if fig_radar:
                                 st.plotly_chart(fig_radar, use_container_width=True)
+
+                                st.markdown("""
+                                <div style='background:rgba(255,68,68,0.1);padding:15px;border-radius:10px;border:1px solid #ef4444;margin:20px 0;'>
+                                <h4 style='color:#ef4444;margin-top:0;'>⚠️ PARADOXO: Similitude vs. Convergência (LEITURA INTEGRADA)</h4>
+                                <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
+                                O <strong>Grafo de Espelhamento</strong> (Similitude) mostra <strong>palavras compartilhadas</strong>.<br>
+                                O <strong>Radar de Convergência</strong> mostra <strong>temas/universos mentais</strong>.<br><br>
                                 
-                            # ✅ PARADOXO DE SIMILITUDE:
-                            st.markdown("""
-                            <div style='background:rgba(255,68,68,0.1);padding:15px;border-radius:10px;border:1px solid #ef4444;margin:20px 0;'>
-                            <h4 style='color:#ef4444;margin-top:0;'>⚠️ PARADOXO: Similitude vs. Convergência (LEITURA INTEGRADA)</h4>
-                            <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
-                            O <strong>Grafo de Espelhamento</strong> (Similitude) mostra <strong>palavras compartilhadas</strong>.<br>
-                            O <strong>Radar de Convergência</strong> mostra <strong>temas/universos mentais</strong>.<br><br>
-                            
-                            <strong>🔴 Cenário de Risco - Quando divergem:</strong><br>
-                            • <strong>Similitude alta + Convergência baixa</strong> = Negociador repetindo vícios/preenchedores sem validar a emoção real<br>
-                            &nbsp;&nbsp; <em>Exemplo: Ambos dizem "mano" (similitude), mas um foca em "calma" e outro em "morte" (convergência baixa)</em><br>
-                            &nbsp;&nbsp; <strong>Resultado:</strong> Falsa conexão - parecem se entender mas não estão sincronizados<br><br>
-                            
-                            • <strong>Similitude baixa + Convergência alta</strong> = Negociador fala diferente mas ENTENDE o causador ✅<br>
-                            &nbsp;&nbsp; <em>Exemplo: Negociador: "Entendo sua dor" | Causador: "Tô sofrendo demais"</em><br>
-                            &nbsp;&nbsp; <strong>Resultado:</strong> Boa sincronização temática mesmo com palavras diferentes<br><br>
-                            
-                            <strong>💡 Regra de Ouro para APA:</strong><br>
-                            Não confunda "usar as mesmas palavras" com "estar sincronizado emocionalmente".<br>
-                            Se similitude é alta MAS efetividade é negativa, procure por palavras SEM significado temático (vícios como "mano", "tipo", "cara").
-                            </p>
-                            </div>
-                            """, unsafe_allow_html=True)
-                            
+                                <strong>🔴 Cenário de Risco - Quando divergem:</strong><br>
+                                • <strong>Similitude alta + Convergência baixa</strong> = Negociador repetindo vícios/preenchedores sem validar a emoção real<br>
+                                &nbsp;&nbsp; <em>Exemplo: Ambos dizem "mano" (similitude), mas um foca em "calma" e outro em "morte" (convergência baixa)</em><br>
+                                &nbsp;&nbsp; <strong>Resultado:</strong> Falsa conexão - parecem se entender mas não estão sincronizados<br><br>
+                                
+                                • <strong>Similitude baixa + Convergência alta</strong> = Negociador fala diferente mas ENTENDE o causador ✅<br>
+                                &nbsp;&nbsp; <em>Exemplo: Negociador: "Entendo sua dor" | Causador: "Tô sofrendo demais"</em><br>
+                                &nbsp;&nbsp; <strong>Resultado:</strong> Boa sincronização temática mesmo com palavras diferentes<br><br>
+                                
+                                <strong>💡 Regra de Ouro para APA:</strong><br>
+                                Não confunda "usar as mesmas palavras" com "estar sincronizado emocionalmente".<br>
+                                Se similitude é alta MAS efetividade é negativa, procure por palavras SEM significado temático (vícios como "mano", "tipo", "cara").
+                                </p>
+                                </div>
+                                """, unsafe_allow_html=True)
+                                                       
                             
                             if conv:
                                 st.markdown("---")
