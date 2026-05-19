@@ -1488,13 +1488,12 @@ else:
                     <h5 style='color:#FFD700;'>📌 Passo 2: Identifique as EXIGÊNCIAS REAIS</h5>
                     <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
                     <strong>Procure por:</strong> O que esse sujeito <strong>quer concretamente</strong>? (não apenas ameaça)<br><br>
-                    • <em>"quero a imprensa aqui"</em> → Exigência instrumental (poder/reconhecimento)<br>
-                    • <em>"só saio se me reconhecerem"</em> → Exigência moral (dignidade)<br>
+                    • <em>"quero a imprensa aqui"</em> → Exigência instrumental (segurança/poder/reconhecimento)<br>                    
                     • <em>"preciso de dinheiro"</em> → Exigência material (sobrevivência)<br><br>
                     <strong>Por quê?</strong> Segundo William Ury (Harvard Negotiation Project), 
                     reconhecer a legitimidade da exigência (mesmo que você não possa cumprir) 
                     reduz hostilidade. O FBI e Chris Voss confirmam isso através de 
-                    <u>active listening tático</u> em negociações críticas. 
+                    <u>escuta ativa</u> em negociações críticas. 
                     (mesmo que você não possa cumprir) reduz hostilidade. O causador quer ser OUVIDO, não necessariamente atendido.
                     </p>
                     <hr style='border-color:#444;margin:12px 0;'>
