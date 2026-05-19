@@ -2213,7 +2213,7 @@ else:
 
                                 st.markdown("""
                                 <div style='background:rgba(255,215,0,0.06);padding:12px;border-radius:10px;border:1px solid rgba(255,215,0,0.15);margin-bottom:20px 0;'>
-                                <h5 style='color:#FFD700;margin-top:0;'>⚠️ PARADOXO: Similitude vs. Convergência</h5>
+                                <h6 style='color:#FFD700;margin-top:0;'>⚠️ PARADOXO: Similitude vs. Convergência</h6>
                                 <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
                                 O <strong>Grafo de Espelhamento</strong> mostra <strong>palavras compartilhadas</strong>.<br>
                                 O <strong>Radar de Convergência</strong> mostra <strong>temas/universos mentais</strong>.<br><br>
