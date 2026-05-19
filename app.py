@@ -2212,7 +2212,7 @@ else:
                                     st.caption(conv.get("leitura_espelhamento") or "—")
 
                                 st.markdown("""
-                                <div style='background:rgba(255,68,68,0.1);padding:15px;border-radius:10px;border:1px solid #ef4444;margin:20px 0;'>
+                                <div style='background:rgba(255,215,0,0.06);padding:12px;border-radius:10px;border:1px solid rgba(255,215,0,0.15);margin-bottom:20px 0;'>
                                 <h5 style='color:#ef4444;margin-top:0;'>⚠️ PARADOXO: Similitude vs. Convergência</h5>
                                 <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
                                 O <strong>Grafo de Espelhamento</strong> mostra <strong>palavras compartilhadas</strong>.<br>
