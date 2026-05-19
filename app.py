@@ -1979,8 +1979,7 @@ else:
                     "✔️ Convergência Temática",
                     "✔️ Estado de Crise"
                 ])
-
-                # --- TAB 1: CAUSADOR ---
+              
                 # --- TAB 1: CAUSADOR ---
                 with tab_ng1:
                     st.markdown("""
@@ -1993,7 +1992,12 @@ else:
                     </div>
                     """, unsafe_allow_html=True)
 
-                    topicos_c = stats.get('topicos_c', ["Análise individual ainda não gerada."])
+                    # ✅ Regenera os tópicos SEM métricas na hora
+                    topicos_c = analise.extrair_topicos_ngrams(
+                        stats.get('texto_c_raw', ''),
+                        resolucao_tipo=stats.get('resolucao_tipo', 'desconhecida'),
+                        mostrar_metricas_apa=False  # ← DESATIVA MÉTRICAS
+                    )
                     for t in topicos_c:
                         st.markdown(t)
 
