@@ -2143,10 +2143,10 @@ else:
                 with tab_ng6:
                     st.markdown("""
                     <div class='info-card'>
-                    <h4 style='color:#FFD700; margin-top:0;'>✔️ CONVERGÊNCIA TEMÁTICA — Estão falando dos mesmos assuntos?</h4>
+                    <h4 style='color:#FFD700; margin-top:0;'>✔️ CONVERGÊNCIA TEMÁTICA — Quanto cada tema foi abordado?</h4>
                     <p style='color:#ccc; font-size:0.9rem; margin-bottom:1rem;'>
-                    Compara os <strong>temas reais</strong> abordados pelo causador vs negociador.
-                    100% = ambos focam nos mesmos assuntos. 0% = universos mentais completamente diferentes.
+                    Compara a <strong>intensidade (score)</strong> de cada tema abordado por causador e negociador.
+                    Polígonos sobrepostos = abordagem similar. Divergência = ênfase diferente.
                     </p>
                     </div>
                     """, unsafe_allow_html=True)
@@ -2205,21 +2205,47 @@ else:
                                     excl_np
                                 )
 
-                            # ── RADAR TEMÁTICO ───────────────────────────────
+                            # ── RADAR TEMÁTICO (INTENSIDADE) ────────────────
                             st.markdown("---")
-                            st.markdown("### 🎯 Padrão de Convergência (Radar Temático)")
+                            st.markdown("### 🎯 Intensidade de Abordagem por Tema (Radar)")
+                            st.markdown("""
+                            <p style='font-size:0.85rem;color:#aaa;'>
+                            Polígono vermelho = intensidade do causador. 
+                            Polígono verde = intensidade do negociador.
+                            Quanto maior o polígono, mais o tema foi abordado.
+                            </p>
+                            """, unsafe_allow_html=True)
                             
                             try:
-                                fig_radar_tematico = analise.gerar_radar_convergencia_tematica(
+                                fig_radar_tematico = analise.gerar_radar_convergencia_tematica_corrigido(
+                                    temas_c,
+                                    temas_np,
                                     conv_tematica["convergencia_por_tema"]
                                 )
                                 st.plotly_chart(fig_radar_tematico, use_container_width=True)
                             except Exception as e:
                                 st.error(f"Erro ao gerar radar: {str(e)[:80]}")
 
+                            # ── GRÁFICO DE BARRAS (ALTERNATIVA) ─────────────
+                            st.markdown("---")
+                            st.markdown("### 📊 Intensidade por Tema (Gráfico de Barras)")
+                            st.markdown("""
+                            <p style='font-size:0.85rem;color:#aaa;'>
+                            Visualização alternativa: compare a altura das barras para cada tema.
+                            </p>
+                            """, unsafe_allow_html=True)
+                            
+                            try:
+                                fig_barras = analise.gerar_grafico_barras_intensidade_temas(
+                                    conv_tematica["convergencia_por_tema"]
+                                )
+                                st.plotly_chart(fig_barras, use_container_width=True)
+                            except Exception as e:
+                                st.error(f"Erro ao gerar gráfico: {str(e)[:80]}")
+
                             # ── TABELA DETALHADA ─────────────────────────────
                             st.markdown("---")
-                            st.markdown("### 📋 Convergência por Tema")
+                            st.markdown("### 📋 Convergência Detalhada por Tema")
                             
                             df_conv_tab = analise.gerar_tabela_convergencia_tematica(conv_tematica)
                             st.dataframe(
@@ -2243,26 +2269,26 @@ else:
                             if conv_pct >= 80:
                                 interpretacao = """
                                 ✅ **Sincronização temática excelente.**
-                                Causador e negociador estão focando nos mesmos assuntos. 
-                                Alto potencial para acordo — há terreno comum.
+                                Causador e negociador abordam os mesmos temas com intensidades similares. 
+                                Alto potencial para acordo — há terreno comum bem desenvolvido.
                                 """
                             elif conv_pct >= 60:
                                 interpretacao = """
                                 🟢 **Boa sincronização temática.**
-                                Maioria dos temas é compartilhada. 
-                                Há base para negociação, mas com pontos de divergência.
+                                Maioria dos temas é compartilhada com intensidades próximas. 
+                                Há base para negociação, mas alguns temas têm ênfases diferentes.
                                 """
                             elif conv_pct >= 40:
                                 interpretacao = """
                                 🟡 **Sincronização moderada.**
-                                Alguns temas são compartilhados, mas há muita divergência.
-                                Negociador pode estar abordando pontos que causador não mencionou.
+                                Alguns temas são compartilhados, mas com intensidades muito diferentes.
+                                Negociador e causador focam em coisas distintas — risco de desencontro.
                                 """
                             else:
                                 interpretacao = """
                                 🔴 **Sincronização fraca.**
-                                Causador e negociador falam de coisas diferentes.
-                                Risco alto de falha de rapport — estão em universos mentais distintos.
+                                Causador e negociador abordam temas com intensidades muito divergentes.
+                                Há desconexão temática — estão focando em coisas diferentes ou com ênfases opostas.
                                 """
                             
                             st.info(interpretacao)

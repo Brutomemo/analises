@@ -740,162 +740,18 @@ def gerar_radar_crise_individual(risco, abertura, raiz, volatilidade):
 # CONVERGÊNCIA TEMÁTICA REAL — Comparar temas do causador vs negociador
 # ============================================================
 
-def extrair_temas_unicos(texto, resolucao_tipo="desconhecida"):
+def gerar_radar_convergencia_tematica_corrigido(temas_causador, temas_negociador, convergencia_por_tema):
     """
-    Extrai os temas (N-gramas + palavras-chave) de um texto.
-    Retorna lista de temas com scores.
-    """
-    analise = analisar_crise_direcional(texto, resolucao_tipo=resolucao_tipo)
-    temas = analise.get("temas", [])
+    Gera radar com:
+    - Eixos = temas compartilhados
+    - Duas linhas = causador vs negociador
+    - Altura = score (intensidade) de cada tema
     
-    # Retorna apenas categoria + score
-    temas_lista = [
-        {
-            "categoria": t["categoria"],
-            "score": t["score"],
-            "tipo": t["tipo"],
-            "evidencias": t["evidencias"]
-        }
-        for t in temas
-    ]
-    return temas_lista
-
-
-def calcular_convergencia_tematica(temas_causador, temas_negociador):
-    """
-    Calcula convergência temática real entre causador e negociador.
-    
-    Compara:
-    - Quais temas ambos abordam
-    - Em que intensidade (score)
-    - Tipo de tema (risco, proteção, contexto)
-    
-    Retorna:
-    - convergencia_geral (0-100%)
-    - temas_compartilhados
-    - temas_exclusivos_causador
-    - temas_exclusivos_negociador
-    - analise_detalhada
-    """
-    
-    if not temas_causador or not temas_negociador:
-        return {
-            "convergencia_geral": 0.0,
-            "temas_compartilhados": [],
-            "temas_exclusivos_causador": [],
-            "temas_exclusivos_negociador": [],
-            "analise_detalhada": "Insuficientes temas para análise."
-        }
-    
-    # ── Extrair nomes de categorias ──────────────────────────────
-    cats_c = {t["categoria"] for t in temas_causador}
-    cats_np = {t["categoria"] for t in temas_negociador}
-    
-    # ── Encontrar interseção ─────────────────────────────────────
-    temas_compartilhados = cats_c & cats_np
-    temas_exclusivos_c = cats_c - cats_np
-    temas_exclusivos_np = cats_np - cats_c
-    
-    # ── Calcular scores de convergência ──────────────────────────
-    convergencia_por_tema = {}
-    
-    for tema in temas_compartilhados:
-        score_c = next((t["score"] for t in temas_causador if t["categoria"] == tema), 0)
-        score_np = next((t["score"] for t in temas_negociador if t["categoria"] == tema), 0)
-        
-        # Convergência = quanto mais próximos os scores, melhor
-        # Escala 0-100%: 100% = scores iguais, 0% = completamente diferentes
-        max_score = max(score_c, score_np)
-        if max_score > 0:
-            similitude = (1 - abs(score_c - score_np) / max_score) * 100
-        else:
-            similitude = 100.0
-        
-        convergencia_por_tema[tema] = {
-            "score_causador": round(score_c, 2),
-            "score_negociador": round(score_np, 2),
-            "convergencia": round(similitude, 1),
-            "tipo": next((t["tipo"] for t in temas_causador if t["categoria"] == tema), "desconhecido")
-        }
-    
-    # ── Calcular convergência geral ──────────────────────────────
-    if temas_compartilhados:
-        convergencia_geral = round(
-            sum(convergencia_por_tema[t]["convergencia"] for t in temas_compartilhados) 
-            / len(temas_compartilhados), 1
-        )
-    else:
-        convergencia_geral = 0.0
-    
-    # ── Gerar narrativa detalhada ────────────────────────────────
-    linhas_analise = []
-    
-    if temas_compartilhados:
-        linhas_analise.append(f"**✅ Temas compartilhados: {len(temas_compartilhados)}**")
-        linhas_analise.append("")
-        
-        # Ordenar por convergência (melhor primeiro)
-        temas_ord = sorted(
-            temas_compartilhados,
-            key=lambda t: convergencia_por_tema[t]["convergencia"],
-            reverse=True
-        )
-        
-        for tema in temas_ord:
-            info = convergencia_por_tema[tema]
-            conv = info["convergencia"]
-            
-            if conv >= 80:
-                emoji = "🟢"
-                status = "Forte alinhamento"
-            elif conv >= 50:
-                emoji = "🟡"
-                status = "Alinhamento moderado"
-            else:
-                emoji = "🔴"
-                status = "Fraco alinhamento"
-            
-            linhas_analise.append(
-                f"{emoji} **{tema}** — {status} ({conv:.0f}%)\n"
-                f"  Causador: {info['score_causador']:.2f} | Negociador: {info['score_negociador']:.2f}"
-            )
-    else:
-        linhas_analise.append("⚠️ **Nenhum tema compartilhado detectado.**")
-    
-    linhas_analise.append("")
-    
-    if temas_exclusivos_c:
-        linhas_analise.append(f"**🔴 Temas só do causador: {len(temas_exclusivos_c)}**")
-        for tema in sorted(temas_exclusivos_c):
-            score = next((t["score"] for t in temas_causador if t["categoria"] == tema), 0)
-            linhas_analise.append(f"  • {tema} (score: {score:.2f})")
-        linhas_analise.append("")
-    
-    if temas_exclusivos_np:
-        linhas_analise.append(f"**🟢 Temas só do negociador: {len(temas_exclusivos_np)}**")
-        for tema in sorted(temas_exclusivos_np):
-            score = next((t["score"] for t in temas_negociador if t["categoria"] == tema), 0)
-            linhas_analise.append(f"  • {tema} (score: {score:.2f})")
-        linhas_analise.append("")
-    
-    return {
-        "convergencia_geral": convergencia_geral,
-        "temas_compartilhados": list(temas_compartilhados),
-        "temas_exclusivos_causador": list(temas_exclusivos_c),
-        "temas_exclusivos_negociador": list(temas_exclusivos_np),
-        "convergencia_por_tema": convergencia_por_tema,
-        "analise_detalhada": "\n".join(linhas_analise)
-    }
-
-
-def gerar_radar_convergencia_tematica(temas_compartilhados_dict):
-    """
-    Gera radar visual da convergência temática.
-    Mostra: tema × convergência
+    Permite comparar visualmente a intensidade de abordagem de cada tema.
     """
     import plotly.graph_objects as go
     
-    if not temas_compartilhados_dict:
+    if not convergencia_por_tema:
         fig = go.Figure()
         fig.add_annotation(
             text="Sem temas compartilhados para gerar radar",
@@ -905,30 +761,49 @@ def gerar_radar_convergencia_tematica(temas_compartilhados_dict):
         )
         return fig
     
-    temas = list(temas_compartilhados_dict.keys())
-    convergencias = [temas_compartilhados_dict[t]["convergencia"] for t in temas]
+    # ── Extrair dados ────────────────────────────────────────────
+    temas = list(convergencia_por_tema.keys())
+    scores_c = [convergencia_por_tema[t]["score_causador"] for t in temas]
+    scores_np = [convergencia_por_tema[t]["score_negociador"] for t in temas]
     
-    fig = go.Figure(data=go.Scatterpolar(
-        r=convergencias,
+    # ── Criar figura com duas traces ─────────────────────────────
+    fig = go.Figure()
+    
+    # Trace 1: Causador (vermelho)
+    fig.add_trace(go.Scatterpolar(
+        r=scores_c,
         theta=temas,
         fill='toself',
-        name='Convergência Temática',
-        line=dict(color='#FFD700', width=2),
-        fillcolor='rgba(255,215,0,0.2)'
+        name='Causador',
+        line=dict(color='#ef4444', width=2),
+        fillcolor='rgba(239,68,68,0.15)',
+        hovertemplate='<b>%{theta}</b><br>Causador: %{r:.2f}<extra></extra>'
     ))
     
+    # Trace 2: Negociador (verde)
+    fig.add_trace(go.Scatterpolar(
+        r=scores_np,
+        theta=temas,
+        fill='toself',
+        name='Negociador',
+        line=dict(color='#10b981', width=2),
+        fillcolor='rgba(16,185,129,0.15)',
+        hovertemplate='<b>%{theta}</b><br>Negociador: %{r:.2f}<extra></extra>'
+    ))
+    
+    # ── Layout ───────────────────────────────────────────────────
     fig.update_layout(
         polar=dict(
             radialaxis=dict(
                 visible=True,
-                range=[0, 100],
-                ticksuffix='%',
+                range=[0, max(max(scores_c), max(scores_np)) * 1.1],
+                tickfont=dict(color='#aaa', size=10),
                 gridcolor='#333',
                 linecolor='#666'
             ),
             bgcolor='rgba(0,0,0,0)',
             angularaxis=dict(
-                tickfont=dict(color='#FFD700', size=10),
+                tickfont=dict(color='#FFD700', size=11),
                 gridcolor='#333',
                 linecolor='#666'
             )
@@ -937,36 +812,75 @@ def gerar_radar_convergencia_tematica(temas_compartilhados_dict):
         plot_bgcolor='rgba(0,0,0,0)',
         font=dict(color='#fff', size=11),
         legend=dict(
-            font=dict(color='#fff'),
+            font=dict(color='#fff', size=12),
             bgcolor='rgba(0,0,0,0.4)',
-            bordercolor='#444'
+            bordercolor='#444',
+            borderwidth=1
         ),
         margin=dict(t=30, b=30, l=40, r=40),
-        height=420
+        height=450,
+        hovermode='closest'
     )
     
     return fig
 
 
-def gerar_tabela_convergencia_tematica(convergencia_data):
+def gerar_grafico_barras_intensidade_temas(convergencia_por_tema):
     """
-    Gera tabela formatada com convergência por tema.
+    Gera gráfico de barras agrupadas mostrando intensidade de cada tema.
+    Alternativa ao radar para quem prefere tabular.
     """
-    import pandas as pd
+    import plotly.graph_objects as go
     
-    df_dados = []
-    for tema, info in convergencia_data["convergencia_por_tema"].items():
-        df_dados.append({
-            "Tema": tema,
-            "Causador": f"{info['score_causador']:.2f}",
-            "Negociador": f"{info['score_negociador']:.2f}",
-            "Convergência (%)": f"{info['convergencia']:.1f}%",
-            "Tipo": info["tipo"]
-        })
+    temas = list(convergencia_por_tema.keys())
+    scores_c = [convergencia_por_tema[t]["score_causador"] for t in temas]
+    scores_np = [convergencia_por_tema[t]["score_negociador"] for t in temas]
     
-    return pd.DataFrame(df_dados)
-
-
+    fig = go.Figure()
+    
+    fig.add_trace(go.Bar(
+        x=temas,
+        y=scores_c,
+        name='Causador',
+        marker_color='#ef4444',
+        hovertemplate='<b>%{x}</b><br>Causador: %{y:.2f}<extra></extra>'
+    ))
+    
+    fig.add_trace(go.Bar(
+        x=temas,
+        y=scores_np,
+        name='Negociador',
+        marker_color='#10b981',
+        hovertemplate='<b>%{x}</b><br>Negociador: %{y:.2f}<extra></extra>'
+    ))
+    
+    fig.update_layout(
+        barmode='group',
+        paper_bgcolor='rgba(0,0,0,0)',
+        plot_bgcolor='rgba(0,0,0,0)',
+        font=dict(color='#fff', size=11),
+        legend=dict(
+            font=dict(color='#fff', size=12),
+            bgcolor='rgba(0,0,0,0.4)',
+            bordercolor='#444'
+        ),
+        xaxis=dict(
+            tickfont=dict(color='#FFD700', size=10),
+            gridcolor='#333',
+            linecolor='#666'
+        ),
+        yaxis=dict(
+            tickfont=dict(color='#aaa', size=10),
+            gridcolor='#333',
+            linecolor='#666',
+            title='Score (Intensidade)'
+        ),
+        height=400,
+        margin=dict(t=20, b=100, l=50, r=30),
+        hovermode='closest'
+    )
+    
+    return fig
 
 
 def gerar_narrativa_crise(risco_observado, abertura_observada, raiz_observada,
