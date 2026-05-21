@@ -2139,14 +2139,14 @@ else:
                         else:
                             st.info("Sem nuvem.")
 
-                # --- TAB 6: CONVERGÊNCIA TEMÁTICA ---
+                # --- TAB 6: CONVERGÊNCIA TEMÁTICA (CORRIGIDO) ---
                 with tab_ng6:
                     st.markdown("""
                     <div class='info-card'>
-                    <h5 style='color:#FFD700; margin-top:0;'>✔️ RADAR SEMÂNTICO & ÍNDICES DE CONVERGÊNCIA</h5>
+                    <h4 style='color:#FFD700; margin-top:0;'>✔️ CONVERGÊNCIA TEMÁTICA — Estão falando dos mesmos assuntos?</h4>
                     <p style='color:#ccc; font-size:0.9rem; margin-bottom:1rem;'>
-                    <strong>Complementa Similitude:</strong> Similitude conta "palavras iguais". Radar mede "temas alinhados". 
-                    Um radar com polígonos sobrepostos = causador e negociador estão no MESMO universo mental.
+                    Compara os <strong>temas reais</strong> abordados pelo causador vs negociador.
+                    100% = ambos focam nos mesmos assuntos. 0% = universos mentais completamente diferentes.
                     </p>
                     </div>
                     """, unsafe_allow_html=True)
@@ -2156,112 +2156,119 @@ else:
                     texto_ns_raw = stats.get('texto_ns_raw', '')
 
                     if not texto_c_raw or not texto_np_raw:
-                        st.warning("⚠️ Transcrições insuficientes para gerar radar.")
+                        st.warning("⚠️ Transcrições insuficientes para analisar convergência temática.")
                     else:
                         try:
-                            fig_radar, conv = analise.gerar_radar_comparativo(
+                            # ── Extrair temas reais ──────────────────────────
+                            temas_c = analise.extrair_temas_unicos(
                                 texto_c_raw,
+                                resolucao_tipo=stats.get('resolucao_tipo', 'desconhecida')
+                            )
+                            temas_np = analise.extrair_temas_unicos(
                                 texto_np_raw,
-                                texto_ns_raw if texto_ns_raw else None
+                                resolucao_tipo=stats.get('resolucao_tipo', 'desconhecida')
                             )
 
-                            if fig_radar:
-                                st.plotly_chart(fig_radar, use_container_width=True)
+                            # ── Calcular convergência ────────────────────────
+                            conv_tematica = analise.calcular_convergencia_tematica(temas_c, temas_np)
 
-                            if conv:
-                                st.markdown("---")
+                            # ── SCORECARD ────────────────────────────────────
+                            st.markdown("### 📊 Resumo da Convergência")
+                            
+                            col1, col2, col3, col4 = st.columns(4)
+                            
+                            with col1:
+                                conv_geral = conv_tematica["convergencia_geral"]
+                                st.metric(
+                                    "Convergência Geral",
+                                    f"{conv_geral:.1f}%"
+                                )
+                            
+                            with col2:
+                                compartilhados = len(conv_tematica["temas_compartilhados"])
+                                st.metric(
+                                    "Temas Compartilhados",
+                                    compartilhados
+                                )
+                            
+                            with col3:
+                                excl_c = len(conv_tematica["temas_exclusivos_causador"])
+                                st.metric(
+                                    "Só Causador",
+                                    excl_c
+                                )
+                            
+                            with col4:
+                                excl_np = len(conv_tematica["temas_exclusivos_negociador"])
+                                st.metric(
+                                    "Só Negociador",
+                                    excl_np
+                                )
 
-                                st.markdown("""
-                                <div style='background:rgba(255,215,0,0.06);padding:12px;border-radius:10px;border:1px solid rgba(255,215,0,0.15);margin-bottom:15px;'>
-                                <p style='font-size:0.9rem;color:#FFD700;font-weight:bold;margin:0;'>
-                                💡 Como ler os índices:
-                                </p>
-                                <p style='font-size:0.85rem;color:#ddd;margin:5px 0 0 0;line-height:1.5;'>
-                                <strong>Δ Risco:</strong> Se positivo = causador mais agressivo. Se negativo = negociador foi muito duro.<br>
-                                <strong>Δ Abertura:</strong> Se positivo = negociador foi acolhedor. Se negativo = barreira alta.<br>
-                                <strong>Efetividade:</strong> Se alta = negociador conseguiu reduzir tensão. Se baixa = sem progresso.<br>
-                                <strong>Rapport:</strong> Quão próximos ficaram em frequência de proteção/abertura.<br>
-                                <strong>Convergência Temática:</strong> 100% = perfeita sincronização. Abaixo de 50% = mundos diferentes.
-                                </p>
-                                </div>
-                                """, unsafe_allow_html=True)
+                            # ── RADAR TEMÁTICO ───────────────────────────────
+                            st.markdown("---")
+                            st.markdown("### 🎯 Padrão de Convergência (Radar Temático)")
+                            
+                            try:
+                                fig_radar_tematico = analise.gerar_radar_convergencia_tematica(
+                                    conv_tematica["convergencia_por_tema"]
+                                )
+                                st.plotly_chart(fig_radar_tematico, use_container_width=True)
+                            except Exception as e:
+                                st.error(f"Erro ao gerar radar: {str(e)[:80]}")
 
-                                col_cv1, col_cv2, col_cv3 = st.columns(3)
+                            # ── TABELA DETALHADA ─────────────────────────────
+                            st.markdown("---")
+                            st.markdown("### 📋 Convergência por Tema")
+                            
+                            df_conv_tab = analise.gerar_tabela_convergencia_tematica(conv_tematica)
+                            st.dataframe(
+                                df_conv_tab,
+                                use_container_width=True,
+                                hide_index=True
+                            )
 
-                                with col_cv1:
-                                    delta_risco = conv.get('delta_risco')
-                                    st.metric(
-                                        label="Δ Risco Observado",
-                                        value=f"{delta_risco:+.2f}" if delta_risco is not None else "N/D"
-                                    )
-                                    st.caption(conv.get("leitura_risco") or "—")
+                            # ── ANÁLISE NARRATIVA ────────────────────────────
+                            st.markdown("---")
+                            st.markdown("### 📖 Análise Detalhada")
+                            
+                            st.markdown(conv_tematica["analise_detalhada"])
 
-                                with col_cv2:
-                                    delta_abertura = conv.get('delta_abertura')
-                                    st.metric(
-                                        label="Δ Abertura Observada",
-                                        value=f"{delta_abertura:+.2f}" if delta_abertura is not None else "N/D"
-                                    )
-                                    st.caption(conv.get("leitura_abertura") or "—")
-
-                                with col_cv3:
-                                    efetividade = conv.get('efetividade_negociador')
-                                    st.metric(
-                                        label="Efetividade do Negociador",
-                                        value=f"{efetividade:.2f}" if efetividade is not None else "N/D"
-                                    )
-                                    st.caption(conv.get("leitura_efetividade") or "—")
-
-                                col_cv4, col_cv5, col_cv6 = st.columns(3)
-
-                                with col_cv4:
-                                    rapport = conv.get('rapport_alcancado')
-                                    if rapport is not None:
-                                        if rapport >= 9:
-                                            status = "✅ Excelente"
-                                        elif rapport >= 7:
-                                            status = "🔵 Bom"
-                                        elif rapport >= 5:
-                                            status = "⚠️ Moderado"
-                                        else:
-                                            status = "❌ Fraco"
-                                    else:
-                                        status = "N/D"
-
-                                    st.metric(
-                                        label="Rapport Alcançado",
-                                        value=f"{rapport:.1f}/10" if rapport is not None else "N/D"
-                                    )
-                                    st.caption(status)
-
-                                with col_cv5:
-                                    delta_progresso = conv.get('delta_progresso')
-                                    st.metric(
-                                        label="Delta de Progresso",
-                                        value=f"{delta_progresso:+.2f}" if delta_progresso is not None else "N/D"
-                                    )
-
-                                with col_cv6:
-                                    espelhamento = conv.get('espelhamento')
-                                    st.metric(
-                                        label="Convergência Temática",
-                                        value=f"{espelhamento:.0%}" if espelhamento is not None else "N/D"
-                                    )
-                                    st.caption(conv.get("leitura_espelhamento") or "—")
-
-                                st.markdown("""
-                                <div style='background:rgba(255,215,0,0.06);padding:12px;border-radius:10px;border:1px solid rgba(255,215,0,0.15);margin-bottom:20px 0;'>
-                                <h6 style='color:#FFD700;margin-top:0;'>⚠️ PARADOXO: Similitude vs. Convergência</h6>
-                                <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
-                                O <strong>Grafo de Espelhamento</strong> mostra <strong>palavras compartilhadas</strong>.<br>
-                                O <strong>Radar de Convergência</strong> mostra <strong>temas/universos mentais</strong>.<br><br>
-                                <strong>Similitude alta + Convergência baixa</strong> = Falsa conexão (repetem palavras mas não estão sincronizados)
-                                </p>
-                                </div>
-                                """, unsafe_allow_html=True)
+                            # ── INTERPRETAÇÃO GERAL ─────────────────────────
+                            st.markdown("---")
+                            st.markdown("### 💡 O que significa")
+                            
+                            conv_pct = conv_tematica["convergencia_geral"]
+                            
+                            if conv_pct >= 80:
+                                interpretacao = """
+                                ✅ **Sincronização temática excelente.**
+                                Causador e negociador estão focando nos mesmos assuntos. 
+                                Alto potencial para acordo — há terreno comum.
+                                """
+                            elif conv_pct >= 60:
+                                interpretacao = """
+                                🟢 **Boa sincronização temática.**
+                                Maioria dos temas é compartilhada. 
+                                Há base para negociação, mas com pontos de divergência.
+                                """
+                            elif conv_pct >= 40:
+                                interpretacao = """
+                                🟡 **Sincronização moderada.**
+                                Alguns temas são compartilhados, mas há muita divergência.
+                                Negociador pode estar abordando pontos que causador não mencionou.
+                                """
+                            else:
+                                interpretacao = """
+                                🔴 **Sincronização fraca.**
+                                Causador e negociador falam de coisas diferentes.
+                                Risco alto de falha de rapport — estão em universos mentais distintos.
+                                """
+                            
+                            st.info(interpretacao)
 
                         except Exception as e:
-                            st.error(f"Erro ao gerar radar: {str(e)[:80]}")
+                            st.error(f"Erro ao analisar convergência temática: {str(e)[:80]}")
 
                 # --- TAB 7: ESTADO DO CAUSADOR ---
                 with tab_ng7:
@@ -2666,7 +2673,7 @@ else:
     NEGOCIAÇÃO!
     </span>
 
-    <br><br>
+    <br>
 
     <span style="color:#777; font-size:11px;">
     Dados confidenciais, de uso exclusivo da equipe de Negociação do Grupo de Ações Táticas Especiais.
