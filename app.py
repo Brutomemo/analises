@@ -2642,22 +2642,14 @@ else:
 
             st.markdown("<div style='margin-bottom: 20px;'></div>", unsafe_allow_html=True)
             st.markdown("""
-        <div style="
-        margin-top:20px;
-        margin-bottom:100px;
-        padding:18px;
-        background: linear-gradient(145deg, #111, #0a0a0a);
-        border:1px solid rgba(255,255,255,0.06);
-        border-radius:12px;
-        box-shadow:0 0 12px rgba(0,0,0,0.35);
-    ">
-
+    <div style='margin-top:20px; margin-bottom:100px; padding:15px; 
+                background-color:#111; border-radius:8px;'>
         <p style="
-            color:#bbb;
-            font-size:13px;
-            line-height:1.7;
-            text-align:left;
-        ">
+        color:#bbb;
+        font-size:13px;
+        line-height:1.7;
+        text-align:left;
+    ">
 
         <span style="
             color:#ffae42;
@@ -2731,6 +2723,8 @@ else:
         Este sistema é protegido por direitos autorais e legislação
         aplicável. Reprodução, distribuição, engenharia reversa,
         modificação ou utilização não autorizada são proibidas.
+
+        </div>
     </div>
     """, unsafe_allow_html=True)
 
