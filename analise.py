@@ -1341,6 +1341,7 @@ def gerar_tabela_convergencia_tematica(convergencia_data):
     return pd.DataFrame(df_dados)
 
 
+
 # ============================================================
 # 7. TREEMAP — CORRIGIDO (aceita string OU DataFrame)
 # ============================================================
