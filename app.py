@@ -2649,18 +2649,15 @@ else:
     DELTA-NEGOCIAÇÃO — GATE/PMESP
     </span>
 
-    <br>
-
+    
     "O maior inimigo do conhecimento não é a ignorância, mas a ilusão do conhecimento."
     — Stephen Hawking.
 
-    <br>
-
+    
     “Sem dados, você é apenas mais uma pessoa com opinião.”
     — W. Edwards Deming.
 
-    <br>
-
+    
     Empenhados no desenvolvimento de treinamentos e na avaliação dos Negociadores, alicerçados no pensamento técnico-científico e no valor humano, guiados por dados.
 
     <br>
