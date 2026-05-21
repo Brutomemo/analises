@@ -3076,48 +3076,7 @@ else:
 
             #NOVAS ANALISES 21MAI
 
-            # ============================================================
-            # AUDITORIA DE RIGOR ESTATÍSTICO — Modelo Atual
-            # ============================================================
-
-            """
-            ✅ VALIDAÇÕES PRESENTES:
-
-            1. **Spearman (Coluna 1)**
-            - N mínimo: 5 casos válidos ✅
-            - Exclui "Não Observado" automaticamente ✅
-            - P-value corretamente interpretado ✅
-            - Robustez: BOAS PRÁTICAS
-
-            2. **Qui-Quadrado (Coluna 2)**
-            - N mínimo: 10 ocorrências distintas ✅
-            - Remove valores-lixo ✅
-            - Verifica variância mínima (2 categorias em cada) ✅
-            - Robustez: BOAS PRÁTICAS
-
-            3. **Modelo Ordinal (Análise 1 - Viés)**
-            - Chi-Quadrado de Pearson (tabela cruzada) ✅
-            - Matriz de resíduos padronizados ✅
-            - Interpretação: CLARA PARA LEIGOS
-
-            4. **Ordered Logistic (Análise 2 - Eficácia)**
-            - Controla por negociador e tipologia ✅
-            - Calcula Odds Ratio ✅
-            - ⚠️ RISCO: Não verifica colinearidade
-            - ⚠️ RISCO: Sem teste de proporcionalidade (PO)
-
-            5. **GEE (Análise 3 - Robustez)**
-            - Lida com clustered data (negociador = cluster) ✅
-            - Exchangeable correlation ✅
-            - Binomial family para resposta dicotômica ✅
-            - Robustez: EXCELENTE PARA ESTE CASO
-
-            ⚠️ CRÍTICAS:
-            - Falta validação de tamanho mínimo de célula (Qui-Quadrado assume ≥5)
-            - Falta teste de proporcionalidade para Ordered Logit
-            - Falta inflação de Tipo I em múltiplos testes (Bonferroni)
-            """
-
+                        
             # ============================================================
             # ANÁLISE 4: EFETIVIDADE DAS TÉCNICAS (NOVA)
             # ============================================================
