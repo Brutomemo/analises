@@ -1574,8 +1574,7 @@ else:
 
 
             # ============================================================
-            # ANÁLISE DE SIMILITUDE — Versão Limpa para Copiar
-            # Indentação: Ajuste conforme seu código (adicione espaços no início)
+            # ANÁLISE DE SIMILITUDE — Versão Corrigida
             # ============================================================
 
             st.markdown("---")
@@ -1589,12 +1588,11 @@ else:
 
             st.markdown("""
             **Como interpretar os resultados:**
-            - **Índice baixo (< 10%)** → Linguagens muito diferentes → Pouca sintonia
-            - **Índice moderado (10-25%)** → Começaram a se sincronizar → Boa progressão  
-            - **Índice alto (> 25%)** → Muito alinhados → Desfecho positivo provável
+            - **Índice baixo (< 15%)** → Linguagens muito diferentes → Pouca sintonia
+            - **Índice moderado (15-30%)** → Começaram a se sincronizar → Boa progressão  
+            - **Índice alto (> 30%)** → Muito alinhados → Desfecho positivo provável
 
-            **Exemplo prático:** Se o negociador diz "entender" e o causador passa a dizer "entendo" também, 
-            há uma conexão sendo formada.
+            ⚠️ **Atenção:** Esses thresholds são provisórios. Serão refinados após análise de 50+ ocorrências.
             """)
 
             st.markdown("""
@@ -1611,7 +1609,7 @@ else:
             </div>
             """, unsafe_allow_html=True)
 
-            if st.button("✔️ Gerar Análise de Similitude"):
+            if st.button("✔️ Gerar Análise de Similitude", key="btn_similitude_analise"):
                 col_causador = "TRANSCRIÇÃO DO CAUSADOR"
                 col_negociador = "TRANSCRIÇÃO DO NEGOCIADOR PRINCIPAL"
 
@@ -1625,15 +1623,8 @@ else:
                         st.warning("⏱️ **Fala Muito Breve** — Pelo menos uma parte falou menos de 5 palavras. Precisamos de mais dados.")
                     else:
                         try:
-                            from sklearn.feature_extraction.text import TfidfVectorizer
-                            from sklearn.metrics.pairwise import cosine_similarity
                             import re
-
-                            def limpar_texto(t):
-                                return re.sub(r'[^\w\s]', '', t.lower())
-
-                            txt_caus_limpo = limpar_texto(txt_caus)
-                            txt_neg_limpo = limpar_texto(txt_neg)
+                            from collections import Counter
 
                             stopwords_pt = [
                                 "o", "a", "os", "as", "um", "uma", "de", "do", "da", "em", "no", "na", "nos", "nas",
@@ -1645,146 +1636,207 @@ else:
                                 "quando", "onde", "quem", "qual", "porque", "pra", "pro", "ta", "tá", "to", "tô", "vai",
                                 "vou", "tem", "tudo", "nada", "coisa", "ai", "aí", "ne", "né", "acho", "gente", "dá",
                                 "causador", "negociador", "principal", "secundario", "secundário", "lider", "líder",
-                                "equipe", "ocorrencia", "ocorrência", "incidente", "forma",  "mano", "manow", "meu", "meu filho",
+                                "equipe", "ocorrencia", "ocorrência", "incidente", "forma", "mano", "manow", "meu", "meu filho",
                                 "cara", "parça", "bixo", "porra", "tipo", "tipo assim", "tipo ó", "saca", "saquei", "entende", "tá ligado",
                                 "fica", "calma", "tranquilo", "relaxa", "né", "fico", "tá", "ta", "tô", "to", "cara", "parça", "tipo assim", "Não", "não",
-
                             ]
-                            
-                            vectorizer = TfidfVectorizer(stop_words=stopwords_pt)
-                            tfidf_matrix = vectorizer.fit_transform([txt_neg_limpo, txt_caus_limpo])
-                            similaridade = cosine_similarity(tfidf_matrix[0:1], tfidf_matrix[1:2])[0][0]
-                            sintonia_pct = similaridade * 100
 
-                            col_sin1, col_sin2 = st.columns([1, 3])
-                            
-                            with col_sin1:
-                                st.metric(label="Grau de Espelhamento", value=f"{sintonia_pct:.1f}%")
-                            
-                            with col_sin2:
-                                if sintonia_pct >= 25:
-                                    cor_barra = "#28a745"
-                                    veredito = "✅ FORTE VÍNCULO"
-                                    explicacao = "Negociador e causador estão muito alinhados. A sintonia é excelente!"
-                                elif sintonia_pct >= 10:
-                                    cor_barra = "#ffc107"
-                                    veredito = "⚠️ VÍNCULO MODERADO"
-                                    explicacao = "Há sintonia, mas ainda há espaço para melhoria. Comunicação em progresso."
-                                else:
-                                    cor_barra = "#dc3545"
-                                    veredito = "❌ POUCA SINTONIA"
-                                    explicacao = "Linguagens bem diferentes. Negociador precisa se adaptar mais."
-                                
-                                st.markdown(f"""
-                                <div style='background-color: #333; border-radius: 5px; width: 100%; height: 25px; margin-top: 15px;'>
-                                <div style='background-color: {cor_barra}; width: {sintonia_pct}%; height: 100%; border-radius: 5px;'></div>
-                                </div>
-                                <p style='color: {cor_barra}; font-weight: bold; margin-top: 10px;'>{veredito}</p>
-                                <p style='color: #bbb; font-size: 0.95rem;'>{explicacao}</p>
-                                """, unsafe_allow_html=True)
-                            
-                            st.markdown("### 💡 O Que Fazer Com Isso")
-                            
-                            if sintonia_pct >= 25:
-                                st.success("✅ **Atuação Tática Excelente:** Continue com a estratégia atual. Aproveite a sintonia para negociar soluções.")
-                            elif sintonia_pct >= 10:
-                                st.info("⚠️ **Progredindo Bem:** Reforce as palavras que o causador usa. Valide emocionalmente as falas dele.")
+                            def limpar_e_extrair(texto):
+                                texto = re.sub(r'[^\w\s]', '', texto.lower())
+                                palavras = [w for w in texto.split() if w not in stopwords_pt and len(w) > 2]
+                                return set(palavras), len(palavras)
+
+                            palavras_neg_set, total_neg = limpar_e_extrair(txt_neg)
+                            palavras_caus_set, total_caus = limpar_e_extrair(txt_caus)
+
+                            # ✅ MÉTRICA CORRIGIDA: Similitude real
+                            palavras_compartilhadas = palavras_neg_set & palavras_caus_set
+                            palavras_total_unicas = palavras_neg_set | palavras_caus_set
+
+                            if len(palavras_total_unicas) > 0:
+                                similitude_pct = (len(palavras_compartilhadas) / len(palavras_total_unicas)) * 100
                             else:
-                                st.warning("❌ **Comunicação Desalinhada:** Escute mais o causador. Repita expressões que ele usa.")
+                                similitude_pct = 0.0
 
-                            if sintonia_pct > 0:
-                                st.markdown("---")
-                                st.markdown("### 📊 Grafo de Espelhamento Léxico")
-                                st.markdown("<p style='color: #aaa; font-size: 0.9rem;'>Visualização das palavras que conectaram negociador e causador.</p>", unsafe_allow_html=True)
-                                
-                                try:
-                                    import plotly.graph_objects as go
-                                    from collections import Counter
+                            # ✅ SALVAR NO SESSION_STATE
+                            st.session_state['similitude_resultado'] = {
+                                'similitude_pct': round(similitude_pct, 1),
+                                'palavras_compartilhadas': palavras_compartilhadas,
+                                'palavras_neg': palavras_neg_set,
+                                'palavras_caus': palavras_caus_set,
+                                'total_neg': total_neg,
+                                'total_caus': total_caus,
+                                'total_unicas': len(palavras_total_unicas),
+                                'compartilhadas_count': len(palavras_compartilhadas)
+                            }
 
-                                    palavras_neg = [w for w in txt_neg_limpo.split() if w not in stopwords_pt and len(w) > 2]
-                                    palavras_caus = [w for w in txt_caus_limpo.split() if w not in stopwords_pt and len(w) > 2]
-                                    
-                                    set_comuns = set(palavras_neg).intersection(set(palavras_caus))
-                                    
-                                    if set_comuns:
-                                        contagem_comuns = Counter({w: palavras_neg.count(w) + palavras_caus.count(w) for w in set_comuns})
-                                        top_comuns = dict(contagem_comuns.most_common(12))
-                                        
-                                        node_x = []
-                                        node_y = []
-                                        node_text = []
-                                        node_color = []
-                                        node_size = []
+                            st.success("✅ Análise de similitude calculada!")
 
-                                        node_x.append(-2)
-                                        node_y.append(0)
-                                        node_text.append("<b>NEGOCIADOR</b>")
-                                        node_color.append("#2196F3") 
-                                        node_size.append(40)
-
-                                        node_x.append(2)
-                                        node_y.append(0)
-                                        node_text.append("<b>CAUSADOR</b>")
-                                        node_color.append("#F44336") 
-                                        node_size.append(40)
-
-                                        edge_x = []
-                                        edge_y = []
-                                        
-                                        y_pos = 1.5 
-                                        passo_y = 3 / max(len(top_comuns), 1) 
-                                        
-                                        for palavra, peso in top_comuns.items():
-                                            node_x.append(0)
-                                            node_y.append(y_pos)
-                                            node_text.append(palavra)
-                                            node_color.append("#FFC107") 
-                                            tamanho_calc = min(max(peso * 3, 15), 35) 
-                                            node_size.append(tamanho_calc)
-                                            
-                                            edge_x.extend([-2, 0, None])
-                                            edge_y.extend([0, y_pos, None])
-                                            
-                                            edge_x.extend([0, 2, None])
-                                            edge_y.extend([y_pos, 0, None])
-                                            
-                                            y_pos -= passo_y
-
-                                        edge_trace = go.Scatter(x=edge_x, y=edge_y, line=dict(width=1, color='#555'), hoverinfo='none', mode='lines')
-                                        node_trace = go.Scatter(x=node_x, y=node_y, mode='markers+text', text=node_text, textposition="bottom center", hoverinfo='text', marker=dict(color=node_color, size=node_size, line=dict(width=2, color='white')), textfont=dict(color='white', size=12))
-
-                                        fig_grafo = go.Figure(data=[edge_trace, node_trace], layout=go.Layout(showlegend=False, hovermode='closest', margin=dict(b=20,l=5,r=5,t=40), paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", xaxis=dict(showgrid=False, zeroline=False, showticklabels=False), yaxis=dict(showgrid=False, zeroline=False, showticklabels=False)))
-                                        
-                                        fig_grafo.update_layout(height=400)
-                                        st.plotly_chart(fig_grafo, use_container_width=True)
-                                        
-                                        tab1, tab2 = st.tabs(["✔️ Resumo", "✔️ Palavras Compartilhadas"])
-
-                                        with tab1:
-                                            st.markdown(f"""
-                                            **Análise de Similitude**
-                                            
-                                            - **Índice encontrado:** {sintonia_pct:.1f}%
-                                            - **Interpretação:** {'Forte vínculo ✅' if sintonia_pct >= 25 else 'Vínculo moderado ⚠️' if sintonia_pct >= 10 else 'Pouca sintonia ❌'}
-                                            - **Total de palavras compartilhadas:** {len(top_comuns)}
-                                            - **Palavra mais frequente:** {max(top_comuns.items(), key=lambda x: x[1])[0]} ({max(top_comuns.values())}x)
-                                            """)
-
-                                        with tab2:
-                                            st.markdown("**Palavras que conectaram os dois lados:**")
-                                            for palavra, freq in sorted(top_comuns.items(), key=lambda x: x[1], reverse=True):
-                                                st.markdown(f"- **{palavra}** — {freq}x")
-                                                            
-                                    else:
-                                        st.info("⚠️ **Sem palavras compartilhadas.**")
-
-                                except Exception as e:
-                                    st.error(f"Erro ao desenhar grafo: {str(e)[:80]}")
-                                    
                         except Exception as e:
                             st.error(f"Erro no cálculo: {str(e)[:80]}")
                 else:
                     st.info("⚠️ Colunas de transcrição não encontradas.")
+
+            # ✅ EXIBIÇÃO (FORA DO BOTÃO)
+            if st.session_state.get('similitude_resultado'):
+                res = st.session_state['similitude_resultado']
+                similitude_pct = res['similitude_pct']
+                palavras_compartilhadas = res['palavras_compartilhadas']
+
+                col_sin1, col_sin2 = st.columns([1, 3])
+                
+                with col_sin1:
+                    st.metric(label="Índice de Espelhamento", value=f"{similitude_pct:.1f}%")
+                
+                with col_sin2:
+                    # ✅ THRESHOLDS PROVISÓRIOS (marcar como tal)
+                    if similitude_pct >= 30:
+                        cor_barra = "#28a745"
+                        veredito = "✅ FORTE VÍNCULO"
+                        explicacao = "Negociador e causador estão muito alinhados. A sintonia é excelente!"
+                    elif similitude_pct >= 15:
+                        cor_barra = "#ffc107"
+                        veredito = "⚠️ VÍNCULO MODERADO"
+                        explicacao = "Há sintonia, mas ainda há espaço para melhoria. Comunicação em progresso."
+                    else:
+                        cor_barra = "#dc3545"
+                        veredito = "❌ POUCA SINTONIA"
+                        explicacao = "Linguagens bem diferentes. Negociador precisa se adaptar mais."
+                    
+                    st.markdown(f"""
+                    <div style='background-color: #333; border-radius: 5px; width: 100%; height: 25px; margin-top: 15px;'>
+                    <div style='background-color: {cor_barra}; width: {min(similitude_pct, 100)}%; height: 100%; border-radius: 5px;'></div>
+                    </div>
+                    <p style='color: {cor_barra}; font-weight: bold; margin-top: 10px;'>{veredito}</p>
+                    <p style='color: #bbb; font-size: 0.95rem;'>{explicacao}</p>
+                    """, unsafe_allow_html=True)
+                
+                st.markdown("### 💡 O Que Fazer Com Isso")
+                
+                if similitude_pct >= 30:
+                    st.success("✅ **Atuação Tática Excelente:** Continue com a estratégia atual. Aproveite a sintonia para negociar soluções.")
+                elif similitude_pct >= 15:
+                    st.info("⚠️ **Progredindo Bem:** Reforce as palavras que o causador usa. Valide emocionalmente as falas dele.")
+                else:
+                    st.warning("❌ **Comunicação Desalinhada:** Escute mais o causador. Repita expressões que ele usa.")
+
+                # ── GRAFO DE ESPELHAMENTO ────────────────────────────────
+                if palavras_compartilhadas:
+                    st.markdown("---")
+                    st.markdown("### 📊 Grafo de Espelhamento Léxico")
+                    st.markdown("<p style='color: #aaa; font-size: 0.9rem;'>Visualização das palavras que conectaram negociador e causador.</p>", unsafe_allow_html=True)
+                    
+                    try:
+                        import plotly.graph_objects as go
+
+                        # Contar frequências nas palavras compartilhadas
+                        contador_neg = Counter(w for w in res['palavras_neg'] if w in palavras_compartilhadas)
+                        contador_caus = Counter(w for w in res['palavras_caus'] if w in palavras_compartilhadas)
+                        
+                        contagem_comuns = {
+                            w: contador_neg.get(w, 0) + contador_caus.get(w, 0)
+                            for w in palavras_compartilhadas
+                        }
+                        top_comuns = dict(sorted(contagem_comuns.items(), key=lambda x: x[1], reverse=True)[:12])
+                        
+                        node_x = []
+                        node_y = []
+                        node_text = []
+                        node_color = []
+                        node_size = []
+
+                        node_x.append(-2)
+                        node_y.append(0)
+                        node_text.append("<b>NEGOCIADOR</b>")
+                        node_color.append("#2196F3") 
+                        node_size.append(40)
+
+                        node_x.append(2)
+                        node_y.append(0)
+                        node_text.append("<b>CAUSADOR</b>")
+                        node_color.append("#F44336") 
+                        node_size.append(40)
+
+                        edge_x = []
+                        edge_y = []
+                        
+                        y_pos = 1.5 
+                        passo_y = 3 / max(len(top_comuns), 1) 
+                        
+                        for palavra, peso in top_comuns.items():
+                            node_x.append(0)
+                            node_y.append(y_pos)
+                            node_text.append(palavra)
+                            node_color.append("#FFC107") 
+                            tamanho_calc = min(max(peso * 3, 15), 35) 
+                            node_size.append(tamanho_calc)
+                            
+                            edge_x.extend([-2, 0, None])
+                            edge_y.extend([0, y_pos, None])
+                            
+                            edge_x.extend([0, 2, None])
+                            edge_y.extend([y_pos, 0, None])
+                            
+                            y_pos -= passo_y
+
+                        edge_trace = go.Scatter(x=edge_x, y=edge_y, line=dict(width=1, color='#555'), hoverinfo='none', mode='lines')
+                        node_trace = go.Scatter(x=node_x, y=node_y, mode='markers+text', text=node_text, textposition="bottom center", hoverinfo='text', marker=dict(color=node_color, size=node_size, line=dict(width=2, color='white')), textfont=dict(color='white', size=12))
+
+                        fig_grafo = go.Figure(data=[edge_trace, node_trace], layout=go.Layout(showlegend=False, hovermode='closest', margin=dict(b=20,l=5,r=5,t=40), paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", xaxis=dict(showgrid=False, zeroline=False, showticklabels=False), yaxis=dict(showgrid=False, zeroline=False, showticklabels=False)))
+                        
+                        fig_grafo.update_layout(height=400)
+                        st.plotly_chart(fig_grafo, use_container_width=True)
+                        
+                        # ── TABS COM RESUMO E PALAVRAS ───────────────────
+                        tab1, tab2, tab3 = st.tabs(["✔️ Resumo Técnico", "✔️ Palavras Compartilhadas", "✔️ Contexto de Validação"])
+
+                        with tab1:
+                            st.markdown(f"""
+                            **Análise de Similitude — Métricas Técnicas**
+                            
+                            - **Índice de Similitude:** {similitude_pct:.1f}%
+                            - **Cálculo:** Palavras compartilhadas / Total de palavras únicas
+                            - **Palavras compartilhadas:** {res['compartilhadas_count']} 
+                            - **Total de palavras únicas:** {res['total_unicas']}
+                            - **Palavras do negociador:** {res['total_neg']}
+                            - **Palavras do causador:** {res['total_caus']}
+                            
+                            **Interpretação provisória:**
+                            - **≥ 30%:** Forte vínculo ✅
+                            - **15-30%:** Vínculo moderado ⚠️
+                            - **< 15%:** Pouca sintonia ❌
+                            
+                            ⚠️ Estes thresholds serão refinados após análise de 50+ ocorrências.
+                            """)
+
+                        with tab2:
+                            st.markdown("**Palavras que conectaram os dois lados:**")
+                            for palavra, freq in sorted(top_comuns.items(), key=lambda x: x[1], reverse=True):
+                                st.markdown(f"- **{palavra}** — {freq}x (negociador: {contador_neg.get(palavra, 0)}x | causador: {contador_caus.get(palavra, 0)}x)")
+
+                        with tab3:
+                            st.markdown("""
+                            **Como validar esta métrica:**
+                            
+                            A similitude atual é baseada em **sobreposição de vocabulário**:
+                            - Conta quantas palavras únicas aparecem em AMBOS os discursos
+                            - Divide pelo total de palavras únicas usadas
+                            - Resultado: % de "cobertura temática compartilhada"
+                            
+                            **Próximas etapas para validação:**
+                            1. Coletar 50+ APAs com este índice
+                            2. Correlacionar com desfecho (resolvido vs escalado)
+                            3. Comparar com avaliação qualitativa de especialistas (PMESP)
+                            4. Refinar thresholds com dados reais
+                            5. Validar se similitude HIGH → desfecho POSITIVO
+                            
+                            **Interpretação atual:** PROVISÓRIA — Use como referência, não como regra.
+                            """)
+                                        
+                    except Exception as e:
+                        st.error(f"Erro ao desenhar grafo: {str(e)[:80]}")
+                else:
+                    st.info("⚠️ **Sem palavras compartilhadas.** Não há conexão léxica entre os discursos.")
 
             st.markdown("<div style='margin-bottom: 30px;'></div>", unsafe_allow_html=True)
 
