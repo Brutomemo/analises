@@ -2414,40 +2414,43 @@ else:
                             
                             st.markdown(conv_tematica["analise_detalhada"])
 
-                            # ── INTERPRETAÇÃO GERAL (SEM THRESHOLDS ARBITRÁRIOS) ─────────────────────
+                            # ── INTERPRETAÇÃO GERAL ─────────────────────────
                             st.markdown("---")
-                            st.markdown("### 💡 O que Este Índice Significa")
+                            st.markdown("### 💡 O que significa")
                             
                             conv_pct = conv_tematica["convergencia_geral"]
                             
                             st.markdown(f"""
-                            **Convergência Temática Observada: {conv_pct:.1f}%**
+                                **Convergência Temática Observada: {conv_pct:.1f}%**
+                                
+                                **O que é medido:**
+                                - Intensidade com que causador e negociador abordam cada tema compartilhado
+                                - Média das similitudes de score para os temas em comum
+                                - Escala: 0% (completamente divergentes) a 100% (perfeitamente alinhados)
+                                
+                                **Interpretação Descritiva (sem classificação):**
+                                
+                                | Range | O que significa |
+                                |-------|---|
+                                | **90-100%** | Ambos abordam os temas com intensidades praticamente idênticas |
+                                | **70-90%** | Maioria dos temas tem intensidades próximas, com variações pequenas |
+                                | **50-70%** | Alguns temas com intensidades similares, outros com diferenças notáveis |
+                                | **30-50%** | Intensidades frequentemente divergentes — énfases diferentes |
+                                | **0-30%** | Abordagens muito diferentes — possivelmente universos mentais distintos |
+                                
+                                **Seu caso: {conv_pct:.1f}%**
+                                
+                                - **Temas compartilhados:** {len(conv_tematica["temas_compartilhados"])}
+                                - **Temas só do causador:** {len(conv_tematica["temas_exclusivos_causador"])}
+                                - **Temas só do negociador:** {len(conv_tematica["temas_exclusivos_negociador"])}
+                                
+                                **Atenção:**
+                                Este é um índice DESCRITIVO. Não é preditivo de desfecho.
+                                Próxima etapa: comparar com histórico de 50+ APAs para validar padrões.
+                                """)
 
-                            **O que é medido:**
-                            - Intensidade com que causador e negociador abordam cada tema compartilhado
-                            - Média das similitudes de score para os temas em comum
-                            - Escala: 0% (completamente divergentes) a 100% (perfeitamente alinhados)
-
-                            **Interpretação Descritiva (sem classificação):**
-
-                            | Range | O que significa |
-                            |-------|---|
-                            | **90-100%** | Ambos abordam os temas com intensidades praticamente idênticas |
-                            | **70-90%** | Maioria dos temas tem intensidades próximas, com variações pequenas |
-                            | **50-70%** | Alguns temas com intensidades similares, outros com diferenças notáveis |
-                            | **30-50%** | Intensidades frequentemente divergentes — énfases diferentes |
-                            | **0-30%** | Abordagens muito diferentes — possivelmente universos mentais distintos |
-
-                            **Seu caso: {conv_pct:.1f}%**
-
-                            - **Temas compartilhados:** {len(conv_tematica["temas_compartilhados"])}
-                            - **Temas só do causador:** {len(conv_tematica["temas_exclusivos_causador"])}
-                            - **Temas só do negociador:** {len(conv_tematica["temas_exclusivos_negociador"])}
-
-                            **Atenção:**
-                            Este é um índice DESCRITIVO. Não é preditivo de desfecho.
-                            Próxima etapa: comparar com histórico de 50+ APAs para validar padrões.
-                            """)
+                        except Exception as e:
+                            st.error(f"Erro ao analisar convergência temática: {str(e)[:80]}")
 
                 # --- TAB 7: ESTADO DO CAUSADOR ---
                 with tab_ng7:
