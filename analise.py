@@ -1191,6 +1191,155 @@ def extrair_topicos_ngrams(texto, resolucao_tipo="desconhecida"):
 
     return resultado
 
+# ============================================================
+# CONVERGÊNCIA TEMÁTICA REAL — Funções novas
+# ============================================================
+
+def extrair_temas_unicos(texto, resolucao_tipo="desconhecida"):
+    """
+    Extrai os temas (N-gramas + palavras-chave) de um texto.
+    Retorna lista de temas com scores.
+    """
+    analise = analisar_crise_direcional(texto, resolucao_tipo=resolucao_tipo)
+    temas = analise.get("temas", [])
+    
+    # Retorna apenas categoria + score
+    temas_lista = [
+        {
+            "categoria": t["categoria"],
+            "score": t["score"],
+            "tipo": t["tipo"],
+            "evidencias": t["evidencias"]
+        }
+        for t in temas
+    ]
+    return temas_lista
+
+
+def calcular_convergencia_tematica(temas_causador, temas_negociador):
+    """
+    Calcula convergência temática real entre causador e negociador.
+    """
+    if not temas_causador or not temas_negociador:
+        return {
+            "convergencia_geral": 0.0,
+            "temas_compartilhados": [],
+            "temas_exclusivos_causador": [],
+            "temas_exclusivos_negociador": [],
+            "analise_detalhada": "Insuficientes temas para análise."
+        }
+    
+    cats_c = {t["categoria"] for t in temas_causador}
+    cats_np = {t["categoria"] for t in temas_negociador}
+    
+    temas_compartilhados = cats_c & cats_np
+    temas_exclusivos_c = cats_c - cats_np
+    temas_exclusivos_np = cats_np - cats_c
+    
+    convergencia_por_tema = {}
+    
+    for tema in temas_compartilhados:
+        score_c = next((t["score"] for t in temas_causador if t["categoria"] == tema), 0)
+        score_np = next((t["score"] for t in temas_negociador if t["categoria"] == tema), 0)
+        
+        max_score = max(score_c, score_np)
+        if max_score > 0:
+            similitude = (1 - abs(score_c - score_np) / max_score) * 100
+        else:
+            similitude = 100.0
+        
+        convergencia_por_tema[tema] = {
+            "score_causador": round(score_c, 2),
+            "score_negociador": round(score_np, 2),
+            "convergencia": round(similitude, 1),
+            "tipo": next((t["tipo"] for t in temas_causador if t["categoria"] == tema), "desconhecido")
+        }
+    
+    if temas_compartilhados:
+        convergencia_geral = round(
+            sum(convergencia_por_tema[t]["convergencia"] for t in temas_compartilhados) 
+            / len(temas_compartilhados), 1
+        )
+    else:
+        convergencia_geral = 0.0
+    
+    linhas_analise = []
+    
+    if temas_compartilhados:
+        linhas_analise.append(f"**✅ Temas compartilhados: {len(temas_compartilhados)}**")
+        linhas_analise.append("")
+        
+        temas_ord = sorted(
+            temas_compartilhados,
+            key=lambda t: convergencia_por_tema[t]["convergencia"],
+            reverse=True
+        )
+        
+        for tema in temas_ord:
+            info = convergencia_por_tema[tema]
+            conv = info["convergencia"]
+            
+            if conv >= 80:
+                emoji = "🟢"
+                status = "Forte alinhamento"
+            elif conv >= 50:
+                emoji = "🟡"
+                status = "Alinhamento moderado"
+            else:
+                emoji = "🔴"
+                status = "Fraco alinhamento"
+            
+            linhas_analise.append(
+                f"{emoji} **{tema}** — {status} ({conv:.0f}%)\n"
+                f"  Causador: {info['score_causador']:.2f} | Negociador: {info['score_negociador']:.2f}"
+            )
+    else:
+        linhas_analise.append("⚠️ **Nenhum tema compartilhado detectado.**")
+    
+    linhas_analise.append("")
+    
+    if temas_exclusivos_c:
+        linhas_analise.append(f"**🔴 Temas só do causador: {len(temas_exclusivos_c)}**")
+        for tema in sorted(temas_exclusivos_c):
+            score = next((t["score"] for t in temas_causador if t["categoria"] == tema), 0)
+            linhas_analise.append(f"  • {tema} (score: {score:.2f})")
+        linhas_analise.append("")
+    
+    if temas_exclusivos_np:
+        linhas_analise.append(f"**🟢 Temas só do negociador: {len(temas_exclusivos_np)}**")
+        for tema in sorted(temas_exclusivos_np):
+            score = next((t["score"] for t in temas_negociador if t["categoria"] == tema), 0)
+            linhas_analise.append(f"  • {tema} (score: {score:.2f})")
+        linhas_analise.append("")
+    
+    return {
+        "convergencia_geral": convergencia_geral,
+        "temas_compartilhados": list(temas_compartilhados),
+        "temas_exclusivos_causador": list(temas_exclusivos_c),
+        "temas_exclusivos_negociador": list(temas_exclusivos_np),
+        "convergencia_por_tema": convergencia_por_tema,
+        "analise_detalhada": "\n".join(linhas_analise)
+    }
+
+
+def gerar_tabela_convergencia_tematica(convergencia_data):
+    """
+    Gera tabela formatada com convergência por tema.
+    """
+    import pandas as pd
+    
+    df_dados = []
+    for tema, info in convergencia_data["convergencia_por_tema"].items():
+        df_dados.append({
+            "Tema": tema,
+            "Causador": f"{info['score_causador']:.2f}",
+            "Negociador": f"{info['score_negociador']:.2f}",
+            "Convergência (%)": f"{info['convergencia']:.1f}%",
+            "Tipo": info["tipo"]
+        })
+    
+    return pd.DataFrame(df_dados)
+
 
 # ============================================================
 # 7. TREEMAP — CORRIGIDO (aceita string OU DataFrame)
@@ -1836,7 +1985,7 @@ def gerar_radar_comparativo(texto_causador, texto_negociador, texto_negociador_s
     
     
 # ============================================================
-# 7. TESTES ESTATÍSTICOS (MANTIDOS)
+# 7. TESTES ESTATÍSTICOS
 # ============================================================
 # ============================================================
 # DETECTOR DE FALSA CONEXÃO (Adicionar antes de calcular_spearman)
