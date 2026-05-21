@@ -1644,10 +1644,14 @@ else:
                             def limpar_e_extrair(texto):
                                 texto = re.sub(r'[^\w\s]', '', texto.lower())
                                 palavras = [w for w in texto.split() if w not in stopwords_pt and len(w) > 2]
-                                return set(palavras), len(palavras)
+                                return palavras  # ✅ Retorna lista, não set
 
-                            palavras_neg_set, total_neg = limpar_e_extrair(txt_neg)
-                            palavras_caus_set, total_caus = limpar_e_extrair(txt_caus)
+                            palavras_neg_lista = limpar_e_extrair(txt_neg)
+                            palavras_caus_lista = limpar_e_extrair(txt_caus)
+                            
+                            # Converter para sets para comparação
+                            palavras_neg_set = set(palavras_neg_lista)
+                            palavras_caus_set = set(palavras_caus_lista)
 
                             # ✅ MÉTRICA CORRIGIDA: Similitude real
                             palavras_compartilhadas = palavras_neg_set & palavras_caus_set
@@ -1662,10 +1666,10 @@ else:
                             st.session_state['similitude_resultado'] = {
                                 'similitude_pct': round(similitude_pct, 1),
                                 'palavras_compartilhadas': palavras_compartilhadas,
-                                'palavras_neg': palavras_neg_set,
-                                'palavras_caus': palavras_caus_set,
-                                'total_neg': total_neg,
-                                'total_caus': total_caus,
+                                'palavras_neg_lista': palavras_neg_lista,  # ✅ Lista para contar frequências
+                                'palavras_caus_lista': palavras_caus_lista,  # ✅ Lista para contar frequências
+                                'total_neg': len(palavras_neg_lista),
+                                'total_caus': len(palavras_caus_lista),
                                 'total_unicas': len(palavras_total_unicas),
                                 'compartilhadas_count': len(palavras_compartilhadas)
                             }
@@ -1730,8 +1734,8 @@ else:
                         import plotly.graph_objects as go
 
                         # Contar frequências nas palavras compartilhadas
-                        contador_neg = Counter(w for w in res['palavras_neg_lista'] if w in palavras_compartilhadas)
-                        contador_caus = Counter(w for w in res['palavras_caus_lista'] if w in palavras_compartilhadas)
+                        contador_neg = Counter(w for w in res['palavras_neg'] if w in palavras_compartilhadas)
+                        contador_caus = Counter(w for w in res['palavras_caus'] if w in palavras_compartilhadas)
                         
                         contagem_comuns = {
                             w: contador_neg.get(w, 0) + contador_caus.get(w, 0)
