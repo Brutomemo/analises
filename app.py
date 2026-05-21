@@ -2140,161 +2140,161 @@ else:
                             st.info("Sem nuvem.")
 
                 # --- TAB 6: CONVERGÊNCIA TEMÁTICA (CORRIGIDO) ---
-                    with tab_ng6:
-                        st.markdown("""
-                        <div class='info-card'>
-                        <h4 style='color:#FFD700; margin-top:0;'>✔️ CONVERGÊNCIA TEMÁTICA — Quanto cada tema foi abordado?</h4>
-                        <p style='color:#ccc; font-size:0.9rem; margin-bottom:1rem;'>
-                        Compara a <strong>intensidade (score)</strong> de cada tema abordado por causador e negociador.
-                        Polígonos sobrepostos = abordagem similar. Divergência = ênfase diferente.
-                        </p>
-                        </div>
-                        """, unsafe_allow_html=True)
+                with tab_ng6:
+                    st.markdown("""
+                    <div class='info-card'>
+                    <h4 style='color:#FFD700; margin-top:0;'>✔️ CONVERGÊNCIA TEMÁTICA — Quanto cada tema foi abordado?</h4>
+                    <p style='color:#ccc; font-size:0.9rem; margin-bottom:1rem;'>
+                    Compara a <strong>intensidade (score)</strong> de cada tema abordado por causador e negociador.
+                    Polígonos sobrepostos = abordagem similar. Divergência = ênfase diferente.
+                    </p>
+                    </div>
+                    """, unsafe_allow_html=True)
 
-                        texto_c_raw  = stats.get('texto_c_raw', '')
-                        texto_np_raw = stats.get('texto_np_raw', '')
-                        texto_ns_raw = stats.get('texto_ns_raw', '')
+                    texto_c_raw  = stats.get('texto_c_raw', '')
+                    texto_np_raw = stats.get('texto_np_raw', '')
+                    texto_ns_raw = stats.get('texto_ns_raw', '')
 
-                        if not texto_c_raw or not texto_np_raw:
-                            st.warning("⚠️ Transcrições insuficientes para analisar convergência temática.")
-                        else:
+                    if not texto_c_raw or not texto_np_raw:
+                        st.warning("⚠️ Transcrições insuficientes para analisar convergência temática.")
+                    else:
+                        try:
+                            # ── Extrair temas reais ──────────────────────────
+                            temas_c = analise.extrair_temas_unicos(
+                                texto_c_raw,
+                                resolucao_tipo=stats.get('resolucao_tipo', 'desconhecida')
+                            )
+                            temas_np = analise.extrair_temas_unicos(
+                                texto_np_raw,
+                                resolucao_tipo=stats.get('resolucao_tipo', 'desconhecida')
+                            )
+
+                            # ── Calcular convergência ────────────────────────
+                            conv_tematica = analise.calcular_convergencia_tematica(temas_c, temas_np)
+
+                            # ── SCORECARD ────────────────────────────────────
+                            st.markdown("### 📊 Resumo da Convergência")
+                            
+                            col1, col2, col3, col4 = st.columns(4)
+                            
+                            with col1:
+                                conv_geral = conv_tematica["convergencia_geral"]
+                                st.metric(
+                                    "Convergência Geral",
+                                    f"{conv_geral:.1f}%"
+                                )
+                            
+                            with col2:
+                                compartilhados = len(conv_tematica["temas_compartilhados"])
+                                st.metric(
+                                    "Temas Compartilhados",
+                                    compartilhados
+                                )
+                            
+                            with col3:
+                                excl_c = len(conv_tematica["temas_exclusivos_causador"])
+                                st.metric(
+                                    "Só Causador",
+                                    excl_c
+                                )
+                            
+                            with col4:
+                                excl_np = len(conv_tematica["temas_exclusivos_negociador"])
+                                st.metric(
+                                    "Só Negociador",
+                                    excl_np
+                                )
+
+                            # ── RADAR TEMÁTICO (INTENSIDADE) ────────────────
+                            st.markdown("---")
+                            st.markdown("### 🎯 Intensidade de Abordagem por Tema (Radar)")
+                            st.markdown("""
+                            <p style='font-size:0.85rem;color:#aaa;'>
+                            Polígono vermelho = intensidade do causador. 
+                            Polígono verde = intensidade do negociador.
+                            Quanto maior o polígono, mais o tema foi abordado.
+                            </p>
+                            """, unsafe_allow_html=True)
+                            
                             try:
-                                # ── Extrair temas reais ──────────────────────────
-                                temas_c = analise.extrair_temas_unicos(
-                                    texto_c_raw,
-                                    resolucao_tipo=stats.get('resolucao_tipo', 'desconhecida')
+                                fig_radar_tematico = analise.gerar_radar_convergencia_tematica_corrigido(
+                                    temas_c,
+                                    temas_np,
+                                    conv_tematica["convergencia_por_tema"]
                                 )
-                                temas_np = analise.extrair_temas_unicos(
-                                    texto_np_raw,
-                                    resolucao_tipo=stats.get('resolucao_tipo', 'desconhecida')
-                                )
-
-                                # ── Calcular convergência ────────────────────────
-                                conv_tematica = analise.calcular_convergencia_tematica(temas_c, temas_np)
-
-                                # ── SCORECARD ────────────────────────────────────
-                                st.markdown("### 📊 Resumo da Convergência")
-                                
-                                col1, col2, col3, col4 = st.columns(4)
-                                
-                                with col1:
-                                    conv_geral = conv_tematica["convergencia_geral"]
-                                    st.metric(
-                                        "Convergência Geral",
-                                        f"{conv_geral:.1f}%"
-                                    )
-                                
-                                with col2:
-                                    compartilhados = len(conv_tematica["temas_compartilhados"])
-                                    st.metric(
-                                        "Temas Compartilhados",
-                                        compartilhados
-                                    )
-                                
-                                with col3:
-                                    excl_c = len(conv_tematica["temas_exclusivos_causador"])
-                                    st.metric(
-                                        "Só Causador",
-                                        excl_c
-                                    )
-                                
-                                with col4:
-                                    excl_np = len(conv_tematica["temas_exclusivos_negociador"])
-                                    st.metric(
-                                        "Só Negociador",
-                                        excl_np
-                                    )
-
-                                # ── RADAR TEMÁTICO (INTENSIDADE) ────────────────
-                                st.markdown("---")
-                                st.markdown("### 🎯 Intensidade de Abordagem por Tema (Radar)")
-                                st.markdown("""
-                                <p style='font-size:0.85rem;color:#aaa;'>
-                                Polígono vermelho = intensidade do causador. 
-                                Polígono verde = intensidade do negociador.
-                                Quanto maior o polígono, mais o tema foi abordado.
-                                </p>
-                                """, unsafe_allow_html=True)
-                                
-                                try:
-                                    fig_radar_tematico = analise.gerar_radar_convergencia_tematica_corrigido(
-                                        temas_c,
-                                        temas_np,
-                                        conv_tematica["convergencia_por_tema"]
-                                    )
-                                    st.plotly_chart(fig_radar_tematico, use_container_width=True)
-                                except Exception as e:
-                                    st.error(f"Erro ao gerar radar: {str(e)[:80]}")
-
-                                # ── GRÁFICO DE BARRAS (ALTERNATIVA) ─────────────
-                                st.markdown("---")
-                                st.markdown("### 📊 Intensidade por Tema (Gráfico de Barras)")
-                                st.markdown("""
-                                <p style='font-size:0.85rem;color:#aaa;'>
-                                Visualização alternativa: compare a altura das barras para cada tema.
-                                </p>
-                                """, unsafe_allow_html=True)
-                                
-                                try:
-                                    fig_barras = analise.gerar_grafico_barras_intensidade_temas(
-                                        conv_tematica["convergencia_por_tema"]
-                                    )
-                                    st.plotly_chart(fig_barras, use_container_width=True)
-                                except Exception as e:
-                                    st.error(f"Erro ao gerar gráfico: {str(e)[:80]}")
-
-                                # ── TABELA DETALHADA ─────────────────────────────
-                                st.markdown("---")
-                                st.markdown("### 📋 Convergência Detalhada por Tema")
-                                
-                                df_conv_tab = analise.gerar_tabela_convergencia_tematica(conv_tematica)
-                                st.dataframe(
-                                    df_conv_tab,
-                                    use_container_width=True,
-                                    hide_index=True
-                                )
-
-                                # ── ANÁLISE NARRATIVA ────────────────────────────
-                                st.markdown("---")
-                                st.markdown("### 📖 Análise Detalhada")
-                                
-                                st.markdown(conv_tematica["analise_detalhada"])
-
-                                # ── INTERPRETAÇÃO GERAL ─────────────────────────
-                                st.markdown("---")
-                                st.markdown("### 💡 O que significa")
-                                
-                                conv_pct = conv_tematica["convergencia_geral"]
-                                
-                                if conv_pct >= 80:
-                                    interpretacao = """
-                                    ✅ **Sincronização temática excelente.**
-                                    Causador e negociador abordam os mesmos temas com intensidades similares. 
-                                    Alto potencial para acordo — há terreno comum bem desenvolvido.
-                                    """
-                                elif conv_pct >= 60:
-                                    interpretacao = """
-                                    🟢 **Boa sincronização temática.**
-                                    Maioria dos temas é compartilhada com intensidades próximas. 
-                                    Há base para negociação, mas alguns temas têm ênfases diferentes.
-                                    """
-                                elif conv_pct >= 40:
-                                    interpretacao = """
-                                    🟡 **Sincronização moderada.**
-                                    Alguns temas são compartilhados, mas com intensidades muito diferentes.
-                                    Negociador e causador focam em coisas distintas — risco de desencontro.
-                                    """
-                                else:
-                                    interpretacao = """
-                                    🔴 **Sincronização fraca.**
-                                    Causador e negociador abordam temas com intensidades muito divergentes.
-                                    Há desconexão temática — estão focando em coisas diferentes ou com ênfases opostas.
-                                    """
-                                
-                                st.info(interpretacao)
-
+                                st.plotly_chart(fig_radar_tematico, use_container_width=True)
                             except Exception as e:
-                                st.error(f"Erro ao analisar convergência temática: {str(e)[:80]}")
+                                st.error(f"Erro ao gerar radar: {str(e)[:80]}")
+
+                            # ── GRÁFICO DE BARRAS (ALTERNATIVA) ─────────────
+                            st.markdown("---")
+                            st.markdown("### 📊 Intensidade por Tema (Gráfico de Barras)")
+                            st.markdown("""
+                            <p style='font-size:0.85rem;color:#aaa;'>
+                            Visualização alternativa: compare a altura das barras para cada tema.
+                            </p>
+                            """, unsafe_allow_html=True)
+                            
+                            try:
+                                fig_barras = analise.gerar_grafico_barras_intensidade_temas(
+                                    conv_tematica["convergencia_por_tema"]
+                                )
+                                st.plotly_chart(fig_barras, use_container_width=True)
+                            except Exception as e:
+                                st.error(f"Erro ao gerar gráfico: {str(e)[:80]}")
+
+                            # ── TABELA DETALHADA ─────────────────────────────
+                            st.markdown("---")
+                            st.markdown("### 📋 Convergência Detalhada por Tema")
+                            
+                            df_conv_tab = analise.gerar_tabela_convergencia_tematica(conv_tematica)
+                            st.dataframe(
+                                df_conv_tab,
+                                use_container_width=True,
+                                hide_index=True
+                            )
+
+                            # ── ANÁLISE NARRATIVA ────────────────────────────
+                            st.markdown("---")
+                            st.markdown("### 📖 Análise Detalhada")
+                            
+                            st.markdown(conv_tematica["analise_detalhada"])
+
+                            # ── INTERPRETAÇÃO GERAL ─────────────────────────
+                            st.markdown("---")
+                            st.markdown("### 💡 O que significa")
+                            
+                            conv_pct = conv_tematica["convergencia_geral"]
+                            
+                            if conv_pct >= 80:
+                                interpretacao = """
+                                ✅ **Sincronização temática excelente.**
+                                Causador e negociador abordam os mesmos temas com intensidades similares. 
+                                Alto potencial para acordo — há terreno comum bem desenvolvido.
+                                """
+                            elif conv_pct >= 60:
+                                interpretacao = """
+                                🟢 **Boa sincronização temática.**
+                                Maioria dos temas é compartilhada com intensidades próximas. 
+                                Há base para negociação, mas alguns temas têm ênfases diferentes.
+                                """
+                            elif conv_pct >= 40:
+                                interpretacao = """
+                                🟡 **Sincronização moderada.**
+                                Alguns temas são compartilhados, mas com intensidades muito diferentes.
+                                Negociador e causador focam em coisas distintas — risco de desencontro.
+                                """
+                            else:
+                                interpretacao = """
+                                🔴 **Sincronização fraca.**
+                                Causador e negociador abordam temas com intensidades muito divergentes.
+                                Há desconexão temática — estão focando em coisas diferentes ou com ênfases opostas.
+                                """
+                            
+                            st.info(interpretacao)
+
+                        except Exception as e:
+                            st.error(f"Erro ao analisar convergência temática: {str(e)[:80]}")
 
                 # --- TAB 7: ESTADO DO CAUSADOR ---
                 with tab_ng7:
