@@ -2641,7 +2641,7 @@ else:
                         st.error(f"Erro na análise da IA ou geração do PDF: {str(e)}")
 
             st.markdown("<div style='margin-bottom: 20px;'></div>", unsafe_allow_html=True)
-            st.markdown("""
+            st.markdown('''
             <div style="
                 margin-top:20px;
                 margin-bottom:100px;
@@ -2735,7 +2735,7 @@ else:
                 </div>
 
             </div>
-            """, unsafe_allow_html=True)
+            ''', unsafe_allow_html=True)
 
     # ====
     # ABA 2: PAINEL (HISTÓRICO)
