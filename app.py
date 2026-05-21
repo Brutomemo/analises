@@ -3078,23 +3078,18 @@ else:
 
                         
             # ============================================================
-            # ANÁLISE 4: EFETIVIDADE DAS TÉCNICAS (NOVA)
+            # ANÁLISE 4: EFETIVIDADE DAS TÉCNICAS (FORMATO INDIVIDUAL)
             # ============================================================
 
             st.markdown("""
-            <div style='background: var(--color-background-secondary); border-left: 4px solid #06C755; padding: 15px; border-radius: 8px; margin-bottom: 20px;'>
-            <h3 style='color: #06C755; margin-top: 0;'>✔️ Análise 4: Qual Técnica Funciona Melhor? (Replicando Aba Individual)</h3>
+            <div style='background:rgba(255,215,0,0.06);border-left:4px solid #FFD700;padding:15px;border-radius:8px;margin-bottom:20px;'>
+            <h3 style='color:#FFD700;margin-top:0;'>✔️ Análise 4: Efetividade das Técnicas</h3>
             <p style='color: #aaa; margin-bottom: 10px;'>
             <strong>Pergunta:</strong> "Qual técnica tem maior taxa de sucesso considerando TODOS os dados filtrados?"
-            </p>
-            <p style='color: #aaa; font-size: 0.85rem;'>
-            Nota: Esta análise agrega todos os usos da técnica nos filtros aplicados (Negociador, Tipologia, Modalidade).
-            Se nenhum filtro está ativo, mostra dados de toda a base.
             </p>
             </div>
             """, unsafe_allow_html=True)
 
-            # Usar df_tec_filt (que já respeita os filtros aplicados)
             if not df_tec_filt.empty:
                 col_t = next(
                     (col for col in ['TÉCNICAS', 'TECNICAS', 'TÉCNICA', 'TECNICA'] if col in df_tec_filt.columns),
@@ -3106,7 +3101,6 @@ else:
                 )
                 
                 if col_t and col_atitude:
-                    # Mapeamento de reações
                     def mapear_reacao(val):
                         s = str(val).strip().lower()
                         if any(x in s for x in ['-1', '🔴', 'negativa']):
@@ -3150,158 +3144,257 @@ else:
                         
                         df_resumo_tec = pd.DataFrame(resumo_tec).sort_values('Score', ascending=False)
                         
+                        # ── SCORECARD GERAL ───────────────────────────
+                        st.markdown("#### ✔️ Resumo Geral")
+                        
+                        col_eg1, col_eg2, col_eg3, col_eg4 = st.columns(4)
+                        
+                        with col_eg1:
+                            st.metric('Total de Usos', len(df_ef_clean))
+                        with col_eg2:
+                            st.metric('Positivas', (df_ef_clean['Reacao_Num'] == 1).sum(), delta='🟢')
+                        with col_eg3:
+                            st.metric('Negativas', (df_ef_clean['Reacao_Num'] == -1).sum(), delta='🔴')
+                        with col_eg4:
+                            score_geral = ((df_ef_clean['Reacao_Num'] == 1).sum() - (df_ef_clean['Reacao_Num'] == -1).sum()) / len(df_ef_clean) * 100
+                            st.metric('Score Geral', f'+{score_geral:.1f}%')
+                        
+                        # ── EFETIVIDADE POR TÉCNICA ───────────────────
+                        st.markdown("#### ✔️ Efetividade por Técnica")
+                        
                         col_ef1, col_ef2 = st.columns([1, 2])
                         
                         with col_ef1:
                             st.dataframe(
-                                df_resumo_tec[['Técnica', 'Total', 'Taxa Sucesso (%)']],
+                                df_resumo_tec[['Técnica', 'Total', 'Positivas', 'Negativas', 'Score']].head(10),
                                 use_container_width=True,
                                 hide_index=True
                             )
                         
                         with col_ef2:
                             fig_ef = px.bar(
-                                df_resumo_tec,
+                                df_resumo_tec.head(10),
                                 x='Técnica',
-                                y='Taxa Sucesso (%)',
-                                color='Taxa Sucesso (%)',
-                                color_continuous_scale='RdYlGn',
-                                title='Efetividade das Técnicas (Taxa de Sucesso %)'
+                                y='Score',
+                                title='Score das Técnicas (Top 10)'
                             )
+                            fig_ef.update_traces(marker_color='#FF8C00')
                             fig_ef.update_layout(
                                 paper_bgcolor='rgba(0,0,0,0)',
                                 plot_bgcolor='rgba(0,0,0,0)',
                                 font_color='#FFF',
-                                height=350
+                                height=350,
+                                xaxis_tickangle=-45
                             )
                             st.plotly_chart(fig_ef, use_container_width=True)
                         
+                        # ── LEITURA OPERACIONAL ──────────────────────
+                        st.markdown("---")
+                        st.markdown("#### 📖 Leitura Operacional")
+                        
+                        top_efetiva = df_resumo_tec.iloc[0]
+                        bottom_efetiva = df_resumo_tec.iloc[-1]
+                        
+                        st.markdown(f"""
+                        <div style='background:rgba(16,185,129,0.06);border-left:4px solid #10b981;padding:15px;border-radius:8px;margin-bottom:15px;'>
+                        <h4 style='color:#10b981;margin-top:0;'>✅ Técnica Mais Efetiva</h4>
+                        <p style='color:#ddd;margin:0;'>
+                        <strong>{top_efetiva['Técnica']}</strong> — Score: <strong>{top_efetiva['Score']:.1f}%</strong> 
+                        ({int(top_efetiva['Positivas'])} positivas de {int(top_efetiva['Total'])} usos)
+                        </p>
+                        </div>
+                        """, unsafe_allow_html=True)
+                        
+                        st.markdown(f"""
+                        <div style='background:rgba(239,68,68,0.06);border-left:4px solid #ef4444;padding:15px;border-radius:8px;margin-bottom:15px;'>
+                        <h4 style='color:#ef4444;margin-top:0;'>⚠️ Técnica Menos Efetiva</h4>
+                        <p style='color:#ddd;margin:0;'>
+                        <strong>{bottom_efetiva['Técnica']}</strong> — Score: <strong>{bottom_efetiva['Score']:.1f}%</strong> 
+                        ({int(bottom_efetiva['Positivas'])} positivas de {int(bottom_efetiva['Total'])} usos)
+                        </p>
+                        </div>
+                        """, unsafe_allow_html=True)
+                        
                         st.markdown("""
                         **Interpretação:**
-                        - A **Taxa de Sucesso (%)** mostra qual % das aplicações da técnica resultou em reação positiva
-                        - O **Score** leva em conta também as reações negativas: (Positivas - Negativas) / Total × 100
-                        - Técnicas com poucos usos (< 3) devem ser interpretadas com cautela
+                        - **Score > 50%** = Técnica efetiva (mais sucessos que fracassos)
+                        - **Score próximo a 0%** = Técnica neutra (sucessos ≈ fracassos)
+                        - **Score < -50%** = Técnica contraproducente (mais fracassos que sucessos)
                         """)
                     else:
                         st.info("⚠️ Sem dados de reação registrados para as técnicas nos filtros atuais.")
-                else:
-                    st.warning("⚠️ Colunas de técnica ou atitude não encontradas.")
-            else:
-                st.info("⚠️ Nenhuma técnica encontrada para os filtros selecionados.")
 
             st.markdown("---")
 
             # ============================================================
-            # ANÁLISE 5: ÍNDICE DE SIMILITUDE AGREGADO (NOVA)
+            # ANÁLISE 5: CONVERGÊNCIA TEMÁTICA AGREGADA (NOVO)
             # ============================================================
 
             st.markdown("""
-            <div style='background: var(--color-background-secondary); border-left: 4px solid #378ADD; padding: 15px; border-radius: 8px; margin-bottom: 20px;'>
-            <h3 style='color: #378ADD; margin-top: 0;'>✔️ Análise 5: Qual é o Padrão de Similitude nos Dados Filtrados?</h3>
+            <div style='background:rgba(255,215,0,0.06);border-left:4px solid #378ADD;padding:15px;border-radius:8px;margin-bottom:20px;'>
+            <h3 style='color:#378ADD;margin-top:0;'>✔️ Análise 5: Convergência Temática nos Dados Filtrados</h3>
             <p style='color: #aaa; margin-bottom: 10px;'>
-            <strong>Pergunta:</strong> "Em média, qual é o nível de sincronização (similitude) entre negociador e causador nos registros?"
+            <strong>Pergunta:</strong> "Em média, quanto de sincronização temática existe entre negociador e causador nos registros?"
             </p>
             <p style='color: #aaa; font-size: 0.85rem;'>
-            Esta análise calcula o índice de similitude para CADA APA dos dados filtrados,
-            depois mostra a distribuição geral e estatísticas resumidas.
+            Se houver muita diferença entre negociadores, pode indicar oportunidade de reforço em escuta ativa.
             </p>
             </div>
             """, unsafe_allow_html=True)
 
-            # Precisamos de df_quali_filt para ter acesso aos textos
             if not df_quali_filt.empty:
                 col_texto_c = 'TRANSCRIÇÃO DO CAUSADOR'
                 col_texto_np = 'TRANSCRIÇÃO DO NEGOCIADOR PRINCIPAL'
                 
                 if col_texto_c in df_quali_filt.columns and col_texto_np in df_quali_filt.columns:
-                    import re
-                    from collections import Counter
+                    try:
+                        # Calcular convergência para CADA APA
+                        convergencias_apas = []
+                        
+                        for idx, row in df_quali_filt.iterrows():
+                            txt_c = str(row[col_texto_c]).strip()
+                            txt_np = str(row[col_texto_np]).strip()
+                            
+                            if len(txt_c.split()) > 5 and len(txt_np.split()) > 5:
+                                try:
+                                    temas_c = analise.extrair_temas_unicos(txt_c, resolucao_tipo='desconhecida')
+                                    temas_np = analise.extrair_temas_unicos(txt_np, resolucao_tipo='desconhecida')
+                                    
+                                    if temas_c and temas_np:
+                                        conv = analise.calcular_convergencia_tematica(temas_c, temas_np)
+                                        convergencias_apas.append({
+                                            'APA': idx,
+                                            'Convergencia': conv['convergencia_geral'],
+                                            'Compartilhados': len(conv['temas_compartilhados']),
+                                            'So_Causador': len(conv['temas_exclusivos_causador']),
+                                            'So_Negociador': len(conv['temas_exclusivos_negociador'])
+                                        })
+                                except:
+                                    pass
+                        
+                        if convergencias_apas:
+                            df_conv_agg = pd.DataFrame(convergencias_apas)
+                            
+                            media_conv = df_conv_agg['Convergencia'].mean()
+                            mediana_conv = df_conv_agg['Convergencia'].median()
+                            dp_conv = df_conv_agg['Convergencia'].std()
+                            media_compartilhados = df_conv_agg['Compartilhados'].mean()
+                            
+                            # ── SCORECARD ────────────────────────────────
+                            st.markdown("#### ✔️ Resumo da Convergência Temática")
+                            
+                            col_cv1, col_cv2, col_cv3, col_cv4 = st.columns(4)
+                            
+                            with col_cv1:
+                                st.metric('Convergência Média', f'{media_conv:.1f}%')
+                                st.caption(f'DP: ±{dp_conv:.1f}%')
+                            
+                            with col_cv2:
+                                st.metric('Mediana', f'{mediana_conv:.1f}%')
+                                st.caption(f'N = {len(df_conv_agg)} APAs')
+                            
+                            with col_cv3:
+                                st.metric('Temas Compartilhados (Média)', f'{media_compartilhados:.1f}')
+                                st.caption('Média por APA')
+                            
+                            with col_cv4:
+                                st.metric('Range', f'{df_conv_agg["Convergencia"].min():.1f}% - {df_conv_agg["Convergencia"].max():.1f}%')
+                                st.caption(f'Amplitude: {df_conv_agg["Convergencia"].max() - df_conv_agg["Convergencia"].min():.1f}%')
+                            
+                            # ── DISTRIBUIÇÃO ─────────────────────────────
+                            st.markdown("---")
+                            st.markdown("#### 📊 Distribuição da Convergência")
+                            
+                            col_cv_hist1, col_cv_hist2 = st.columns(2)
+                            
+                            with col_cv_hist1:
+                                fig_conv_hist = px.histogram(
+                                    df_conv_agg,
+                                    x='Convergencia',
+                                    nbins=8,
+                                    title='Distribuição da Convergência Temática'
+                                )
+                                fig_conv_hist.update_traces(marker_color='#378ADD')
+                                fig_conv_hist.update_layout(
+                                    paper_bgcolor='rgba(0,0,0,0)',
+                                    plot_bgcolor='rgba(0,0,0,0)',
+                                    font_color='#FFF',
+                                    height=300
+                                )
+                                st.plotly_chart(fig_conv_hist, use_container_width=True)
+                            
+                            with col_cv_hist2:
+                                fig_box_conv = px.box(
+                                    df_conv_agg,
+                                    y='Convergencia',
+                                    title='Box Plot - Convergência'
+                                )
+                                fig_box_conv.update_traces(marker_color='#378ADD')
+                                fig_box_conv.update_layout(
+                                    paper_bgcolor='rgba(0,0,0,0)',
+                                    plot_bgcolor='rgba(0,0,0,0)',
+                                    font_color='#FFF',
+                                    height=300
+                                )
+                                st.plotly_chart(fig_box_conv, use_container_width=True)
+                            
+                            # ── ANÁLISE POR NEGOCIADOR (SE FILTRADO) ──────
+                            if filtro_neg_g != "Todos":
+                                st.markdown("---")
+                                st.markdown("#### 🎯 Análise Específica do Negociador")
+                                
+                                conv_neg = df_conv_agg['Convergencia'].mean()
+                                
+                                if conv_neg >= 60:
+                                    status = "✅ Excelente — Alta sintonia temática com causadores"
+                                    cor = "🟢"
+                                elif conv_neg >= 40:
+                                    status = "⚠️ Moderado — Alguns temas divergentes"
+                                    cor = "🟡"
+                                else:
+                                    status = "❌ Fraco — Muita divergência temática. Recomendado reforço em escuta ativa"
+                                    cor = f"{cor}"
+                                
+                                st.markdown(f"""
+                                **Negociador:** {filtro_neg_g}
+                                
+                                **Convergência média:** {conv_neg:.1f}%
+                                
+                                **Status:** {status}
+                                
+                                **Recomendação:**
+                                - Se convergência < 40%: Investir em treinamento de escuta ativa
+                                - Se convergência 40-60%: Consolidar técnicas de rapport
+                                - Se convergência > 60%: Excelente! Usar como referência para equipe
+                                """)
+                            
+                            # ── LEITURA OPERACIONAL ──────────────────────
+                            st.markdown("---")
+                            st.markdown("#### 📖 Leitura Operacional")
+                            
+                            st.markdown(f"""
+                            **O que os dados mostram:**
+                            
+                            - **Convergência média de {media_conv:.1f}%:** Em média, há {media_conv:.0f}% de sincronização temática
+                            - **Variação (DP ±{dp_conv:.1f}%):** Há oscilação significativa entre ocorrências
+                            - **Temas compartilhados (média {media_compartilhados:.1f}):** Cada negociador-causador compartilha ~{media_compartilhados:.0f} temas em comum
+                            
+                            **Interpretação:**
+                            - Convergência alta (> 60%) = Negociador e causador falam dos mesmos assuntos
+                            - Convergência baixa (< 40%) = Universos temáticos diferentes = risco de desencontro
+                            
+                            **Ação Recomendada:**
+                            Se convergência < 40%, implementar treinamento focado em:
+                            1. **Escuta Ativa** — Entender os temas do causador antes de impor a agenda
+                            2. **Validação Emocional** — Reconhecer as preocupações mesmo que diferentes
+                            3. **Ponte Temática** — Conectar temas do causador aos temas da resolução
+                            """)
+                        
+                        else:
+                            st.info('⚠️ Sem dados suficientes para calcular convergência temática nos filtros atuais.')
                     
-                    stopwords_pt_minimal = {
-                        'o', 'a', 'os', 'as', 'um', 'uma', 'de', 'do', 'da', 'em', 'para', 'com', 'por',
-                        'que', 'e', 'ou', 'é', 'foi', 'ser', 'ter', 'está', 'fazer', 'vai', 'vou',
-                        'tá', 'ta', 'né', 'então', 'tipo', 'cara', 'mano', 'cara', 'não', 'sim'
-                    }
-                    
-                    def calcular_similitude_apa(txt_c, txt_np):
-                        """Calcula similitude para uma APA."""
-                        if not txt_c or not txt_np:
-                            return None
-                        
-                        txt_c = re.sub(r'[^\w\s]', '', str(txt_c).lower())
-                        txt_np = re.sub(r'[^\w\s]', '', str(txt_np).lower())
-                        
-                        palavras_c = set(w for w in txt_c.split() if w not in stopwords_pt_minimal and len(w) > 2)
-                        palavras_np = set(w for w in txt_np.split() if w not in stopwords_pt_minimal and len(w) > 2)
-                        
-                        if not palavras_c or not palavras_np:
-                            return None
-                        
-                        compartilhadas = len(palavras_c & palavras_np)
-                        total_unicas = len(palavras_c | palavras_np)
-                        
-                        return (compartilhadas / total_unicas * 100) if total_unicas > 0 else 0
-                    
-                    df_quali_filt['Similitude'] = df_quali_filt.apply(
-                        lambda row: calcular_similitude_apa(row[col_texto_c], row[col_texto_np]),
-                        axis=1
-                    )
-                    
-                    similitudes_validas = df_quali_filt['Similitude'].dropna()
-                    
-                    if not similitudes_validas.empty:
-                        media_sim = similitudes_validas.mean()
-                        mediana_sim = similitudes_validas.median()
-                        dp_sim = similitudes_validas.std()
-                        min_sim = similitudes_validas.min()
-                        max_sim = similitudes_validas.max()
-                        
-                        col_sim1, col_sim2, col_sim3 = st.columns(3)
-                        
-                        with col_sim1:
-                            st.metric('Similitude Média', f'{media_sim:.1f}%')
-                            st.caption(f'Desvio Padrão: {dp_sim:.1f}%')
-                        
-                        with col_sim2:
-                            st.metric('Mediana', f'{mediana_sim:.1f}%')
-                            st.caption(f'N = {len(similitudes_validas)} APAs')
-                        
-                        with col_sim3:
-                            st.metric('Range', f'{min_sim:.1f}% - {max_sim:.1f}%')
-                            st.caption(f'Amplitude: {max_sim - min_sim:.1f}%')
-                        
-                        # Histograma da distribuição
-                        fig_sim_hist = px.histogram(
-                            {'Similitude': similitudes_validas},
-                            x='Similitude',
-                            nbins=10,
-                            color_discrete_sequence=['#378ADD'],
-                            title='Distribuição de Similitude nos Dados Filtrados'
-                        )
-                        fig_sim_hist.add_vline(
-                            x=media_sim, line_dash='dash', line_color='#FFD700',
-                            annotation_text='Média', annotation_position='top right'
-                        )
-                        fig_sim_hist.update_layout(
-                            paper_bgcolor='rgba(0,0,0,0)',
-                            plot_bgcolor='rgba(0,0,0,0)',
-                            font_color='#FFF',
-                            height=350
-                        )
-                        st.plotly_chart(fig_sim_hist, use_container_width=True)
-                        
-                        st.markdown(f"""
-                        **Interpretação dos Dados:**
-                        
-                        - **Média de {media_sim:.1f}%:** Em média, {media_sim:.0f}% do vocabulário é compartilhado entre negociador e causador
-                        - **Desvio Padrão de {dp_sim:.1f}%:** Há variação significativa entre as ocorrências
-                        - **Range de {min_sim:.1f}% a {max_sim:.1f}%:** Algumas negociações têm sincronia muito baixa, outras muito alta
-                        
-                        **Próxima etapa:** Quando completar a coleta, use a Análise 5 da aba Individual
-                        para validar se similitude alta correlaciona com desfecho positivo.
-                        """)
-                    else:
-                        st.info('⚠️ Sem textos suficientes para calcular similitude nos dados filtrados.')
+                    except Exception as e:
+                        st.warning(f'⚠️ Erro ao processar convergência: {str(e)[:80]}')
                 else:
                     st.warning('⚠️ Colunas de transcrição não encontradas.')
             else:
