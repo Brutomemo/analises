@@ -1856,7 +1856,7 @@ else:
             if "show_explicacao" not in st.session_state:
                 st.session_state["show_explicacao"] = False
 
-            label_btn = "▲ Ocultar Guia" if st.session_state.get["show_explicacao"] else "▼ Entenda como ler a Análise"
+            label_btn = "▲ Ocultar Guia" if st.session_state["show_explicacao"] else "▼ Entenda como ler a Análise"
             if st.button(label_btn, key="btn_explicacao_semantica"):
                 st.session_state["show_explicacao"] = not st.session_state["show_explicacao"]
 
