@@ -3073,6 +3073,330 @@ else:
 
             st.markdown("---")
 
+
+            #NOVAS ANALISES 21MAI
+
+            # ============================================================
+            # AUDITORIA DE RIGOR ESTATÍSTICO — Modelo Atual
+            # ============================================================
+
+            """
+            ✅ VALIDAÇÕES PRESENTES:
+
+            1. **Spearman (Coluna 1)**
+            - N mínimo: 5 casos válidos ✅
+            - Exclui "Não Observado" automaticamente ✅
+            - P-value corretamente interpretado ✅
+            - Robustez: BOAS PRÁTICAS
+
+            2. **Qui-Quadrado (Coluna 2)**
+            - N mínimo: 10 ocorrências distintas ✅
+            - Remove valores-lixo ✅
+            - Verifica variância mínima (2 categorias em cada) ✅
+            - Robustez: BOAS PRÁTICAS
+
+            3. **Modelo Ordinal (Análise 1 - Viés)**
+            - Chi-Quadrado de Pearson (tabela cruzada) ✅
+            - Matriz de resíduos padronizados ✅
+            - Interpretação: CLARA PARA LEIGOS
+
+            4. **Ordered Logistic (Análise 2 - Eficácia)**
+            - Controla por negociador e tipologia ✅
+            - Calcula Odds Ratio ✅
+            - ⚠️ RISCO: Não verifica colinearidade
+            - ⚠️ RISCO: Sem teste de proporcionalidade (PO)
+
+            5. **GEE (Análise 3 - Robustez)**
+            - Lida com clustered data (negociador = cluster) ✅
+            - Exchangeable correlation ✅
+            - Binomial family para resposta dicotômica ✅
+            - Robustez: EXCELENTE PARA ESTE CASO
+
+            ⚠️ CRÍTICAS:
+            - Falta validação de tamanho mínimo de célula (Qui-Quadrado assume ≥5)
+            - Falta teste de proporcionalidade para Ordered Logit
+            - Falta inflação de Tipo I em múltiplos testes (Bonferroni)
+            """
+
+            # ============================================================
+            # ANÁLISE 4: EFETIVIDADE DAS TÉCNICAS (NOVA)
+            # ============================================================
+
+            st.markdown("""
+            <div style='background: var(--color-background-secondary); border-left: 4px solid #06C755; padding: 15px; border-radius: 8px; margin-bottom: 20px;'>
+            <h3 style='color: #06C755; margin-top: 0;'>✔️ Análise 4: Qual Técnica Funciona Melhor? (Replicando Aba Individual)</h3>
+            <p style='color: #aaa; margin-bottom: 10px;'>
+            <strong>Pergunta:</strong> "Qual técnica tem maior taxa de sucesso considerando TODOS os dados filtrados?"
+            </p>
+            <p style='color: #aaa; font-size: 0.85rem;'>
+            Nota: Esta análise agrega todos os usos da técnica nos filtros aplicados (Negociador, Tipologia, Modalidade).
+            Se nenhum filtro está ativo, mostra dados de toda a base.
+            </p>
+            </div>
+            """, unsafe_allow_html=True)
+
+            # Usar df_tec_filt (que já respeita os filtros aplicados)
+            if not df_tec_filt.empty:
+                col_t = next(
+                    (col for col in ['TÉCNICAS', 'TECNICAS', 'TÉCNICA', 'TECNICA'] if col in df_tec_filt.columns),
+                    None,
+                )
+                col_atitude = next(
+                    (col for col in df_tec_filt.columns if 'ATITUDE' in col.upper()),
+                    None,
+                )
+                
+                if col_t and col_atitude:
+                    # Mapeamento de reações
+                    def mapear_reacao(val):
+                        s = str(val).strip().lower()
+                        if any(x in s for x in ['-1', '🔴', 'negativa']):
+                            return -1
+                        elif any(x in s for x in ['0', '⚪', 'neutra']):
+                            return 0
+                        elif any(x in s for x in ['1', '🟢', 'positiva']):
+                            return 1
+                        else:
+                            return None
+                    
+                    df_ef = df_tec_filt.copy()
+                    df_ef['Reacao_Num'] = df_ef[col_atitude].apply(mapear_reacao)
+                    df_ef_clean = df_ef[df_ef['Reacao_Num'].notna()].copy()
+                    
+                    if not df_ef_clean.empty:
+                        resumo_tec = []
+                        for tecnica, grupo in df_ef_clean.groupby(col_t):
+                            total = len(grupo)
+                            positivas = (grupo['Reacao_Num'] == 1).sum()
+                            neutras = (grupo['Reacao_Num'] == 0).sum()
+                            negativas = (grupo['Reacao_Num'] == -1).sum()
+                            
+                            observados = positivas + neutras + negativas
+                            if observados > 0:
+                                taxa_sucesso = (positivas / observados) * 100
+                                score = ((positivas - negativas) / observados) * 100
+                            else:
+                                taxa_sucesso = 0
+                                score = 0
+                            
+                            resumo_tec.append({
+                                'Técnica': tecnica,
+                                'Total': total,
+                                'Positivas': positivas,
+                                'Neutras': neutras,
+                                'Negativas': negativas,
+                                'Taxa Sucesso (%)': round(taxa_sucesso, 1),
+                                'Score': round(score, 1)
+                            })
+                        
+                        df_resumo_tec = pd.DataFrame(resumo_tec).sort_values('Score', ascending=False)
+                        
+                        col_ef1, col_ef2 = st.columns([1, 2])
+                        
+                        with col_ef1:
+                            st.dataframe(
+                                df_resumo_tec[['Técnica', 'Total', 'Taxa Sucesso (%)']],
+                                use_container_width=True,
+                                hide_index=True
+                            )
+                        
+                        with col_ef2:
+                            fig_ef = px.bar(
+                                df_resumo_tec,
+                                x='Técnica',
+                                y='Taxa Sucesso (%)',
+                                color='Taxa Sucesso (%)',
+                                color_continuous_scale='RdYlGn',
+                                title='Efetividade das Técnicas (Taxa de Sucesso %)'
+                            )
+                            fig_ef.update_layout(
+                                paper_bgcolor='rgba(0,0,0,0)',
+                                plot_bgcolor='rgba(0,0,0,0)',
+                                font_color='#FFF',
+                                height=350
+                            )
+                            st.plotly_chart(fig_ef, use_container_width=True)
+                        
+                        st.markdown("""
+                        **Interpretação:**
+                        - A **Taxa de Sucesso (%)** mostra qual % das aplicações da técnica resultou em reação positiva
+                        - O **Score** leva em conta também as reações negativas: (Positivas - Negativas) / Total × 100
+                        - Técnicas com poucos usos (< 3) devem ser interpretadas com cautela
+                        """)
+                    else:
+                        st.info("⚠️ Sem dados de reação registrados para as técnicas nos filtros atuais.")
+                else:
+                    st.warning("⚠️ Colunas de técnica ou atitude não encontradas.")
+            else:
+                st.info("⚠️ Nenhuma técnica encontrada para os filtros selecionados.")
+
+            st.markdown("---")
+
+            # ============================================================
+            # ANÁLISE 5: ÍNDICE DE SIMILITUDE AGREGADO (NOVA)
+            # ============================================================
+
+            st.markdown("""
+            <div style='background: var(--color-background-secondary); border-left: 4px solid #378ADD; padding: 15px; border-radius: 8px; margin-bottom: 20px;'>
+            <h3 style='color: #378ADD; margin-top: 0;'>✔️ Análise 5: Qual é o Padrão de Similitude nos Dados Filtrados?</h3>
+            <p style='color: #aaa; margin-bottom: 10px;'>
+            <strong>Pergunta:</strong> "Em média, qual é o nível de sincronização (similitude) entre negociador e causador nos registros?"
+            </p>
+            <p style='color: #aaa; font-size: 0.85rem;'>
+            Esta análise calcula o índice de similitude para CADA APA dos dados filtrados,
+            depois mostra a distribuição geral e estatísticas resumidas.
+            </p>
+            </div>
+            """, unsafe_allow_html=True)
+
+            # Precisamos de df_quali_filt para ter acesso aos textos
+            if not df_quali_filt.empty:
+                col_texto_c = 'TRANSCRIÇÃO DO CAUSADOR'
+                col_texto_np = 'TRANSCRIÇÃO DO NEGOCIADOR PRINCIPAL'
+                
+                if col_texto_c in df_quali_filt.columns and col_texto_np in df_quali_filt.columns:
+                    import re
+                    from collections import Counter
+                    
+                    stopwords_pt_minimal = {
+                        'o', 'a', 'os', 'as', 'um', 'uma', 'de', 'do', 'da', 'em', 'para', 'com', 'por',
+                        'que', 'e', 'ou', 'é', 'foi', 'ser', 'ter', 'está', 'fazer', 'vai', 'vou',
+                        'tá', 'ta', 'né', 'então', 'tipo', 'cara', 'mano', 'cara', 'não', 'sim'
+                    }
+                    
+                    def calcular_similitude_apa(txt_c, txt_np):
+                        """Calcula similitude para uma APA."""
+                        if not txt_c or not txt_np:
+                            return None
+                        
+                        txt_c = re.sub(r'[^\w\s]', '', str(txt_c).lower())
+                        txt_np = re.sub(r'[^\w\s]', '', str(txt_np).lower())
+                        
+                        palavras_c = set(w for w in txt_c.split() if w not in stopwords_pt_minimal and len(w) > 2)
+                        palavras_np = set(w for w in txt_np.split() if w not in stopwords_pt_minimal and len(w) > 2)
+                        
+                        if not palavras_c or not palavras_np:
+                            return None
+                        
+                        compartilhadas = len(palavras_c & palavras_np)
+                        total_unicas = len(palavras_c | palavras_np)
+                        
+                        return (compartilhadas / total_unicas * 100) if total_unicas > 0 else 0
+                    
+                    df_quali_filt['Similitude'] = df_quali_filt.apply(
+                        lambda row: calcular_similitude_apa(row[col_texto_c], row[col_texto_np]),
+                        axis=1
+                    )
+                    
+                    similitudes_validas = df_quali_filt['Similitude'].dropna()
+                    
+                    if not similitudes_validas.empty:
+                        media_sim = similitudes_validas.mean()
+                        mediana_sim = similitudes_validas.median()
+                        dp_sim = similitudes_validas.std()
+                        min_sim = similitudes_validas.min()
+                        max_sim = similitudes_validas.max()
+                        
+                        col_sim1, col_sim2, col_sim3 = st.columns(3)
+                        
+                        with col_sim1:
+                            st.metric('Similitude Média', f'{media_sim:.1f}%')
+                            st.caption(f'Desvio Padrão: {dp_sim:.1f}%')
+                        
+                        with col_sim2:
+                            st.metric('Mediana', f'{mediana_sim:.1f}%')
+                            st.caption(f'N = {len(similitudes_validas)} APAs')
+                        
+                        with col_sim3:
+                            st.metric('Range', f'{min_sim:.1f}% - {max_sim:.1f}%')
+                            st.caption(f'Amplitude: {max_sim - min_sim:.1f}%')
+                        
+                        # Histograma da distribuição
+                        fig_sim_hist = px.histogram(
+                            {'Similitude': similitudes_validas},
+                            x='Similitude',
+                            nbins=10,
+                            color_discrete_sequence=['#378ADD'],
+                            title='Distribuição de Similitude nos Dados Filtrados'
+                        )
+                        fig_sim_hist.add_vline(
+                            x=media_sim, line_dash='dash', line_color='#FFD700',
+                            annotation_text='Média', annotation_position='top right'
+                        )
+                        fig_sim_hist.update_layout(
+                            paper_bgcolor='rgba(0,0,0,0)',
+                            plot_bgcolor='rgba(0,0,0,0)',
+                            font_color='#FFF',
+                            height=350
+                        )
+                        st.plotly_chart(fig_sim_hist, use_container_width=True)
+                        
+                        st.markdown(f"""
+                        **Interpretação dos Dados:**
+                        
+                        - **Média de {media_sim:.1f}%:** Em média, {media_sim:.0f}% do vocabulário é compartilhado entre negociador e causador
+                        - **Desvio Padrão de {dp_sim:.1f}%:** Há variação significativa entre as ocorrências
+                        - **Range de {min_sim:.1f}% a {max_sim:.1f}%:** Algumas negociações têm sincronia muito baixa, outras muito alta
+                        
+                        **Próxima etapa:** Quando completar a coleta, use a Análise 5 da aba Individual
+                        para validar se similitude alta correlaciona com desfecho positivo.
+                        """)
+                    else:
+                        st.info('⚠️ Sem textos suficientes para calcular similitude nos dados filtrados.')
+                else:
+                    st.warning('⚠️ Colunas de transcrição não encontradas.')
+            else:
+                st.info('⚠️ Nenhuma APA encontrada para os filtros selecionados.')
+
+            st.markdown("---")
+
+            # ============================================================
+            # ANÁLISE 6: PADRÕES N-GRAMAS AGREGADOS (NOVA)
+            # ============================================================
+
+            st.markdown("""
+            <div style='background: var(--color-background-secondary); border-left: 4px solid #FF8C00; padding: 15px; border-radius: 8px; margin-bottom: 20px;'>
+            <h3 style='color: #FF8C00; margin-top: 0;'>✔️ Análise 6: Quais São os Temas Dominantes nos Dados Filtrados?</h3>
+            <p style='color: #aaa; margin-bottom: 10px;'>
+            <strong>Pergunta:</strong> "Que temas aparecem com mais frequência nos discursos do causador nos registros?"
+            </p>
+            <p style='color: #aaa; font-size: 0.85rem;'>
+            Esta análise extrai os temas mais comuns usando a mesma lógica da aba Individual,
+            mas agregando TODOS os registros que passaram pelos filtros.
+            </p>
+            </div>
+            """, unsafe_allow_html=True)
+
+            if not df_quali_filt.empty and col_texto_c in df_quali_filt.columns:
+                textos_causador = df_quali_filt[col_texto_c].astype(str).str.cat(sep=' ')
+                
+                if len(textos_causador.split()) > 20:  # Mínimo para análise
+                    try:
+                        # Usar a função extrair_topicos_ngrams do analise.py
+                        topicos_agg = analise.extrair_topicos_ngrams(textos_causador, resolucao_tipo='desconhecida')
+                        
+                        # Filtrar apenas temas (não métricas)
+                        temas_agg = [t for t in topicos_agg if not any(k in t for k in ['Risco', 'Abertura', 'Raiz', 'Intensidade'])]
+                        
+                        st.markdown('**Temas Dominantes (Top 10):**')
+                        for tema in temas_agg[:10]:
+                            st.markdown(tema)
+                        
+                        st.markdown("""
+                        **Interpretação:**
+                        - Estes são os **assuntos recorrentes** nas negociações dos dados filtrados
+                        - O score indica frequência e força de aparição
+                        - Padrões recorrentes indicam causas comuns para as ocorrências
+                        - Use isso para priorizar treinamento em negociação de temas críticos
+                        """)
+                    except Exception as e:
+                        st.warning(f'⚠️ Erro ao processar temas: {str(e)[:80]}')
+                else:
+                    st.info('⚠️ Insuficientes dados textuais para análise de N-gramas.')
+            else:
+                st.info('⚠️ Nenhuma transcrição disponível para os filtros selecionados.')
+
+
             # ----------------------------------------------------------
             # Cabeçalho da seção de correlações
             # ----------------------------------------------------------
