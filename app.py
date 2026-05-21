@@ -1732,6 +1732,7 @@ else:
                     
                     try:
                         import plotly.graph_objects as go
+                        from collections import Counter  # ✅ IMPORTAÇÃO CORRIGIDA
 
                         # Contar frequências nas palavras compartilhadas
                         contador_neg = Counter(w for w in res['palavras_neg_lista'] if w in palavras_compartilhadas)
@@ -1804,13 +1805,6 @@ else:
                             - **Total de palavras únicas:** {res['total_unicas']}
                             - **Palavras do negociador:** {res['total_neg']}
                             - **Palavras do causador:** {res['total_caus']}
-                            
-                            **Interpretação provisória:**
-                            - **≥ 30%:** Forte vínculo ✅
-                            - **15-30%:** Vínculo moderado ⚠️
-                            - **< 15%:** Pouca sintonia ❌
-                            
-                            ⚠️ Estes thresholds serão refinados após análise de 50+ ocorrências.
                             """)
 
                         with tab2:
@@ -1820,21 +1814,15 @@ else:
 
                         with tab3:
                             st.markdown("""
-                            **Como validar esta métrica:**
+                            **Sobre esta métrica:**
                             
-                            A similitude atual é baseada em **sobreposição de vocabulário**:
-                            - Conta quantas palavras únicas aparecem em AMBOS os discursos
-                            - Divide pelo total de palavras únicas usadas
-                            - Resultado: % de "cobertura temática compartilhada"
+                            A similitude mede o quanto do vocabulário é compartilhado entre negociador e causador.
                             
-                            **Próximas etapas para validação:**
-                            1. Coletar 50+ APAs com este índice
-                            2. Correlacionar com desfecho (resolvido vs escalado)
-                            3. Comparar com avaliação qualitativa de especialistas (PMESP)
-                            4. Refinar thresholds com dados reais
-                            5. Validar se similitude HIGH → desfecho POSITIVO
+                            - Quanto maior → mais palavras em comum
+                            - Quanto menor → vocabulários mais distintos
                             
-                            **Interpretação atual:** PROVISÓRIA — Use como referência, não como regra.
+                            **Próximas etapas:**
+                            Será comparado com 50+ APAs para validar se existe correlação com desfecho (resolvido vs escalado).
                             """)
                                         
                     except Exception as e:
@@ -2426,41 +2414,40 @@ else:
                             
                             st.markdown(conv_tematica["analise_detalhada"])
 
-                            # ── INTERPRETAÇÃO GERAL ─────────────────────────
+                            # ── INTERPRETAÇÃO GERAL (SEM THRESHOLDS ARBITRÁRIOS) ─────────────────────
                             st.markdown("---")
-                            st.markdown("### 💡 O que significa")
+                            st.markdown("### 💡 O que Este Índice Significa")
                             
                             conv_pct = conv_tematica["convergencia_geral"]
                             
-                            if conv_pct >= 80:
-                                interpretacao = """
-                                ✅ **Sincronização temática excelente.**
-                                Causador e negociador abordam os mesmos temas com intensidades similares. 
-                                Alto potencial para acordo — há terreno comum bem desenvolvido.
-                                """
-                            elif conv_pct >= 60:
-                                interpretacao = """
-                                🟢 **Boa sincronização temática.**
-                                Maioria dos temas é compartilhada com intensidades próximas. 
-                                Há base para negociação, mas alguns temas têm ênfases diferentes.
-                                """
-                            elif conv_pct >= 40:
-                                interpretacao = """
-                                🟡 **Sincronização moderada.**
-                                Alguns temas são compartilhados, mas com intensidades muito diferentes.
-                                Negociador e causador focam em coisas distintas — risco de desencontro.
-                                """
-                            else:
-                                interpretacao = """
-                                🔴 **Sincronização fraca.**
-                                Causador e negociador abordam temas com intensidades muito divergentes.
-                                Há desconexão temática — estão focando em coisas diferentes ou com ênfases opostas.
-                                """
-                            
-                            st.info(interpretacao)
+                            st.markdown(f"""
+**Convergência Temática Observada: {conv_pct:.1f}%**
 
-                        except Exception as e:
-                            st.error(f"Erro ao analisar convergência temática: {str(e)[:80]}")
+**O que é medido:**
+- Intensidade com que causador e negociador abordam cada tema compartilhado
+- Média das similitudes de score para os temas em comum
+- Escala: 0% (completamente divergentes) a 100% (perfeitamente alinhados)
+
+**Interpretação Descritiva (sem classificação):**
+
+| Range | O que significa |
+|-------|---|
+| **90-100%** | Ambos abordam os temas com intensidades praticamente idênticas |
+| **70-90%** | Maioria dos temas tem intensidades próximas, com variações pequenas |
+| **50-70%** | Alguns temas com intensidades similares, outros com diferenças notáveis |
+| **30-50%** | Intensidades frequentemente divergentes — énfases diferentes |
+| **0-30%** | Abordagens muito diferentes — possivelmente universos mentais distintos |
+
+**Seu caso: {conv_pct:.1f}%**
+
+- **Temas compartilhados:** {len(conv_tematica["temas_compartilhados"])}
+- **Temas só do causador:** {len(conv_tematica["temas_exclusivos_causador"])}
+- **Temas só do negociador:** {len(conv_tematica["temas_exclusivos_negociador"])}
+
+**Atenção:**
+Este é um índice DESCRITIVO. Não é preditivo de desfecho.
+Próxima etapa: comparar com histórico de 50+ APAs para validar padrões.
+""")
 
                 # --- TAB 7: ESTADO DO CAUSADOR ---
                 with tab_ng7:
