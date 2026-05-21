@@ -1187,7 +1187,7 @@ else:
 
             st.markdown("<h5 style='color: #FFD700;'>✔ Frequência das Técnicas Aplicadas (Nesta APA)</h5>", unsafe_allow_html=True)
 
-            if st.button("✔ Calcular Frequência de Técnicas"):
+            if st.button("✔ Calcular Frequência de Técnicas", key="btn_freq_tecnicas"):
                 if not df_tec.empty:
                     col_vinculo = next((c for c in df_tec.columns if 'VINCULO' in c.upper() or 'VÍNCULO' in c.upper()), None)
                     
@@ -1239,7 +1239,7 @@ else:
             </div>
             """, unsafe_allow_html=True)
 
-            if st.button("✔ 1. Analisar Efetividade das Técnicas", key="btn_tecnicas_semantica"):
+            if st.button("✔ 1. Gerar Análise de Técnicas", key="btn_treemap"):
                 with st.spinner("Cruzando técnicas com reação do causador..."):
                     try:
                         # ── Buscar ID do registro atual ──────────────────────
