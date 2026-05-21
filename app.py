@@ -2653,6 +2653,14 @@ else:
         Dados confidenciais, de uso exclusivo da equipe de Negociação do Grupo de Ações Táticas Especiais.
         </span>
         </p>
+                        
+        <hr style="margin-top:50px;margin-bottom:10px;">
+
+        <div style='text-align:center; font-size:0.85rem; color:gray;'>
+        © 2026 Marcos Batista - Todos os direitos reservados.<br>
+        É proibida a reprodução, distribuição ou engenharia reversa sem autorização.
+        </div>
+                        
     </div>
     """, unsafe_allow_html=True)
 
