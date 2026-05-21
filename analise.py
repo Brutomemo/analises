@@ -736,6 +736,8 @@ def gerar_radar_crise_individual(risco, abertura, raiz, volatilidade):
 
     return fig
 
+#atualização radar convergencia
+
 def gerar_radar_convergencia_tematica_corrigido(temas_causador, temas_negociador, convergencia_por_tema):
     """
     Gera radar com:
@@ -877,6 +879,7 @@ def gerar_grafico_barras_intensidade_temas(convergencia_por_tema):
     )
     
     return fig
+
 
 
 def gerar_narrativa_crise(risco_observado, abertura_observada, raiz_observada,
