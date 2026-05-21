@@ -1730,8 +1730,8 @@ else:
                         import plotly.graph_objects as go
 
                         # Contar frequências nas palavras compartilhadas
-                        contador_neg = Counter(w for w in res['palavras_neg'] if w in palavras_compartilhadas)
-                        contador_caus = Counter(w for w in res['palavras_caus'] if w in palavras_compartilhadas)
+                        contador_neg = Counter(w for w in res['palavras_neg_lista'] if w in palavras_compartilhadas)
+                        contador_caus = Counter(w for w in res['palavras_caus_lista'] if w in palavras_compartilhadas)
                         
                         contagem_comuns = {
                             w: contador_neg.get(w, 0) + contador_caus.get(w, 0)
