@@ -3750,7 +3750,7 @@ else:
         # ──────────────────────────────────────────────────────────
         # BOTÃO TOGGLE (Centralizado)
         # ──────────────────────────────────────────────────────────
-        col_left, col_center, col_right = st.columns([1, 3, 1])
+        col_left, col_center, col_right = st.columns([1, 1, 1])
         with col_center:
             is_correlacao_associacao = render_toggle_button(
                 label="✔️ Abrir Correlações e Associações",
@@ -3961,7 +3961,7 @@ else:
 
         st.markdown("<h5 style='color: #FFD700;'>Entenda melhor os testes estatísticos de correlação e associação</h5>", unsafe_allow_html=True)
 
-        col_left, col_center, col_right = st.columns([1, 3, 1])
+        col_left, col_center, col_right = st.columns([1, 1, 1])
         with col_center:
             is_entenda_testes = render_toggle_button(
                 label="✔️ Entenda os testes estatísticos",
