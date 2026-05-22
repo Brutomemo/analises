@@ -3024,15 +3024,15 @@ else:
         # estatística corrigida
         # ============================================================
 
-    st.markdown("#### Ranking de Técnicas Aplicadas")
+        st.markdown("#### Ranking de Técnicas Aplicadas")
 
-    if render_toggle_button(
-        label="✔️ Abrir Ranking de Técnicas",
-        session_key="ranking_de_tecnicas_expanded",
-        button_key="btn_ranking_tecnicas"
-    ):
+        if render_toggle_button(
+            label="✔️ Abrir Ranking de Técnicas",
+            session_key="ranking_de_tecnicas_expanded",
+            button_key="btn_ranking_tecnicas"
+        ):
 
-        st.markdown("<div style='margin-bottom: 20px;'></div>", unsafe_allow_html=True)
+            st.markdown("<div style='margin-bottom: 20px;'></div>", unsafe_allow_html=True)
 
         if st.session_state.get("exibir_ranking", False):
 
