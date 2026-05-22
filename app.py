@@ -3262,12 +3262,12 @@ else:
             #NOVAS ANALISES 21MAI
 
                         
-        # ============================================================
+       # ============================================================
         # ANÁLISE 4: EFETIVIDADE DAS TÉCNICAS (FORMATO INDIVIDUAL)
         # ============================================================
-
+ 
         st.markdown("<h5 style='color: #FFD700;'>Efetividade das Técnicas</h5>", unsafe_allow_html=True)
-
+ 
         col_left, col_center, col_right = st.columns([1, 1, 1])  
         with col_center:
             is_Efetividade_Técnicas = render_toggle_button(
@@ -3275,9 +3275,9 @@ else:
                 session_key="Efetividade_Técnicas",
                 button_key="btn_Efetividade_Técnicas"
             )
-
+ 
         st.markdown("---")
-
+ 
         if is_Efetividade_Técnicas:
                 
             if not df_tec_filt.empty:
@@ -3413,7 +3413,7 @@ else:
                         """)
                     else:
                         st.info("⚠️ Sem dados de reação registrados para as técnicas nos filtros atuais.")
-
+ 
             st.markdown("---")
 
 
