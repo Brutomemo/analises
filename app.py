@@ -3377,7 +3377,7 @@ else:
             st.markdown("<h5 style='color: #FFD700;'>Convergência Temática: Quanto de sincronização temática existe entre negociador e causador</h5>", unsafe_allow_html=True)
 
             # ── BOTÃO TOGGLE ───────────────────────────────────────────
-            col_left, col_center, col_right = st.columns([1, 3, 1])
+            col_left, col_center, col_right = st.columns([1, 1, 1])
             with col_center:
                 is_convergencia = render_toggle_button(
                     label="✔️ Abrir Convergência Temática",
