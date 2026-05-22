@@ -3027,102 +3027,101 @@ else:
         # ====
         # NOVOS GRÁFICOS: VISÃO GERAL DA AMOSTRA
         # ====
-    st.markdown("<h5 style='color: #FFD700;'>Visão Geral da Amostra</h5>", unsafe_allow_html=True)
+        st.markdown("<h5 style='color: #FFD700;'>Visão Geral da Amostra</h5>", unsafe_allow_html=True)
 
-    # ── BOTÃO TOGGLE ───────────────────────────────────────────
-    col_left, col_center, col_right = st.columns([1, 1, 1])
-    with col_center:
-        is_visao_geral = render_toggle_button(
-            label="✔️ Abrir Visão Geral da Amostra",
-            session_key="analise1_visao_geral",
-            button_key="btn_analise1_visao_geral"
-        )
-    if is_visao_geral:     
-        
-        st.markdown("<h5 style='color: #FFD700;'> Visão Geral da Amostra</h5>", unsafe_allow_html=True)
-        
-        def gerar_grafico_resumo(df, coluna, titulo):
-            """Gera gráfico de rosca (donut) padronizado com o Design System."""
-            if coluna not in df.columns: return None
-            
-            # Limpa listas vazias e formata strings
-            serie = df[coluna].apply(lambda x: x[0] if isinstance(x, list) and len(x)>0 else str(x))
-            serie = serie[~serie.isin(["N/D", "nan", "", "None"])]
-            
-            if serie.empty: return None
-            
-            contagem = serie.value_counts().reset_index()
-            contagem.columns = [coluna, 'Frequência']
-            # para garantir que a maior fatia pegue a cor mais forte
-            contagem = contagem.sort_values('Frequência', ascending=False)
-
-            cores_contraste = ['#FF8C00', '#8B4513', "#A53A00", '#DEB887', "#EBE9E7" ]
-
-            # Criação do Gráfico de Rosca
-            fig = px.pie(
-                contagem, 
-                values='Frequência', 
-                names=coluna, 
-                title=titulo,
-                hole=0.5, # Define o buraco central para transformar em rosca
-                color_discrete_sequence=cores_contraste
+        # ── BOTÃO TOGGLE ───────────────────────────────────────────
+        col_left, col_center, col_right = st.columns([1, 1, 1])
+        with col_center:
+            is_visao_geral = render_toggle_button(
+                label="✔️ Abrir Visão Geral da Amostra",
+                session_key="analise1_visao_geral",
+                button_key="btn_analise1_visao_geral"
             )
-            
-            # Configuração das legendas e rótulos
-            fig.update_traces(
-                textinfo='value+percent', # Mostra o número absoluto e a porcentagem
-                textposition='outside',   # Coloca os números para fora para não poluir
-                marker=dict(line=dict(color='#FFFFFF', width=1))
-            )
-            
-            # Layout padronizado
-            fig.update_layout(
-                paper_bgcolor="rgba(0,0,0,0)", 
-                plot_bgcolor="rgba(0,0,0,0)", 
-                font_color="#FFF", 
-                margin=dict(t=50, b=10, l=10, r=10),
-                showlegend=True,
-                legend=dict(
-                    orientation="h",       # Legenda horizontal
-                    yanchor="bottom", 
-                    y=-0.3, 
-                    xanchor="center", 
-                    x=0.5
+        if is_visao_geral:     
+                
+        
+            def gerar_grafico_resumo(df, coluna, titulo):
+                """Gera gráfico de rosca (donut) padronizado com o Design System."""
+                if coluna not in df.columns: return None
+                
+                # Limpa listas vazias e formata strings
+                serie = df[coluna].apply(lambda x: x[0] if isinstance(x, list) and len(x)>0 else str(x))
+                serie = serie[~serie.isin(["N/D", "nan", "", "None"])]
+                
+                if serie.empty: return None
+                
+                contagem = serie.value_counts().reset_index()
+                contagem.columns = [coluna, 'Frequência']
+                # para garantir que a maior fatia pegue a cor mais forte
+                contagem = contagem.sort_values('Frequência', ascending=False)
+
+                cores_contraste = ['#FF8C00', '#8B4513', "#A53A00", '#DEB887', "#EBE9E7" ]
+
+                # Criação do Gráfico de Rosca
+                fig = px.pie(
+                    contagem, 
+                    values='Frequência', 
+                    names=coluna, 
+                    title=titulo,
+                    hole=0.5, # Define o buraco central para transformar em rosca
+                    color_discrete_sequence=cores_contraste
                 )
-            )
-            return fig
+                
+                # Configuração das legendas e rótulos
+                fig.update_traces(
+                    textinfo='value+percent', # Mostra o número absoluto e a porcentagem
+                    textposition='outside',   # Coloca os números para fora para não poluir
+                    marker=dict(line=dict(color='#FFFFFF', width=1))
+                )
+                
+                # Layout padronizado
+                fig.update_layout(
+                    paper_bgcolor="rgba(0,0,0,0)", 
+                    plot_bgcolor="rgba(0,0,0,0)", 
+                    font_color="#FFF", 
+                    margin=dict(t=50, b=10, l=10, r=10),
+                    showlegend=True,
+                    legend=dict(
+                        orientation="h",       # Legenda horizontal
+                        yanchor="bottom", 
+                        y=-0.3, 
+                        xanchor="center", 
+                        x=0.5
+                    )
+                )
+                return fig
 
-        c_g1, c_g2, c_g3 = st.columns(3)
-        
-        with c_g1:
-            fig_res = gerar_grafico_resumo(df_quali_filt, 'Resolução', 'Resolução do Incidente')
-            if fig_res: st.plotly_chart(fig_res, use_container_width=True)
-            else: st.info("Sem dados de Resolução para os filtros atuais.")
+            c_g1, c_g2, c_g3 = st.columns(3)
             
-            fig_uni = gerar_grafico_resumo(df_quali_filt, 'Uniforme Usado', 'Uniforme Utilizado')
-            if fig_uni: st.plotly_chart(fig_uni, use_container_width=True)
-            else: st.info("Sem dados de Uniforme para os filtros atuais.")
+            with c_g1:
+                fig_res = gerar_grafico_resumo(df_quali_filt, 'Resolução', 'Resolução do Incidente')
+                if fig_res: st.plotly_chart(fig_res, use_container_width=True)
+                else: st.info("Sem dados de Resolução para os filtros atuais.")
+                
+                fig_uni = gerar_grafico_resumo(df_quali_filt, 'Uniforme Usado', 'Uniforme Utilizado')
+                if fig_uni: st.plotly_chart(fig_uni, use_container_width=True)
+                else: st.info("Sem dados de Uniforme para os filtros atuais.")
 
-        with c_g2:
-            fig_trans = gerar_grafico_resumo(df_quali_filt, 'Forma de Transição', 'Forma de Transição')
-            if fig_trans: st.plotly_chart(fig_trans, use_container_width=True)
-            else: st.info("Sem dados de Transição para os filtros atuais.")
-            
-            fig_sexo = gerar_grafico_resumo(df_quali_filt, 'Sexo do Causador', 'Sexo do Causador')
-            if fig_sexo: st.plotly_chart(fig_sexo, use_container_width=True)
-            else: st.info("Sem dados de Sexo para os filtros atuais.")
+            with c_g2:
+                fig_trans = gerar_grafico_resumo(df_quali_filt, 'Forma de Transição', 'Forma de Transição')
+                if fig_trans: st.plotly_chart(fig_trans, use_container_width=True)
+                else: st.info("Sem dados de Transição para os filtros atuais.")
+                
+                fig_sexo = gerar_grafico_resumo(df_quali_filt, 'Sexo do Causador', 'Sexo do Causador')
+                if fig_sexo: st.plotly_chart(fig_sexo, use_container_width=True)
+                else: st.info("Sem dados de Sexo para os filtros atuais.")
 
 
-        with c_g3:
-            fig_mod = gerar_grafico_resumo(df_quali_filt, 'Modalidade do incidente', 'Modalidade do incidente')
-            if fig_mod: st.plotly_chart(fig_mod, use_container_width=True)
-            else: st.info("Sem dados de Modalidade do incidente para os filtros atuais.")
-            
-            fig_tip = gerar_grafico_resumo(df_quali_filt, 'Tipologia', 'Tipologia')
-            if fig_tip: st.plotly_chart(fig_tip, use_container_width=True)
-            else: st.info("Sem dados de Tipologia para os filtros atuais.")
+            with c_g3:
+                fig_mod = gerar_grafico_resumo(df_quali_filt, 'Modalidade do incidente', 'Modalidade do incidente')
+                if fig_mod: st.plotly_chart(fig_mod, use_container_width=True)
+                else: st.info("Sem dados de Modalidade do incidente para os filtros atuais.")
+                
+                fig_tip = gerar_grafico_resumo(df_quali_filt, 'Tipologia', 'Tipologia')
+                if fig_tip: st.plotly_chart(fig_tip, use_container_width=True)
+                else: st.info("Sem dados de Tipologia para os filtros atuais.")
 
-        st.markdown("---")
+            st.markdown("---")
         # ============================================================
         # BLOCO: Ranking de Técnicas + Padrões e Correlações
         # ============================================================
