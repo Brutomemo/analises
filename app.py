@@ -435,44 +435,167 @@ st.markdown("""
         left: 100%; transition: 0.7s ease-in-out;
     }
 
-    /* Efeito Design System nos Botões (Gradiente + Glow) */
-    div.stButton > button { 
-        background: linear-gradient(to top, #fef08a 0%, #fb923c 50%, #f97316 100%) !important;
-        color: #2c1306 !important; /* Cor escura para leitura perfeita sobre o laranja/amarelo */
-        border: 1px inset rgba(255, 255, 255, 0.4) !important;
-        padding: 0.7rem 2rem; border-radius: 9999px !important; font-weight: 600 !important; 
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important; width: 100%; position: relative;
-        box-shadow: 0 4px 20px -5px rgba(249, 115, 22, 0.6) !important;
-        transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1), 
-        box-shadow 0.3s ease-out, 
-        filter 0.3s ease !important;
-                
-        animation: fadeInUpBlur 1s cubic-bezier(0.2, 0.8, 0.2, 1) both;
-    }
-        div.stButton > button:hover { 
-        box-shadow: 0 10px 40px -5px rgba(249, 115, 22, 0.9) !important; 
-        transform: scale(1.03) translateY(-3px) !important;
-        filter: brightness(1.05);
-    }
-        div.stButton > button:active {
-        transform: scale(0.98) translateY(0.6px) !important;
-        box-shadow: 0 3px 10px -5px rgba(249, 115, 22, 0.6) !important;
-        filter: brightness(0.99);
-    }
+    /* ═══════════════════════════════════════════════════════════════════════════════
+   BOTÕES TOGGLE - GLASSMORPHISM QUADRADO (Design System Integrado)
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+/* Container do botão (para não ficar lateral) */
+div.stButton > button[key*="btn_"] {
+    /* ─────────────────────────────────────────────────────────────────────────
+       GLASSMORPHISM - Idêntico ao design do HTML
+       ───────────────────────────────────────────────────────────────────────── */
     
-    /* Efeito Ambient Blobs (Degradês Flutuantes no Fundo) */
-    .liquid-blob {
-        position: fixed; border-radius: 60%; filter: blur(80px); opacity: 0.20; z-index: 1;
-        animation: float 10s infinite alternate cubic-bezier(0.4, 0, 0.2, 1); pointer-events: none;
-    }
-    .blob1 { background-color: #FFD700; width: 500px; height: 500px; top: -100px; left: -100px; animation-duration: 15s; }
-    .blob2 { background-color: #fb923c; width: 400px; height: 400px; top: 40%; right: -100px; animation-duration: 20s; animation-delay: -10s; }
-    .blob3 { background-color: #c2410c; width: 600px; height: 600px; bottom: -150px; left: 20%; animation-duration: 25s; animation-delay: -15s; }
+    background: rgba(0, 0, 0, 0.7) !important;
+    backdrop-filter: blur(16px) saturate(180%) !important;
+    -webkit-backdrop-filter: blur(16px) saturate(180%) !important;
     
-    @keyframes float {
-        0% { transform: translate(0, 0) scale(1); }
-        100% { transform: translate(30px, 50px) scale(1.1); }
+    /* Border de Vidro (branco com opacidade sutil) */
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    
+    /* ─────────────────────────────────────────────────────────────────────────
+       LAYOUT QUADRADO (Não arredondado)
+       ───────────────────────────────────────────────────────────────────────── */
+    
+    border-radius: 0px !important;            /* Quadrado perfeito */
+    padding: 0.875rem 1.5rem !important;      /* Espaçamento adequado */
+    min-height: 48px !important;              /* Altura mínima */
+    
+    /* ─────────────────────────────────────────────────────────────────────────
+       CORES E TEXTO
+       ───────────────────────────────────────────────────────────────────────── */
+    
+    color: rgba(255, 255, 255, 0.7) !important;  /* Branco sutil */
+    font-family: 'Orbitron', monospace !important;
+    font-weight: 600 !important;
+    font-size: 0.9rem !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.1em !important;
+    
+    /* ─────────────────────────────────────────────────────────────────────────
+       SOMBRA E EFEITOS
+       ───────────────────────────────────────────────────────────────────────── */
+    
+    box-shadow: 
+        0 0 20px rgba(0, 0, 0, 0.5),
+        inset 0 1px 1px rgba(255, 255, 255, 0.05) !important;
+    
+    /* ─────────────────────────────────────────────────────────────────────────
+       ANIMAÇÕES
+       ───────────────────────────────────────────────────────────────────────── */
+    
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    position: relative;
+    overflow: hidden;
+    width: 100% !important;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   EFEITO SWEEP (Luz passando) - Similar ao design do HTML
+   ───────────────────────────────────────────────────────────────────────────── */
+
+div.stButton > button[key*="btn_"]::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(0, 200, 255, 0.1),
+        transparent
+    );
+    transition: left 0.5s ease-in-out;
+    pointer-events: none;
+    z-index: 20;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   HOVER STATE - Borda mais visível, cor mais brilhante
+   ───────────────────────────────────────────────────────────────────────────── */
+
+div.stButton > button[key*="btn_"]:hover {
+    background: rgba(0, 0, 0, 0.85) !important;     /* Mais denso */
+    border-color: rgba(0, 200, 255, 0.4) !important;
+    color: #00c8ff !important;                       /* Cyan mais brilhante */
+    
+    box-shadow: 
+        0 0 30px rgba(0, 200, 255, 0.2),           /* Glow cyan */
+        0 0 60px rgba(0, 200, 255, 0.05),
+        inset 0 1px 1px rgba(255, 255, 255, 0.1) !important;
+    
+    transform: translateY(-2px) !important;         /* Sobe levemente */
+    filter: brightness(1.1);
+}
+
+/* Efeito sweep no hover */
+div.stButton > button[key*="btn_"]:hover::before {
+    left: 100%;
+    transition: left 0.7s ease-in-out;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   ACTIVE STATE (Clicado)
+   ───────────────────────────────────────────────────────────────────────────── */
+
+div.stButton > button[key*="btn_"]:active {
+    background: rgba(0, 0, 0, 0.95) !important;
+    border-color: rgba(0, 200, 255, 0.3) !important;
+    
+    box-shadow: 
+        0 0 15px rgba(0, 200, 255, 0.1),
+        inset 0 2px 4px rgba(0, 0, 0, 0.3) !important;
+    
+    transform: translateY(0) !important;
+    filter: brightness(0.95);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   FOCUSED STATE (Teclado)
+   ───────────────────────────────────────────────────────────────────────────── */
+
+div.stButton > button[key*="btn_"]:focus {
+    outline: none !important;
+    border-color: rgba(0, 200, 255, 0.5) !important;
+    box-shadow: 
+        0 0 40px rgba(0, 200, 255, 0.25),
+        inset 0 1px 1px rgba(255, 255, 255, 0.1) !important;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   ESTADO DISABLED
+   ───────────────────────────────────────────────────────────────────────────── */
+
+div.stButton > button[key*="btn_"]:disabled {
+    opacity: 0.5 !important;
+    cursor: not-allowed !important;
+    background: rgba(0, 0, 0, 0.4) !important;
+    border-color: rgba(255, 255, 255, 0.05) !important;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   RESPONSIVIDADE
+   ───────────────────────────────────────────────────────────────────────────── */
+
+@media (max-width: 768px) {
+    div.stButton > button[key*="btn_"] {
+        padding: 0.75rem 1.2rem !important;
+        font-size: 0.85rem !important;
+        letter-spacing: 0.08em !important;
+        min-height: 44px !important;
     }
+}
+
+@media (max-width: 480px) {
+    div.stButton > button[key*="btn_"] {
+        padding: 0.65rem 1rem !important;
+        font-size: 0.8rem !important;
+        min-height: 40px !important;
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════ */
 
     /* Tabelas e Menus Base */
     [data-testid="stDataFrame"] { background-color: rgba(255, 255, 255, 0.03); border-radius: 8px; }
