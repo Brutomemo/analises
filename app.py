@@ -3375,6 +3375,7 @@ else:
         # ANÁLISE 6: RANKING DOS TEMAS DOMINANTES
         # ══════════════════════════════════════════════════════════════════════════════
 
+        st.markdown("---")
         st.markdown("<h5 style='color: #FFD700;'>Ranking dos Temas Dominantes</h5>", unsafe_allow_html=True)
 
         col_left, col_center, col_right = st.columns([1, 1, 1])  
