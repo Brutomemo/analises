@@ -3382,24 +3382,24 @@ else:
                 st.markdown("---")
 
             
-            # ============================================================
-            # ANÁLISE 6: PADRÕES N-GRAMAS AGREGADOS (NOVA)
-            # ============================================================
+        # ============================================================
+        # ANÁLISE 6: PADRÕES N-GRAMAS AGREGADOS (NOVA)
+        # ============================================================
 
             
-            st.markdown("<h5 style='color: #FFD700;'> Ranking dos Temas Dominantes</h5>", unsafe_allow_html=True)
+        st.markdown("<h5 style='color: #FFD700;'> Ranking dos Temas Dominantes</h5>", unsafe_allow_html=True)
 
-            col_left, col_center, col_right = st.columns([1, 1, 1])  
-            with col_center:
-                is_ranking_temas = render_toggle_button(
-                    label="✔️ Abrir Ranking Temático",
-                    session_key="ranking_temas_dominantes",
-                    button_key="btn_ranking_temas_dominantes"
-                )
+        col_left, col_center, col_right = st.columns([1, 1, 1])  
+        with col_center:
+            is_ranking_temas = render_toggle_button(
+                label="✔️ Abrir Ranking Temático",
+                session_key="ranking_temas_dominantes",
+                button_key="btn_ranking_temas_dominantes"
+            )
 
-            st.markdown("---")
+        st.markdown("---")
 
-            if is_ranking_temas:
+        if is_ranking_temas:
             
                 st.markdown("""
                 <div style='background: var(--color-background-secondary); border-left: 4px solid #FF8C00; padding: 15px; border-radius: 8px; margin-bottom: 20px;'>            
