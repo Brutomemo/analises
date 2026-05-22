@@ -3279,14 +3279,14 @@ else:
         st.markdown("---")
 
         if is_efetividade:
-            # ✅ MUDE: df_tec_filt → df_quali_filt (ABA 2 usa quali_filt)
-            if not df_quali_filt.empty:
+            
+            if not df_tec_filt.empty:
                 col_t = next(
-                    (col for col in ['TÉCNICAS', 'TECNICAS', 'TÉCNICA', 'TECNICA'] if col in df_quali_filt.columns),
+                    (col for col in ['TÉCNICAS', 'TECNICAS', 'TÉCNICA', 'TECNICA'] if col in df_tec_filt.columns),
                     None,
                 )
                 col_atitude = next(
-                    (col for col in df_quali_filt.columns if 'ATITUDE' in col.upper()),
+                    (col for col in df_tec_filt.columns if 'ATITUDE' in col.upper()),
                     None,
                 )
                 
@@ -3302,8 +3302,7 @@ else:
                         else:
                             return None
                     
-                    # ✅ MUDE: df_tec_filt → df_quali_filt
-                    df_ef = df_quali_filt.copy()
+                    df_ef = df_tec_filt.copy()
                     df_ef['Reacao_Num'] = df_ef[col_atitude].apply(mapear_reacao)
                     df_ef_clean = df_ef[df_ef['Reacao_Num'].notna()].copy()
                     
@@ -3381,7 +3380,7 @@ else:
                         
                         # ── LEITURA OPERACIONAL ──────────────────────
                         st.markdown("---")
-                        st.markdown("#### ✔️ Leitura Operacional")
+                        st.markdown("#### 📖 Leitura Operacional")
                         
                         top_efetiva = df_resumo_tec.iloc[0]
                         bottom_efetiva = df_resumo_tec.iloc[-1]
@@ -3414,12 +3413,8 @@ else:
                         """)
                     else:
                         st.info("⚠️ Sem dados de reação registrados para as técnicas nos filtros atuais.")
-                else:
-                    st.warning("⚠️ Colunas necessárias não encontradas (TÉCNICAS e ATITUDE).")
-            else:
-                st.info("⚠️ Nenhuma técnica encontrada para os filtros selecionados.")
 
-        st.markdown("---")
+            st.markdown("---")
 
         # ══════════════════════════════════════════════════════════════════════════════
         # ANÁLISE 6: RANKING DOS TEMAS DOMINANTES
