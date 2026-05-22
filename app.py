@@ -3117,20 +3117,6 @@ else:
 
         st.markdown("#### Ranking de Técnicas Aplicadas")
 
-        col_left, col_center, col_right = st.columns([1, 2, 1])
-
-        with col_center:
-            is_ranking_expanded = render_toggle_button(
-                label="✔️ Abrir Ranking de Técnicas",
-                session_key="ranking_de_tecnicas_expanded",
-                button_key="btn_ranking_tecnicas"
-            )
-
-        # CONTEÚDO (volta a 100% da largura)
-        if is_ranking_expanded:
-            st.markdown("<div style='margin-bottom: 20px;'></div>", unsafe_allow_html=True)
-            col_g1, col_g2, col_g3 = st.columns(3)
-
         if render_toggle_button(
             label="✔️ Abrir Ranking de Técnicas",
             session_key="ranking_de_tecnicas_expanded",
