@@ -3614,47 +3614,47 @@ else:
         st.markdown("---")
 
         if is_ranking_temas:
-            
-                st.markdown("""
-                <div style='background: var(--color-background-secondary); border-left: 4px solid #FF8C00; padding: 15px; border-radius: 8px; margin-bottom: 20px;'>            
-                <p style='color: #aaa; margin-bottom: 10px;'>
-                <strong>Pergunta:</strong> "Que temas aparecem com mais frequência nos discursos do causador e Negociador nos registros?"
-                </p>
-                <p style='color: #aaa; font-size: 0.85rem;'>
-                Esta análise extrai os temas mais comuns usando a mesma lógica da aba Individual,
-                mas agregando TODOS os registros que passaram pelos filtros.
-                </p>
-                </div>
-                """, unsafe_allow_html=True)
+        
+            st.markdown("""
+            <div style='background: var(--color-background-secondary); border-left: 4px solid #FF8C00; padding: 15px; border-radius: 8px; margin-bottom: 20px;'>            
+            <p style='color: #aaa; margin-bottom: 10px;'>
+            <strong>Pergunta:</strong> "Que temas aparecem com mais frequência nos discursos do causador e Negociador nos registros?"
+            </p>
+            <p style='color: #aaa; font-size: 0.85rem;'>
+            Esta análise extrai os temas mais comuns usando a mesma lógica da aba Individual,
+            mas agregando TODOS os registros que passaram pelos filtros.
+            </p>
+            </div>
+            """, unsafe_allow_html=True)
 
-                if not df_quali_filt.empty and col_texto_c in df_quali_filt.columns:
-                    textos_causador = df_quali_filt[col_texto_c].astype(str).str.cat(sep=' ')
-                    
-                    if len(textos_causador.split()) > 20:  # Mínimo para análise
-                        try:
-                            # Usar a função extrair_topicos_ngrams do analise.py
-                            topicos_agg = analise.extrair_topicos_ngrams(textos_causador, resolucao_tipo='desconhecida')
-                            
-                            # Filtrar apenas temas (não métricas)
-                            temas_agg = [t for t in topicos_agg if not any(k in t for k in ['Risco', 'Abertura', 'Raiz', 'Intensidade'])]
-                            
-                            st.markdown('**Temas Dominantes (Top 10):**')
-                            for tema in temas_agg[:10]:
-                                st.markdown(tema)
-                            
-                            st.markdown("""
-                            **Interpretação:**
-                            - Estes são os **assuntos recorrentes** nas negociações dos dados filtrados
-                            - O score indica frequência e força de aparição
-                            - Padrões recorrentes indicam causas comuns para as ocorrências
-                            - Use isso para priorizar treinamento em negociação de temas críticos
-                            """)
-                        except Exception as e:
-                            st.warning(f'⚠️ Erro ao processar temas: {str(e)[:80]}')
-                    else:
-                        st.info('⚠️ Insuficientes dados textuais para análise de N-gramas.')
+            if not df_quali_filt.empty and col_texto_c in df_quali_filt.columns:
+                textos_causador = df_quali_filt[col_texto_c].astype(str).str.cat(sep=' ')
+                
+                if len(textos_causador.split()) > 20:  # Mínimo para análise
+                    try:
+                        # Usar a função extrair_topicos_ngrams do analise.py
+                        topicos_agg = analise.extrair_topicos_ngrams(textos_causador, resolucao_tipo='desconhecida')
+                        
+                        # Filtrar apenas temas (não métricas)
+                        temas_agg = [t for t in topicos_agg if not any(k in t for k in ['Risco', 'Abertura', 'Raiz', 'Intensidade'])]
+                        
+                        st.markdown('**Temas Dominantes (Top 10):**')
+                        for tema in temas_agg[:10]:
+                            st.markdown(tema)
+                        
+                        st.markdown("""
+                        **Interpretação:**
+                        - Estes são os **assuntos recorrentes** nas negociações dos dados filtrados
+                        - O score indica frequência e força de aparição
+                        - Padrões recorrentes indicam causas comuns para as ocorrências
+                        - Use isso para priorizar treinamento em negociação de temas críticos
+                        """)
+                    except Exception as e:
+                        st.warning(f'⚠️ Erro ao processar temas: {str(e)[:80]}')
                 else:
-                    st.info('⚠️ Nenhuma transcrição disponível para os filtros selecionados.')
+                    st.info('⚠️ Insuficientes dados textuais para análise de N-gramas.')
+            else:
+                st.info('⚠️ Nenhuma transcrição disponível para os filtros selecionados.')
 
 
             # ----------------------------------------------------------
