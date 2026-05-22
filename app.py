@@ -3126,6 +3126,7 @@ else:
         # BLOCO: Ranking de Técnicas + Padrões e Correlações
         # ============================================================
         
+        
         st.markdown("<h5 style='color: #FFD700;'> Ranking de Técnicas Aplicadas</h5>", unsafe_allow_html=True)
 
         col_left, col_center, col_right = st.columns([1, 1, 1])  
@@ -3137,10 +3138,6 @@ else:
             )
 
         if is_ranking:
-
-            st.markdown("<div style='margin-bottom: 20px;'></div>", unsafe_allow_html=True)
-
-        if st.session_state.get("exibir_ranking", False):
 
             # ----------------------------------------------------------
             # Pré-processamento de colunas limpas
