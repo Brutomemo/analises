@@ -2449,7 +2449,7 @@ else:
                             conv_tematica = analise.calcular_convergencia_tematica(temas_c, temas_np)
 
                             # ── SCORECARD ────────────────────────────────────
-                            st.markdown("### 📊 Resumo da Convergência")
+                            st.markdown("### ✔️ Resumo da Convergência")
                             
                             col1, col2, col3, col4 = st.columns(4)
                             
@@ -3117,6 +3117,20 @@ else:
 
         st.markdown("#### Ranking de Técnicas Aplicadas")
 
+        col_left, col_center, col_right = st.columns([1, 2, 1])
+
+        with col_center:
+            is_ranking_expanded = render_toggle_button(
+                label="✔️ Abrir Ranking de Técnicas",
+                session_key="ranking_de_tecnicas_expanded",
+                button_key="btn_ranking_tecnicas"
+            )
+
+        # CONTEÚDO (volta a 100% da largura)
+        if is_ranking_expanded:
+            st.markdown("<div style='margin-bottom: 20px;'></div>", unsafe_allow_html=True)
+            col_g1, col_g2, col_g3 = st.columns(3)
+
         if render_toggle_button(
             label="✔️ Abrir Ranking de Técnicas",
             session_key="ranking_de_tecnicas_expanded",
@@ -3425,7 +3439,7 @@ else:
                             media_compartilhados = df_conv_agg['Compartilhados'].mean()
                             
                             # ── SCORECARD ────────────────────────────────
-                            st.markdown("#### ✔️ Resumo da Convergência Temática")
+                            st.markdown("#### Resumo da Convergência Temática")
                             
                             col_cv1, col_cv2, col_cv3, col_cv4 = st.columns(4)
                             
