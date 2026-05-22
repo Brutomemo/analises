@@ -3371,45 +3371,62 @@ else:
                         st.markdown("---")
                         st.markdown("#### ✔️ Leitura Operacional")
                         
-                        # ✅ ENCONTRAR TODAS AS TÉCNICAS COM MELHOR SCORE
-                        max_score = df_resumo_tec['Score'].max()
-                        tecnicas_mais_efetivas = df_resumo_tec[df_resumo_tec['Score'] == max_score]
+                        # ── 1. TÉCNICA MAIS EFETIVA (com desempate) ────────────────
+                        df_com_score = df_resumo_tec[df_resumo_tec["Score"].notna()]
                         
-                        # ✅ ENCONTRAR TODAS AS TÉCNICAS COM PIOR SCORE
-                        min_score = df_resumo_tec['Score'].min()
-                        tecnicas_menos_efetivas = df_resumo_tec[df_resumo_tec['Score'] == min_score]
-                        
-                        # ── EXIBIR TÉCNICAS MAIS EFETIVAS ──────────────
-                        st.markdown(f"""
-                        <div style='background:rgba(16,185,129,0.06);border-left:4px solid #10b981;padding:15px;border-radius:8px;margin-bottom:15px;'>
-                        <h6 style='color:#FFD700;margin-top:0;'>✅ Técnicas Mais Efetivas</h6>
-                        """, unsafe_allow_html=True)
-                        
-                        for idx, row in tecnicas_mais_efetivas.iterrows():
+                        if not df_com_score.empty:
+                            score_maximo = df_com_score["Score"].max()
+                            tecnicas_maximas = df_com_score[df_com_score["Score"] == score_maximo]
+                            
+                            if len(tecnicas_maximas) == 1:
+                                melhor = tecnicas_maximas.iloc[0]
+                                txt_melhor = (
+                                    f"✅ <strong>Técnica mais efetiva:</strong> {melhor['Técnica']} "
+                                    f"— Score {melhor['Score']:+.1f}% "
+                                    f"({int(melhor['Positivas'])} positivas / {int(melhor['Total'])} usos)"
+                                )
+                            else:
+                                # Múltiplas técnicas com mesmo score máximo
+                                tecnicas_nomes = ", ".join(tecnicas_maximas['Técnica'].tolist())
+                                txt_melhor = (
+                                    f"✅ <strong>Técnicas mais efetivas (empate):</strong> {tecnicas_nomes} "
+                                    f"— Score {score_maximo:+.1f}%"
+                                )
+                            
                             st.markdown(f"""
-                            <p style='color:#ddd;margin:8px 0;'>
-                            <strong>{row['Técnica']}</strong> — Score: <strong>{row['Score']:.1f}%</strong> 
-                            ({int(row['Positivas'])} positivas de {int(row['Total'])} usos)
+                            <div style='background:rgba(16,185,129,0.08);padding:12px;border-radius:8px;border-left:3px solid #10b981;margin-bottom:10px;'>
+                            <p style='color:#ddd;font-size:0.9rem;margin:0;'>
+                            {txt_melhor}
                             </p>
+                            </div>
                             """, unsafe_allow_html=True)
                         
-                        st.markdown("</div>", unsafe_allow_html=True)
+                        # ── 2. TÉCNICA MENOS EFETIVA (com desempate) ───────────────
+                        score_minimo = df_com_score["Score"].min()
+                        tecnicas_minimas = df_com_score[df_com_score["Score"] == score_minimo]
                         
-                        # ── EXIBIR TÉCNICAS MENOS EFETIVAS ────────────
+                        if len(tecnicas_minimas) == 1:
+                            pior = tecnicas_minimas.iloc[0]
+                            txt_pior = (
+                                f"⚠️ <strong>Técnica menos efetiva:</strong> {pior['Técnica']} "
+                                f"— Score {pior['Score']:+.1f}% "
+                                f"({int(pior['Positivas'])} positivas / {int(pior['Total'])} usos)"
+                            )
+                        else:
+                            # Múltiplas técnicas com mesmo score mínimo
+                            tecnicas_nomes = ", ".join(tecnicas_minimas['Técnica'].tolist())
+                            txt_pior = (
+                                f"⚠️ <strong>Técnicas menos efetivas (empate):</strong> {tecnicas_nomes} "
+                                f"— Score {score_minimo:+.1f}%"
+                            )
+                        
                         st.markdown(f"""
-                        <div style='background:rgba(239,68,68,0.06);border-left:4px solid #ef4444;padding:15px;border-radius:8px;margin-bottom:15px;'>
-                        <h6 style='color:#FFD700;margin-top:0;'>⚠️ Técnicas Menos Efetivas</h6>
+                        <div style='background:rgba(239,68,68,0.08);padding:12px;border-radius:8px;border-left:3px solid #ef4444;margin-bottom:10px;'>
+                        <p style='color:#ddd;font-size:0.9rem;margin:0;'>
+                        {txt_pior}
+                        </p>
+                        </div>
                         """, unsafe_allow_html=True)
-                        
-                        for idx, row in tecnicas_menos_efetivas.iterrows():
-                            st.markdown(f"""
-                            <p style='color:#ddd;margin:8px 0;'>
-                            <strong>{row['Técnica']}</strong> — Score: <strong>{row['Score']:.1f}%</strong> 
-                            ({int(row['Positivas'])} positivas de {int(row['Total'])} usos)
-                            </p>
-                            """, unsafe_allow_html=True)
-                        
-                        st.markdown("</div>", unsafe_allow_html=True)
                         
                         st.markdown("""
                         **Interpretação:**
@@ -3417,7 +3434,6 @@ else:
                         - **Score próximo a 0%** = Técnica neutra (sucessos ≈ fracassos)
                         - **Score < -50%** = Técnica contraproducente (mais fracassos que sucessos)
                         """)
-
 
         # ══════════════════════════════════════════════════════════════════════════════
         # ANÁLISE 6: RANKING DOS TEMAS DOMINANTES
