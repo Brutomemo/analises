@@ -3240,8 +3240,8 @@ else:
 
             st.markdown("---")
 
-                if is_efetividade:
-                        st.session_state[key_analise4_expanded] = not st.session_state[key_analise4_expanded]
+            if is_efetividade:
+                    
 
                 # ── CONTEÚDO EXPANDÍVEL ───────────────────────────────────
                 if st.session_state[key_analise4_expanded]:
