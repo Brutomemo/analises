@@ -3117,11 +3117,15 @@ else:
 
         st.markdown("#### Ranking de Técnicas Aplicadas")
 
-        if render_toggle_button(
-            label="✔️ Abrir Ranking de Técnicas",
-            session_key="ranking_de_tecnicas_expanded",
-            button_key="btn_ranking_tecnicas"
-        ):
+        col_left, col_center, col_right = st.columns([1, 3, 1])  # ← 60%
+        with col_center:
+            is_ranking = render_toggle_button(
+                label="✔️ Abrir Ranking de Técnicas",
+                session_key="ranking_de_tecnicas_expanded",
+                button_key="btn_ranking_tecnicas"
+            )
+
+        if is_ranking:
 
             st.markdown("<div style='margin-bottom: 20px;'></div>", unsafe_allow_html=True)
 
