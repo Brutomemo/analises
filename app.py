@@ -3125,6 +3125,54 @@ else:
                 else: st.info("Sem dados de Tipologia para os filtros atuais.")
 
             st.markdown("---")
+
+
+
+            # ══════════════════════════════════════════════════════════════════════════════
+            # SEÇÃO: INFORMAÇÃO LONGITUDINAL
+            # ══════════════════════════════════════════════════════════════════════════════
+
+            st.markdown("<h5 style='color: #FFD700;'>✔️ Informação Longitudinal</h5>", unsafe_allow_html=True)
+            st.markdown("<p style='color: #aaa; font-size: 0.95rem;'>Como tem evoluído o volume de negociações ao longo do tempo?</p>", unsafe_allow_html=True)
+
+            col_data = next((col for col in ['Data da ocorrência', 'Data', 'DATA'] if col in df_quali_filt.columns), None)
+            if col_data:
+                df_quali_filt['Data_DT'] = pd.to_datetime(df_quali_filt[col_data], errors='coerce')
+                df_time = df_quali_filt.dropna(subset=['Data_DT']).sort_values('Data_DT')
+                if not df_time.empty:
+                    df_time['Mes_Ano'] = df_time['Data_DT'].dt.to_period('M').astype(str)
+                    df_trend = df_time['Mes_Ano'].value_counts().sort_index().reset_index()
+                    df_trend.columns = ['Mês', 'Qtd Ocorrências']
+                    
+                    st.markdown(
+                        f"""
+                        **Resumo:** Total de {len(df_time)} ocorrências registradas de {df_trend['Mês'].min()} a {df_trend['Mês'].max()}
+                        """
+                    )
+                    
+                    fig_time = px.line(
+                        df_trend, 
+                        x='Mês', 
+                        y='Qtd Ocorrências', 
+                        markers=True, 
+                        color_discrete_sequence=['#FFD700'],
+                        title="Evolução Temporal de Negociações"
+                    )
+                    fig_time.update_layout(
+                        paper_bgcolor="rgba(0,0,0,0)", 
+                        plot_bgcolor="rgba(0,0,0,0)", 
+                        font_color="#FFF",
+                        hovermode='x unified'
+                    )
+                    st.plotly_chart(fig_time, use_container_width=True)
+                else: 
+                    st.info("⚠️ Sem datas válidas nos registros.")
+            else: 
+                st.info("⚠️ Coluna de Data não encontrada. Adicione uma coluna 'Data' ao seu formulário.")
+
+            st.markdown("---")
+
+
         # ============================================================
         # BLOCO: Ranking de Técnicas + Padrões e Correlações
         # ============================================================
@@ -4009,49 +4057,7 @@ else:
 
             st.markdown("---")
 
-            # ══════════════════════════════════════════════════════════════════════════════
-            # SEÇÃO: INFORMAÇÃO LONGITUDINAL
-            # ══════════════════════════════════════════════════════════════════════════════
-
-            st.markdown("<h5 style='color: #FFD700;'>✔️ Informação Longitudinal</h5>", unsafe_allow_html=True)
-            st.markdown("<p style='color: #aaa; font-size: 0.95rem;'>Como tem evoluído o volume de negociações ao longo do tempo?</p>", unsafe_allow_html=True)
-
-            col_data = next((col for col in ['Data da ocorrência', 'Data', 'DATA'] if col in df_quali_filt.columns), None)
-            if col_data:
-                df_quali_filt['Data_DT'] = pd.to_datetime(df_quali_filt[col_data], errors='coerce')
-                df_time = df_quali_filt.dropna(subset=['Data_DT']).sort_values('Data_DT')
-                if not df_time.empty:
-                    df_time['Mes_Ano'] = df_time['Data_DT'].dt.to_period('M').astype(str)
-                    df_trend = df_time['Mes_Ano'].value_counts().sort_index().reset_index()
-                    df_trend.columns = ['Mês', 'Qtd Ocorrências']
-                    
-                    st.markdown(
-                        f"""
-                        **Resumo:** Total de {len(df_time)} ocorrências registradas de {df_trend['Mês'].min()} a {df_trend['Mês'].max()}
-                        """
-                    )
-                    
-                    fig_time = px.line(
-                        df_trend, 
-                        x='Mês', 
-                        y='Qtd Ocorrências', 
-                        markers=True, 
-                        color_discrete_sequence=['#FFD700'],
-                        title="Evolução Temporal de Negociações"
-                    )
-                    fig_time.update_layout(
-                        paper_bgcolor="rgba(0,0,0,0)", 
-                        plot_bgcolor="rgba(0,0,0,0)", 
-                        font_color="#FFF",
-                        hovermode='x unified'
-                    )
-                    st.plotly_chart(fig_time, use_container_width=True)
-                else: 
-                    st.info("⚠️ Sem datas válidas nos registros.")
-            else: 
-                st.info("⚠️ Coluna de Data não encontrada. Adicione uma coluna 'Data' ao seu formulário.")
-
-            st.markdown("---")
+            
             st.markdown("""
             <h3 style='color: #06C755;'>✔️ Síntese Interpretativa Assistida por IA</h3>
             <p style='color: #aaa; font-size: 0.95rem; margin-bottom: 20px;'>
