@@ -3263,22 +3263,23 @@ else:
 
                         
         # ============================================================
-        # ANÁLISE 4: EFETIVIDADE DAS TÉCNICAS
+        # ANÁLISE 4: EFETIVIDADE DAS TÉCNICAS (FORMATO INDIVIDUAL)
         # ============================================================
-        
+
         st.markdown("<h5 style='color: #FFD700;'>Efetividade das Técnicas</h5>", unsafe_allow_html=True)
-        
-        col_left, col_center, col_right = st.columns([1, 3, 1])
+
+        col_left, col_center, col_right = st.columns([1, 1, 1])  
         with col_center:
-            is_efetividade = render_toggle_button(
+            is_Efetividade_Técnicas = render_toggle_button(
                 label="✔️ Abrir Efetividade das Técnicas",
-                session_key="analise4_efetividade_expanded",
-                button_key="btn_analise4_efetividade"
+                session_key="Efetividade_Técnicas",
+                button_key="btn_Efetividade_Técnicas"
             )
-        
+
         st.markdown("---")
-        
-        if is_efetividade:
+
+        if is_Efetividade_Técnicas:
+                
             if not df_tec_filt.empty:
                 col_t = next(
                     (col for col in ['TÉCNICAS', 'TECNICAS', 'TÉCNICA', 'TECNICA'] if col in df_tec_filt.columns),
@@ -3379,7 +3380,7 @@ else:
                         
                         # ── LEITURA OPERACIONAL ──────────────────────
                         st.markdown("---")
-                        st.markdown("#### 📖 Leitura Operacional")
+                        st.markdown("#### ✔️ Leitura Operacional")
                         
                         top_efetiva = df_resumo_tec.iloc[0]
                         bottom_efetiva = df_resumo_tec.iloc[-1]
@@ -3412,12 +3413,9 @@ else:
                         """)
                     else:
                         st.info("⚠️ Sem dados de reação registrados para as técnicas nos filtros atuais.")
-                else:
-                    st.warning("⚠️ Colunas necessárias não encontradas (TÉCNICAS e ATITUDE).")
-            else:
-                st.info("⚠️ Nenhuma técnica encontrada para os filtros selecionados.")
-        
-        st.markdown("---")
+
+            st.markdown("---")
+
 
         # ══════════════════════════════════════════════════════════════════════════════
         # ANÁLISE 6: RANKING DOS TEMAS DOMINANTES
