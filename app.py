@@ -3948,7 +3948,7 @@ Os dois testes acima buscam padrões nos dados de negociações. Aqui explicamos
 - Exige pelo menos 10 ocorrências distintas
 - Se alguma categoria tiver muito poucos casos (< 5), o teste fica impreciso
 - Funciona apenas com variáveis categóricas
-            """)
+                """)
         
             # ============================================================
             # MODELAGEM AVANÇADA — Mais clara e acessível
