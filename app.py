@@ -3027,13 +3027,13 @@ else:
         # ====
         # NOVOS GRÁFICOS: VISÃO GERAL DA AMOSTRA
         # ====
-        st.markdown("<h5 style='color: #FFD700;'>Visão Geral da Amostra</h5>", unsafe_allow_html=True)
+        st.markdown("<h5 style='color: #FFD700;'>Visão Geral da Série Histórica</h5>", unsafe_allow_html=True)
 
         # ── BOTÃO TOGGLE ───────────────────────────────────────────
         col_left, col_center, col_right = st.columns([1, 1, 1])
         with col_center:
             is_visao_geral = render_toggle_button(
-                label="✔️ Abrir Visão Geral da Amostra",
+                label="✔️ Abrir Visão Geral",
                 session_key="analise1_visao_geral",
                 button_key="btn_analise1_visao_geral"
             )
