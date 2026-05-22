@@ -3660,6 +3660,8 @@ else:
             # ----------------------------------------------------------
             # Cabeçalho da seção de correlações
             # ----------------------------------------------------------
+            st.markdown("---")
+
             st.markdown("<h5 style='color: #FFD700;'> O que os Dados dizem sobre a Resolução das Ocorrências?</h5>", unsafe_allow_html=True)
 
             col_left, col_center, col_right = st.columns([1, 1, 1])  
