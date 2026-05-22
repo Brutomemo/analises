@@ -3374,18 +3374,12 @@ else:
             # ANÁLISE: CONVERGÊNCIA TEMÁTICA
             # ============================================================
 
-            st.markdown("<h5 style='color: #FFD700;'> Convergência Temática: Quanto de sincronização temática existe entre negociador e causador </h5>", unsafe_allow_html=True)
-                                
-
-            # ── INICIALIZAR SESSION STATE ──────────────────────────────
-            key_analise5_convergencia_tematica = "analise5_convergencia_tematica"
-            if key_analise5_convergencia_tematica not in st.session_state:
-                st.session_state[key_analise5_convergencia_tematica] = False
+            st.markdown("<h5 style='color: #FFD700;'>Convergência Temática: Quanto de sincronização temática existe entre negociador e causador</h5>", unsafe_allow_html=True)
 
             # ── BOTÃO TOGGLE ───────────────────────────────────────────
-            col_left, col_center, col_right = st.columns([1, 1, 1])  # ← 60%
+            col_left, col_center, col_right = st.columns([1, 3, 1])  # ✅ 60% CORRETO
             with col_center:
-                is_efetividade = render_toggle_button(
+                is_convergencia = render_toggle_button(
                     label="✔️ Abrir Convergência Temática",
                     session_key="analise5_convergencia_tematica",
                     button_key="btn_analise5_convergencia_tematica"
