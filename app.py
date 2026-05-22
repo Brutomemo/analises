@@ -3378,16 +3378,15 @@ else:
 
             # ── BOTÃO TOGGLE ───────────────────────────────────────────
             col_left, col_center, col_right = st.columns([1, 3, 1])  # ✅ 60% CORRETO
-            with col_center:
+        with col_center:
                 is_convergencia = render_toggle_button(
                     label="✔️ Abrir Convergência Temática",
                     session_key="analise5_convergencia_tematica",
                     button_key="btn_analise5_convergencia_tematica"
                 )
 
-            if is_efetividade:
-                    st.session_state[key_analise5_convergencia_tematica] = not st.session_state[key_analise5_convergencia_tematica]
-            
+        if is_efetividade:
+                               
 
             if not df_quali_filt.empty:
                 col_texto_c = 'TRANSCRIÇÃO DO CAUSADOR'
