@@ -3504,6 +3504,9 @@ else:
                 session_key="analise5_convergencia_tematica",
                 button_key="btn_analise5_convergencia_tematica"
             )
+
+        st.markdown("---")
+
         if is_convergencia:                   
 
             if not df_quali_filt.empty:
