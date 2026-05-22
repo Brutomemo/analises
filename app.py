@@ -3037,6 +3037,9 @@ else:
                 session_key="analise1_visao_geral",
                 button_key="btn_analise1_visao_geral"
             )
+        
+        st.markdown("---")
+        
         if is_visao_geral:     
                 
         
@@ -3137,6 +3140,8 @@ else:
                 button_key="btn_ranking_tecnicas"
             )
 
+        st.markdown("---")
+
         if is_ranking:
 
             # ----------------------------------------------------------
@@ -3232,6 +3237,8 @@ else:
                     session_key="analise4_efetividade_expanded",
                     button_key="btn_analise4_efetividade"
                 )
+
+            st.markdown("---")
 
             if is_efetividade:
                     st.session_state[key_analise4_expanded] = not st.session_state[key_analise4_expanded]
