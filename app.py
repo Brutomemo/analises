@@ -4058,15 +4058,9 @@ else:
             - Funciona apenas com variáveis categóricas
             """)
 
-        st.markdown("---")
-
         
-        st.markdown("""
-            <h3 style='color: #06C755;'>✔️ Síntese Interpretativa Assistida por IA</h3>
-            <p style='color: #aaa; font-size: 0.95rem; margin-bottom: 20px;'>
-            Gere um relatório em linguagem natural que traduz todos os números em recomendações acionáveis para a equipe.
-            </p>
-            """, unsafe_allow_html=True)
+        st.markdown("<h5 style='color: #FFD700;'>Síntese Interpretativa Assistida</h5>", unsafe_allow_html=True)
+        
 
         if st.button("✔ GERAR RELATÓRIO ESTATÍSTICO ASSISTIDO POR IA"):
                 with st.spinner("✔️ Processando análises e gerando interpretações..."):
