@@ -3208,14 +3208,8 @@ else:
             # ANÁLISE 4: EFETIVIDADE DAS TÉCNICAS (FORMATO INDIVIDUAL)
             # ============================================================
 
-            st.markdown("""
-            <div style='background:rgba(255,215,0,0.06);border-left:4px solid #FFD700;padding:15px;border-radius:8px;margin-bottom:20px;'>
-            <h3 style='color:#FFD700;margin-top:0;'>Efetividade das Técnicas</h3>
-            <p style='color: #aaa; margin-bottom: 10px;'>
-            <strong>Pergunta:</strong> "Quais técnicas possuem maior taxa de sucesso considerando TODOS os dados filtrados?"
-            </p>
-            </div>
-            """, unsafe_allow_html=True)
+            st.markdown("<h5 style='color: #FFD700;'> Efetividade das Técnicas</h5>", unsafe_allow_html=True)
+                                
 
             # ── INICIALIZAR SESSION STATE ──────────────────────────────
             key_analise4_expanded = "analise4_efetividade_expandida"
