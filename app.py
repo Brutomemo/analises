@@ -3117,7 +3117,7 @@ else:
 
         st.markdown("#### Ranking de Técnicas Aplicadas")
 
-        col_left, col_center, col_right = st.columns([1, 3, 1])  # ← 60%
+        col_left, col_center, col_right = st.columns([1, 2, 1])  # ← 60%
         with col_center:
             is_ranking = render_toggle_button(
                 label="✔️ Abrir Ranking de Técnicas",
