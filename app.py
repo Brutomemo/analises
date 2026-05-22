@@ -3335,7 +3335,7 @@ else:
                         df_resumo_tec = pd.DataFrame(resumo).sort_values("Score", ascending=False, na_position='last')
 
                         # ── SCORECARD GERAL ───────────────────────────────────
-                        st.markdown("#### ✔️ Resumo Geral")
+                        st.markdown("### ✔️ Resumo Geral")
 
                         total_usos     = int(df_resumo_tec["Total"].sum())
                         total_positivo = int(df_resumo_tec["Positivas"].sum())
@@ -3354,7 +3354,7 @@ else:
                             st.metric('Score Geral', f'{score_geral:+.1f}%')
 
                         # ── TABELA + GRÁFICO ──────────────────────────────────
-                        st.markdown("#### ✔️ Efetividade por Técnica")
+                        st.markdown("### ✔️ Efetividade por Técnica")
 
                         col_ef1, col_ef2 = st.columns([1, 2])
 
@@ -3411,7 +3411,7 @@ else:
 
                         # ── LEITURA OPERACIONAL ───────────────────────────────
                         st.markdown("---")
-                        st.markdown("#### ✔️ Leitura Operacional")
+                        st.markdown("### ✔️ Leitura Operacional")
 
                         # Só técnicas com pelo menos 2 usos observados
                         df_com_score = df_resumo_tec[
@@ -3544,7 +3544,7 @@ else:
                             media_compartilhados = df_conv_agg['Compartilhados'].mean()
                             
                             # ── SCORECARD ────────────────────────────────
-                            st.markdown("#### Resumo da Convergência Temática")
+                            st.markdown("### Resumo da Convergência Temática")
                             
                             col_cv1, col_cv2, col_cv3, col_cv4 = st.columns(4)
                             
@@ -3566,7 +3566,7 @@ else:
                             
                             # ── DISTRIBUIÇÃO ─────────────────────────────
                             st.markdown("---")
-                            st.markdown("#### ✔️ Distribuição da Convergência")
+                            st.markdown("### ✔️ Distribuição da Convergência")
                             
                             st.markdown("""
                             **O que são esses gráficos?**
@@ -3668,7 +3668,7 @@ else:
                             
                             # ── LEITURA OPERACIONAL ──────────────────────
                             st.markdown("---")
-                            st.markdown("#### ✔️ Leitura Operacional")
+                            st.markdown("### ✔️ Leitura Operacional")
                             
                             st.markdown(f"""
                             **O que os dados mostram:**
