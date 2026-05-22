@@ -3696,376 +3696,376 @@ else:
                         st.warning(f'⚠️ Erro ao processar convergência: {str(e)[:80]}')
                 else:
                     st.warning('⚠️ Colunas de transcrição não encontradas.')
-            # ──────────────────────────────────────────────────────────
-            # ANÁLISE: CORRELAÇÕES E ASSOCIAÇÕES
-            # ──────────────────────────────────────────────────────────
+        # ──────────────────────────────────────────────────────────
+        # ANÁLISE: CORRELAÇÕES E ASSOCIAÇÕES
+        # ──────────────────────────────────────────────────────────
 
-            st.markdown("<h5 style='color: #FFD700;'>O que os Dados dizem sobre a Resolução das Ocorrências?</h5>", unsafe_allow_html=True)
+        st.markdown("<h5 style='color: #FFD700;'>O que os Dados dizem sobre a Resolução das Ocorrências?</h5>", unsafe_allow_html=True)
 
-            # ──────────────────────────────────────────────────────────
-            # Helpers estatísticos locais
-            # ──────────────────────────────────────────────────────────
-            import unicodedata
+        # ──────────────────────────────────────────────────────────
+        # Helpers estatísticos locais
+        # ──────────────────────────────────────────────────────────
+        import unicodedata
 
-            def norm_col(t):
-                return (
-                    unicodedata.normalize("NFKD", str(t))
-                    .encode("ASCII", "ignore")
-                    .decode("ASCII")
-                    .lower()
-                )
-
-            def achar_coluna(df, papel, metrica, momento):
-                for col in df.columns:
-                    cn = norm_col(col)
-                    if norm_col(papel) in cn and norm_col(metrica) in cn and norm_col(momento) in cn:
-                        return col
-                return None
-
-            def tempo_para_minutos(val):
-                """Converte segundos (inteiro ou lista) para minutos float."""
-                try:
-                    if isinstance(val, list):
-                        val = val[0]
-                    if pd.isna(val) or str(val).strip().lower() in ("", "n/d", "nan", "none"):
-                        return None
-                    segundos = float(val)
-                    return segundos / 60 if segundos > 0 else None
-                except Exception:
-                    return None
-
-            # ──────────────────────────────────────────────────────────
-            # Configurações iniciais (APENAS COM df_quali_filt)
-            # ──────────────────────────────────────────────────────────
-            lixo = {"none", "nan", "n/d", "", "null", "[]"}
-
-            col_agr_c = achar_coluna(df_quali_filt, "Principal", "Agressividade", "Chegada")
-            col_agr_e = achar_coluna(df_quali_filt, "Principal", "Agressividade", "Encerramento")
-
-            id_col = next(
-                (c for c in df_quali_filt.columns if "ID" in c.upper() or "VINCULO" in c.upper()),
-                None,
+        def norm_col(t):
+            return (
+                unicodedata.normalize("NFKD", str(t))
+                .encode("ASCII", "ignore")
+                .decode("ASCII")
+                .lower()
             )
 
-            # ──────────────────────────────────────────────────────────
-            # BOTÃO TOGGLE (Centralizado)
-            # ──────────────────────────────────────────────────────────
-            col_left, col_center, col_right = st.columns([1, 3, 1])
-            with col_center:
-                is_correlacao_associacao = render_toggle_button(
-                    label="✔️ Abrir Correlações e Associações",
-                    session_key="correlacao_associacao",
-                    button_key="btn_correlacao_associacao"
-                )
+        def achar_coluna(df, papel, metrica, momento):
+            for col in df.columns:
+                cn = norm_col(col)
+                if norm_col(papel) in cn and norm_col(metrica) in cn and norm_col(momento) in cn:
+                    return col
+            return None
 
-            st.markdown("---")
+        def tempo_para_minutos(val):
+            """Converte segundos (inteiro ou lista) para minutos float."""
+            try:
+                if isinstance(val, list):
+                    val = val[0]
+                if pd.isna(val) or str(val).strip().lower() in ("", "n/d", "nan", "none"):
+                    return None
+                segundos = float(val)
+                return segundos / 60 if segundos > 0 else None
+            except Exception:
+                return None
 
-            # ──────────────────────────────────────────────────────────
-            # CONTEÚDO (Dentro do if)
-            # ──────────────────────────────────────────────────────────
-            if is_correlacao_associacao:
-                
-                # Layout das duas colunas de análise
-                c_sp1, c_sp2 = st.columns(2)
+        # ──────────────────────────────────────────────────────────
+        # Configurações iniciais (APENAS COM df_quali_filt)
+        # ──────────────────────────────────────────────────────────
+        lixo = {"none", "nan", "n/d", "", "null", "[]"}
 
-                # ══════════════════════════════════════════════════════════════════════════════
-                # COLUNA 1 — Spearman: Duração vs. Queda de Agressividade
-                # ══════════════════════════════════════════════════════════════════════════════
-                with c_sp1:
-                    st.markdown(
-                        """
-                        <div class='info-card'>
-                        <strong>Ocorrências mais longas terminam com o causador menos agressivo?</strong><br>
-                        <span style='font-size: 0.82rem; color: #aaa;'>
-                        Verifica se existe uma relação matemática entre o tempo da negociação
-                        e a queda de agressividade do causador do início ao fim da ocorrência.
-                        </span>
-                        """,
-                        unsafe_allow_html=True,
-                    )
+        col_agr_c = achar_coluna(df_quali_filt, "Principal", "Agressividade", "Chegada")
+        col_agr_e = achar_coluna(df_quali_filt, "Principal", "Agressividade", "Encerramento")
 
-                    df_sp = df_quali_filt.copy()
+        id_col = next(
+            (c for c in df_quali_filt.columns if "ID" in c.upper() or "VINCULO" in c.upper()),
+            None,
+        )
 
-                    # Verificações de pré-requisito
-                    colunas_ausentes = []
-                    if not col_agr_c:
-                        colunas_ausentes.append("Agressividade na Chegada")
-                    if not col_agr_e:
-                        colunas_ausentes.append("Agressividade no Encerramento")
-                    if "Tempo de Negociação Real" not in df_sp.columns:
-                        colunas_ausentes.append("Tempo de Negociação Real")
+        # ──────────────────────────────────────────────────────────
+        # BOTÃO TOGGLE (Centralizado)
+        # ──────────────────────────────────────────────────────────
+        col_left, col_center, col_right = st.columns([1, 3, 1])
+        with col_center:
+            is_correlacao_associacao = render_toggle_button(
+                label="✔️ Abrir Correlações e Associações",
+                session_key="correlacao_associacao",
+                button_key="btn_correlacao_associacao"
+            )
 
-                    if colunas_ausentes:
-                        st.warning(
-                            f"⚠️ Colunas ausentes nos dados: {', '.join(colunas_ausentes)}. "
-                            "Verifique o formulário de registro."
-                        )
+        st.markdown("---")
 
-                    else:
-                        # Converte escalas e remove "Não Observado" (0)
-                        df_sp["Agr_Inicio"] = (
-                            df_sp[col_agr_c].apply(converter_escala).replace(0, pd.NA)
-                        )
-                        df_sp["Agr_Fim"] = (
-                            df_sp[col_agr_e].apply(converter_escala).replace(0, pd.NA)
-                        )
-                        df_sp["Tempo_Min"] = df_sp["Tempo de Negociação Real"].apply(
-                            tempo_para_minutos
-                        )
-
-                        # Remove linhas sem os três valores necessários
-                        df_sp = df_sp.dropna(subset=["Agr_Inicio", "Agr_Fim", "Tempo_Min"])
-
-                        # Delta positivo = queda de agressividade (bom sinal)
-                        df_sp["Delta_Agressividade"] = df_sp["Agr_Inicio"] - df_sp["Agr_Fim"]
-
-                        n_valido = len(df_sp)
-
-                        if n_valido < 5:
-                            # Barra de progresso visual
-                            progresso = int((n_valido / 5) * 100)
-                            st.warning(
-                                f"⏳ **Aguardando mais dados (N={n_valido}/5)**\n\n"
-                                "São necessárias pelo menos **5 ocorrências encerradas** "
-                                "com agressividade registrada nos dois momentos para calcular "
-                                "este indicador de forma confiável."
-                            )
-                            st.progress(progresso)
-
-                        else:
-                            res_sp = analise.calcular_spearman(df_sp, "Tempo_Min", "Delta_Agressividade")
-
-                            if res_sp.get("valido", False):
-                                rho = res_sp["rho"]
-                                p = res_sp["p_value"]
-                                significativo = p < 0.05
-
-                                # Veredito em linguagem clara
-                                if significativo and rho > 0:
-                                    icone = "✅"
-                                    titulo_veredito = "Sim — ocorrências mais longas terminam com menos agressividade"
-                                    cor_veredito = "success"
-                                    forca_correlacao = "muito forte" if abs(rho) > 0.7 else "forte" if abs(rho) > 0.5 else "moderada"
-                                    explicacao = (
-                                        f"**O que isso significa:** Existe uma **relação {forca_correlacao}** entre duração e queda de agressividade. "
-                                        f"Em outras palavras: quanto mais tempo a negociação leva, maior a chance de o causador terminar menos agressivo.\n\n"
-                                        f"**Por que temos certeza?** Analisamos {n_valido} ocorrências e o padrão encontrado é tão consistente "
-                                        f"que a probabilidade de ser mera coincidência é menor que 5% (p < 0,05). Isso significa que o padrão é **real**.\n\n"
-                                        f"**Métrica técnica:** Rho = {rho:.2f} (escala de -1 a +1, onde +1 = relação perfeita)."
-                                    )
-                                elif significativo and rho < 0:
-                                    icone = "⚠️"
-                                    titulo_veredito = "Atenção — ocorrências mais longas terminam COM MAIS agressividade"
-                                    cor_veredito = "warning"
-                                    forca_correlacao = "muito forte" if abs(rho) > 0.7 else "forte" if abs(rho) > 0.5 else "moderada"
-                                    explicacao = (
-                                        f"**O que isso significa:** Existe uma **relação {forca_correlacao} inversa**. "
-                                        f"Ocorrências que demoram mais tempo tendem a terminar com o causador **mais agressivo**, não menos.\n\n"
-                                        f"**Por que isso preocupa?** Isso pode indicar que:\n"
-                                        f"  • O tempo prolongado está gerando **desgaste ou frustração** no causador\n"
-                                        f"  • A estratégia de longa negociação pode não estar sendo efetiva em alguns cenários\n"
-                                        f"  • Pode haver um ponto de saturação após o qual continuar negociando piora as coisas\n\n"
-                                        f"**Por que temos certeza?** O padrão foi encontrado em {n_valido} ocorrências e é improvável ser coincidência (p < 0,05).\n\n"
-                                        f"**Métrica técnica:** Rho = {rho:.2f} (negativo indica relação inversa)."
-                                    )
-                                elif not significativo and abs(rho) > 0.3:
-                                    icone = "🔎"
-                                    titulo_veredito = "Há uma tendência, mas ainda é cedo para confirmar"
-                                    cor_veredito = "info"
-                                    direcao = "positiva (mais tempo = menos agressividade)" if rho > 0 else "negativa (mais tempo = mais agressividade)"
-                                    explicacao = (
-                                        f"**O que observamos:** Existe uma tendência {direcao}, mas com {n_valido} ocorrências, "
-                                        f"não podemos ter certeza se é um padrão real ou coincidência.\n\n"
-                                        f"**Por que não temos certeza?** A probabilidade de isso ser acaso é {p*100:.1f}% — acima do limite de 5% que os estatísticos usam como referência.\n\n"
-                                        f"**O que fazer?** Colete mais registros de negociações. Com 10-15 ocorrências a mais, essa tendência pode se confirmar ou se desfazer.\n\n"
-                                        f"**Métrica técnica:** Rho = {rho:.2f}, p = {p:.4f} (p > 0,05 = não significativo ainda)."
-                                    )
-                                else:
-                                    icone = "➖"
-                                    titulo_veredito = "Nenhuma relação detectada entre duração e agressividade"
-                                    cor_veredito = "info"
-                                    explicacao = (
-                                        f"**O que isso significa:** A duração da ocorrência **não está associada** à queda de agressividade. "
-                                        f"Ocorrências longas terminam com queda de agressividade tão frequentemente quanto as curtas.\n\n"
-                                        f"**O que fazer?** Isso não é necessariamente ruim — significa que o tempo não é o fator determinante. "
-                                        f"Procure investigar outros fatores: técnicas usadas, perfil do causador, contexto da ocorrência, etc.\n\n"
-                                        f"**Por que temos certeza?** A relação encontrada (Rho = {rho:.2f}) é tão fraca que não conseguimos descartar coincidência (p = {p:.4f}).\n\n"
-                                        f"**Próximo passo:** Se quiser, rode os outros testes abaixo para explorar quais fatores **realmente** influenciam o desfecho."
-                                    )
-
-                                # Exibe o veredito
-                                getattr(st, cor_veredito)(f"{icone} **{titulo_veredito}**\n\n{explicacao}")
-                            else:
-                                st.warning(res_sp.get("msg", "Dados insuficientes para o cálculo (N < 3)."))
-
-                    st.markdown("</div>", unsafe_allow_html=True)
-
-                # ══════════════════════════════════════════════════════════════════════════════
-                # COLUNA 2 — Distribuição de Características
-                # ══════════════════════════════════════════════════════════════════════════════
-                with c_sp2:
-                    st.markdown(
-                        """
-                        <div class='info-card'>
-                        <strong>Padrão de Características da Ocorrência</strong><br>
-                        <span style='font-size: 0.82rem; color: #aaa;'>
-                        Analisa como diferentes características estão distribuídas na série histórica.
-                        </span>
-                        """,
-                        unsafe_allow_html=True,
-                    )
-
-                    # Opções simples (usando df_quali_filt)
-                    opcoes_variaveis = {
-                        "Tipologia": "Tip_Limpa",
-                        "Negociador": "Neg_Limpo",
-                        "Modalidade": "Mod_Limpa",
-                    }
-
-                    var_analise = st.selectbox(
-                        "Analisar distribuição de:",
-                        list(opcoes_variaveis.keys()),
-                        index=0,
-                        key="selectbox_distribuicao"
-                    )
-                    col_v1_key = opcoes_variaveis[var_analise]
-
-                    # Análise simples da variável
-                    if col_v1_key in df_quali_filt.columns:
-                        df_anal = df_quali_filt[[col_v1_key]].dropna()
-                        df_anal = df_anal[~df_anal[col_v1_key].astype(str).str.strip().str.lower().isin(lixo)]
-
-                        if not df_anal.empty:
-                            distribuicao = df_anal[col_v1_key].value_counts()
-                            
-                            st.info(
-                                f"**Distribuição de {var_analise}**\n\n"
-                                f"Total de registros: {len(df_anal)}\n"
-                                f"Categorias únicas: {df_anal[col_v1_key].nunique()}\n\n"
-                                f"**Top 5 mais frequentes:**\n"
-                                + "\n".join([f"• {cat}: {count} ({count/len(df_anal)*100:.1f}%)" 
-                                            for cat, count in distribuicao.head(5).items()])
-                            )
-                        else:
-                            st.warning("Sem dados válidos para esta análise.")
-                    else:
-                        st.warning(f"Coluna '{col_v1_key}' não encontrada nos dados.")
-
-                    st.markdown("</div>", unsafe_allow_html=True)
-
-            st.markdown("---")
-
-            # ══════════════════════════════════════════════════════════════════════════════
-            # SEÇÃO: ENTENDA OS TESTES ESTATÍSTICOS
-            # ══════════════════════════════════════════════════════════════════════════════
-
-            st.markdown("<h5 style='color: #FFD700;'>Entenda melhor os testes estatísticos de correlação e associação</h5>", unsafe_allow_html=True)
-
-            col_left, col_center, col_right = st.columns([1, 3, 1])
-            with col_center:
-                is_entenda_testes = render_toggle_button(
-                    label="✔️ Entenda os testes estatísticos",
-                    session_key="entenda_testes",
-                    button_key="btn_entenda_testes"
-                )
-
-            st.markdown("---")
-
-            if is_entenda_testes:
-                st.markdown("""
-                ## ✔️ Guia de Entendimento dos Testes Estatísticos
-
-                Os dois testes acima buscam padrões nos dados de negociações. Aqui explicamos o que cada um faz em linguagem simples.
-
-                ---
-
-                ### ✔️ Teste de Spearman (Coluna Esquerda)
-
-                **O que faz:** Verifica se duas coisas "andam juntas" — quando uma cresce, a outra cresce também?
-
-                **No seu caso:** "Ocorrências mais longas terminam com o causador menos agressivo?"
-
-                **Como entender:**
-                - **Rho (Coeficiente):** Um número entre -1 e +1 que mede a força da relação
-                - **+1.0** = relação perfeita (sempre que uma sobe, outra sobe)
-                - **0.0** = sem relação (variam independentemente)
-                - **-1.0** = relação inversa (quando uma sobe, outra desce)
-
-                - **P-Value:** Responde "é realmente um padrão ou coincidência?"
-                - **p < 0.05** (5%) = ✅ É um padrão real (improvável ser acaso)
-                - **p ≥ 0.05** = ⚠️ Pode ser coincidência
-
-                **Quando usar:** Para variáveis contínuas ou ordinais (como escalas de agressividade: baixa, média, alta)
-
-                ---
-
-                ### ✔️ Teste Qui-Quadrado (Coluna Direita)
-
-                **O que faz:** Verifica se a escolha de uma coisa é **independente** de outra, ou se há uma relação.
-
-                **No seu caso:** "A técnica escolhida depende da Tipologia/Negociador/Modalidade?"
-
-                **Como entender:**
-                - **χ² (Chi-Quadrado):** Um número que mede "quanto a realidade se desvia do acaso"
-                - **χ² próximo de 0** = sem padrão (aleatório)
-                - **χ² grande** = há um padrão (não é aleatório)
-
-                - **P-Value:** Mesma lógica do Spearman
-                - **p < 0.05** = ✅ Há um padrão real
-                - **p ≥ 0.05** = ⚠️ Pode ser acaso
-
-                **Quando usar:** Para variáveis categóricas (categorias, grupos) — não contínuas
-
-                ---
-
-                ### ✔️ Comparação Rápida
-
-                | Aspecto | Spearman | Qui-Quadrado |
-                |---------|----------|--------------|
-                | **Tipo de dado** | Contínuo ou ordinal | Categórico |
-                | **Pergunta** | "Duas coisas andam juntas?" | "Escolher A depende de B?" |
-                | **Resultado** | Rho (-1 a +1) | χ² (≥0) |
-                | **Seu caso** | Duração × Agressividade | Técnica × Contexto |
-
-                ---
-
-                ### ✔️ O Que Fazer Com os Resultados
-
-                **Se p-value < 0.05 (padrão real encontrado):**
-                - ✅ Há um padrão consistente nos dados
-                - Isso não é coincidência — é algo que realmente está acontecendo
-                - Vale investigar por quê esse padrão existe
-
-                **Se p-value ≥ 0.05 (sem confirmação):**
-                - ⚠️ Não há evidência estatística de padrão
-                - Pode ser coincidência ou falta de dados suficientes
-                - Coleta mais registros para confirmar ou refutar
-
-                ---
-
-                ### ⚠️ Limitações Importantes
-
-                **Spearman:**
-                - Exige pelo menos 5 valores válidos para ser confiável
-                - Valores "Não Observado" são excluídos automaticamente
-
-                **Qui-Quadrado:**
-                - Exige pelo menos 10 ocorrências distintas
-                - Se alguma categoria tiver muito poucos casos (< 5), o teste fica impreciso
-                - Funciona apenas com variáveis categóricas
-                """)
-
-            st.markdown("---")
-
+        # ──────────────────────────────────────────────────────────
+        # CONTEÚDO (Dentro do if)
+        # ──────────────────────────────────────────────────────────
+        if is_correlacao_associacao:
             
+            # Layout das duas colunas de análise
+            c_sp1, c_sp2 = st.columns(2)
+
+            # ══════════════════════════════════════════════════════════════════════════════
+            # COLUNA 1 — Spearman: Duração vs. Queda de Agressividade
+            # ══════════════════════════════════════════════════════════════════════════════
+            with c_sp1:
+                st.markdown(
+                    """
+                    <div class='info-card'>
+                    <strong>Ocorrências mais longas terminam com o causador menos agressivo?</strong><br>
+                    <span style='font-size: 0.82rem; color: #aaa;'>
+                    Verifica se existe uma relação matemática entre o tempo da negociação
+                    e a queda de agressividade do causador do início ao fim da ocorrência.
+                    </span>
+                    """,
+                    unsafe_allow_html=True,
+                )
+
+                df_sp = df_quali_filt.copy()
+
+                # Verificações de pré-requisito
+                colunas_ausentes = []
+                if not col_agr_c:
+                    colunas_ausentes.append("Agressividade na Chegada")
+                if not col_agr_e:
+                    colunas_ausentes.append("Agressividade no Encerramento")
+                if "Tempo de Negociação Real" not in df_sp.columns:
+                    colunas_ausentes.append("Tempo de Negociação Real")
+
+                if colunas_ausentes:
+                    st.warning(
+                        f"⚠️ Colunas ausentes nos dados: {', '.join(colunas_ausentes)}. "
+                        "Verifique o formulário de registro."
+                    )
+
+                else:
+                    # Converte escalas e remove "Não Observado" (0)
+                    df_sp["Agr_Inicio"] = (
+                        df_sp[col_agr_c].apply(converter_escala).replace(0, pd.NA)
+                    )
+                    df_sp["Agr_Fim"] = (
+                        df_sp[col_agr_e].apply(converter_escala).replace(0, pd.NA)
+                    )
+                    df_sp["Tempo_Min"] = df_sp["Tempo de Negociação Real"].apply(
+                        tempo_para_minutos
+                    )
+
+                    # Remove linhas sem os três valores necessários
+                    df_sp = df_sp.dropna(subset=["Agr_Inicio", "Agr_Fim", "Tempo_Min"])
+
+                    # Delta positivo = queda de agressividade (bom sinal)
+                    df_sp["Delta_Agressividade"] = df_sp["Agr_Inicio"] - df_sp["Agr_Fim"]
+
+                    n_valido = len(df_sp)
+
+                    if n_valido < 5:
+                        # Barra de progresso visual
+                        progresso = int((n_valido / 5) * 100)
+                        st.warning(
+                            f"⏳ **Aguardando mais dados (N={n_valido}/5)**\n\n"
+                            "São necessárias pelo menos **5 ocorrências encerradas** "
+                            "com agressividade registrada nos dois momentos para calcular "
+                            "este indicador de forma confiável."
+                        )
+                        st.progress(progresso)
+
+                    else:
+                        res_sp = analise.calcular_spearman(df_sp, "Tempo_Min", "Delta_Agressividade")
+
+                        if res_sp.get("valido", False):
+                            rho = res_sp["rho"]
+                            p = res_sp["p_value"]
+                            significativo = p < 0.05
+
+                            # Veredito em linguagem clara
+                            if significativo and rho > 0:
+                                icone = "✅"
+                                titulo_veredito = "Sim — ocorrências mais longas terminam com menos agressividade"
+                                cor_veredito = "success"
+                                forca_correlacao = "muito forte" if abs(rho) > 0.7 else "forte" if abs(rho) > 0.5 else "moderada"
+                                explicacao = (
+                                    f"**O que isso significa:** Existe uma **relação {forca_correlacao}** entre duração e queda de agressividade. "
+                                    f"Em outras palavras: quanto mais tempo a negociação leva, maior a chance de o causador terminar menos agressivo.\n\n"
+                                    f"**Por que temos certeza?** Analisamos {n_valido} ocorrências e o padrão encontrado é tão consistente "
+                                    f"que a probabilidade de ser mera coincidência é menor que 5% (p < 0,05). Isso significa que o padrão é **real**.\n\n"
+                                    f"**Métrica técnica:** Rho = {rho:.2f} (escala de -1 a +1, onde +1 = relação perfeita)."
+                                )
+                            elif significativo and rho < 0:
+                                icone = "⚠️"
+                                titulo_veredito = "Atenção — ocorrências mais longas terminam COM MAIS agressividade"
+                                cor_veredito = "warning"
+                                forca_correlacao = "muito forte" if abs(rho) > 0.7 else "forte" if abs(rho) > 0.5 else "moderada"
+                                explicacao = (
+                                    f"**O que isso significa:** Existe uma **relação {forca_correlacao} inversa**. "
+                                    f"Ocorrências que demoram mais tempo tendem a terminar com o causador **mais agressivo**, não menos.\n\n"
+                                    f"**Por que isso preocupa?** Isso pode indicar que:\n"
+                                    f"  • O tempo prolongado está gerando **desgaste ou frustração** no causador\n"
+                                    f"  • A estratégia de longa negociação pode não estar sendo efetiva em alguns cenários\n"
+                                    f"  • Pode haver um ponto de saturação após o qual continuar negociando piora as coisas\n\n"
+                                    f"**Por que temos certeza?** O padrão foi encontrado em {n_valido} ocorrências e é improvável ser coincidência (p < 0,05).\n\n"
+                                    f"**Métrica técnica:** Rho = {rho:.2f} (negativo indica relação inversa)."
+                                )
+                            elif not significativo and abs(rho) > 0.3:
+                                icone = "🔎"
+                                titulo_veredito = "Há uma tendência, mas ainda é cedo para confirmar"
+                                cor_veredito = "info"
+                                direcao = "positiva (mais tempo = menos agressividade)" if rho > 0 else "negativa (mais tempo = mais agressividade)"
+                                explicacao = (
+                                    f"**O que observamos:** Existe uma tendência {direcao}, mas com {n_valido} ocorrências, "
+                                    f"não podemos ter certeza se é um padrão real ou coincidência.\n\n"
+                                    f"**Por que não temos certeza?** A probabilidade de isso ser acaso é {p*100:.1f}% — acima do limite de 5% que os estatísticos usam como referência.\n\n"
+                                    f"**O que fazer?** Colete mais registros de negociações. Com 10-15 ocorrências a mais, essa tendência pode se confirmar ou se desfazer.\n\n"
+                                    f"**Métrica técnica:** Rho = {rho:.2f}, p = {p:.4f} (p > 0,05 = não significativo ainda)."
+                                )
+                            else:
+                                icone = "➖"
+                                titulo_veredito = "Nenhuma relação detectada entre duração e agressividade"
+                                cor_veredito = "info"
+                                explicacao = (
+                                    f"**O que isso significa:** A duração da ocorrência **não está associada** à queda de agressividade. "
+                                    f"Ocorrências longas terminam com queda de agressividade tão frequentemente quanto as curtas.\n\n"
+                                    f"**O que fazer?** Isso não é necessariamente ruim — significa que o tempo não é o fator determinante. "
+                                    f"Procure investigar outros fatores: técnicas usadas, perfil do causador, contexto da ocorrência, etc.\n\n"
+                                    f"**Por que temos certeza?** A relação encontrada (Rho = {rho:.2f}) é tão fraca que não conseguimos descartar coincidência (p = {p:.4f}).\n\n"
+                                    f"**Próximo passo:** Se quiser, rode os outros testes abaixo para explorar quais fatores **realmente** influenciam o desfecho."
+                                )
+
+                            # Exibe o veredito
+                            getattr(st, cor_veredito)(f"{icone} **{titulo_veredito}**\n\n{explicacao}")
+                        else:
+                            st.warning(res_sp.get("msg", "Dados insuficientes para o cálculo (N < 3)."))
+
+                st.markdown("</div>", unsafe_allow_html=True)
+
+            # ══════════════════════════════════════════════════════════════════════════════
+            # COLUNA 2 — Distribuição de Características
+            # ══════════════════════════════════════════════════════════════════════════════
+            with c_sp2:
+                st.markdown(
+                    """
+                    <div class='info-card'>
+                    <strong>Padrão de Características da Ocorrência</strong><br>
+                    <span style='font-size: 0.82rem; color: #aaa;'>
+                    Analisa como diferentes características estão distribuídas na série histórica.
+                    </span>
+                    """,
+                    unsafe_allow_html=True,
+                )
+
+                # Opções simples (usando df_quali_filt)
+                opcoes_variaveis = {
+                    "Tipologia": "Tip_Limpa",
+                    "Negociador": "Neg_Limpo",
+                    "Modalidade": "Mod_Limpa",
+                }
+
+                var_analise = st.selectbox(
+                    "Analisar distribuição de:",
+                    list(opcoes_variaveis.keys()),
+                    index=0,
+                    key="selectbox_distribuicao"
+                )
+                col_v1_key = opcoes_variaveis[var_analise]
+
+                # Análise simples da variável
+                if col_v1_key in df_quali_filt.columns:
+                    df_anal = df_quali_filt[[col_v1_key]].dropna()
+                    df_anal = df_anal[~df_anal[col_v1_key].astype(str).str.strip().str.lower().isin(lixo)]
+
+                    if not df_anal.empty:
+                        distribuicao = df_anal[col_v1_key].value_counts()
+                        
+                        st.info(
+                            f"**Distribuição de {var_analise}**\n\n"
+                            f"Total de registros: {len(df_anal)}\n"
+                            f"Categorias únicas: {df_anal[col_v1_key].nunique()}\n\n"
+                            f"**Top 5 mais frequentes:**\n"
+                            + "\n".join([f"• {cat}: {count} ({count/len(df_anal)*100:.1f}%)" 
+                                        for cat, count in distribuicao.head(5).items()])
+                        )
+                    else:
+                        st.warning("Sem dados válidos para esta análise.")
+                else:
+                    st.warning(f"Coluna '{col_v1_key}' não encontrada nos dados.")
+
+                st.markdown("</div>", unsafe_allow_html=True)
+
+        st.markdown("---")
+
+        # ══════════════════════════════════════════════════════════════════════════════
+        # SEÇÃO: ENTENDA OS TESTES ESTATÍSTICOS
+        # ══════════════════════════════════════════════════════════════════════════════
+
+        st.markdown("<h5 style='color: #FFD700;'>Entenda melhor os testes estatísticos de correlação e associação</h5>", unsafe_allow_html=True)
+
+        col_left, col_center, col_right = st.columns([1, 3, 1])
+        with col_center:
+            is_entenda_testes = render_toggle_button(
+                label="✔️ Entenda os testes estatísticos",
+                session_key="entenda_testes",
+                button_key="btn_entenda_testes"
+            )
+
+        st.markdown("---")
+
+        if is_entenda_testes:
             st.markdown("""
+            ## ✔️ Guia de Entendimento dos Testes Estatísticos
+
+            Os dois testes acima buscam padrões nos dados de negociações. Aqui explicamos o que cada um faz em linguagem simples.
+
+            ---
+
+            ### ✔️ Teste de Spearman (Coluna Esquerda)
+
+            **O que faz:** Verifica se duas coisas "andam juntas" — quando uma cresce, a outra cresce também?
+
+            **No seu caso:** "Ocorrências mais longas terminam com o causador menos agressivo?"
+
+            **Como entender:**
+            - **Rho (Coeficiente):** Um número entre -1 e +1 que mede a força da relação
+            - **+1.0** = relação perfeita (sempre que uma sobe, outra sobe)
+            - **0.0** = sem relação (variam independentemente)
+            - **-1.0** = relação inversa (quando uma sobe, outra desce)
+
+            - **P-Value:** Responde "é realmente um padrão ou coincidência?"
+            - **p < 0.05** (5%) = ✅ É um padrão real (improvável ser acaso)
+            - **p ≥ 0.05** = ⚠️ Pode ser coincidência
+
+            **Quando usar:** Para variáveis contínuas ou ordinais (como escalas de agressividade: baixa, média, alta)
+
+            ---
+
+            ### ✔️ Teste Qui-Quadrado (Coluna Direita)
+
+            **O que faz:** Verifica se a escolha de uma coisa é **independente** de outra, ou se há uma relação.
+
+            **No seu caso:** "A técnica escolhida depende da Tipologia/Negociador/Modalidade?"
+
+            **Como entender:**
+            - **χ² (Chi-Quadrado):** Um número que mede "quanto a realidade se desvia do acaso"
+            - **χ² próximo de 0** = sem padrão (aleatório)
+            - **χ² grande** = há um padrão (não é aleatório)
+
+            - **P-Value:** Mesma lógica do Spearman
+            - **p < 0.05** = ✅ Há um padrão real
+            - **p ≥ 0.05** = ⚠️ Pode ser acaso
+
+            **Quando usar:** Para variáveis categóricas (categorias, grupos) — não contínuas
+
+            ---
+
+            ### ✔️ Comparação Rápida
+
+            | Aspecto | Spearman | Qui-Quadrado |
+            |---------|----------|--------------|
+            | **Tipo de dado** | Contínuo ou ordinal | Categórico |
+            | **Pergunta** | "Duas coisas andam juntas?" | "Escolher A depende de B?" |
+            | **Resultado** | Rho (-1 a +1) | χ² (≥0) |
+            | **Seu caso** | Duração × Agressividade | Técnica × Contexto |
+
+            ---
+
+            ### ✔️ O Que Fazer Com os Resultados
+
+            **Se p-value < 0.05 (padrão real encontrado):**
+            - ✅ Há um padrão consistente nos dados
+            - Isso não é coincidência — é algo que realmente está acontecendo
+            - Vale investigar por quê esse padrão existe
+
+            **Se p-value ≥ 0.05 (sem confirmação):**
+            - ⚠️ Não há evidência estatística de padrão
+            - Pode ser coincidência ou falta de dados suficientes
+            - Coleta mais registros para confirmar ou refutar
+
+            ---
+
+            ### ⚠️ Limitações Importantes
+
+            **Spearman:**
+            - Exige pelo menos 5 valores válidos para ser confiável
+            - Valores "Não Observado" são excluídos automaticamente
+
+            **Qui-Quadrado:**
+            - Exige pelo menos 10 ocorrências distintas
+            - Se alguma categoria tiver muito poucos casos (< 5), o teste fica impreciso
+            - Funciona apenas com variáveis categóricas
+            """)
+
+        st.markdown("---")
+
+        
+        st.markdown("""
             <h3 style='color: #06C755;'>✔️ Síntese Interpretativa Assistida por IA</h3>
             <p style='color: #aaa; font-size: 0.95rem; margin-bottom: 20px;'>
             Gere um relatório em linguagem natural que traduz todos os números em recomendações acionáveis para a equipe.
             </p>
             """, unsafe_allow_html=True)
 
-            if st.button("✔ GERAR RELATÓRIO ESTATÍSTICO ASSISTIDO POR IA"):
+        if st.button("✔ GERAR RELATÓRIO ESTATÍSTICO ASSISTIDO POR IA"):
                 with st.spinner("✔️ Processando análises e gerando interpretações..."):
                     try:
                         import ia_estatistica 
