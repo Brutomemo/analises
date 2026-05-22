@@ -3371,28 +3371,45 @@ else:
                         st.markdown("---")
                         st.markdown("#### ✔️ Leitura Operacional")
                         
-                        top_efetiva = df_resumo_tec.iloc[0]
-                        bottom_efetiva = df_resumo_tec.iloc[-1]
+                        # ✅ ENCONTRAR TODAS AS TÉCNICAS COM MELHOR SCORE
+                        max_score = df_resumo_tec['Score'].max()
+                        tecnicas_mais_efetivas = df_resumo_tec[df_resumo_tec['Score'] == max_score]
                         
+                        # ✅ ENCONTRAR TODAS AS TÉCNICAS COM PIOR SCORE
+                        min_score = df_resumo_tec['Score'].min()
+                        tecnicas_menos_efetivas = df_resumo_tec[df_resumo_tec['Score'] == min_score]
+                        
+                        # ── EXIBIR TÉCNICAS MAIS EFETIVAS ──────────────
                         st.markdown(f"""
                         <div style='background:rgba(16,185,129,0.06);border-left:4px solid #10b981;padding:15px;border-radius:8px;margin-bottom:15px;'>
-                        <h6 style='color:#FFD700;margin-top:0;'>✅ Técnicas mais Efetivas</h6>
-                        <p style='color:#ddd;margin:0;'>
-                        <strong>{top_efetiva['Técnica']}</strong> — Score: <strong>{top_efetiva['Score']:.1f}%</strong> 
-                        ({int(top_efetiva['Positivas'])} positivas de {int(top_efetiva['Total'])} usos)
-                        </p>
-                        </div>
+                        <h6 style='color:#FFD700;margin-top:0;'>✅ Técnicas Mais Efetivas</h6>
                         """, unsafe_allow_html=True)
                         
+                        for idx, row in tecnicas_mais_efetivas.iterrows():
+                            st.markdown(f"""
+                            <p style='color:#ddd;margin:8px 0;'>
+                            <strong>{row['Técnica']}</strong> — Score: <strong>{row['Score']:.1f}%</strong> 
+                            ({int(row['Positivas'])} positivas de {int(row['Total'])} usos)
+                            </p>
+                            """, unsafe_allow_html=True)
+                        
+                        st.markdown("</div>", unsafe_allow_html=True)
+                        
+                        # ── EXIBIR TÉCNICAS MENOS EFETIVAS ────────────
                         st.markdown(f"""
                         <div style='background:rgba(239,68,68,0.06);border-left:4px solid #ef4444;padding:15px;border-radius:8px;margin-bottom:15px;'>
-                        <h6 style='color:#FFD700;margin-top:0;'>⚠️ Técnicas menos Efetivas</h6>
-                        <p style='color:#ddd;margin:0;'>
-                        <strong>{bottom_efetiva['Técnica']}</strong> — Score: <strong>{bottom_efetiva['Score']:.1f}%</strong> 
-                        ({int(bottom_efetiva['Positivas'])} positivas de {int(bottom_efetiva['Total'])} usos)
-                        </p>
-                        </div>
+                        <h6 style='color:#FFD700;margin-top:0;'>⚠️ Técnicas Menos Efetivas</h6>
                         """, unsafe_allow_html=True)
+                        
+                        for idx, row in tecnicas_menos_efetivas.iterrows():
+                            st.markdown(f"""
+                            <p style='color:#ddd;margin:8px 0;'>
+                            <strong>{row['Técnica']}</strong> — Score: <strong>{row['Score']:.1f}%</strong> 
+                            ({int(row['Positivas'])} positivas de {int(row['Total'])} usos)
+                            </p>
+                            """, unsafe_allow_html=True)
+                        
+                        st.markdown("</div>", unsafe_allow_html=True)
                         
                         st.markdown("""
                         **Interpretação:**
@@ -3400,10 +3417,6 @@ else:
                         - **Score próximo a 0%** = Técnica neutra (sucessos ≈ fracassos)
                         - **Score < -50%** = Técnica contraproducente (mais fracassos que sucessos)
                         """)
-                    else:
-                        st.info("⚠️ Sem dados de reação registrados para as técnicas nos filtros atuais.")
-
-            st.markdown("---")
 
 
         # ══════════════════════════════════════════════════════════════════════════════
