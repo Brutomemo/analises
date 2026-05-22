@@ -1,12 +1,23 @@
+# ====
+# 0. VALIDAÇÃO DE LICENÇA (ANTES DE TUDO)
+# ====
+from src.axiom.license_manager import LicenseManager
+
+try:
+    LicenseManager.validate_license()
+except PermissionError:
+    import streamlit as st
+    st.error("❌ Erro: LICENSE.txt não encontrado na raiz do projeto.")
+    st.stop()
+
+# ====
+# 1. CONFIGURAÇÃO DA PÁGINA (DEVE SER O PRIMEIRO COMANDO STREAMLIT)
+# ====
 import streamlit as st
 import subprocess
 import sys
 import os
 
-# ====
-# 1. CONFIGURAÇÃO DA PÁGINA (DEVE SER O PRIMEIRO COMANDO STREAMLIT)
-# ====
-# Movido para o topo para evitar o erro de inicialização da senha
 st.set_page_config(page_title="Analise Qualitativa - Negociação", layout="wide", initial_sidebar_state="collapsed")
 
 # ====
@@ -36,6 +47,7 @@ import ia_estatistica # Cérebro da Aba 2 (Série Histórica)
 def limpar_valor(val):
     if isinstance(val, list): return val[0] if len(val) > 0 else "N/D"
     return str(val) if pd.notna(val) else "N/D"
+
 
 def limpar_id(v):
     if isinstance(v, list) and len(v) > 0: v = v[0]
@@ -2866,7 +2878,7 @@ else:
     <hr style="border:none; height:1px; background:linear-gradient(to right, transparent, rgba(255,174,66,0.6), transparent); margin-top:18px; margin-bottom:12px;">
 
     <div style="text-align:center; font-size:11px; color:#666; line-height:1.5;">
-    © 2026 Marcos Batista — Todos os direitos reservados.<br>
+    © 2026 AXIOM Strategic Intelligence Ltda — Todos os direitos reservados.<br>
     Este sistema é protegido por direitos autorais e legislação aplicável. Reprodução, distribuição, engenharia reversa, modificação ou utilização não autorizada são proibidas.
     </div>
     """, unsafe_allow_html=True)
@@ -2997,7 +3009,7 @@ else:
 
         st.markdown("#### Ranking de Técnicas Aplicadas")
 
-        if st.button("📊 Abrir Ranking de Técnicas"):
+        if st.button("✔️ Abrir Ranking de Técnicas"):
             st.session_state["exibir_ranking"] = True
 
         st.markdown("<div style='margin-bottom: 20px;'></div>", unsafe_allow_html=True)
