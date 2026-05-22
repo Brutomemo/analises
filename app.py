@@ -1566,7 +1566,7 @@ else:
                     if len(tecnicas_maximas) == 1:
                         melhor = tecnicas_maximas.iloc[0]
                         txt_melhor = (
-                            f"✅ <strong>Técnica mais efetiva:</strong> {melhor['Técnica']} "
+                            f"✅ <strong>Técnicas mais efetivas:</strong> {melhor['Técnica']} "
                             f"— Score {melhor['Score (%)']:+.1f}% "
                             f"({int(melhor['🟢 Positiva'])} positivo / {int(melhor['Total'])} usos)"
                         )
@@ -1696,7 +1696,7 @@ else:
 
 
             # ============================================================
-            # ANÁLISE DE SIMILITUDE — Versão Corrigida
+            # ANÁLISE DE SIMILITUDE 
             # ============================================================
 
             st.markdown("---")
@@ -2483,7 +2483,7 @@ else:
 
                             # ── RADAR TEMÁTICO (INTENSIDADE) ────────────────
                             st.markdown("---")
-                            st.markdown("### 🎯 Intensidade de Abordagem por Tema (Radar)")
+                            st.markdown("### ✔️ Intensidade de Abordagem por Tema (Radar)")
                             st.markdown("""
                             <p style='font-size:0.85rem;color:#aaa;'>
                             Polígono vermelho = intensidade do causador. 
@@ -2504,7 +2504,7 @@ else:
 
                             # ── GRÁFICO DE BARRAS (ALTERNATIVA) ─────────────
                             st.markdown("---")
-                            st.markdown("### 📊 Intensidade por Tema (Gráfico de Barras)")
+                            st.markdown("### ✔️ Intensidade por Tema (Gráfico de Barras)")
                             st.markdown("""
                             <p style='font-size:0.85rem;color:#aaa;'>
                             Visualização alternativa: compare a altura das barras para cada tema.
@@ -3376,7 +3376,7 @@ else:
                         
                         st.markdown(f"""
                         <div style='background:rgba(16,185,129,0.06);border-left:4px solid #10b981;padding:15px;border-radius:8px;margin-bottom:15px;'>
-                        <h4 style='color:#10b981;margin-top:0;'>✅ Técnica Mais Efetiva</h4>
+                        <h6 style='color:#FFD700;margin-top:0;'>✅ Técnicas mais Efetivas</h6>
                         <p style='color:#ddd;margin:0;'>
                         <strong>{top_efetiva['Técnica']}</strong> — Score: <strong>{top_efetiva['Score']:.1f}%</strong> 
                         ({int(top_efetiva['Positivas'])} positivas de {int(top_efetiva['Total'])} usos)
@@ -3386,7 +3386,7 @@ else:
                         
                         st.markdown(f"""
                         <div style='background:rgba(239,68,68,0.06);border-left:4px solid #ef4444;padding:15px;border-radius:8px;margin-bottom:15px;'>
-                        <h4 style='color:#ef4444;margin-top:0;'>⚠️ Técnica Menos Efetiva</h4>
+                        <h6 style='color:#FFD700;margin-top:0;'>⚠️ Técnicas menos Efetivas</h6>
                         <p style='color:#ddd;margin:0;'>
                         <strong>{bottom_efetiva['Técnica']}</strong> — Score: <strong>{bottom_efetiva['Score']:.1f}%</strong> 
                         ({int(bottom_efetiva['Positivas'])} positivas de {int(bottom_efetiva['Total'])} usos)
