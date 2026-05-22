@@ -3223,13 +3223,15 @@ else:
                 st.session_state[key_analise4_expanded] = False
 
             # ── BOTÃO TOGGLE ───────────────────────────────────────────
-            col_btn_analise4, col_spacer = st.columns([0.5, 0.5])
-            with col_btn_analise4:
-                if st.button(
-                    "✔️ Abrir Efetividade das Técnicas",
-                    key="btn_analise4_efetividade",
-                    use_container_width=True
-                ):
+            col_left, col_center, col_right = st.columns([1, 2, 1])  # ← 60%
+            with col_center:
+                is_efetividade = render_toggle_button(
+                    label="✔️ Abrir Efetividade das Técnicas",
+                    session_key="analise4_efetividade_expanded",
+                    button_key="btn_analise4_efetividade"
+                )
+
+            if is_efetividade:
                     st.session_state[key_analise4_expanded] = not st.session_state[key_analise4_expanded]
 
             # ── CONTEÚDO EXPANDÍVEL ───────────────────────────────────
