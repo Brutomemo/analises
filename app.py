@@ -3648,13 +3648,6 @@ else:
                         st.warning(f'⚠️ Erro ao processar convergência: {str(e)[:80]}')
                 else:
                     st.warning('⚠️ Colunas de transcrição não encontradas.')
-            else:
-                st.info('⚠️ Nenhuma APA encontrada para os filtros selecionados.')
-
-            st.markdown("---")
-
-            
-
             # ──────────────────────────────────────────────────────────
             # ANÁLISE: CORRELAÇÕES E ASSOCIAÇÕES
             # ──────────────────────────────────────────────────────────
@@ -3701,7 +3694,6 @@ else:
             col_agr_c = achar_coluna(df_quali_filt, "Principal", "Agressividade", "Chegada")
             col_agr_e = achar_coluna(df_quali_filt, "Principal", "Agressividade", "Encerramento")
 
-            # ✅ MUDE AQUI: df_tec_filt → df_quali_filt
             id_col = next(
                 (c for c in df_quali_filt.columns if "ID" in c.upper() or "VINCULO" in c.upper()),
                 None,
@@ -3861,7 +3853,7 @@ else:
                     st.markdown("</div>", unsafe_allow_html=True)
 
                 # ══════════════════════════════════════════════════════════════════════════════
-                # COLUNA 2 — Qui-Quadrado: Técnica vs. Variável escolhida
+                # COLUNA 2 — Distribuição de Características
                 # ══════════════════════════════════════════════════════════════════════════════
                 with c_sp2:
                     st.markdown(
@@ -3886,6 +3878,7 @@ else:
                         "Analisar distribuição de:",
                         list(opcoes_variaveis.keys()),
                         index=0,
+                        key="selectbox_distribuicao"
                     )
                     col_v1_key = opcoes_variaveis[var_analise]
 
@@ -3912,381 +3905,116 @@ else:
 
                     st.markdown("</div>", unsafe_allow_html=True)
 
-            st.markdown("---")  # Linha separadora final
-
-        # ============================================================
-        # ============================================================
-        # BOTÃO UNIFICADO: Explicação dos dois testes
-        # ============================================================
-        st.markdown("---")
-
-        # INICIALIZAR CHAVE DE SESSION STATE SE NÃO EXISTIR
-        key_details_unif = "show_unified_test_details"
-        if key_details_unif not in st.session_state:
-            st.session_state[key_details_unif] = False
-
-        # BOTÃO PARA ALTERNAR O ESTADO
-        
-    st.markdown("<h5 style='color: #FFD700;'> Entenda melhor os testes estatísticos de correlação e associação</h5>", unsafe_allow_html=True)
-
-    col_left, col_center, col_right = st.columns([1, 1, 1])  
-    with col_center:
-        is_entenda_testes = render_toggle_button(
-            label="✔️ Entenda os testes estatísticos",
-            session_key="entenda_testes",
-            button_key="btn_entenda_testes"
-        )
-
-    st.markdown("---")
-
-    if is_entenda_testes:
-               
-
-        # RENDERIZAR CONTEÚDO BASEADO NO ESTADO (NÃO DENTRO DO IF DO BOTÃO)
-        if st.session_state[key_details_unif]:
-            st.markdown("""
-        ## ✔️ Guia de Entendimento dos Testes Estatísticos
-
-        Os dois testes acima buscam padrões nos dados de negociações. Aqui explicamos o que cada um faz em linguagem simples.
-
-        ---
-
-        ### ✔️ Teste de Spearman (Coluna Esquerda)
-
-        **O que faz:** Verifica se duas coisas "andam juntas" — quando uma cresce, a outra cresce também?
-
-        **No seu caso:** "Ocorrências mais longas terminam com o causador menos agressivo?"
-
-        **Como entender:**
-        - **Rho (Coeficiente):** Um número entre -1 e +1 que mede a força da relação
-        - **+1.0** = relação perfeita (sempre que uma sobe, outra sobe)
-        - **0.0** = sem relação (variam independentemente)
-        - **-1.0** = relação inversa (quando uma sobe, outra desce)
-
-        - **P-Value:** Responde "é realmente um padrão ou coincidência?"
-        - **p < 0.05** (5%) = ✅ É um padrão real (improvável ser acaso)
-        - **p ≥ 0.05** = ⚠️ Pode ser coincidência
-
-        **Quando usar:** Para variáveis contínuas ou ordinais (como escalas de agressividade: baixa, média, alta)
-
-        ---
-
-        ### ✔️ Teste Qui-Quadrado (Coluna Direita)
-
-        **O que faz:** Verifica se a escolha de uma coisa é **independente** de outra, ou se há uma relação.
-
-        **No seu caso:** "A técnica escolhida depende da Tipologia/Negociador/Modalidade?"
-
-        **Como entender:**
-        - **χ² (Chi-Quadrado):** Um número que mede "quanto a realidade se desvia do acaso"
-        - **χ² próximo de 0** = sem padrão (aleatório)
-        - **χ² grande** = há um padrão (não é aleatório)
-
-        - **P-Value:** Mesma lógica do Spearman
-        - **p < 0.05** = ✅ Há um padrão real
-        - **p ≥ 0.05** = ⚠️ Pode ser acaso
-
-        **Quando usar:** Para variáveis categóricas (categorias, grupos) — não contínuas
-
-        ---
-
-        ### ✔️ Comparação Rápida
-
-        | Aspecto | Spearman | Qui-Quadrado |
-        |---------|----------|--------------|
-        | **Tipo de dado** | Contínuo ou ordinal | Categórico |
-        | **Pergunta** | "Duas coisas andam juntas?" | "Escolher A depende de B?" |
-        | **Resultado** | Rho (-1 a +1) | χ² (≥0) |
-        | **Seu caso** | Duração × Agressividade | Técnica × Contexto |
-
-        ---
-
-        ### ✔️ O Que Fazer Com os Resultados
-
-        **Se p-value < 0.05 (padrão real encontrado):**
-        - ✅ Há um padrão consistente nos dados
-        - Isso não é coincidência — é algo que realmente está acontecendo
-        - Vale investigar por quê esse padrão existe
-
-        **Se p-value ≥ 0.05 (sem confirmação):**
-        - ⚠️ Não há evidência estatística de padrão
-        - Pode ser coincidência ou falta de dados suficientes
-        - Coleta mais registros para confirmar ou refutar
-
-        ---
-
-        ### ⚠️ Limitações Importantes
-
-        **Spearman:**
-        - Exige pelo menos 5 valores válidos para ser confiável
-        - Valores "Não Observado" são excluídos automaticamente
-
-        **Qui-Quadrado:**
-        - Exige pelo menos 10 ocorrências distintas
-        - Se alguma categoria tiver muito poucos casos (< 5), o teste fica impreciso
-        - Funciona apenas com variáveis categóricas
-            """)
-
-            # ============================================================
-            # MODELAGEM AVANÇADA — Mais clara e acessível
-            # ============================================================
             st.markdown("---")
-            st.markdown("""
-            <h3 style='color: #FFD700;'>🔬 Modelagem Avançada: Desvendando o Viés e a Eficácia Provável das Técnicas</h3>
-            <p style='color: #aaa; font-size: 0.95rem; margin-bottom: 20px;'>
-            <strong>Pergunta simples:</strong> "As técnicas funcionam independente da experiência do Negociador?"
-            </p>
-            """, unsafe_allow_html=True)
 
-            st.markdown("""
-            **Por que isso importa:** 
-            - Se a técnica funciona para *todos* os negociadores, vale a pena treinar a equipe inteira nela
-            - Se funciona só para alguns, é porque depende da expertise pessoal, não unicamente do método
-            - Enfatizamos que a análise está condicionada e limitada aos dados registrados, não representa a realidade em sua totalidade
-            """)
+            # ══════════════════════════════════════════════════════════════════════════════
+            # SEÇÃO: ENTENDA OS TESTES ESTATÍSTICOS
+            # ══════════════════════════════════════════════════════════════════════════════
 
-            # Adicione isto ANTES de "if total_apas_reais < 15:"
-            if 'total_apas_reais' not in locals():
-                # Define baseado no que você tem disponível
-                if 'df_tec_limpo' in locals():
-                    id_col = next((c for c in df_tec_limpo.columns if 'ID' in c.upper() or 'VINCULO' in c.upper()), None)
-                    total_apas_reais = df_tec_limpo[id_col].astype(str).nunique() if id_col else len(df_tec_limpo)
-                else:
-                    total_apas_reais = 0
+            st.markdown("<h5 style='color: #FFD700;'>Entenda melhor os testes estatísticos de correlação e associação</h5>", unsafe_allow_html=True)
 
-            if total_apas_reais < 15:
-                st.warning(
-                    f"""
-                    🔒 **Esta análise está bloqueada por segurança estatística**
-                    
-                    Para garantir resultados confiáveis, precisamos de pelo menos 15 ocorrências com respostas registradas.
-                    Você tem **{total_apas_reais}** — faltam **{15 - total_apas_reais}** registros.
-                    
-                    **Por quê?** Com poucos dados, um único caso excepcional pode parecer uma tendência geral.
-                    """
+            col_left, col_center, col_right = st.columns([1, 3, 1])
+            with col_center:
+                is_entenda_testes = render_toggle_button(
+                    label="✔️ Entenda os testes estatísticos",
+                    session_key="entenda_testes",
+                    button_key="btn_entenda_testes"
                 )
-                
-                # Barra de progresso visual
-                progresso_adv = int((total_apas_reais / 15) * 100)
-                st.progress(progresso_adv)
-                st.caption(f"Progresso: {total_apas_reais}/15 ocorrências")
-
-            else:
-                col_resposta = next((col for col in df_tec_filt.columns if 'ATITUDE' in col.upper()), None)
-                
-                if not col_resposta:
-                    st.warning(
-                        """
-                        ⚠️ **Campo 'Resposta da Técnica' não encontrado**
-                        
-                        Para esta análise funcionar, é necessário registrar nos dados:
-                        - **Reação Negativa** (🔴) — técnica não funcionou
-                        - **Reação Neutra** (⚪) — resultado indefinido
-                        - **Reação Positiva** (🟢) — técnica funcionou bem
-                        
-                        Adicione essa coluna ao Airtable e sincronize os dados.
-                        """
-                    )
-                else:
-                    try: 
-                        import statsmodels.api as sm
-                        import statsmodels.formula.api as smf
-                        from statsmodels.miscmodels.ordinal_model import OrderedModel
-                        from scipy.stats import chi2_contingency
-                        import numpy as np
-
-                        df_adv = df_tec_limpo.copy()
-                        mapa_resp = {
-                            '-1': 'Negativa', '-1.0': 'Negativa', -1: 'Negativa', '🔴 reação negativa': 'Negativa',
-                            '0': 'Neutra', '0.0': 'Neutra', 0: 'Neutra', '⚪ reação neutra': 'Neutra',
-                            '1': 'Positiva', '1.0': 'Positiva', 1: 'Positiva', '🟢 reação positiva': 'Positiva'
-                        }
-                        
-                        df_adv['Resposta_Cat'] = df_adv[col_resposta].astype(str).str.lower().str.strip().map(mapa_resp).fillna('Nao_Observado')
-                        df_adv_clean = df_adv[df_adv['Resposta_Cat'] != 'Nao_Observado'].copy()
-                        df_adv_clean = df_adv_clean.dropna(subset=['TÉCNICAS'])
-                        df_adv_clean['Resposta_Ord'] = pd.Categorical(df_adv_clean['Resposta_Cat'], categories=['Negativa', 'Neutra', 'Positiva'], ordered=True)
-                        
-                        # ============================================================
-                        # ANÁLISE 1: Viés por Negociador
-                        # ============================================================
-                        st.markdown("""
-                        <div style='background: var(--color-background-secondary); border-left: 4px solid #FFD700; padding: 15px; border-radius: 8px; margin-bottom: 20px;'>
-                        <h3 style='color: #FFD700; margin-top: 0;'>✔️ Análise 1: Existe Viés entre Negociadores?</h3>
-                        <p style='color: #aaa; margin-bottom: 10px;'><strong>A pergunta:</strong> "Os 'sucessos' vêm do método ou de alguns negociadores talentosos?"</p>
-                        </div>
-                        """, unsafe_allow_html=True)
-                        
-                        tab_vies = pd.crosstab(df_adv_clean['Neg_Limpo'], df_adv_clean['Resposta_Cat'])
-                        
-                        if tab_vies.shape[0] > 1 and tab_vies.shape[1] > 1:
-                            chi2, p, dof, exp = chi2_contingency(tab_vies)
-                            residuos = (tab_vies - exp) / np.sqrt(exp)
-                            
-                            col_vies1, col_vies2 = st.columns([1, 2])
-                            
-                            with col_vies1:
-                                st.markdown("**Resultado Estatístico:**")
-                                if p < 0.05:
-                                    st.success(
-                                        f"""
-                                        ✅ **Há viés detectado**
-                                        
-                                        P-Valor: `{p:.4f}` (< 0.05)
-                                        
-                                        Alguns negociadores conseguem mais sucessos que outros — o talento individual importa.
-                                        """
-                                    )
-                                else:
-                                    st.info(
-                                        f"""
-                                        ➖ **Sem viés significativo**
-                                        
-                                        P-Valor: `{p:.4f}` (> 0.05)
-                                        
-                                        Os resultados são homogêneos — a técnica funciona independentemente de quem a usa.
-                                        """
-                                    )
-                            
-                            with col_vies2:
-                                st.markdown("**Visualização (Mapa de Calor):**")
-                                st.markdown(
-                                    "<span style='font-size: 0.85rem; color: #aaa;'>"
-                                    "Vermelho = sucesso acima do esperado | Azul = sucesso abaixo do esperado"
-                                    "</span>",
-                                    unsafe_allow_html=True
-                                )
-                                fig_heat = px.imshow(residuos, text_auto=".2f", color_continuous_scale="RdBu", title="Viés por Negociador")
-                                fig_heat.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font_color="#FFF", height=350)
-                                st.plotly_chart(fig_heat, use_container_width=True)
-                        else:
-                            st.info("⚠️ Dados insuficientes para comparar múltiplos negociadores.")
-                        
-                        # ============================================================
-                        # ANÁLISE 2: Eficácia Isolada da Técnica
-                        # ============================================================
-                        st.markdown("""
-                        <div style='background: var(--color-background-secondary); border-left: 4px solid #06C755; padding: 15px; border-radius: 8px; margin-bottom: 20px;'>
-                        <h3 style='color: #06C755; margin-top: 0;'>✔️ Análise 2: Qual Técnica Funciona Melhor?</h3>
-                        <p style='color: #aaa; margin-bottom: 10px;'><strong>A pergunta:</strong> "Se removermos a influência do negociador, qual técnica realmente funciona melhor?"</p>
-                        </div>
-                        """, unsafe_allow_html=True)
-                        
-                        if 'col_t' in locals() and col_t:
-                            df_adv_clean['Tecnica_Patsy'] = df_adv_clean[col_t].astype(str).str.replace(' ', '_').str.replace('-', '_')
-                            df_adv_clean['Neg_Patsy'] = df_adv_clean['Neg_Limpo'].astype(str).str.replace(' ', '_')
-                            df_adv_clean['Tip_Patsy'] = df_adv_clean['Tip_Limpa'].astype(str).str.replace(' ', '_')
-
-                            try:
-                                mod_ord = OrderedModel.from_formula("Resposta_Ord ~ C(Tecnica_Patsy) + C(Neg_Patsy) + C(Tip_Patsy)", data=df_adv_clean, distr='logit')
-                                res_ord = mod_ord.fit(method='bfgs', disp=False)
-                                coefs = res_ord.params[res_ord.params.index.str.contains('Tecnica')]
-                                pvals = res_ord.pvalues[res_ord.params.index.str.contains('Tecnica')]
-                                df_or = pd.DataFrame({
-                                    'Técnica': coefs.index.str.extract(r'\[T\.(.*?)\]')[0], 
-                                    'Odds_Ratio': np.exp(coefs), 
-                                    'P_Valor': pvals
-                                })
-                                df_or = df_or[df_or['P_Valor'] < 0.05].sort_values('Odds_Ratio', ascending=False)
-                                
-                                if not df_or.empty:
-                                    st.markdown("**Técnicas com Eficácia Comprovada (p < 0.05):**")
-                                    
-                                    for idx, row in df_or.iterrows():
-                                        multiplo = row['Odds_Ratio']
-                                        st.markdown(
-                                            f"""
-                                            **{row['Técnica']}**
-                                            - Odds Ratio: `{multiplo:.2f}` — dobra a chance de sucesso {multiplo:.1f}x
-                                            - Significância: P-Valor = `{row['P_Valor']:.4f}`
-                                            """
-                                        )
-                                    
-                                    st.info(
-                                        "💡 **O que é Odds Ratio?** "
-                                        "Um Odds Ratio de 2.0 significa que usar essa técnica dobra a chance de uma resposta positiva."
-                                    )
-                                else:
-                                    st.info(
-                                        "ℹ️ **Nenhuma técnica isolada alcançou significância estatística neste cenário.**\n\n"
-                                        "Isso pode significar:\n"
-                                        "- As técnicas funcionam em combinação, não isoladamente\n"
-                                        "- Precisamos de mais dados para confirmar eficácia individual\n"
-                                        "- O contexto (tipo de ocorrência) importa mais que a técnica escolhida"
-                                    )
-                            except Exception as e:
-                                st.warning(f"⚠️ O modelo não convergiu para este conjunto de dados: {str(e)[:100]}")
-                        
-                        # ============================================================
-                        # ANÁLISE 3: Robustez Hierárquica (GEE)
-                        # ============================================================
-                        st.markdown("""
-                        <div style='background: var(--color-background-secondary); border-left: 4px solid #378ADD; padding: 15px; border-radius: 8px; margin-bottom: 20px;'>
-                        <h3 style='color: #378ADD; margin-top: 0;'>🔐 Análise 3: A Técnica é Robusta para Toda a Tropa?</h3>
-                        <p style='color: #aaa; margin-bottom: 10px;'><strong>A pergunta:</strong> "A técnica funciona para a equipe inteira ou só para alguns indivíduos?"</p>
-                        </div>
-                        """, unsafe_allow_html=True)
-                        
-                        df_gee_real = df_adv_clean.copy()
-                        df_gee_real['Sucesso'] = np.where(df_gee_real['Resposta_Cat'] == 'Positiva', 1, 0)
-                        
-                        try:
-                            if 'Tecnica_Patsy' in df_gee_real.columns:
-                                modelo_gee = smf.gee(
-                                    "Sucesso ~ C(Tecnica_Patsy)", 
-                                    groups=df_gee_real['Neg_Patsy'], 
-                                    data=df_gee_real, 
-                                    family=sm.families.Binomial(), 
-                                    cov_struct=sm.cov_struct.Exchangeable()
-                                )
-                                res_gee = modelo_gee.fit()
-                                gee_coefs = res_gee.params[res_gee.params.index.str.contains('Tecnica')]
-                                gee_pvals = res_gee.pvalues[res_gee.params.index.str.contains('Tecnica')]
-                                df_gee = pd.DataFrame({
-                                    'Técnica': gee_coefs.index.str.extract(r'\[T\.(.*?)\]')[0], 
-                                    'Coeficiente': gee_coefs, 
-                                    'P_Valor': gee_pvals
-                                })
-                                
-                                if not df_gee.empty:
-                                    significativas = df_gee[df_gee['P_Valor'] < 0.05]
-                                    
-                                    if not significativas.empty:
-                                        st.success(
-                                            "✅ **Doutrina Validada — Técnica Robusta para Toda a Tropa**\n\n"
-                                            "Essas técnicas funcionam consistentemente, independentemente de quem as aplica."
-                                        )
-                                        for idx, row in significativas.iterrows():
-                                            st.markdown(
-                                                f"- **{row['Técnica']}**: P-Valor = `{row['P_Valor']:.4f}` (significativo)"
-                                            )
-                                    else:
-                                        st.info(
-                                            "ℹ️ **Nenhuma técnica atingiu robustez estatística neste modelo.**\n\n"
-                                            "Isso sugere que o sucesso depende muito do contexto ou da combinação de fatores."
-                                        )
-                                
-                                with st.expander("🔬 Ver detalhes técnicos (GEE)"):
-                                    st.markdown(
-                                        "**Generalized Estimating Equations (GEE):** "
-                                        "Este modelo leva em conta que há 'agrupamentos' de dados (cada negociador fez várias ocorrências). "
-                                        "Isso torna as conclusões mais confiáveis para aplicar na prática."
-                                    )
-                                    st.dataframe(df_gee.style.format({'Coeficiente': '{:.4f}', 'P_Valor': '{:.4f}'}), use_container_width=True, hide_index=True)
-                                    
-                        except Exception as e:
-                            st.error(f"⚠️ Erro no processamento GEE: {str(e)[:100]}")
-                        
-                    except ImportError:
-                        st.error("🚨 Biblioteca 'statsmodels' não instalada. Instale com: `pip install statsmodels`")
-                    except Exception as e:
-                        st.error(f"🚨 Erro geral na modelagem: {str(e)[:150]}")
 
             st.markdown("---")
-            st.markdown("""
-            <h3 style='color: #FFD700;'>✔️ Informação Longitudinal</h3>
-            <p style='color: #aaa; font-size: 0.95rem;'>Como tem evoluído o volume de negociações ao longo do tempo?</p>
-            """, unsafe_allow_html=True)
+
+            if is_entenda_testes:
+                st.markdown("""
+                ## ✔️ Guia de Entendimento dos Testes Estatísticos
+
+                Os dois testes acima buscam padrões nos dados de negociações. Aqui explicamos o que cada um faz em linguagem simples.
+
+                ---
+
+                ### ✔️ Teste de Spearman (Coluna Esquerda)
+
+                **O que faz:** Verifica se duas coisas "andam juntas" — quando uma cresce, a outra cresce também?
+
+                **No seu caso:** "Ocorrências mais longas terminam com o causador menos agressivo?"
+
+                **Como entender:**
+                - **Rho (Coeficiente):** Um número entre -1 e +1 que mede a força da relação
+                - **+1.0** = relação perfeita (sempre que uma sobe, outra sobe)
+                - **0.0** = sem relação (variam independentemente)
+                - **-1.0** = relação inversa (quando uma sobe, outra desce)
+
+                - **P-Value:** Responde "é realmente um padrão ou coincidência?"
+                - **p < 0.05** (5%) = ✅ É um padrão real (improvável ser acaso)
+                - **p ≥ 0.05** = ⚠️ Pode ser coincidência
+
+                **Quando usar:** Para variáveis contínuas ou ordinais (como escalas de agressividade: baixa, média, alta)
+
+                ---
+
+                ### ✔️ Teste Qui-Quadrado (Coluna Direita)
+
+                **O que faz:** Verifica se a escolha de uma coisa é **independente** de outra, ou se há uma relação.
+
+                **No seu caso:** "A técnica escolhida depende da Tipologia/Negociador/Modalidade?"
+
+                **Como entender:**
+                - **χ² (Chi-Quadrado):** Um número que mede "quanto a realidade se desvia do acaso"
+                - **χ² próximo de 0** = sem padrão (aleatório)
+                - **χ² grande** = há um padrão (não é aleatório)
+
+                - **P-Value:** Mesma lógica do Spearman
+                - **p < 0.05** = ✅ Há um padrão real
+                - **p ≥ 0.05** = ⚠️ Pode ser acaso
+
+                **Quando usar:** Para variáveis categóricas (categorias, grupos) — não contínuas
+
+                ---
+
+                ### ✔️ Comparação Rápida
+
+                | Aspecto | Spearman | Qui-Quadrado |
+                |---------|----------|--------------|
+                | **Tipo de dado** | Contínuo ou ordinal | Categórico |
+                | **Pergunta** | "Duas coisas andam juntas?" | "Escolher A depende de B?" |
+                | **Resultado** | Rho (-1 a +1) | χ² (≥0) |
+                | **Seu caso** | Duração × Agressividade | Técnica × Contexto |
+
+                ---
+
+                ### ✔️ O Que Fazer Com os Resultados
+
+                **Se p-value < 0.05 (padrão real encontrado):**
+                - ✅ Há um padrão consistente nos dados
+                - Isso não é coincidência — é algo que realmente está acontecendo
+                - Vale investigar por quê esse padrão existe
+
+                **Se p-value ≥ 0.05 (sem confirmação):**
+                - ⚠️ Não há evidência estatística de padrão
+                - Pode ser coincidência ou falta de dados suficientes
+                - Coleta mais registros para confirmar ou refutar
+
+                ---
+
+                ### ⚠️ Limitações Importantes
+
+                **Spearman:**
+                - Exige pelo menos 5 valores válidos para ser confiável
+                - Valores "Não Observado" são excluídos automaticamente
+
+                **Qui-Quadrado:**
+                - Exige pelo menos 10 ocorrências distintas
+                - Se alguma categoria tiver muito poucos casos (< 5), o teste fica impreciso
+                - Funciona apenas com variáveis categóricas
+                """)
+
+            st.markdown("---")
+
+            # ══════════════════════════════════════════════════════════════════════════════
+            # SEÇÃO: INFORMAÇÃO LONGITUDINAL
+            # ══════════════════════════════════════════════════════════════════════════════
+
+            st.markdown("<h5 style='color: #FFD700;'>✔️ Informação Longitudinal</h5>", unsafe_allow_html=True)
+            st.markdown("<p style='color: #aaa; font-size: 0.95rem;'>Como tem evoluído o volume de negociações ao longo do tempo?</p>", unsafe_allow_html=True)
 
             col_data = next((col for col in ['Data da ocorrência', 'Data', 'DATA'] if col in df_quali_filt.columns), None)
             if col_data:
