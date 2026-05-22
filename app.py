@@ -44,6 +44,23 @@ import ia_estatistica # Cérebro da Aba 2 (Série Histórica)
 # ====
 # 3. FUNÇÕES AUXILIARES E DADOS (A "CAIXA DE FERRAMENTAS")
 # ====
+def render_toggle_button(
+    label: str,
+    session_key: str,
+    button_key: str,
+    width_ratio: float = 0.6
+) -> bool:
+    """Renderiza um botão toggle padronizado."""
+    if session_key not in st.session_state:
+        st.session_state[session_key] = False
+    
+    col_btn, col_spacer = st.columns([width_ratio, 1 - width_ratio])
+    with col_btn:
+        if st.button(label, key=button_key, use_container_width=True):
+            st.session_state[session_key] = not st.session_state[session_key]
+    
+    return st.session_state[session_key]
+
 def limpar_valor(val):
     if isinstance(val, list): return val[0] if len(val) > 0 else "N/D"
     return str(val) if pd.notna(val) else "N/D"
@@ -3009,8 +3026,11 @@ else:
 
         st.markdown("#### Ranking de Técnicas Aplicadas")
 
-        if st.button("✔️ Abrir Ranking de Técnicas"):
-            st.session_state["exibir_ranking"] = True
+        if render_toggle_button(
+            label="✔️ Abrir Ranking de Técnicas",
+            session_key="ranking_de_tecnicas_expanded",
+            button_key="btn_ranking_tecnicas"
+        ):
 
         st.markdown("<div style='margin-bottom: 20px;'></div>", unsafe_allow_html=True)
 
@@ -3095,9 +3115,9 @@ else:
 
             st.markdown("""
             <div style='background:rgba(255,215,0,0.06);border-left:4px solid #FFD700;padding:15px;border-radius:8px;margin-bottom:20px;'>
-            <h3 style='color:#FFD700;margin-top:0;'>✔️ Efetividade das Técnicas</h3>
+            <h3 style='color:#FFD700;margin-top:0;'>Efetividade das Técnicas</h3>
             <p style='color: #aaa; margin-bottom: 10px;'>
-            <strong>Pergunta:</strong> "Qual técnica tem maior taxa de sucesso considerando TODOS os dados filtrados?"
+            <strong>Pergunta:</strong> "Quais técnicas possuem maior taxa de sucesso considerando TODOS os dados filtrados?"
             </p>
             </div>
             """, unsafe_allow_html=True)
@@ -3219,7 +3239,7 @@ else:
                             
                             # ── LEITURA OPERACIONAL ──────────────────────
                             st.markdown("---")
-                            st.markdown("#### 📖 Leitura Operacional")
+                            st.markdown("#### ✔️ Leitura Operacional")
                             
                             top_efetiva = df_resumo_tec.iloc[0]
                             bottom_efetiva = df_resumo_tec.iloc[-1]
