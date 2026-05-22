@@ -3371,20 +3371,29 @@ else:
                 st.markdown("---")
 
             # ============================================================
-            # ANÁLISE: CONVERGÊNCIA TEMÁTICA AGREGADA (NOVO)
+            # ANÁLISE: CONVERGÊNCIA TEMÁTICA
             # ============================================================
 
-            st.markdown("""
-            <div style='background:rgba(255,215,0,0.06);border-left:4px solid #378ADD;padding:15px;border-radius:8px;margin-bottom:20px;'>
-            <h3 style='color:#378ADD;margin-top:0;'>✔️ Análise 5: Convergência Temática nos Dados Filtrados</h3>
-            <p style='color: #aaa; margin-bottom: 10px;'>
-            <strong>Pergunta:</strong> "Em média, quanto de sincronização temática existe entre negociador e causador nos registros?"
-            </p>
-            <p style='color: #aaa; font-size: 0.85rem;'>
-            Se houver muita diferença entre negociadores, pode indicar oportunidade de reforço em escuta ativa.
-            </p>
-            </div>
-            """, unsafe_allow_html=True)
+            st.markdown("<h5 style='color: #FFD700;'> Convergência Temática: Quanto de sincronização temática existe entre negociador e causador </h5>", unsafe_allow_html=True)
+                                
+
+            # ── INICIALIZAR SESSION STATE ──────────────────────────────
+            key_analise5_convergencia_tematica = "analise5_convergencia_tematica"
+            if key_analise5_convergencia_tematica not in st.session_state:
+                st.session_state[key_analise5_convergencia_tematica] = False
+
+            # ── BOTÃO TOGGLE ───────────────────────────────────────────
+            col_left, col_center, col_right = st.columns([1, 1, 1])  # ← 60%
+            with col_center:
+                is_efetividade = render_toggle_button(
+                    label="✔️ Abrir Convergência Temática",
+                    session_key="analise5_convergencia_tematica",
+                    button_key="btn_analise5_convergencia_tematica"
+                )
+
+            if is_efetividade:
+                    st.session_state[key_analise5_convergencia_tematica] = not st.session_state[key_analise5_convergencia_tematica]
+            
 
             if not df_quali_filt.empty:
                 col_texto_c = 'TRANSCRIÇÃO DO CAUSADOR'
