@@ -3366,6 +3366,8 @@ else:
                                 xaxis_tickangle=-45
                             )
                             st.plotly_chart(fig_ef, use_container_width=True)
+
+                            st.markdown("---")
                         
                         
 
