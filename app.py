@@ -4057,12 +4057,13 @@ else:
             - Se alguma categoria tiver muito poucos casos (< 5), o teste fica impreciso
             - Funciona apenas com variáveis categóricas
             """)
+        st.markdown("---")
 
         
-        st.markdown("<h5 style='color: #FFD700;'>Síntese Interpretativa Assistida</h5>", unsafe_allow_html=True)
+        st.markdown("<h5 style='color: #FFD700;'>Síntese Interpretativa Assistida por Inteligência Artificial</h5>", unsafe_allow_html=True)
         
 
-        if st.button("✔ GERAR RELATÓRIO ESTATÍSTICO ASSISTIDO POR IA"):
+        if st.button("✔ GERAR RELATÓRIO INTERPRETADO POR IA"):
                 with st.spinner("✔️ Processando análises e gerando interpretações..."):
                     try:
                         import ia_estatistica 
