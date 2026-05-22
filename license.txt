@@ -1,0 +1,48 @@
+# PROPRIETARY SOFTWARE LICENSE AGREEMENT
+
+## AXIOM STRATEGIC INTELLIGENCE
+
+### Copyright Notice
+Copyright © 2026 Marcos Batista. All rights reserved.
+
+### License Grant
+This software is proprietary and confidential. You are granted 
+a limited, non-exclusive, non-transferable license to use this 
+software only as authorized in writing by the copyright holder.
+
+### Restrictions
+You may NOT:
+- Reverse engineer, decompile, or disassemble this software
+- Modify, adapt, translate, or create derivative works
+- Sublicense, sell, rent, lease, or lend the software
+- Remove or alter any proprietary notices or labels
+- Use for commercial purposes without explicit written consent
+- Share with unauthorized parties
+- Circumvent security measures or access controls
+
+### Permitted Use
+- Internal use by authorized government agencies
+- Training and simulation purposes (as authorized)
+- Incident analysis (within scope of agreement)
+
+### Limitation of Liability
+This software is provided "AS IS" without warranty. The author 
+shall not be liable for any damages arising from your use or 
+inability to use this software.
+
+### Termination
+This license is valid unless:
+- Terminated by written notice from the author
+- You violate any terms herein
+- The licensed period expires
+
+### Governing Law
+This agreement shall be governed by the laws of Brazil 
+(São Paulo State).
+
+### Contact
+For licensing inquiries: [seu email/contato]
+
+---
+Last Updated: May 2026
+Version: 1.0
