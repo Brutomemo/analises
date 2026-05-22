@@ -3263,12 +3263,12 @@ else:
 
                         
         # ══════════════════════════════════════════════════════════════════════════════
-        # ANÁLISE 4: EFETIVIDADE DAS TÉCNICAS
+        # ANÁLISE 4: EFETIVIDADE DAS TÉCNICAS - CORRIGIDA PARA ABA 2
         # ══════════════════════════════════════════════════════════════════════════════
 
         st.markdown("<h5 style='color: #FFD700;'>Efetividade das Técnicas</h5>", unsafe_allow_html=True)
 
-        col_left, col_center, col_right = st.columns([1, 3, 1])  # ✅ 60% CORRETO
+        col_left, col_center, col_right = st.columns([1, 3, 1])
         with col_center:
             is_efetividade = render_toggle_button(
                 label="✔️ Abrir Efetividade das Técnicas",
@@ -3278,16 +3278,15 @@ else:
 
         st.markdown("---")
 
-        # ✅ REMOVA O if st.session_state[key_analise4_expanded] DUPLICADO
-        # Use diretamente o is_efetividade
         if is_efetividade:
-            if not df_tec_filt.empty:
+            # ✅ MUDE: df_tec_filt → df_quali_filt (ABA 2 usa quali_filt)
+            if not df_quali_filt.empty:
                 col_t = next(
-                    (col for col in ['TÉCNICAS', 'TECNICAS', 'TÉCNICA', 'TECNICA'] if col in df_tec_filt.columns),
+                    (col for col in ['TÉCNICAS', 'TECNICAS', 'TÉCNICA', 'TECNICA'] if col in df_quali_filt.columns),
                     None,
                 )
                 col_atitude = next(
-                    (col for col in df_tec_filt.columns if 'ATITUDE' in col.upper()),
+                    (col for col in df_quali_filt.columns if 'ATITUDE' in col.upper()),
                     None,
                 )
                 
@@ -3303,7 +3302,8 @@ else:
                         else:
                             return None
                     
-                    df_ef = df_tec_filt.copy()
+                    # ✅ MUDE: df_tec_filt → df_quali_filt
+                    df_ef = df_quali_filt.copy()
                     df_ef['Reacao_Num'] = df_ef[col_atitude].apply(mapear_reacao)
                     df_ef_clean = df_ef[df_ef['Reacao_Num'].notna()].copy()
                     
@@ -3427,7 +3427,7 @@ else:
 
         st.markdown("<h5 style='color: #FFD700;'>Ranking dos Temas Dominantes</h5>", unsafe_allow_html=True)
 
-        col_left, col_center, col_right = st.columns([1, 3, 1])  # ✅ 60% CORRETO
+        col_left, col_center, col_right = st.columns([1, 1, 1])  # ✅ 60% CORRETO
         with col_center:
             is_ranking_temas = render_toggle_button(
                 label="✔️ Abrir Ranking Temático",
