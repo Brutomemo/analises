@@ -3262,12 +3262,20 @@ else:
             #NOVAS ANALISES 21MAI
 
                         
-        # ══════════════════════════════════════════════════════════════════════════════
-        # ANÁLISE 4: EFETIVIDADE DAS TÉCNICAS - CORRIGIDA PARA ABA 2
-        # ══════════════════════════════════════════════════════════════════════════════
+        # ============================================================
+        # ANÁLISE 4: EFETIVIDADE DAS TÉCNICAS (FORMATO INDIVIDUAL)
+        # ============================================================
 
-        st.markdown("<h5 style='color: #FFD700;'>Efetividade das Técnicas</h5>", unsafe_allow_html=True)
+        st.markdown("""
+        <div style='background:rgba(255,215,0,0.06);border-left:4px solid #FFD700;padding:15px;border-radius:8px;margin-bottom:20px;'>
+        <h3 style='color:#FFD700;margin-top:0;'>✔️ Análise 4: Efetividade das Técnicas</h3>
+        <p style='color: #aaa; margin-bottom: 10px;'>
+        <strong>Pergunta:</strong> "Qual técnica tem maior taxa de sucesso considerando TODOS os dados filtrados?"
+        </p>
+        </div>
+        """, unsafe_allow_html=True)
 
+        # ── BOTÃO TOGGLE (ÚNICA ALTERAÇÃO) ───────────────────────
         col_left, col_center, col_right = st.columns([1, 3, 1])
         with col_center:
             is_efetividade = render_toggle_button(
@@ -3278,8 +3286,8 @@ else:
 
         st.markdown("---")
 
+        # ── CONTEÚDO (Dentro do if) ───────────────────────────────
         if is_efetividade:
-            
             if not df_tec_filt.empty:
                 col_t = next(
                     (col for col in ['TÉCNICAS', 'TECNICAS', 'TÉCNICA', 'TECNICA'] if col in df_tec_filt.columns),
@@ -3414,7 +3422,8 @@ else:
                     else:
                         st.info("⚠️ Sem dados de reação registrados para as técnicas nos filtros atuais.")
 
-            st.markdown("---")
+        st.markdown("---")
+
 
         # ══════════════════════════════════════════════════════════════════════════════
         # ANÁLISE 6: RANKING DOS TEMAS DOMINANTES
