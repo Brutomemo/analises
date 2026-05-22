@@ -3698,28 +3698,17 @@ else:
                     return None
 
             # ──────────────────────────────────────────────────────────
-            # Configurações e cálculos iniciais
+            # Configurações iniciais (APENAS COM df_quali_filt)
             # ──────────────────────────────────────────────────────────
             lixo = {"none", "nan", "n/d", "", "null", "[]"}
 
             col_agr_c = achar_coluna(df_quali_filt, "Principal", "Agressividade", "Chegada")
             col_agr_e = achar_coluna(df_quali_filt, "Principal", "Agressividade", "Encerramento")
 
+            # ✅ MUDE AQUI: df_tec_filt → df_quali_filt
             id_col = next(
-                (c for c in df_tec_filt.columns if "ID" in c.upper() or "VINCULO" in c.upper()),
+                (c for c in df_quali_filt.columns if "ID" in c.upper() or "VINCULO" in c.upper()),
                 None,
-            )
-
-            # N real de APAs (descartando linhas-lixo da coluna de técnicas)
-            if col_t:
-                df_tec_limpo = df_tec_filt[
-                    ~df_tec_filt[col_t].astype(str).str.strip().str.lower().isin(lixo)
-                ].copy()
-            else:
-                df_tec_limpo = df_tec_filt.copy()
-
-            total_apas_reais = (
-                df_tec_limpo[id_col].astype(str).nunique() if id_col else len(df_tec_limpo)
             )
 
             # ──────────────────────────────────────────────────────────
@@ -3882,152 +3871,52 @@ else:
                     st.markdown(
                         """
                         <div class='info-card'>
-                        <strong>O uso de técnicas segue um padrão ou é improvisado?</strong><br>
+                        <strong>Padrão de Características da Ocorrência</strong><br>
                         <span style='font-size: 0.82rem; color: #aaa;'>
-                        Verifica se a escolha de técnicas está associada a uma característica da ocorrência
-                        ou se parece aleatória — independente do contexto.
+                        Analisa como diferentes características estão distribuídas na série histórica.
                         </span>
                         """,
                         unsafe_allow_html=True,
                     )
 
-                    # Mapeamento variável → coluna
+                    # Opções simples (usando df_quali_filt)
                     opcoes_variaveis = {
                         "Tipologia": "Tip_Limpa",
                         "Negociador": "Neg_Limpo",
                         "Modalidade": "Mod_Limpa",
                     }
 
-                    # Adiciona "Atitude do Causador" apenas se a coluna existir
-                    col_resposta = next(
-                        (c for c in df_quali_filt.columns if norm_col(c) in ("resposta_cat", "atitude", "resposta")),
-                        None,
-                    )
-                    if col_resposta and id_col:
-                        opcoes_variaveis["Atitude do Causador"] = "_merged_resposta"
-
                     var_analise = st.selectbox(
-                        "Comparar técnica com:",
+                        "Analisar distribuição de:",
                         list(opcoes_variaveis.keys()),
                         index=0,
                     )
                     col_v1_key = opcoes_variaveis[var_analise]
 
-                    # Monta o DataFrame correto para o cruzamento
-                    if col_v1_key == "_merged_resposta":
-                        # Merge entre df_tec_limpo e df_quali_filt pela coluna de ID
-                        id_quali = next(
-                            (c for c in df_quali_filt.columns if "ID" in c.upper() or "VINCULO" in c.upper()),
-                            None,
-                        )
-                        if id_quali and id_col and col_t:
-                            df_merge = df_tec_limpo[[id_col, col_t]].merge(
-                                df_quali_filt[[id_quali, col_resposta]].rename(
-                                    columns={col_resposta: "_Resposta_Cat"}
-                                ),
-                                left_on=id_col,
-                                right_on=id_quali,
-                                how="inner",
+                    # Análise simples da variável
+                    if col_v1_key in df_quali_filt.columns:
+                        df_anal = df_quali_filt[[col_v1_key]].dropna()
+                        df_anal = df_anal[~df_anal[col_v1_key].astype(str).str.strip().str.lower().isin(lixo)]
+
+                        if not df_anal.empty:
+                            distribuicao = df_anal[col_v1_key].value_counts()
+                            
+                            st.info(
+                                f"**Distribuição de {var_analise}**\n\n"
+                                f"Total de registros: {len(df_anal)}\n"
+                                f"Categorias únicas: {df_anal[col_v1_key].nunique()}\n\n"
+                                f"**Top 5 mais frequentes:**\n"
+                                + "\n".join([f"• {cat}: {count} ({count/len(df_anal)*100:.1f}%)" 
+                                            for cat, count in distribuicao.head(5).items()])
                             )
-                            df_qui_base = df_merge.rename(columns={col_t: "_Tecnica", "_Resposta_Cat": col_v1_key})
-                            col_v1_real = col_v1_key
-                            col_v2_real = "_Tecnica"
                         else:
-                            df_qui_base = pd.DataFrame()
-                            col_v1_real = None
-                            col_v2_real = None
+                            st.warning("Sem dados válidos para esta análise.")
                     else:
-                        # Variáveis já presentes em df_tec_limpo
-                        col_v1_real = col_v1_key
-                        col_v2_real = col_t
-                        df_qui_base = df_tec_limpo.copy() if col_t else pd.DataFrame()
-
-                    # Verificação de N mínimo
-                    n_apas_qui = (
-                        df_qui_base[id_col].astype(str).nunique()
-                        if (id_col and id_col in df_qui_base.columns)
-                        else len(df_qui_base)
-                    )
-
-                    META_QUI = 10
-
-                    if n_apas_qui < META_QUI:
-                        progresso_qui = int((n_apas_qui / META_QUI) * 100)
-                        st.warning(
-                            f"⏳ **Análise em maturação (N={n_apas_qui}/{META_QUI})**\n\n"
-                            "Para identificar se o uso de técnicas segue um padrão real, "
-                            "o sistema precisa de pelo menos **10 ocorrências distintas**. "
-                            "Com menos dados, o comportamento de um único caso pode parecer uma regra."
-                        )
-                        st.progress(progresso_qui)
-
-                    elif col_v1_real and col_v2_real and not df_qui_base.empty:
-
-                        df_qui_clean = df_qui_base[[col_v1_real, col_v2_real]].dropna()
-                        # Remove valores-lixo de ambas as colunas
-                        df_qui_clean = df_qui_clean[
-                            ~df_qui_clean[col_v1_real].astype(str).str.strip().str.lower().isin(lixo)
-                            & ~df_qui_clean[col_v2_real].astype(str).str.strip().str.lower().isin(lixo)
-                        ]
-
-                        if df_qui_clean.empty:
-                            st.info("Sem dados suficientes após filtragem para este cruzamento.")
-                        else:
-                            # Verifica variância mínima
-                            cats_v1 = df_qui_clean[col_v1_real].nunique()
-                            cats_v2 = df_qui_clean[col_v2_real].nunique()
-
-                            if cats_v1 < 2 or cats_v2 < 2:
-                                st.info(
-                                    f"O cruzamento **Técnica × {var_analise}** não pode ser calculado: "
-                                    f"{'a variável selecionada tem apenas 1 categoria nos dados filtrados' if cats_v1 < 2 else 'há apenas 1 técnica nos dados filtrados'}. "
-                                    "Tente remover os filtros ou escolher outra variável."
-                                )
-                            else:
-                                res_chi = analise.calcular_qui_quadrado(df_qui_clean, col_v1_real, col_v2_real)
-
-                                if res_chi.get("valido", False):
-                                    chi2 = res_chi["chi2"]
-                                    p_chi = res_chi["p_value"]
-
-                                    # Veredito em linguagem clara
-                                    if p_chi < 0.05:
-                                        st.success(
-                                            f"✅ **Há um padrão — técnicas são escolhidas diferente conforme a {var_analise.lower()}**\n\n"
-                                            f"**O que isso significa:** A escolha de técnicas **não é aleatória**. "
-                                            f"Negociadores (ou a equipe em geral) aplicam técnicas diferentes dependendo da {var_analise.lower()} da ocorrência.\n\n"
-                                            f"**Por que isso é importante?** Indica uma **atuação doutrinária** — existe um padrão consistente, "
-                                            f"possivelmente baseado em treinamento ou protocolo. Isso é bom porque mostra profissionalismo e adaptação ao contexto.\n\n"
-                                            f"**Exemplo prático:** Se a {var_analise.lower()} é 'Tipologia', significa que para cada tipo de ocorrência "
-                                            f"há uma 'receita' de técnicas preferidas — não é improviso.\n\n"
-                                            f"**Por que temos certeza?** Testamos {len(df_qui_clean)} ocorrências e a probabilidade desse padrão ser acaso é "
-                                            f"menor que 5% (p = {p_chi:.4f})."
-                                        )
-                                    else:
-                                        st.info(
-                                            f"➖ **Sem padrão — técnicas parecem ser escolhidas independentemente da {var_analise.lower()}**\n\n"
-                                            f"**O que isso significa:** Não existe uma relação consistente entre a {var_analise.lower()} e a técnica escolhida. "
-                                            f"Técnicas são aplicadas de forma **situacional**, sem seguir um padrão claro.\n\n"
-                                            f"**Por que isso importa?** Pode indicar:\n"
-                                            f"  • Falta de protocolo ou doutrina clara\n"
-                                            f"  • Cada negociador decide independentemente\n"
-                                            f"  • As técnicas funcionam bem em qualquer contexto (possivelmente positivo)\n"
-                                            f"  • Oportunidade de desenvolvimento de protocolo se não há uma estratégia deliberada\n\n"
-                                            f"**Por que não há padrão?** Com {len(df_qui_clean)} ocorrências, a probabilidade de haver um padrão escondido é "
-                                            f"maior que 5% (p = {p_chi:.4f}), então não podemos confirmar associação."
-                                        )
-
-                                else:
-                                    st.warning(
-                                        "Variância insuficiente para este cruzamento. "
-                                        "Tente escolher outra variável ou remover filtros."
-                                    )
-                    else:
-                        st.warning("Configuração de colunas inválida para o cruzamento selecionado.")
+                        st.warning(f"Coluna '{col_v1_key}' não encontrada nos dados.")
 
                     st.markdown("</div>", unsafe_allow_html=True)
 
-            st.markdown("---")  # Linha separadora após o bloco
+            st.markdown("---")  # Linha separadora final
 
         # ============================================================
         # ============================================================
