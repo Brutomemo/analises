@@ -3095,7 +3095,7 @@ else:
 
             st.markdown("""
             <div style='background:rgba(255,215,0,0.06);border-left:4px solid #FFD700;padding:15px;border-radius:8px;margin-bottom:20px;'>
-            <h3 style='color:#FFD700;margin-top:0;'>✔️ Análise 4: Efetividade das Técnicas</h3>
+            <h3 style='color:#FFD700;margin-top:0;'>✔️ Efetividade das Técnicas</h3>
             <p style='color: #aaa; margin-bottom: 10px;'>
             <strong>Pergunta:</strong> "Qual técnica tem maior taxa de sucesso considerando TODOS os dados filtrados?"
             </p>
@@ -3111,7 +3111,7 @@ else:
             col_btn_analise4, col_spacer = st.columns([0.5, 0.5])
             with col_btn_analise4:
                 if st.button(
-                    "✔️ Abrir Análise 4: Efetividade das Técnicas",
+                    "✔️ Abrir Efetividade das Técnicas",
                     key="btn_analise4_efetividade",
                     use_container_width=True
                 ):
