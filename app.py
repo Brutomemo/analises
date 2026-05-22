@@ -3115,7 +3115,7 @@ else:
         # BLOCO: Ranking de Técnicas + Padrões e Correlações
         # ============================================================
 
-        st.markdown("#### Ranking de Técnicas Aplicadas")
+        st.markdown("### Ranking de Técnicas Aplicadas")
 
         col_left, col_center, col_right = st.columns([1, 1, 1])  
         with col_center:
