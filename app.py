@@ -2878,7 +2878,7 @@ else:
     <hr style="border:none; height:1px; background:linear-gradient(to right, transparent, rgba(255,174,66,0.6), transparent); margin-top:18px; margin-bottom:12px;">
 
     <div style="text-align:center; font-size:11px; color:#666; line-height:1.5;">
-    © 2026 AXIOM Strategic Intelligence Ltda — Todos os direitos reservados.<br>
+    © 2026 AXIOM - Strategic Intelligence Ltda — Todos os direitos reservados.<br>
     Este sistema é protegido por direitos autorais e legislação aplicável. Reprodução, distribuição, engenharia reversa, modificação ou utilização não autorizada são proibidas.
     </div>
     """, unsafe_allow_html=True)
@@ -3102,144 +3102,165 @@ else:
             </div>
             """, unsafe_allow_html=True)
 
-            if not df_tec_filt.empty:
-                col_t = next(
-                    (col for col in ['TÉCNICAS', 'TECNICAS', 'TÉCNICA', 'TECNICA'] if col in df_tec_filt.columns),
-                    None,
-                )
-                col_atitude = next(
-                    (col for col in df_tec_filt.columns if 'ATITUDE' in col.upper()),
-                    None,
-                )
-                
-                if col_t and col_atitude:
-                    def mapear_reacao(val):
-                        s = str(val).strip().lower()
-                        if any(x in s for x in ['-1', '🔴', 'negativa']):
-                            return -1
-                        elif any(x in s for x in ['0', '⚪', 'neutra']):
-                            return 0
-                        elif any(x in s for x in ['1', '🟢', 'positiva']):
-                            return 1
-                        else:
-                            return None
-                    
-                    df_ef = df_tec_filt.copy()
-                    df_ef['Reacao_Num'] = df_ef[col_atitude].apply(mapear_reacao)
-                    df_ef_clean = df_ef[df_ef['Reacao_Num'].notna()].copy()
-                    
-                    if not df_ef_clean.empty:
-                        resumo_tec = []
-                        for tecnica, grupo in df_ef_clean.groupby(col_t):
-                            total = len(grupo)
-                            positivas = (grupo['Reacao_Num'] == 1).sum()
-                            neutras = (grupo['Reacao_Num'] == 0).sum()
-                            negativas = (grupo['Reacao_Num'] == -1).sum()
-                            
-                            observados = positivas + neutras + negativas
-                            if observados > 0:
-                                taxa_sucesso = (positivas / observados) * 100
-                                score = ((positivas - negativas) / observados) * 100
-                            else:
-                                taxa_sucesso = 0
-                                score = 0
-                            
-                            resumo_tec.append({
-                                'Técnica': tecnica,
-                                'Total': total,
-                                'Positivas': positivas,
-                                'Neutras': neutras,
-                                'Negativas': negativas,
-                                'Taxa Sucesso (%)': round(taxa_sucesso, 1),
-                                'Score': round(score, 1)
-                            })
-                        
-                        df_resumo_tec = pd.DataFrame(resumo_tec).sort_values('Score', ascending=False)
-                        
-                        # ── SCORECARD GERAL ───────────────────────────
-                        st.markdown("#### ✔️ Resumo Geral")
-                        
-                        col_eg1, col_eg2, col_eg3, col_eg4 = st.columns(4)
-                        
-                        with col_eg1:
-                            st.metric('Total de Usos', len(df_ef_clean))
-                        with col_eg2:
-                            st.metric('Positivas', (df_ef_clean['Reacao_Num'] == 1).sum(), delta='🟢')
-                        with col_eg3:
-                            st.metric('Negativas', (df_ef_clean['Reacao_Num'] == -1).sum(), delta='🔴')
-                        with col_eg4:
-                            score_geral = ((df_ef_clean['Reacao_Num'] == 1).sum() - (df_ef_clean['Reacao_Num'] == -1).sum()) / len(df_ef_clean) * 100
-                            st.metric('Score Geral', f'+{score_geral:.1f}%')
-                        
-                        # ── EFETIVIDADE POR TÉCNICA ───────────────────
-                        st.markdown("#### ✔️ Efetividade por Técnica")
-                        
-                        col_ef1, col_ef2 = st.columns([1, 2])
-                        
-                        with col_ef1:
-                            st.dataframe(
-                                df_resumo_tec[['Técnica', 'Total', 'Positivas', 'Negativas', 'Score']].head(10),
-                                use_container_width=True,
-                                hide_index=True
-                            )
-                        
-                        with col_ef2:
-                            fig_ef = px.bar(
-                                df_resumo_tec.head(10),
-                                x='Técnica',
-                                y='Score',
-                                title='Score das Técnicas (Top 10)'
-                            )
-                            fig_ef.update_traces(marker_color='#FF8C00')
-                            fig_ef.update_layout(
-                                paper_bgcolor='rgba(0,0,0,0)',
-                                plot_bgcolor='rgba(0,0,0,0)',
-                                font_color='#FFF',
-                                height=350,
-                                xaxis_tickangle=-45
-                            )
-                            st.plotly_chart(fig_ef, use_container_width=True)
-                        
-                        # ── LEITURA OPERACIONAL ──────────────────────
-                        st.markdown("---")
-                        st.markdown("#### 📖 Leitura Operacional")
-                        
-                        top_efetiva = df_resumo_tec.iloc[0]
-                        bottom_efetiva = df_resumo_tec.iloc[-1]
-                        
-                        st.markdown(f"""
-                        <div style='background:rgba(16,185,129,0.06);border-left:4px solid #10b981;padding:15px;border-radius:8px;margin-bottom:15px;'>
-                        <h4 style='color:#10b981;margin-top:0;'>✅ Técnica Mais Efetiva</h4>
-                        <p style='color:#ddd;margin:0;'>
-                        <strong>{top_efetiva['Técnica']}</strong> — Score: <strong>{top_efetiva['Score']:.1f}%</strong> 
-                        ({int(top_efetiva['Positivas'])} positivas de {int(top_efetiva['Total'])} usos)
-                        </p>
-                        </div>
-                        """, unsafe_allow_html=True)
-                        
-                        st.markdown(f"""
-                        <div style='background:rgba(239,68,68,0.06);border-left:4px solid #ef4444;padding:15px;border-radius:8px;margin-bottom:15px;'>
-                        <h4 style='color:#ef4444;margin-top:0;'>⚠️ Técnica Menos Efetiva</h4>
-                        <p style='color:#ddd;margin:0;'>
-                        <strong>{bottom_efetiva['Técnica']}</strong> — Score: <strong>{bottom_efetiva['Score']:.1f}%</strong> 
-                        ({int(bottom_efetiva['Positivas'])} positivas de {int(bottom_efetiva['Total'])} usos)
-                        </p>
-                        </div>
-                        """, unsafe_allow_html=True)
-                        
-                        st.markdown("""
-                        **Interpretação:**
-                        - **Score > 50%** = Técnica efetiva (mais sucessos que fracassos)
-                        - **Score próximo a 0%** = Técnica neutra (sucessos ≈ fracassos)
-                        - **Score < -50%** = Técnica contraproducente (mais fracassos que sucessos)
-                        """)
-                    else:
-                        st.info("⚠️ Sem dados de reação registrados para as técnicas nos filtros atuais.")
+            # ── INICIALIZAR SESSION STATE ──────────────────────────────
+            key_analise4_expanded = "analise4_efetividade_expandida"
+            if key_analise4_expanded not in st.session_state:
+                st.session_state[key_analise4_expanded] = False
 
-            st.markdown("---")
+            # ── BOTÃO TOGGLE ───────────────────────────────────────────
+            col_btn_analise4, col_spacer = st.columns([0.5, 0.5])
+            with col_btn_analise4:
+                if st.button(
+                    "✔️ Abrir Análise 4: Efetividade das Técnicas",
+                    key="btn_analise4_efetividade",
+                    use_container_width=True
+                ):
+                    st.session_state[key_analise4_expanded] = not st.session_state[key_analise4_expanded]
+
+            # ── CONTEÚDO EXPANDÍVEL ───────────────────────────────────
+            if st.session_state[key_analise4_expanded]:
+                if not df_tec_filt.empty:
+                    col_t = next(
+                        (col for col in ['TÉCNICAS', 'TECNICAS', 'TÉCNICA', 'TECNICA'] if col in df_tec_filt.columns),
+                        None,
+                    )
+                    col_atitude = next(
+                        (col for col in df_tec_filt.columns if 'ATITUDE' in col.upper()),
+                        None,
+                    )
+                    
+                    if col_t and col_atitude:
+                        def mapear_reacao(val):
+                            s = str(val).strip().lower()
+                            if any(x in s for x in ['-1', '🔴', 'negativa']):
+                                return -1
+                            elif any(x in s for x in ['0', '⚪', 'neutra']):
+                                return 0
+                            elif any(x in s for x in ['1', '🟢', 'positiva']):
+                                return 1
+                            else:
+                                return None
+                        
+                        df_ef = df_tec_filt.copy()
+                        df_ef['Reacao_Num'] = df_ef[col_atitude].apply(mapear_reacao)
+                        df_ef_clean = df_ef[df_ef['Reacao_Num'].notna()].copy()
+                        
+                        if not df_ef_clean.empty:
+                            resumo_tec = []
+                            for tecnica, grupo in df_ef_clean.groupby(col_t):
+                                total = len(grupo)
+                                positivas = (grupo['Reacao_Num'] == 1).sum()
+                                neutras = (grupo['Reacao_Num'] == 0).sum()
+                                negativas = (grupo['Reacao_Num'] == -1).sum()
+                                
+                                observados = positivas + neutras + negativas
+                                if observados > 0:
+                                    taxa_sucesso = (positivas / observados) * 100
+                                    score = ((positivas - negativas) / observados) * 100
+                                else:
+                                    taxa_sucesso = 0
+                                    score = 0
+                                
+                                resumo_tec.append({
+                                    'Técnica': tecnica,
+                                    'Total': total,
+                                    'Positivas': positivas,
+                                    'Neutras': neutras,
+                                    'Negativas': negativas,
+                                    'Taxa Sucesso (%)': round(taxa_sucesso, 1),
+                                    'Score': round(score, 1)
+                                })
+                            
+                            df_resumo_tec = pd.DataFrame(resumo_tec).sort_values('Score', ascending=False)
+                            
+                            # ── SCORECARD GERAL ───────────────────────────
+                            st.markdown("#### ✔️ Resumo Geral")
+                            
+                            col_eg1, col_eg2, col_eg3, col_eg4 = st.columns(4)
+                            
+                            with col_eg1:
+                                st.metric('Total de Usos', len(df_ef_clean))
+                            with col_eg2:
+                                st.metric('Positivas', (df_ef_clean['Reacao_Num'] == 1).sum(), delta='🟢')
+                            with col_eg3:
+                                st.metric('Negativas', (df_ef_clean['Reacao_Num'] == -1).sum(), delta='🔴')
+                            with col_eg4:
+                                score_geral = ((df_ef_clean['Reacao_Num'] == 1).sum() - (df_ef_clean['Reacao_Num'] == -1).sum()) / len(df_ef_clean) * 100
+                                st.metric('Score Geral', f'+{score_geral:.1f}%')
+                            
+                            # ── EFETIVIDADE POR TÉCNICA ───────────────────
+                            st.markdown("#### ✔️ Efetividade por Técnica")
+                            
+                            col_ef1, col_ef2 = st.columns([1, 2])
+                            
+                            with col_ef1:
+                                st.dataframe(
+                                    df_resumo_tec[['Técnica', 'Total', 'Positivas', 'Negativas', 'Score']].head(10),
+                                    use_container_width=True,
+                                    hide_index=True
+                                )
+                            
+                            with col_ef2:
+                                fig_ef = px.bar(
+                                    df_resumo_tec.head(10),
+                                    x='Técnica',
+                                    y='Score',
+                                    title='Score das Técnicas (Top 10)'
+                                )
+                                fig_ef.update_traces(marker_color='#FF8C00')
+                                fig_ef.update_layout(
+                                    paper_bgcolor='rgba(0,0,0,0)',
+                                    plot_bgcolor='rgba(0,0,0,0)',
+                                    font_color='#FFF',
+                                    height=350,
+                                    xaxis_tickangle=-45
+                                )
+                                st.plotly_chart(fig_ef, use_container_width=True)
+                            
+                            # ── LEITURA OPERACIONAL ──────────────────────
+                            st.markdown("---")
+                            st.markdown("#### 📖 Leitura Operacional")
+                            
+                            top_efetiva = df_resumo_tec.iloc[0]
+                            bottom_efetiva = df_resumo_tec.iloc[-1]
+                            
+                            st.markdown(f"""
+                            <div style='background:rgba(16,185,129,0.06);border-left:4px solid #10b981;padding:15px;border-radius:8px;margin-bottom:15px;'>
+                            <h4 style='color:#10b981;margin-top:0;'>✅ Técnica Mais Efetiva</h4>
+                            <p style='color:#ddd;margin:0;'>
+                            <strong>{top_efetiva['Técnica']}</strong> — Score: <strong>{top_efetiva['Score']:.1f}%</strong> 
+                            ({int(top_efetiva['Positivas'])} positivas de {int(top_efetiva['Total'])} usos)
+                            </p>
+                            </div>
+                            """, unsafe_allow_html=True)
+                            
+                            st.markdown(f"""
+                            <div style='background:rgba(239,68,68,0.06);border-left:4px solid #ef4444;padding:15px;border-radius:8px;margin-bottom:15px;'>
+                            <h4 style='color:#ef4444;margin-top:0;'>⚠️ Técnica Menos Efetiva</h4>
+                            <p style='color:#ddd;margin:0;'>
+                            <strong>{bottom_efetiva['Técnica']}</strong> — Score: <strong>{bottom_efetiva['Score']:.1f}%</strong> 
+                            ({int(bottom_efetiva['Positivas'])} positivas de {int(bottom_efetiva['Total'])} usos)
+                            </p>
+                            </div>
+                            """, unsafe_allow_html=True)
+                            
+                            st.markdown("""
+                            **Interpretação:**
+                            - **Score > 50%** = Técnica efetiva (mais sucessos que fracassos)
+                            - **Score próximo a 0%** = Técnica neutra (sucessos ≈ fracassos)
+                            - **Score < -50%** = Técnica contraproducente (mais fracassos que sucessos)
+                            """)
+                        else:
+                            st.info("⚠️ Sem dados de reação registrados para as técnicas nos filtros atuais.")
+                    else:
+                        st.warning("⚠️ Colunas necessárias não encontradas (TÉCNICAS e ATITUDE).")
+                else:
+                    st.info("⚠️ Nenhuma técnica encontrada para os filtros selecionados.")
+
+                st.markdown("---")
 
             # ============================================================
-            # ANÁLISE 5: CONVERGÊNCIA TEMÁTICA AGREGADA (NOVO)
+            # ANÁLISE: CONVERGÊNCIA TEMÁTICA AGREGADA (NOVO)
             # ============================================================
 
             st.markdown("""
@@ -4419,7 +4440,7 @@ else:
     <hr style="border:none; height:1px; background:linear-gradient(to right, transparent, rgba(255,174,66,0.6), transparent); margin-top:18px; margin-bottom:12px;">
 
     <div style="text-align:center; font-size:11px; color:#666; line-height:1.5;">
-    © 2026 AXIOM Strategic Intelligence Ltda — Todos os direitos reservados.<br>
+    © 2026 AXIOM - Strategic Intelligence Ltda — Todos os direitos reservados.<br>
     Este sistema é protegido por direitos autorais e legislação aplicável. Reprodução, distribuição, engenharia reversa, modificação ou utilização não autorizada são proibidas.
     </div>
     """, unsafe_allow_html=True)
