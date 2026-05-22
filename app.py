@@ -3374,17 +3374,17 @@ else:
             # ANÁLISE: CONVERGÊNCIA TEMÁTICA
             # ============================================================
 
-            st.markdown("<h5 style='color: #FFD700;'>Convergência Temática: Quanto de sincronização temática existe entre negociador e causador</h5>", unsafe_allow_html=True)
+        st.markdown("<h5 style='color: #FFD700;'>Convergência Temática: Quanto de sincronização temática existe entre negociador e causador</h5>", unsafe_allow_html=True)
 
-            # ── BOTÃO TOGGLE ───────────────────────────────────────────
-            col_left, col_center, col_right = st.columns([1, 1, 1])
-            with col_center:
-                is_convergencia = render_toggle_button(
-                    label="✔️ Abrir Convergência Temática",
-                    session_key="analise5_convergencia_tematica",
-                    button_key="btn_analise5_convergencia_tematica"
-                )
-                               
+        # ── BOTÃO TOGGLE ───────────────────────────────────────────
+        col_left, col_center, col_right = st.columns([1, 1, 1])
+        with col_center:
+            is_convergencia = render_toggle_button(
+                label="✔️ Abrir Convergência Temática",
+                session_key="analise5_convergencia_tematica",
+                button_key="btn_analise5_convergencia_tematica"
+            )
+        if is_convergencia:                   
 
             if not df_quali_filt.empty:
                 col_texto_c = 'TRANSCRIÇÃO DO CAUSADOR'
