@@ -1506,7 +1506,7 @@ else:
 
                 # ── 3. SCORE GERAL COM EXPLICAÇÃO DA BASE ──────────────────
                 st.markdown("---")
-                st.markdown("### 📊 Efetividade Geral do Repertório Técnico")
+                st.markdown("### ✔️ Efetividade Geral do Repertório Técnico")
 
                 # Baseline: média de todas as técnicas
                 media_geral = round(df_com_score["Score (%)"].mean(), 1) if not df_com_score.empty else 0
@@ -3315,7 +3315,7 @@ else:
                             
                             # ── DISTRIBUIÇÃO ─────────────────────────────
                             st.markdown("---")
-                            st.markdown("#### 📊 Distribuição da Convergência")
+                            st.markdown("#### ✔️ Distribuição da Convergência")
                             
                             col_cv_hist1, col_cv_hist2 = st.columns(2)
                             
@@ -3832,90 +3832,88 @@ else:
             st.session_state[key_details_unif] = not st.session_state.get(key_details_unif, False)
 
         if st.session_state.get(key_details_unif, False):
-            st.markdown(
-                """
-                ## 📖 Guia de Entendimento dos Testes Estatísticos
-                
-                Os dois testes acima buscam padrões nos dados de negociações. Aqui explicamos o que cada um faz em linguagem simples.
-                
-                ---
-                
-                ### 🔵 Teste de Spearman (Coluna Esquerda)
-                
-                **O que faz:** Verifica se duas coisas "andam juntas" — quando uma cresce, a outra cresce também?
-                
-                **No seu caso:** "Ocorrências mais longas terminam com o causador menos agressivo?"
-                
-                **Como entender:**
-                - **Rho (Coeficiente):** Um número entre -1 e +1 que mede a força da relação
-                - **+1.0** = relação perfeita (sempre que uma sobe, outra sobe)
-                - **0.0** = sem relação (variam independentemente)
-                - **-1.0** = relação inversa (quando uma sobe, outra desce)
-                
-                - **P-Value:** Responde "é realmente um padrão ou coincidência?"
-                - **p < 0.05** (5%) = ✅ É um padrão real (improvável ser acaso)
-                - **p ≥ 0.05** = ⚠️ Pode ser coincidência
-                
-                **Quando usar:** Para variáveis contínuas ou ordinais (como escalas de agressividade: baixa, média, alta)
-                
-                ---
-                
-                ### 🟢 Teste Qui-Quadrado (Coluna Direita)
-                
-                **O que faz:** Verifica se a escolha de uma coisa é **independente** de outra, ou se há uma relação.
-                
-                **No seu caso:** "A técnica escolhida depende da Tipologia/Negociador/Modalidade?"
-                
-                **Como entender:**
-                - **χ² (Chi-Quadrado):** Um número que mede "quanto a realidade se desvia do acaso"
-                - **χ² próximo de 0** = sem padrão (aleatório)
-                - **χ² grande** = há um padrão (não é aleatório)
-                
-                - **P-Value:** Mesma lógica do Spearman
-                - **p < 0.05** = ✅ Há um padrão real
-                - **p ≥ 0.05** = ⚠️ Pode ser acaso
-                
-                **Quando usar:** Para variáveis categóricas (categorias, grupos) — não contínuas
-                
-                ---
-                
-                ### 💡 Comparação Rápida
-                
-                | Aspecto | Spearman | Qui-Quadrado |
-                |---------|----------|--------------|
-                | **Tipo de dado** | Contínuo ou ordinal | Categórico |
-                | **Pergunta** | "Duas coisas andam juntas?" | "Escolher A depende de B?" |
-                | **Resultado** | Rho (-1 a +1) | χ² (≥0) |
-                | **Seu caso** | Duração × Agressividade | Técnica × Contexto |
-                
-                ---
-                
-                ### 🎯 O Que Fazer Com os Resultados
-                
-                **Se p-value < 0.05 (padrão real encontrado):**
-                - ✅ Há um padrão consistente nos dados
-                - Isso não é coincidência — é algo que realmente está acontecendo
-                - Vale investigar por quê esse padrão existe
-                
-                **Se p-value ≥ 0.05 (sem confirmação):**
-                - ⚠️ Não há evidência estatística de padrão
-                - Pode ser coincidência ou falta de dados suficientes
-                - Coleta mais registros para confirmar ou refutar
-                
-                ---
-                
-                ### ⚠️ Limitações Importantes
-                
-                **Spearman:**
-                - Exige pelo menos 5 valores válidos para ser confiável
-                - Valores "Não Observado" são excluídos automaticamente
-                
-                **Qui-Quadrado:**
-                - Exige pelo menos 10 ocorrências distintas
-                - Se alguma categoria tiver muito poucos casos (< 5), o teste fica impreciso
-                - Funciona apenas com variáveis categóricas
-                """
-            )
+            st.markdown("""
+            ## 📖 Guia de Entendimento dos Testes Estatísticos
+
+            Os dois testes acima buscam padrões nos dados de negociações. Aqui explicamos o que cada um faz em linguagem simples.
+
+            ---
+
+            ### 🔵 Teste de Spearman (Coluna Esquerda)
+
+            **O que faz:** Verifica se duas coisas "andam juntas" — quando uma cresce, a outra cresce também?
+
+            **No seu caso:** "Ocorrências mais longas terminam com o causador menos agressivo?"
+
+            **Como entender:**
+            - **Rho (Coeficiente):** Um número entre -1 e +1 que mede a força da relação
+            - **+1.0** = relação perfeita (sempre que uma sobe, outra sobe)
+            - **0.0** = sem relação (variam independentemente)
+            - **-1.0** = relação inversa (quando uma sobe, outra desce)
+
+            - **P-Value:** Responde "é realmente um padrão ou coincidência?"
+            - **p < 0.05** (5%) = ✅ É um padrão real (improvável ser acaso)
+            - **p ≥ 0.05** = ⚠️ Pode ser coincidência
+
+            **Quando usar:** Para variáveis contínuas ou ordinais (como escalas de agressividade: baixa, média, alta)
+
+            ---
+
+            ### 🟢 Teste Qui-Quadrado (Coluna Direita)
+
+            **O que faz:** Verifica se a escolha de uma coisa é **independente** de outra, ou se há uma relação.
+
+            **No seu caso:** "A técnica escolhida depende da Tipologia/Negociador/Modalidade?"
+
+            **Como entender:**
+            - **χ² (Chi-Quadrado):** Um número que mede "quanto a realidade se desvia do acaso"
+            - **χ² próximo de 0** = sem padrão (aleatório)
+            - **χ² grande** = há um padrão (não é aleatório)
+
+            - **P-Value:** Mesma lógica do Spearman
+            - **p < 0.05** = ✅ Há um padrão real
+            - **p ≥ 0.05** = ⚠️ Pode ser acaso
+
+            **Quando usar:** Para variáveis categóricas (categorias, grupos) — não contínuas
+
+            ---
+
+            ### 💡 Comparação Rápida
+
+            | Aspecto | Spearman | Qui-Quadrado |
+            |---------|----------|--------------|
+            | **Tipo de dado** | Contínuo ou ordinal | Categórico |
+            | **Pergunta** | "Duas coisas andam juntas?" | "Escolher A depende de B?" |
+            | **Resultado** | Rho (-1 a +1) | χ² (≥0) |
+            | **Seu caso** | Duração × Agressividade | Técnica × Contexto |
+
+            ---
+
+            ### 🎯 O Que Fazer Com os Resultados
+
+            **Se p-value < 0.05 (padrão real encontrado):**
+            - ✅ Há um padrão consistente nos dados
+            - Isso não é coincidência — é algo que realmente está acontecendo
+            - Vale investigar por quê esse padrão existe
+
+            **Se p-value ≥ 0.05 (sem confirmação):**
+            - ⚠️ Não há evidência estatística de padrão
+            - Pode ser coincidência ou falta de dados suficientes
+            - Coleta mais registros para confirmar ou refutar
+
+            ---
+
+            ### ⚠️ Limitações Importantes
+
+            **Spearman:**
+            - Exige pelo menos 5 valores válidos para ser confiável
+            - Valores "Não Observado" são excluídos automaticamente
+
+            **Qui-Quadrado:**
+            - Exige pelo menos 10 ocorrências distintas
+            - Se alguma categoria tiver muito poucos casos (< 5), o teste fica impreciso
+            - Funciona apenas com variáveis categóricas
+                        """)
                     
             # ============================================================
             # MODELAGEM AVANÇADA — Mais clara e acessível
