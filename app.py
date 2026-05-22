@@ -1,7 +1,7 @@
 # ====
 # 0. VALIDAÇÃO DE LICENÇA (ANTES DE TUDO)
 # ====
-from src.axiom.license_manager import LicenseManager
+from license_manager import LicenseManager
 
 try:
     LicenseManager.validate_license()
