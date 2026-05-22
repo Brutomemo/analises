@@ -3660,10 +3660,67 @@ else:
             # ----------------------------------------------------------
             # Cabeçalho da seção de correlações
             # ----------------------------------------------------------
-            st.markdown("---")
-
+            
+            
             st.markdown("<h5 style='color: #FFD700;'> O que os Dados dizem sobre a Resolução das Ocorrências?</h5>", unsafe_allow_html=True)
 
+                        
+            # -------------------------------------------------------
+            # Helpers estatísticos locais
+            # -------------------------------------------------------
+            import unicodedata
+
+            def norm_col(t):
+                return (
+                    unicodedata.normalize("NFKD", str(t))
+                    .encode("ASCII", "ignore")
+                    .decode("ASCII")
+                    .lower()
+                )
+
+            def achar_coluna(df, papel, metrica, momento):
+                for col in df.columns:
+                    cn = norm_col(col)
+                    if norm_col(papel) in cn and norm_col(metrica) in cn and norm_col(momento) in cn:
+                        return col
+                return None
+
+            def tempo_para_minutos(val):
+                """Converte segundos (inteiro ou lista) para minutos float."""
+                try:
+                    if isinstance(val, list):
+                        val = val[0]
+                    if pd.isna(val) or str(val).strip().lower() in ("", "n/d", "nan", "none"):
+                        return None
+                    segundos = float(val)
+                    return segundos / 60 if segundos > 0 else None
+                except Exception:
+                    return None
+
+            lixo = {"none", "nan", "n/d", "", "null", "[]"}
+
+            col_agr_c = achar_coluna(df_quali_filt, "Principal", "Agressividade", "Chegada")
+            col_agr_e = achar_coluna(df_quali_filt, "Principal", "Agressividade", "Encerramento")
+
+            id_col = next(
+                (c for c in df_tec_filt.columns if "ID" in c.upper() or "VINCULO" in c.upper()),
+                None,
+            )
+
+            # N real de APAs (descartando linhas-lixo da coluna de técnicas)
+            if col_t:
+                df_tec_limpo = df_tec_filt[
+                    ~df_tec_filt[col_t].astype(str).str.strip().str.lower().isin(lixo)
+                ].copy()
+            else:
+                df_tec_limpo = df_tec_filt.copy()
+
+            total_apas_reais = (
+                df_tec_limpo[id_col].astype(str).nunique() if id_col else len(df_tec_limpo)
+            )
+
+            #botão
+            
             col_left, col_center, col_right = st.columns([1, 1, 1])  
             with col_center:
                 is_correlacao_associacao = render_toggle_button(
@@ -3674,62 +3731,8 @@ else:
 
             st.markdown("---")
 
-            if is_correlacao_associacao:
-            
-                # -------------------------------------------------------
-                # Helpers estatísticos locais
-                # -------------------------------------------------------
-                import unicodedata
-
-                def norm_col(t):
-                    return (
-                        unicodedata.normalize("NFKD", str(t))
-                        .encode("ASCII", "ignore")
-                        .decode("ASCII")
-                        .lower()
-                    )
-
-                def achar_coluna(df, papel, metrica, momento):
-                    for col in df.columns:
-                        cn = norm_col(col)
-                        if norm_col(papel) in cn and norm_col(metrica) in cn and norm_col(momento) in cn:
-                            return col
-                    return None
-
-                def tempo_para_minutos(val):
-                    """Converte segundos (inteiro ou lista) para minutos float."""
-                    try:
-                        if isinstance(val, list):
-                            val = val[0]
-                        if pd.isna(val) or str(val).strip().lower() in ("", "n/d", "nan", "none"):
-                            return None
-                        segundos = float(val)
-                        return segundos / 60 if segundos > 0 else None
-                    except Exception:
-                        return None
-
-                lixo = {"none", "nan", "n/d", "", "null", "[]"}
-
-                col_agr_c = achar_coluna(df_quali_filt, "Principal", "Agressividade", "Chegada")
-                col_agr_e = achar_coluna(df_quali_filt, "Principal", "Agressividade", "Encerramento")
-
-                id_col = next(
-                    (c for c in df_tec_filt.columns if "ID" in c.upper() or "VINCULO" in c.upper()),
-                    None,
-                )
-
-                # N real de APAs (descartando linhas-lixo da coluna de técnicas)
-                if col_t:
-                    df_tec_limpo = df_tec_filt[
-                        ~df_tec_filt[col_t].astype(str).str.strip().str.lower().isin(lixo)
-                    ].copy()
-                else:
-                    df_tec_limpo = df_tec_filt.copy()
-
-                total_apas_reais = (
-                    df_tec_limpo[id_col].astype(str).nunique() if id_col else len(df_tec_limpo)
-                )
-
+            if is_correlacao_associacao:    
+                
                 # ----------------------------------------------------------
                 # Layout das duas colunas de análise
                 # ----------------------------------------------------------
