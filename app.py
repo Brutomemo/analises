@@ -3317,6 +3317,28 @@ else:
                             st.markdown("---")
                             st.markdown("#### ✔️ Distribuição da Convergência")
                             
+                            st.markdown("""
+                            **O que são esses gráficos?**
+                            
+                            Imagine 6 negociações diferentes. Em cada uma, calculamos quanto o negociador e o causador falam dos **mesmos temas** (convergência).
+                            
+                            - **Negociação 1:** 45% de sintonia temática
+                            - **Negociação 2:** 52% de sintonia temática
+                            - **Negociação 3:** 38% de sintonia temática
+                            - ... e assim por diante
+                            
+                            Esses dois gráficos mostram como essas porcentagens se distribuem:
+                            
+                            **Gráfico da Esquerda (Histograma):** "Em quantas negociações tivemos cada nível de sintonia?"
+                            - Se há uma barra alta em 45%, significa que muitas negociações tiveram ~45% de convergência
+                            - Se a distribuição é espalhada, significa que a sintonia varia muito de ocorrência para ocorrência
+                            
+                            **Gráfico da Direita (Box Plot):** "Qual é a faixa típica de sintonia?"
+                            - **A linha do meio (mediana):** 50% das negociações tiveram sintonia até esse valor
+                            - **A caixa:** Mostra onde estão a maioria dos valores (do 25º ao 75º percentil)
+                            - **Os pontinhos:** Ocorrências com sintonia muito diferente das outras (outliers)
+                            """)
+                            
                             col_cv_hist1, col_cv_hist2 = st.columns(2)
                             
                             with col_cv_hist1:
@@ -3326,12 +3348,14 @@ else:
                                     nbins=8,
                                     title='Distribuição da Convergência Temática'
                                 )
-                                fig_conv_hist.update_traces(marker_color='#378ADD')
+                                fig_conv_hist.update_traces(marker_color='#FF8C00')
                                 fig_conv_hist.update_layout(
                                     paper_bgcolor='rgba(0,0,0,0)',
                                     plot_bgcolor='rgba(0,0,0,0)',
                                     font_color='#FFF',
-                                    height=300
+                                    height=300,
+                                    xaxis_title='Convergência (%)',
+                                    yaxis_title='Número de Negociações'
                                 )
                                 st.plotly_chart(fig_conv_hist, use_container_width=True)
                             
@@ -3339,16 +3363,27 @@ else:
                                 fig_box_conv = px.box(
                                     df_conv_agg,
                                     y='Convergencia',
-                                    title='Box Plot - Convergência'
+                                    title='Faixa Típica de Convergência'
                                 )
-                                fig_box_conv.update_traces(marker_color='#378ADD')
+                                fig_box_conv.update_traces(marker_color='#FF8C00')
                                 fig_box_conv.update_layout(
                                     paper_bgcolor='rgba(0,0,0,0)',
                                     plot_bgcolor='rgba(0,0,0,0)',
                                     font_color='#FFF',
-                                    height=300
+                                    height=300,
+                                    yaxis_title='Convergência (%)'
                                 )
                                 st.plotly_chart(fig_box_conv, use_container_width=True)
+                            
+                            st.markdown("""
+                            **Como interpretar os números na prática:**
+                            
+                            - **Convergência 40-60%:** Normal — há sempre alguma diferença de perspectiva entre negociador e causador
+                            - **Convergência > 60%:** Excelente — o negociador está na "mesma frequência" que o causador
+                            - **Convergência < 40%:** Alerta — há risco de desencontro de comunicação
+                            
+                            **Dica:** Se a maioria das suas negociações tem convergência > 50%, sua equipe está fazendo escuta ativa de forma consistente! 🎯
+                            """)
                             
                             # ── ANÁLISE POR NEGOCIADOR (SE FILTRADO) ──────
                             if filtro_neg_g != "Todos":
