@@ -1166,9 +1166,9 @@ else:
                     with tab_pc1:
                         st.markdown("""
                         <div class='info-card'>
-                        <h5 style='color: #ef4444; margin-top: 0;'>Linha de tendência individualizada da Percepção de agressividade e reptividade do causador</h5>
+                        <h5 style='color: #FFD700; margin-top: 0;'>Linha de tendência individualizada da Percepção de agressividade e reptividade do causador</h5>
                         <p style='font-size:0.9rem;color:#ddd;'>
-                        Segundo os Negociadores: <strong>Principal, Secundário e Lider</strong>.                        
+                        Percepção dos Negociadores <strong>no início e encerramento da ocorrência</strong>.                 
                         </p>
                         </div>
                         """, unsafe_allow_html=True)
@@ -1214,7 +1214,7 @@ else:
                     l_agr_c_num, l_rec_c_num = converter_escala(l_agr_c_txt), converter_escala(l_rec_c_txt)
                     l_agr_e_num, l_rec_e_num = converter_escala(l_agr_e_txt), converter_escala(l_rec_e_txt)
 
-                    st.markdown("### ✔ Percepção dos negociadores sobre a receptividade e agressividade do causador no início e encerramento da ocorrência (Linha de tendência)")
+                    #removi titulo
                     p_escolhida = st.selectbox(
                         "Visualizar evolução sob a perspectiva do:", 
                         ["Negociador Principal", "Negociador Secundário", "Negociador Líder"],
@@ -1282,6 +1282,18 @@ else:
                     
                     st.plotly_chart(fig_trend, use_container_width=True)
 
+                    
+                    # --- TAB 2: linha tendencia ---
+                    with tab_pc2:
+                        st.markdown("""
+                        <div class='info-card'>
+                        <h5 style='color: #FFD700; margin-top: 0;'>Percepção Geral dos Negociadores sobre a agressividade e reptividade do causador.</h5>
+                        <p style='font-size:0.9rem;color:#ddd;'>
+                        Percepção dos Negociadores <strong>no início e encerramento da ocorrência</strong>.                        
+                        </p>
+                        </div>
+                        """, unsafe_allow_html=True)
+                    
                     st.markdown("### ✔ Percepção dos negociadores sobre a receptividade e agressividade do causador no início e encerramento da ocorrência (Textual)")
                     tab_chegada, tab_encerramento = st.tabs(["🏳 Na Chegada à Ocorrência", "🏴 No Encerramento"])
                     
