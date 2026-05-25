@@ -1423,7 +1423,7 @@ else:
 
 
                     
-                    # === SEÇÃO 2: ANÁLISE DE TÉCNICAS × REAÇÃO DO CAUSADOR ===
+                    # === SEÇÃO 2: ANÁLISE DE efetividade × REAÇÃO DO CAUSADOR ===
                 with tab_ng2:
                             st.markdown("""
                             <div class='info-card'>
@@ -1434,115 +1434,106 @@ else:
                             </div>
                             """, unsafe_allow_html=True)
                 
-                            st.markdown("""
-                                <div style='margin-top:20px;'>
-                                <h5 style='color:#FFD700;'>✔️ Efetividade das Técnicas</h5>
-                                <p style='color:#aaa;font-size:0.9rem;'>
-                                Cruza cada técnica usada com a reação do causador.
-                                Permite identificar quais abordagens foram efetivas nesta ocorrência.
-                                </p>
-                                </div>
-                                """, unsafe_allow_html=True)
+                            
+                            
+                            with st.spinner("Cruzando técnicas com reação do causador..."):
+                                try:
+                                    # ── Buscar ID do registro atual ──────────────────────
+                                    record_id_atual = df_apa.get('Airtable_Record_ID')
 
-                            if st.button("✔ 1. Analisar Efetividade das Técnicas", key="btn_efetividade_tecnicas"):
-                                    with st.spinner("Cruzando técnicas com reação do causador..."):
-                                        try:
-                                            # ── Buscar ID do registro atual ──────────────────────
-                                            record_id_atual = df_apa.get('Airtable_Record_ID')
+                                    if not record_id_atual:
+                                        st.warning("⚠️ ID do registro não encontrado.")
+                                    else:
+                                        # ── Buscar df_tec do session_state ───────────────
+                                        df_tec = st.session_state.get("df_tec", pd.DataFrame())
 
-                                            if not record_id_atual:
-                                                st.warning("⚠️ ID do registro não encontrado.")
+                                        if df_tec.empty:
+                                            st.warning("⚠️ Tabela de técnicas não carregada. Atualize os dados.")
+                                        else:
+                                            # ── Filtrar técnicas desta APA ────────────────
+                                            def vinculo_contem(val, record_id):
+                                                if isinstance(val, list):
+                                                    return record_id in val
+                                                return str(val) == record_id
+
+                                            mask = df_tec['Vinculo_APA'].apply(
+                                                lambda x: vinculo_contem(x, record_id_atual)
+                                            )
+                                            df_tec_apa = df_tec[mask].copy()
+
+                                            if df_tec_apa.empty:
+                                                st.info("Nenhuma técnica registrada para esta ocorrência.")
                                             else:
-                                                # ── Buscar df_tec do session_state ───────────────
-                                                df_tec = st.session_state.get("df_tec", pd.DataFrame())
-
-                                                if df_tec.empty:
-                                                    st.warning("⚠️ Tabela de técnicas não carregada. Atualize os dados.")
-                                                else:
-                                                    # ── Filtrar técnicas desta APA ────────────────
-                                                    def vinculo_contem(val, record_id):
-                                                        if isinstance(val, list):
-                                                            return record_id in val
-                                                        return str(val) == record_id
-
-                                                    mask = df_tec['Vinculo_APA'].apply(
-                                                        lambda x: vinculo_contem(x, record_id_atual)
-                                                    )
-                                                    df_tec_apa = df_tec[mask].copy()
-
-                                                    if df_tec_apa.empty:
-                                                        st.info("Nenhuma técnica registrada para esta ocorrência.")
+                                                # ── Normalizar coluna de reação ───────────
+                                                def normalizar_reacao(val):
+                                                    if val is None:
+                                                        return None
+                                                    s = str(val).strip()
+                                                    if s in ["-1", "-1.0", "🔴 Reação Negativa", "Reação Negativa"]:
+                                                        return -1
+                                                    elif s in ["0", "0.0", "⚪ Reação Neutra", "Reação Neutra"]:
+                                                        return 0
+                                                    elif s in ["1", "1.0", "🟢 Reação Positiva", "Reação Positiva"]:
+                                                        return 1
                                                     else:
-                                                        # ── Normalizar coluna de reação ───────────
-                                                        def normalizar_reacao(val):
-                                                            if val is None:
-                                                                return None
-                                                            s = str(val).strip()
-                                                            if s in ["-1", "-1.0", "🔴 Reação Negativa", "Reação Negativa"]:
-                                                                return -1
-                                                            elif s in ["0", "0.0", "⚪ Reação Neutra", "Reação Neutra"]:
-                                                                return 0
-                                                            elif s in ["1", "1.0", "🟢 Reação Positiva", "Reação Positiva"]:
-                                                                return 1
-                                                            else:
-                                                                return None
+                                                        return None
 
-                                                        # Detectar coluna de reação
-                                                        col_reacao = None
-                                                        for c in ['ATITUDE DO CAUSADOR', 'Atitude do Causador', 'atitude_causador']:
-                                                            if c in df_tec_apa.columns:
-                                                                col_reacao = c
-                                                                break
+                                                # Detectar coluna de reação
+                                                col_reacao = None
+                                                for c in ['ATITUDE DO CAUSADOR', 'Atitude do Causador', 'atitude_causador']:
+                                                    if c in df_tec_apa.columns:
+                                                        col_reacao = c
+                                                        break
 
-                                                        col_tecnica = None
-                                                        for c in ['TÉCNICAS', 'Técnicas', 'tecnicas']:
-                                                            if c in df_tec_apa.columns:
-                                                                col_tecnica = c
-                                                                break
+                                                col_tecnica = None
+                                                for c in ['TÉCNICAS', 'Técnicas', 'tecnicas']:
+                                                    if c in df_tec_apa.columns:
+                                                        col_tecnica = c
+                                                        break
 
-                                                        if not col_tecnica:
-                                                            st.warning("⚠️ Coluna TÉCNICAS não encontrada.")
+                                                if not col_tecnica:
+                                                    st.warning("⚠️ Coluna TÉCNICAS não encontrada.")
+                                                else:
+                                                    if col_reacao:
+                                                        df_tec_apa['_reacao_num'] = df_tec_apa[col_reacao].apply(normalizar_reacao)
+                                                    else:
+                                                        df_tec_apa['_reacao_num'] = None
+
+                                                    # ── Agrupar por técnica ───────────────
+                                                    resumo = []
+                                                    for tecnica, grupo in df_tec_apa.groupby(col_tecnica):
+                                                        total    = len(grupo)
+                                                        positivo = (grupo['_reacao_num'] == 1).sum()
+                                                        neutro   = (grupo['_reacao_num'] == 0).sum()
+                                                        negativo = (grupo['_reacao_num'] == -1).sum()
+                                                        inaud    = grupo['_reacao_num'].isna().sum()
+
+                                                        # Score: (positivos - negativos) / observados
+                                                        observados = positivo + neutro + negativo
+                                                        if observados > 0:
+                                                            score = round(((positivo - negativo) / observados) * 100, 1)
                                                         else:
-                                                            if col_reacao:
-                                                                df_tec_apa['_reacao_num'] = df_tec_apa[col_reacao].apply(normalizar_reacao)
-                                                            else:
-                                                                df_tec_apa['_reacao_num'] = None
+                                                            score = None
 
-                                                            # ── Agrupar por técnica ───────────────
-                                                            resumo = []
-                                                            for tecnica, grupo in df_tec_apa.groupby(col_tecnica):
-                                                                total    = len(grupo)
-                                                                positivo = (grupo['_reacao_num'] == 1).sum()
-                                                                neutro   = (grupo['_reacao_num'] == 0).sum()
-                                                                negativo = (grupo['_reacao_num'] == -1).sum()
-                                                                inaud    = grupo['_reacao_num'].isna().sum()
+                                                        resumo.append({
+                                                            "Técnica":        tecnica,
+                                                            "Total":          total,
+                                                            "🟢 Positiva":    int(positivo),
+                                                            "⚪ Neutra":      int(neutro),
+                                                            "🔴 Negativa":    int(negativo),
+                                                            "❓ Inaudível":   int(inaud),
+                                                            "Score (%)":      score
+                                                        })
 
-                                                                # Score: (positivos - negativos) / observados
-                                                                observados = positivo + neutro + negativo
-                                                                if observados > 0:
-                                                                    score = round(((positivo - negativo) / observados) * 100, 1)
-                                                                else:
-                                                                    score = None
+                                                    df_resumo = pd.DataFrame(resumo)
+                                                    df_resumo = df_resumo.sort_values("Score (%)", ascending=False, na_position='last')
 
-                                                                resumo.append({
-                                                                    "Técnica":        tecnica,
-                                                                    "Total":          total,
-                                                                    "🟢 Positiva":    int(positivo),
-                                                                    "⚪ Neutra":      int(neutro),
-                                                                    "🔴 Negativa":    int(negativo),
-                                                                    "❓ Inaudível":   int(inaud),
-                                                                    "Score (%)":      score
-                                                                })
+                                                    # ✅ SALVAR NO SESSION_STATE
+                                                    st.session_state['tecnicas_analisadas'] = df_resumo
+                                                    st.success(f"✅ {len(df_resumo)} técnicas analisadas!")
 
-                                                            df_resumo = pd.DataFrame(resumo)
-                                                            df_resumo = df_resumo.sort_values("Score (%)", ascending=False, na_position='last')
-
-                                                            # ✅ SALVAR NO SESSION_STATE
-                                                            st.session_state['tecnicas_analisadas'] = df_resumo
-                                                            st.success(f"✅ {len(df_resumo)} técnicas analisadas!")
-
-                                        except Exception as e:
-                                            st.error(f"Erro ao analisar técnicas: {str(e)[:80]}")
+                                except Exception as e:
+                                    st.error(f"Erro ao analisar técnicas: {str(e)[:80]}")
 
                                 # ✅ EXIBIÇÃO DOS RESULTADOS (FORA DO BOTÃO)
                             if st.session_state.get('tecnicas_analisadas') is not None:
