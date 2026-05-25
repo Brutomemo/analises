@@ -2286,7 +2286,7 @@ else:
                     "✔️ Análise Global",
                     "✔️ Comparativo das Nuvens de Palavras",
                     "✔️ Convergência Temática",
-                    "✔️ Estado da Crise"
+                    "✔️ Estado da Crise",
                     "✔️ Escuta e Sentimento"
                 ])
               
@@ -2710,28 +2710,29 @@ else:
                         # CONFIGURAÇÃO: Lazy Loading para Transformer
                         # ============================================================
 
-                    with tab_ng8:
-                        st.markdown("### 📢 Escuta e Sentimento")    
-                        
-                        @st.cache_resource
-                        def carregar_transformer_portugues():
-                            """
-                            Carrega transformer uma única vez e cacheia.
-                            Demora ~5-10s na primeira execução.
-                            """
-                            try:
-                                from transformers import pipeline
-                                
-                                # Usar transformer português (validado, contextual)
-                                nlp = pipeline(
-                                    "sentiment-analysis",
-                                    model="bert-base-portuguese-cased",
-                                    device=0  # GPU se disponível, CPU caso contrário
-                                )
-                                return nlp
-                            except Exception as e:
-                                st.error(f"Erro ao carregar modelo: {str(e)[:100]}")
-                                return None
+                with tab_ng8:
+                    st.markdown("### ✔️ Escuta e Sentimento")    
+                    
+                    @st.cache_resource
+                    def carregar_transformer_portugues():
+                        """
+                        Carrega transformer uma única vez e cacheia.
+                        Demora ~5-10s na primeira execução.
+                        """
+                        try:
+                            from transformers import pipeline
+                            
+                            nlp = pipeline(
+                                "sentiment-analysis",
+                                model="bert-base-portuguese-cased",
+                                device=0
+                            )
+                            return nlp
+                        except Exception as e:
+                            st.error(f"Erro ao carregar modelo: {str(e)[:100]}")
+                            return None
+    
+    # ... resto do código de Tab 8
 
                         # ============================================================
                         # FUNÇÕES AUXILIARES (Regex, rápido)
