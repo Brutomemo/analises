@@ -1425,6 +1425,16 @@ else:
 
                     
                     # === SEÇÃO 2: ANÁLISE DE TÉCNICAS × REAÇÃO DO CAUSADOR ===
+                with tab_ng2:
+                            st.markdown("""
+                            <div class='info-card'>
+                            <h5 style='color: #ffae42; margin-top: 0;'>✔️ Efetividade das Técnicas Aplicadas</h5>
+                            <p style='font-size:1rem;color:#ddd;'>
+                            Percepção individalizada dos negociadores sobre a receptividade e agressividade do causador no início e encerramento da ocorrência.
+                            </p>
+                            </div>
+                            """, unsafe_allow_html=True)
+                
                 st.markdown("""
                     <div style='margin-top:20px;'>
                     <h5 style='color:#FFD700;'>✔️ Efetividade das Técnicas</h5>
