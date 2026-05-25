@@ -20,3 +20,4 @@ tabulate
 streamlit-echarts
 transformers
 torch
+seaborn
