@@ -379,10 +379,10 @@ def carregar_transformer_portugues():
         
         # Usar transformer multilingue (validado, funciona bem em português)
         nlp = pipeline(
-        "sentiment-analysis",
-        model="distilbert-base-multilingual-cased",  # Mais rápido, menos preciso
-        device=0
-    )
+            "sentiment-analysis",
+            model="distilbert-base-uncased-finetuned-sst-2-english",  # Melhor que multilingue
+            device=0
+        )
         return nlp
     except Exception as e:
         st.error(f"Erro ao carregar modelo: {str(e)[:100]}")
@@ -465,23 +465,64 @@ def analise_sentimento_transformer(texto, nlp_model):
     Análise com Transformer português.
     Demora ~1-5s dependendo do texto.
     """
+    import streamlit as st
+    
     sentencas = dividir_em_sentencas(texto)
     
     if not sentencas:
+        st.warning("⚠️ Nenhuma sentença encontrada para análise")
         return None
     
+    st.info(f"📊 Analisando {len(sentencas)} sentenças...")
+    
     resultados = []
-    for sentenca in sentencas[:20]:  # Limitar a 20 sentenças
+    
+    # PROCESSA TODAS as sentenças (não limita a 20!)
+    for idx, sentenca in enumerate(sentencas):
+        if not sentenca.strip():  # Pula sentenças vazias
+            continue
+            
         try:
-            resultado = nlp_model(sentenca[:512])  # BERT tem limite de 512 tokens
+            # Chamar o modelo
+            resultado = nlp_model(sentenca[:512])
+            
+            # O modelo retorna: [{'label': 'LABEL_0', 'score': 0.95}, ...]
+            label_raw = resultado[0]['label']
+            score = resultado[0]['score']
+            
+            # CONVERTER labels para padrão
+            # nlptown retorna: LABEL_0 (negativo), LABEL_1 (neutro), LABEL_2 (positivo)
+            # neuralmind retorna: NEGATIVE, NEUTRAL, POSITIVE
+            
+            if 'LABEL_' in label_raw:
+                # Modelo multilingue (nlptown)
+                label_map = {
+                    'LABEL_0': 'NEGATIVE',
+                    'LABEL_1': 'NEUTRAL',
+                    'LABEL_2': 'POSITIVE'
+                }
+                label = label_map.get(label_raw, 'NEUTRAL')
+            else:
+                # Modelo específico (neuralmind)
+                label = label_raw
+            
             resultados.append({
                 'sentenca': sentenca[:100],
-                'label': resultado[0]['label'],
-                'score': resultado[0]['score']
+                'label': label,
+                'score': score,
+                'label_raw': label_raw
             })
+            
         except Exception as e:
+            # DEBUG: Mostrar erro
+            st.warning(f"⚠️ Erro ao processar sentença {idx+1}: {str(e)[:60]}")
             continue
     
+    if not resultados:
+        st.error("❌ Nenhuma sentença foi processada com sucesso")
+        return None
+    
+    st.success(f"✅ {len(resultados)} sentenças processadas")
     return resultados
 
 # ============================================================
