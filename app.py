@@ -1141,15 +1141,27 @@ else:
             
             # PERCEPÇÃO DE AGRESSIVIDADE/RECEPTIVIDADE LINHA DE TENDENCIA
             
+    col_left, col_center, col_right = st.columns([1, 1, 1])
+    with col_center:
+        is_perc_neg = render_toggle_button(
+            label="✔️ Abrir Percepção de agressividade e Receptividade",
+            session_key="perc_neg",
+            button_key="btn_perc_neg"
+        )
+        
+        st.markdown("---")
+        
+        if is_perc_neg: 
+            
             if st.session_state.get('stats_calculados'):
                 stats = st.session_state['stats_calculados']
 
-                tab_ng1, tab_ng2 = st.tabs([
+                tab_pc1, tab_pc2 = st.tabs([
                     "✔️ Linha de Tendência",
                     "✔️ Visão Geral"                    
                 ])
             
-                with tab_ng1:
+                with tab_pc1:
                     st.markdown("""
                     <div class='info-card'>
                     <h5 style='color: #ffae42; margin-top: 0;'>✔️ Linha de tendência individualizada da Percepção de agressividade e reptividade do causador</h5>
@@ -1269,7 +1281,7 @@ else:
 
                 # VISÃO GERAL
                 
-                with tab_ng2:
+                with tab_pc2:
                     st.markdown("""
                     <div class='info-card'>
                     <h5 style='color: #ffae42; margin-top: 0;'>✔️ Visão geral da Percepção de agressividade e reptividade do causador</h5>
