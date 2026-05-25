@@ -1034,7 +1034,7 @@ else:
     # ====
     #ETAPA 1
     with aba_individual:
-        st.markdown("<h4 style='font-size: 20px; font-weight: 500; margin-bottom: 0.5rem;'>✔ Etapa 1: Seleção e Metadados da Ocorrência</h4>", unsafe_allow_html=True)
+        st.markdown("<h4 style='font-size: 20px; font-weight: 500; margin-bottom: 0.5rem;'>✔ Seleção e Metadados da Ocorrência</h4>", unsafe_allow_html=True)
 
         df_quali['Neg_Limpo'] = df_quali['Negociador Principal'].apply(limpar_valor)
         df_quali['Tip_Limpa'] = df_quali['Tipologia'].apply(limpar_valor)
@@ -1344,6 +1344,18 @@ else:
 
             st.markdown("<h5 style='color: #FFD700;'>✔ Frequência das Técnicas Aplicadas (Nesta APA)</h5>", unsafe_allow_html=True)
 
+            col_left, col_center, col_right = st.columns([1, 1, 1])
+            with col_center:
+                is_frequencia_tecnicas = render_toggle_button(
+                    label="✔️ Frequência de Técnicas",
+                    session_key="frequencia_tecnicas",
+                    button_key="btn_frequencia_tecnicas"
+                )
+            
+            st.markdown("---")
+        
+        if is_frequencia_tecnicas:  
+            
             if st.button("✔ Calcular Frequência de Técnicas", key="btn_freq_tecnicas"):
                 if not df_tec.empty:
                     col_vinculo = next((c for c in df_tec.columns if 'VINCULO' in c.upper() or 'VÍNCULO' in c.upper()), None)
