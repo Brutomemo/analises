@@ -1415,11 +1415,11 @@ else:
                                     st.warning("Tabela de técnicas vazia no Airtable.")
 
                             # ✅ EXIBIR TREEMAP SE FOI GERADO (FORA DO BOTÃO)
-                        if st.session_state.get('treemap_freq'):
-                                st.plotly_chart(st.session_state['treemap_freq'], use_container_width=True)
-                                
-                        st.markdown("<div style='margin-bottom: 20px;'></div>", unsafe_allow_html=True)
-                        st.markdown("---")
+                                if st.session_state.get('treemap_freq'):
+                                        st.plotly_chart(st.session_state['treemap_freq'], use_container_width=True)
+                                        
+                                st.markdown("<div style='margin-bottom: 20px;'></div>", unsafe_allow_html=True)
+                                st.markdown("---")
 
 
                     
