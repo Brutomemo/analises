@@ -1416,16 +1416,16 @@ else:
                         st.warning("Tabela de técnicas vazia no Airtable.")
 
                 # ✅ EXIBIR TREEMAP SE FOI GERADO (FORA DO BOTÃO)
-                if st.session_state.get('treemap_freq'):
+            if st.session_state.get('treemap_freq'):
                     st.plotly_chart(st.session_state['treemap_freq'], use_container_width=True)
                     
-                st.markdown("<div style='margin-bottom: 20px;'></div>", unsafe_allow_html=True)
-                st.markdown("---")
+            st.markdown("<div style='margin-bottom: 20px;'></div>", unsafe_allow_html=True)
+            st.markdown("---")
 
 
                 
                 # === SEÇÃO 2: ANÁLISE DE TÉCNICAS × REAÇÃO DO CAUSADOR ===
-                st.markdown("""
+            st.markdown("""
                 <div style='margin-top:20px;'>
                 <h5 style='color:#FFD700;'>✔️ Efetividade das Técnicas</h5>
                 <p style='color:#aaa;font-size:0.9rem;'>
@@ -1435,7 +1435,7 @@ else:
                 </div>
                 """, unsafe_allow_html=True)
 
-                if st.button("✔ 1. Analisar Efetividade das Técnicas", key="btn_efetividade_tecnicas"):
+            if st.button("✔ 1. Analisar Efetividade das Técnicas", key="btn_efetividade_tecnicas"):
                     with st.spinner("Cruzando técnicas com reação do causador..."):
                         try:
                             # ── Buscar ID do registro atual ──────────────────────
