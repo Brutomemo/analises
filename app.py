@@ -1366,61 +1366,60 @@ else:
                     ])
                                         
                 
-                with tab_ng1:
-                            st.markdown("""
-                            <div class='info-card'>
-                            <h5 style='color: #ffae42; margin-top: 0;'>✔️ Frequência das Técnicas Aplicadas</h5>
-                            <p style='font-size:1rem;color:#ddd;'>
-                            Percepção individalizada dos negociadores sobre a receptividade e agressividade do causador no início e encerramento da ocorrência.
-                            </p>
-                            </div>
-                            """, unsafe_allow_html=True)
-
-                                
-                
-                if not df_tec.empty:
-                            col_vinculo = next((c for c in df_tec.columns if 'VINCULO' in c.upper() or 'VÍNCULO' in c.upper()), None)
-                            
-                            if col_vinculo:
-                                id_visivel = str(apa_selecionada).strip()
-                                df_tec['Vinculo_Str'] = df_tec[col_vinculo].astype(str).str.replace(r"[\[\]'\"]", "", regex=True).str.strip()
-                                df_tec_filtrado = df_tec[df_tec['Vinculo_Str'] == id_visivel]
-                                
-                                if df_tec_filtrado.empty and 'Airtable_Record_ID' in df_apa:
-                                    id_interno = str(df_apa['Airtable_Record_ID']).strip()
-                                    df_tec_filtrado = df_tec[df_tec[col_vinculo].astype(str).str.contains(id_interno, na=False, regex=False)]
-                                
-                                if not df_tec_filtrado.empty:
-                                    col_tecnica = next((col for col in ['TÉCNICAS', 'TECNICAS', 'TÉCNICA', 'TECNICA'] if col in df_tec_filtrado.columns), None)
-                                    if col_tecnica:
-                                        freq_abs = df_tec_filtrado[col_tecnica].value_counts()
-                                        freq_rel = (df_tec_filtrado[col_tecnica].value_counts(normalize=True) * 100).round(1)
-                                        df_freq = pd.DataFrame({'Frequência Absoluta': freq_abs, 'Frequência Relativa (%)': freq_rel}).reset_index().rename(columns={col_tecnica: 'Técnica Empregada'})
+                    with tab_ng1:
+                                st.markdown("""
+                                <div class='info-card'>
+                                <h5 style='color: #ffae42; margin-top: 0;'>✔️ Frequência das Técnicas Aplicadas</h5>
+                                <p style='font-size:1rem;color:#ddd;'>
+                                Percepção individalizada dos negociadores sobre a receptividade e agressividade do causador no início e encerramento da ocorrência.
+                                </p>
+                                </div>
+                                """, unsafe_allow_html=True)
+                                    
+                    
+                                if not df_tec.empty:
+                                    col_vinculo = next((c for c in df_tec.columns if 'VINCULO' in c.upper() or 'VÍNCULO' in c.upper()), None)
+                                    
+                                    if col_vinculo:
+                                        id_visivel = str(apa_selecionada).strip()
+                                        df_tec['Vinculo_Str'] = df_tec[col_vinculo].astype(str).str.replace(r"[\[\]'\"]", "", regex=True).str.strip()
+                                        df_tec_filtrado = df_tec[df_tec['Vinculo_Str'] == id_visivel]
                                         
-                                        st.dataframe(df_freq, use_container_width=True, hide_index=True)
+                                        if df_tec_filtrado.empty and 'Airtable_Record_ID' in df_apa:
+                                            id_interno = str(df_apa['Airtable_Record_ID']).strip()
+                                            df_tec_filtrado = df_tec[df_tec[col_vinculo].astype(str).str.contains(id_interno, na=False, regex=False)]
                                         
-                                        st.markdown("<h4 style='text-align:center; color: #FFFF; margin-top: 20px;'>Frequencias das Técnicas Aplicadas (Treemap)</h4>", unsafe_allow_html=True)
-                                        fig_tree = px.treemap(df_freq, path=['Técnica Empregada'], values='Frequência Absoluta', color='Frequência Absoluta', color_continuous_scale='Oranges')
-                                        fig_tree.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font_color="#FFF", margin=dict(t=10, l=10, r=10, b=10))
-                                        
-                                        # ✅ SALVAR NO SESSION_STATE
-                                        st.session_state['treemap_freq'] = fig_tree
-                                        st.success("✅ Treemap gerado!")
+                                        if not df_tec_filtrado.empty:
+                                            col_tecnica = next((col for col in ['TÉCNICAS', 'TECNICAS', 'TÉCNICA', 'TECNICA'] if col in df_tec_filtrado.columns), None)
+                                            if col_tecnica:
+                                                freq_abs = df_tec_filtrado[col_tecnica].value_counts()
+                                                freq_rel = (df_tec_filtrado[col_tecnica].value_counts(normalize=True) * 100).round(1)
+                                                df_freq = pd.DataFrame({'Frequência Absoluta': freq_abs, 'Frequência Relativa (%)': freq_rel}).reset_index().rename(columns={col_tecnica: 'Técnica Empregada'})
+                                                
+                                                st.dataframe(df_freq, use_container_width=True, hide_index=True)
+                                                
+                                                st.markdown("<h4 style='text-align:center; color: #FFFF; margin-top: 20px;'>Frequencias das Técnicas Aplicadas (Treemap)</h4>", unsafe_allow_html=True)
+                                                fig_tree = px.treemap(df_freq, path=['Técnica Empregada'], values='Frequência Absoluta', color='Frequência Absoluta', color_continuous_scale='Oranges')
+                                                fig_tree.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font_color="#FFF", margin=dict(t=10, l=10, r=10, b=10))
+                                                
+                                                # ✅ SALVAR NO SESSION_STATE
+                                                st.session_state['treemap_freq'] = fig_tree
+                                                st.success("✅ Treemap gerado!")
+                                            else:
+                                                st.warning("Técnicas encontradas, mas a coluna 'TÉCNICAS' não foi identificada no Airtable.")
+                                        else:
+                                            st.info(f"Nenhuma técnica cruzou com a APA atual.")
                                     else:
-                                        st.warning("Técnicas encontradas, mas a coluna 'TÉCNICAS' não foi identificada no Airtable.")
+                                        st.warning("A coluna de vínculo (ex: 'Vinculo_APA') não foi encontrada na aba de técnicas.")
                                 else:
-                                    st.info(f"Nenhuma técnica cruzou com a APA atual.")
-                            else:
-                                st.warning("A coluna de vínculo (ex: 'Vinculo_APA') não foi encontrada na aba de técnicas.")
-                        else:
-                            st.warning("Tabela de técnicas vazia no Airtable.")
+                                    st.warning("Tabela de técnicas vazia no Airtable.")
 
-                    # ✅ EXIBIR TREEMAP SE FOI GERADO (FORA DO BOTÃO)
-                if st.session_state.get('treemap_freq'):
-                        st.plotly_chart(st.session_state['treemap_freq'], use_container_width=True)
-                        
-                st.markdown("<div style='margin-bottom: 20px;'></div>", unsafe_allow_html=True)
-                st.markdown("---")
+                            # ✅ EXIBIR TREEMAP SE FOI GERADO (FORA DO BOTÃO)
+                        if st.session_state.get('treemap_freq'):
+                                st.plotly_chart(st.session_state['treemap_freq'], use_container_width=True)
+                                
+                        st.markdown("<div style='margin-bottom: 20px;'></div>", unsafe_allow_html=True)
+                        st.markdown("---")
 
 
                     
