@@ -1342,6 +1342,14 @@ else:
             
             #TABELA DE FREQUENCIA
 
+            if st.session_state.get('stats_calculados'):
+                stats = st.session_state['stats_calculados']
+
+                tab_ng1, tab_ng2 = st.tabs([
+                    "✔️ Frequência das Técnicas",
+                    "✔️ Efetividade das Técnicas"                    
+                ])
+            
             st.markdown("<h5 style='color: #FFD700;'>✔ Frequência das Técnicas Aplicadas (Nesta APA)</h5>", unsafe_allow_html=True)
 
             col_left, col_center, col_right = st.columns([1, 1, 1])
