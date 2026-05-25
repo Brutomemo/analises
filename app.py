@@ -1363,8 +1363,11 @@ else:
                     button_key="btn_frequencia_tecnicas"
                 )
             
-            
-                if not df_tec.empty:
+            st.markdown("---")
+        
+            if is_frequencia_tecnicas:                  
+                
+                    if not df_tec.empty:
                         col_vinculo = next((c for c in df_tec.columns if 'VINCULO' in c.upper() or 'VÍNCULO' in c.upper()), None)
                         
                         if col_vinculo:
