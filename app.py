@@ -1343,12 +1343,12 @@ else:
             
             #TABELA DE FREQUENCIA
 
-            st.markdown("<h5 style='color: #FFD700;'>✔ Frequência das Técnicas Aplicadas (Nesta APA)</h5>", unsafe_allow_html=True)
+            st.markdown("<h5 style='color: #FFD700;'>✔ Análise das Técnicas Aplicadas (Nesta APA)</h5>", unsafe_allow_html=True)
 
             col_left, col_center, col_right = st.columns([1, 1, 1])
             with col_center:
                 is_frequencia_tecnicas = render_toggle_button(
-                    label="✔️ Frequência de Técnicas",
+                    label="✔️ Análise de Técnicas",
                     session_key="frequencia_tecnicas",
                     button_key="btn_frequencia_tecnicas"
                 )
