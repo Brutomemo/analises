@@ -21,3 +21,4 @@ streamlit-echarts
 transformers
 torch
 seaborn
+google-trans-new

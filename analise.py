@@ -364,6 +364,131 @@ import streamlit as st
 import re
 from collections import Counter
 
+
+# ============================================================
+# TRADUÇÃO + ANÁLISE COM TRANSFORMER
+# Adicione ISTO em analise.py
+# ============================================================
+
+import streamlit as st
+
+# ============================================================
+# TRADUÇÃO: Português → Inglês
+# ============================================================
+
+@st.cache_resource
+def carregar_tradutor():
+    """
+    Carrega o Google Translate.
+    Rápido, sem dependências pesadas.
+    """
+    try:
+        from google_trans_new import google_translator
+        return google_translator()
+    except ImportError:
+        st.warning("⚠️ Instale: pip install google-trans-new")
+        return None
+
+def traduzir_sentenca(sentenca, tradutor):
+    """
+    Traduz uma sentença de português para inglês.
+    """
+    try:
+        if not tradutor:
+            return None
+        
+        traducao = tradutor.translate(sentenca, lang_src='pt', lang_tgt='en')
+        return traducao
+    except Exception as e:
+        return None
+
+# ============================================================
+# ANÁLISE COM TRANSFORMER (com tradução)
+# ============================================================
+
+def analise_sentimento_transformer_com_traducao(texto, nlp_model):
+    """
+    Análise com Transformer português:
+    1. Divide em sentenças
+    2. Traduz para inglês
+    3. Analisa sentimento em inglês
+    4. Retorna resultado com sentença original + traduzida
+    """
+    import streamlit as st
+    
+    sentencas_pt = dividir_em_sentencas(texto)
+    
+    if not sentencas_pt:
+        st.warning("⚠️ Nenhuma sentença encontrada para análise")
+        return None
+    
+    st.info(f"📊 Analisando {len(sentencas_pt)} sentenças...")
+    
+    # Carregar tradutor
+    tradutor = carregar_tradutor()
+    if not tradutor:
+        st.error("❌ Erro ao carregar tradutor")
+        return None
+    
+    resultados = []
+    
+    # Progress bar
+    progress_bar = st.progress(0)
+    
+    # PROCESSA TODAS as sentenças
+    for idx, sentenca_pt in enumerate(sentencas_pt):
+        if not sentenca_pt.strip():
+            continue
+        
+        try:
+            # 1. TRADUZIR
+            sentenca_en = traduzir_sentenca(sentenca_pt, tradutor)
+            if not sentenca_en:
+                continue
+            
+            # 2. ANALISAR em inglês
+            resultado = nlp_model(sentenca_en[:512])
+            
+            label_raw = resultado[0]['label']
+            score = resultado[0]['score']
+            
+            # Converter labels
+            if 'LABEL_' in label_raw:
+                # Modelo multilingue
+                label_map = {
+                    'LABEL_0': 'NEGATIVE',
+                    'LABEL_1': 'NEUTRAL',
+                    'LABEL_2': 'POSITIVE'
+                }
+                label = label_map.get(label_raw, 'NEUTRAL')
+            else:
+                # Outros modelos
+                label = label_raw
+            
+            resultados.append({
+                'sentenca_pt': sentenca_pt[:100],       # Português original
+                'sentenca_en': sentenca_en[:100],       # Tradução
+                'label': label,
+                'score': score,
+                'label_raw': label_raw
+            })
+            
+            # Atualizar progress
+            progress = (idx + 1) / len(sentencas_pt)
+            progress_bar.progress(progress)
+            
+        except Exception as e:
+            st.warning(f"⚠️ Erro na sentença {idx+1}: {str(e)[:60]}")
+            continue
+    
+    progress_bar.empty()
+    
+    if not resultados:
+        st.error("❌ Nenhuma sentença foi processada com sucesso")
+        return None
+    
+    st.success(f"✅ {len(resultados)} sentenças processadas")
+    return resultados
 # ============================================================
 # CACHE RESOURCE: Lazy Loading para Transformer
 # ============================================================
