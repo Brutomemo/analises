@@ -1536,7 +1536,7 @@ else:
                             st.error(f"Erro ao analisar técnicas: {str(e)[:80]}")
 
                 # ✅ EXIBIÇÃO DOS RESULTADOS (FORA DO BOTÃO)
-                if st.session_state.get('tecnicas_analisadas') is not None:
+            if st.session_state.get('tecnicas_analisadas') is not None:
                     df_resumo = st.session_state['tecnicas_analisadas']
 
                     # ── SCORECARD GERAL ───────────────────────────────────────────
