@@ -1741,7 +1741,7 @@ else:
                                     """, unsafe_allow_html=True)
 
                                     # ── 4. CONTEXTO COMPARATIVO ────────────────────────────────
-                                    st.markdown("### 📈 Contexto Comparativo")
+                                    st.markdown("### ✔️ Contexto Comparativo")
 
                                     st.markdown(f"""
                                     <p style='font-size:0.9rem;color:#aaa;line-height:1.6;'>
@@ -1771,8 +1771,8 @@ else:
             <h3 style='color: #FFD700;'>✔ Etapa 2: Análise Semântica </h3>
             <p style='color: #aaa; font-size: 0.95rem; margin-top: -10px;'>
             <strong>O que o causador REALMENTE sente, quer e teme.</strong> 
-            Enquanto Similitude conta palavras repetidas, Semântica lê entre as linhas: intenções escondidas, 
-            gatilhos emocionais e pontos de alavanca para resolução.
+            Análise detalhada da transcrição da negociação, como: temas mais usados pelo Causador e Negociadores,
+            nuvem de palavras, convergência de temas, estado emocional do Causador segundo a transcrição e Analise detalhada da negociação.
             </p></p>
             """, unsafe_allow_html=True)
 
@@ -2520,26 +2520,26 @@ else:
                         else:
                             st.warning("⚠️ Nenhuma transcrição disponível para análise")                    
                                                 
-                            # ============================================================
-                            # TAB 8: QUALIDADE DO DISCURSO COM TRANSFORMER (LAZY LOADING)
-                            # Cole TUDO isso DENTRO do: with tab_ng8:
-                            # ============================================================
+# ============================================================
+# TAB 8: QUALIDADE DO DISCURSO COM TRANSFORMER (LAZY LOADING)
+# Cole TUDO isso DENTRO do: with tab_ng8:
+# ============================================================
 
-                            st.markdown("### ✔️ Escuta e Sentimento")
+                        st.markdown("### ✔️ Escuta e Sentimento")
 
-                            col_caus = "TRANSCRIÇÃO DO CAUSADOR"
-                            col_neg = "TRANSCRIÇÃO DO NEGOCIADOR PRINCIPAL"
+                        col_caus = "TRANSCRIÇÃO DO CAUSADOR"
+                        col_neg = "TRANSCRIÇÃO DO NEGOCIADOR PRINCIPAL"
 
-                            if col_caus not in df_apa or col_neg not in df_apa:
-                                st.warning("⚠️ Colunas de transcrição não encontradas")
+                        if col_caus not in df_apa or col_neg not in df_apa:
+                            st.warning("⚠️ Colunas de transcrição não encontradas")
+                        else:
+                            txt_caus = str(df_apa[col_caus]).strip()
+                            txt_neg = str(df_apa[col_neg]).strip()
+                            
+                            if not txt_caus or not txt_neg or len(txt_caus) < 20 or len(txt_neg) < 20:
+                                st.warning("⚠️ Transcrições insuficientes para análise")
                             else:
-                                txt_caus = str(df_apa[col_caus]).strip()
-                                txt_neg = str(df_apa[col_neg]).strip()
                                 
-                                if not txt_caus or not txt_neg or len(txt_caus) < 20 or len(txt_neg) < 20:
-                                    st.warning("⚠️ Transcrições insuficientes para análise")
-                                else:
-                                    
                                     # =========================================================
                                     # SEÇÃO 1: ANÁLISE RÁPIDA (com toggle)
                                     # =========================================================
