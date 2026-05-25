@@ -1153,7 +1153,7 @@ else:
                 with tab_ng1:
                         st.markdown("""
                         <div class='info-card'>
-                        <h5 style='color: #3b82f6; margin-top: 0;'>✔️ Linha de tendência sobre a Percepção de agressividade e reptividade do causador</h5>
+                        <h5 style='color: #ffae42; margin-top: 0;'>✔️ Linha de tendência sobre a Percepção de agressividade e reptividade do causador</h5>
                         <p style='font-size:1rem;color:#ddd;'>
                         Percepção dos negociadores sobre a receptividade e agressividade do causador no início e encerramento da ocorrência.
                         </p>
@@ -1272,7 +1272,7 @@ else:
             with tab_ng2:
                     st.markdown("""
                     <div class='info-card'>
-                    <h5 style='color: #3b82f6; margin-top: 0;'>✔️ Visão geral da Percepção de agressividade e reptividade do causador</h5>
+                    <h5 style='color: #ffae42; margin-top: 0;'>✔️ Visão geral da Percepção de agressividade e reptividade do causador</h5>
                     <p style='font-size:1rem;color:#ddd;'>
                     Percepção Geral dos negociadores sobre a receptividade e agressividade do causador no início e encerramento da ocorrência.
                     </p>
