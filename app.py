@@ -2747,9 +2747,9 @@ else:
                             col_left, col_center, col_right = st.columns([1, 1, 1])
                             with col_center:
                                 is_transformer = render_toggle_button(
-                                    label="🤖 Transformer Otimizado (10-15s)",
-                                    session_key="tab8_transformer_otimizado",
-                                    button_key="btn_tab8_transformer_otimizado"
+                                    label="✔️ Transformer Otimizado (10-15s)",
+                                    session_key="ng8_transformer_otimizado_v2",
+                                    button_key="btn_ng8_transformer_otimizado_v2"
                                 )
 
                             st.markdown("---")
@@ -2757,7 +2757,7 @@ else:
                             if is_transformer:
 
                                 # Mostrar exemplo de limpeza
-                                with st.expander("📚 Como funciona a limpeza (exemplo)"):
+                                with st.expander("✔️ Como funciona a limpeza (exemplo)"):
                                     st.markdown("**Exemplo: Primeiras 3 sentenças**")
                                     exemplo_linhas = analise.dividir_em_sentencas(txt_neg)[:3]
                                     for sentenca in exemplo_linhas:
