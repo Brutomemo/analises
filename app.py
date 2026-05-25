@@ -1373,27 +1373,7 @@ else:
 
             st.markdown("---")
 
-    if is_analise_tecnicas:
-
-
-        if st.session_state.get('stats_calculados'):
-            stats = st.session_state['stats_calculados']
-
-            tab_fq1, tab_ef2 = st.tabs([
-                "✔️ Frequência",
-                "✔️ Efetividade"                        
-            ])
-            
-            # --- TAB 1: linha tendencia ---
-            with tab_fq1:
-                st.markdown("""
-                <div class='info-card'>
-                <h5 style='color: #FFD700; margin-top: 0;'>Linha de tendência individualizada da Percepção de agressividade e reptividade do causador</h5>
-                <p style='font-size:1.2rem;color:#ddd;'>
-                Percepção dos Negociadores <strong>no início e encerramento da ocorrência</strong>.                 
-                </p>
-                </div>
-                """, unsafe_allow_html=True)
+            if is_analise_tecnicas:                
 
                 if st.button("✔ Calcular Frequência de Técnicas", key="btn_freq_tecnicas"):
                     if not df_tec.empty:
