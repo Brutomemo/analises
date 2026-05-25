@@ -402,17 +402,11 @@ def traduzir_sentenca(sentenca, tradutor):
     except Exception as e:
         return None
 
-# ============================================================
-# ANÁLISE COM TRANSFORMER (com tradução)
-# ============================================================
-
 def analise_sentimento_transformer_com_traducao(texto, nlp_model):
     """
-    Análise com Transformer português:
-    1. Divide em sentenças
-    2. Traduz para inglês
-    3. Analisa sentimento em inglês
-    4. Retorna resultado com sentença original + traduzida
+    Análise com Transformer português.
+    Demora ~1-5s dependendo do texto.
+    COM DEBUG DETALHADO
     """
     import streamlit as st
     
@@ -431,6 +425,7 @@ def analise_sentimento_transformer_com_traducao(texto, nlp_model):
         return None
     
     resultados = []
+    erros_detalhados = []  # DEBUG
     
     # Progress bar
     progress_bar = st.progress(0)
@@ -443,18 +438,28 @@ def analise_sentimento_transformer_com_traducao(texto, nlp_model):
         try:
             # 1. TRADUZIR
             sentenca_en = traduzir_sentenca(sentenca_pt, tradutor)
+            
+            # DEBUG: Verificar se tradução funcionou
             if not sentenca_en:
+                erros_detalhados.append(f"Sentença {idx+1}: Tradução retornou None")
+                continue
+            
+            if sentenca_en == sentenca_pt:  # Se não mudou, algo errou
+                erros_detalhados.append(f"Sentença {idx+1}: Tradução idêntica ao original (não funcionou)")
                 continue
             
             # 2. ANALISAR em inglês
-            resultado = nlp_model(sentenca_en[:512])
+            try:
+                resultado = nlp_model(sentenca_en[:512])
+            except Exception as e_nlp:
+                erros_detalhados.append(f"Sentença {idx+1} ('{sentenca_en[:50]}'): Erro NLP: {str(e_nlp)[:100]}")
+                continue
             
             label_raw = resultado[0]['label']
             score = resultado[0]['score']
             
             # Converter labels
             if 'LABEL_' in label_raw:
-                # Modelo multilingue
                 label_map = {
                     'LABEL_0': 'NEGATIVE',
                     'LABEL_1': 'NEUTRAL',
@@ -462,12 +467,11 @@ def analise_sentimento_transformer_com_traducao(texto, nlp_model):
                 }
                 label = label_map.get(label_raw, 'NEUTRAL')
             else:
-                # Outros modelos
                 label = label_raw
             
             resultados.append({
-                'sentenca_pt': sentenca_pt[:100],       # Português original
-                'sentenca_en': sentenca_en[:100],       # Tradução
+                'sentenca_pt': sentenca_pt[:100],
+                'sentenca_en': sentenca_en[:100],
                 'label': label,
                 'score': score,
                 'label_raw': label_raw
@@ -478,16 +482,23 @@ def analise_sentimento_transformer_com_traducao(texto, nlp_model):
             progress_bar.progress(progress)
             
         except Exception as e:
-            st.warning(f"⚠️ Erro na sentença {idx+1}: {str(e)[:60]}")
+            erros_detalhados.append(f"Sentença {idx+1}: Erro geral: {str(e)[:100]}")
             continue
     
     progress_bar.empty()
     
+    # MOSTRAR ERROS ENCONTRADOS (DEBUG)
+    if erros_detalhados:
+        with st.expander(f"🐛 Debug: {len(erros_detalhados)} erros encontrados"):
+            for erro in erros_detalhados[:10]:  # Mostrar apenas os 10 primeiros
+                st.write(f"❌ {erro}")
+    
     if not resultados:
         st.error("❌ Nenhuma sentença foi processada com sucesso")
+        st.error(f"Total de erros: {len(erros_detalhados)}")
         return None
     
-    st.success(f"✅ {len(resultados)} sentenças processadas")
+    st.success(f"✅ {len(resultados)} sentenças processadas (com {len(erros_detalhados)} erros)")
     return resultados
 # ============================================================
 # CACHE RESOURCE: Lazy Loading para Transformer
