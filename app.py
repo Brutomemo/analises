@@ -1141,17 +1141,6 @@ else:
             
             # PERCEPÇÃO DE AGRESSIVIDADE/RECEPTIVIDADE LINHA DE TENDENCIA
             
-    col_left, col_center, col_right = st.columns([1, 1, 1])
-    with col_center:
-        is_perc_neg = render_toggle_button(
-            label="✔️ Abrir Percepção de agressividade e Receptividade",
-            session_key="perc_neg",
-            button_key="btn_perc_neg"
-        )
-        
-        st.markdown("---")
-        
-        if is_perc_neg: 
             
             if st.session_state.get('stats_calculados'):
                 stats = st.session_state['stats_calculados']
