@@ -2546,7 +2546,7 @@ else:
 
                                             with col_center:
                                                 is_analise_rapida = render_toggle_button(
-                                                    label="✔️ Análise de Padrões Léxicos",
+                                                    label="✔️ Análise Rápida (Padrões Léxicos)",
                                                     session_key="tab8_analise_rapida",
                                                     button_key="btn_tab8_analise_rapida"
                                                 )
