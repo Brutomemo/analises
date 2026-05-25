@@ -1355,10 +1355,8 @@ else:
                 st.markdown("---")
                
             
-        # ====
-        # #TABELA DE FREQUENCIA
-        # ====
-
+                # #TABELA DE FREQUENCIA
+        
                     
                 st.markdown("<h5 style='color: #FFD700;'>✔ Frequência das Técnicas Aplicadas (Nesta APA)</h5>", unsafe_allow_html=True)
 
