@@ -1150,7 +1150,16 @@ else:
                     "✔️ Visão geral da Percepção de agressividade e reptividade do causador"                    
                 ])
             
-                        
+            with tab_ng1:
+                    st.markdown("""
+                    <div class='info-card'>
+                    <h5 style='color: #3b82f6; margin-top: 0;'>✔️ Linha de tendência da Percepção de agressividade e reptividade do causador</h5>
+                    <p style='font-size:0.9rem;color:#ddd;'>
+                    Geralmente suporte. Seus temas indicam se estava reforçando a mensagem do principal ou dispersando esforços.
+                    </p>
+                    </div>
+                    """, unsafe_allow_html=True)
+            
             colunas_norm = {col: unicodedata.normalize('NFKD', str(col)).encode('ASCII', 'ignore').decode('ASCII').lower() for col in df_apa.index}
             
             def buscar_percepcao(papel, metrica, momento):
@@ -1192,17 +1201,6 @@ else:
             l_agr_e_num, l_rec_e_num = converter_escala(l_agr_e_txt), converter_escala(l_rec_e_txt)
 
             
-            with tab_ng1:
-                    st.markdown("""
-                    <div class='info-card'>
-                    <h5 style='color: #3b82f6; margin-top: 0;'>✔️ Linha de tendência da Percepção de agressividade e reptividade do causador</h5>
-                    <p style='font-size:0.9rem;color:#ddd;'>
-                    Geralmente suporte. Seus temas indicam se estava reforçando a mensagem do principal ou dispersando esforços.
-                    </p>
-                    </div>
-                    """, unsafe_allow_html=True)
-            
-            st.markdown("### ✔ Percepção dos negociadores sobre a receptividade e agressividade do causador no início e encerramento da ocorrência (Linha de tendência)")
             p_escolhida = st.selectbox(
                 "Visualizar evolução sob a perspectiva do:", 
                 ["Negociador Principal", "Negociador Secundário", "Negociador Líder"],
