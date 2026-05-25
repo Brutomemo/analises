@@ -1273,13 +1273,13 @@ else:
                     st.markdown("""
                     <div class='info-card'>
                     <h5 style='color: #3b82f6; margin-top: 0;'>✔️ Visão geral da Percepção de agressividade e reptividade do causador</h5>
-                    <p style='font-size:0.9rem;color:#ddd;'>
-                    Geralmente suporte. Seus temas indicam se estava reforçando a mensagem do principal ou dispersando esforços.
+                    <p style='font-size:1rem;color:#ddd;'>
+                    Percepção Geral dos negociadores sobre a receptividade e agressividade do causador no início e encerramento da ocorrência.
                     </p>
                     </div>
                     """, unsafe_allow_html=True)
 
-                    st.markdown("### ✔ Percepção dos negociadores sobre a receptividade e agressividade do causador no início e encerramento da ocorrência (Textual)")
+                    
                     tab_chegada, tab_encerramento = st.tabs(["🏳 Na Chegada à Ocorrência", "🏴 No Encerramento"])
                     
                     def render_card(label, valor, cor_classe):
