@@ -1294,7 +1294,7 @@ else:
                         </div>
                         """, unsafe_allow_html=True)
                     
-                    st.markdown("### ✔ Percepção dos negociadores sobre a receptividade e agressividade do causador no início e encerramento da ocorrência (Textual)")
+                    
                     tab_chegada, tab_encerramento = st.tabs(["🏳 Na Chegada à Ocorrência", "🏴 No Encerramento"])
                     
                     def render_card(label, valor, cor_classe):
@@ -1353,11 +1353,27 @@ else:
                     st.write(limpar_valor(df_apa.get('TRANSCRIÇÃO DO NEGOCIADOR SECUNDÁRIO')))
 
                 st.markdown("---")
+               
+            
+    # ====
+    # #TABELA DE FREQUENCIA
+    # ====
 
                 
-                #TABELA DE FREQUENCIA
+            st.markdown("<h5 style='color: #FFD700;'>✔ Frequência das Técnicas Aplicadas (Nesta APA)</h5>", unsafe_allow_html=True)
 
-                st.markdown("<h5 style='color: #FFD700;'>✔ Frequência das Técnicas Aplicadas (Nesta APA)</h5>", unsafe_allow_html=True)
+            
+            col_left, col_center, col_right = st.columns([1, 1, 1])  
+            with col_center:
+                is_analise_tecnicas = render_toggle_button(
+                    label="✔️ Abrir Análise das Técnicas",
+                    session_key="analise_tecnicas",
+                    button_key="btn_analise_tecnicas"
+                )
+
+            st.markdown("---")
+
+            if is_analise_tecnicas:
 
                 if st.button("✔ Calcular Frequência de Técnicas", key="btn_freq_tecnicas"):
                     if not df_tec.empty:
