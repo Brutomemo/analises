@@ -356,87 +356,134 @@ def gerar_wordcloud(texto):
     return fig
 
 # ============================================================
-# FUNÇÕES PARA TAB 8: QUALIDADE DO DISCURSO
-# Adicione TUDO isso em analise.py
+# ANÁLISE COM TRANSFORMER OTIMIZADO (SEM TRADUÇÃO)
+# Stopwords + Gírias apenas
 # ============================================================
 
-import streamlit as st
 import re
-from collections import Counter
+import streamlit as st
+
+# ============================================================
+# STOPWORDS PORTUGUÊS
+# ============================================================
+
+STOPWORDS_PT = {
+    'o', 'a', 'os', 'as', 'um', 'uma', 'uns', 'umas',
+    'de', 'da', 'do', 'das', 'dos', 'em', 'no', 'na', 'nos', 'nas',
+    'por', 'para', 'com', 'sem', 'sob', 'sobre', 'entre',
+    'e', 'ou', 'mas', 'porém', 'todavia', 'contudo',
+    'é', 'são', 'era', 'eram', 'ser', 'estar',
+    'eu', 'você', 'ele', 'ela', 'nós', 'vós', 'eles', 'elas',
+    'meu', 'teu', 'seu', 'nosso', 'vosso',
+    'minha', 'tua', 'sua', 'nossa', 'vossa',
+    'que', 'qual', 'quais', 'quanto', 'quantos',
+    'onde', 'quando', 'como', 'porque', 'porquê',
+    'me', 'te', 'se', 'nos', 'vos', 'lhe', 'lhes',
+    'ao', 'aos', 'à', 'às', 'pelo', 'pela', 'pelos', 'pelas',
+    'este', 'esse', 'aquele',
+    'isto', 'isso', 'aquilo', 'tá', 'tá bom', 'tá certo',
+    'só', 'somente', 'apenas', 'ainda', 'já', 'também', 'nem',
+    'não', 'sim', 'talvez',
+    'muito', 'pouco', 'mais', 'menos', 'bastante', 'demais',
+    'bem', 'mal',
+    'aí', 'ali', 'aqui', 'lá', 'cá', 'acolá',
+}
+
+# ============================================================
+# DICIONÁRIO DE GÍRIAS (expandido)
+# ============================================================
+
+GIRIAS_MAP = {
+    # Amigos/relacionamento
+    r'\bmano\b': 'amigo',
+    r'\bparça\b': 'amigo',
+    r'\bparcero\b': 'parceiro',
+    r'\bcolega\b': 'amigo',
+    r'\bmina\b': 'garota',
+    r'\brapa\b': 'garoto',
+    
+    # Situação/coisa
+    r'\bbagulho\b': 'coisa',
+    r'\bbaguio\b': 'coisa',
+    r'\bbaguete\b': 'coisa',
+    r'\bparada\b': 'situação',
+    r'\brapação\b': 'situação',
+    r'\brolê\b': 'brincadeira',
+    r'\bbagunça\b': 'confusão',
+    
+    # Afirmação/concordância
+    r'\blegal\b': 'bom',
+    r'\bshow\b': 'bom',
+    r'\btop\b': 'bom',
+    r'\bmaneiro\b': 'bom',
+    r'\bbacana\b': 'bom',
+    r'\blindeza\b': 'beleza',
+    r'\btá bom\b': 'está bem',
+    r'\btá certo\b': 'está certo',
+    r'\btá certo sim\b': 'está certo',
+    
+    # Pronomes coloquiais
+    r'\bcê\b': 'você',
+    r'\bvcs\b': 'vocês',
+    r'\btu\b': 'você',
+    
+    # Expressões
+    r'\bpapo reto\b': 'conversa direta',
+    r'\bfavela\b': 'comunidade',
+    r'\bperiferia\b': 'comunidade',
+    r'\bsmall\b': 'pequeno',
+    r'\bfresh\b': 'novo',
+}
+
+# ============================================================
+# FUNÇÕES DE LIMPEZA
+# ============================================================
 
 def normalizar_girias_pt(texto):
-    """Substitui gírias por palavras formais."""
-    import re
+    """Substitui gírias paulistas por palavras formais."""
+    texto_normalizado = texto.lower()
     
-    GIRIAS_MAP = {
-        r'\bmano\b': 'amigo',
-        r'\bparça\b': 'amigo',
-        r'\btá\b': 'está',
-        r'\btá bom\b': 'está bem',
-        r'\btá certo\b': 'está certo',
-        r'\bmó\b': 'muito',
-        r'\bpapo\b': 'conversa',
-        r'\bpapo reto\b': 'conversa direta',
-        r'\blegal\b': 'bom',
-        r'\btranquilo\b': 'tranquilo',
-        r'\bcalma\b': 'calma',
-        r'\bbeleza\b': 'beleza',
-        r'\bcê\b': 'você',
-        r'\bvcs\b': 'vocês',
-    }
-    
-    texto_normalizado = texto
     for giria, formal in GIRIAS_MAP.items():
         texto_normalizado = re.sub(giria, formal, texto_normalizado, flags=re.IGNORECASE)
     
     return texto_normalizado
 
-def traduzir_sentenca(sentenca, tradutor):
-    """Traduz uma sentença de português para inglês."""
-    try:
-        if not tradutor or not sentenca.strip():
-            return None
-        
-        # ✅ NOVO: Normalizar gírias primeiro!
-        sentenca_normalizada = normalizar_girias_pt(sentenca)
-        
-        traducao = tradutor.translate(sentenca_normalizada)
-        return traducao if traducao else None
-    except Exception as e:
-        return None
-# ============================================================
-# TRADUÇÃO + ANÁLISE COM TRANSFORMER
-# Adicione ISTO em analise.py
-# ============================================================
+def remover_stopwords(texto):
+    """Remove stopwords mantendo apenas palavras significativas."""
+    palavras = texto.lower().split()
+    palavras_filtradas = [p for p in palavras if p not in STOPWORDS_PT and len(p) > 2]
+    return ' '.join(palavras_filtradas)
 
-import streamlit as st
-
-@st.cache_resource
-def carregar_tradutor():
-    """Carrega o tradutor deep-translator."""
-    try:
-        from deep_translator import GoogleTranslator
-        return GoogleTranslator(source='pt', target='en')
-    except ImportError:
-        st.warning("⚠️ Instale: pip install deep-translator")
-        return None
-
-def traduzir_sentenca(sentenca, tradutor):
-    """Traduz uma sentença de português para inglês."""
-    try:
-        if not tradutor or not sentenca.strip():
-            return None
-        
-        traducao = tradutor.translate(sentenca)
-        return traducao if traducao else None
-    except Exception as e:
-        return None
-
-def analise_sentimento_transformer_com_traducao(texto, nlp_model):
+def limpar_sentenca(sentenca):
     """
-    Análise com Transformer português.
-    Demora ~1-5s dependendo do texto.
-    COM DEBUG DETALHADO
+    Limpa sentença:
+    1. Normaliza gírias
+    2. Remove pontuação extra
+    3. Remove stopwords
+    """
+    # 1. Normalizar gírias
+    sentenca = normalizar_girias_pt(sentenca)
+    
+    # 2. Remover pontuação extra
+    sentenca = re.sub(r'[^\w\s]', '', sentenca)
+    
+    # 3. Remover stopwords
+    sentenca = remover_stopwords(sentenca)
+    
+    return sentenca.strip()
+
+# ============================================================
+# ANÁLISE COM TRANSFORMER OTIMIZADO
+# ============================================================
+
+def analise_sentimento_transformer_otimizado(texto, nlp_model):
+    """
+    Análise com Transformer otimizado:
+    1. Divide em sentenças
+    2. Normaliza gírias
+    3. Remove stopwords
+    4. Analisa sentimento direto no português limpo
+    5. Retorna resultado com sentença original + limpa
     """
     import streamlit as st
     
@@ -448,14 +495,8 @@ def analise_sentimento_transformer_com_traducao(texto, nlp_model):
     
     st.info(f"✔️ Analisando {len(sentencas_pt)} sentenças...")
     
-    # Carregar tradutor
-    tradutor = carregar_tradutor()
-    if not tradutor:
-        st.error("❌ Erro ao carregar tradutor")
-        return None
-    
     resultados = []
-    erros_detalhados = []  # DEBUG
+    erros_detalhados = []
     
     # Progress bar
     progress_bar = st.progress(0)
@@ -466,23 +507,18 @@ def analise_sentimento_transformer_com_traducao(texto, nlp_model):
             continue
         
         try:
-            # 1. TRADUZIR
-            sentenca_en = traduzir_sentenca(sentenca_pt, tradutor)
+            # 1. LIMPAR (gírias + stopwords)
+            sentenca_limpa = limpar_sentenca(sentenca_pt)
             
-            # DEBUG: Verificar se tradução funcionou
-            if not sentenca_en:
-                erros_detalhados.append(f"Sentença {idx+1}: Tradução retornou None")
+            # DEBUG: Se ficou vazia após limpeza, pula
+            if not sentenca_limpa or len(sentenca_limpa.split()) < 2:
                 continue
             
-            if sentenca_en == sentenca_pt:  # Se não mudou, algo errou
-                erros_detalhados.append(f"Sentença {idx+1}: Tradução idêntica ao original (não funcionou)")
-                continue
-            
-            # 2. ANALISAR em inglês
+            # 2. ANALISAR direto no português limpo
             try:
-                resultado = nlp_model(sentenca_en[:512])
+                resultado = nlp_model(sentenca_limpa[:512])
             except Exception as e_nlp:
-                erros_detalhados.append(f"Sentença {idx+1} ('{sentenca_en[:50]}'): Erro NLP: {str(e_nlp)[:100]}")
+                erros_detalhados.append(f"Sentença {idx+1}: Erro NLP: {str(e_nlp)[:80]}")
                 continue
             
             label_raw = resultado[0]['label']
@@ -500,8 +536,8 @@ def analise_sentimento_transformer_com_traducao(texto, nlp_model):
                 label = label_raw
             
             resultados.append({
-                'sentenca_pt': sentenca_pt[:100],
-                'sentenca_en': sentenca_en[:100],
+                'sentenca_pt': sentenca_pt[:100],          # Original
+                'sentenca_limpa': sentenca_limpa[:100],    # Sem gírias/stopwords
                 'label': label,
                 'score': score,
                 'label_raw': label_raw
@@ -512,47 +548,22 @@ def analise_sentimento_transformer_com_traducao(texto, nlp_model):
             progress_bar.progress(progress)
             
         except Exception as e:
-            erros_detalhados.append(f"Sentença {idx+1}: Erro geral: {str(e)[:100]}")
             continue
     
     progress_bar.empty()
     
-    # MOSTRAR ERROS ENCONTRADOS (DEBUG)
+    # MOSTRAR DEBUG
     if erros_detalhados:
         with st.expander(f"🐛 Debug: {len(erros_detalhados)} erros encontrados"):
-            for erro in erros_detalhados[:10]:  # Mostrar apenas os 10 primeiros
-                st.write(f"❌ {erro}")
+            for erro in erros_detalhados[:5]:
+                st.write(f"⚠️ {erro}")
     
     if not resultados:
         st.error("❌ Nenhuma sentença foi processada com sucesso")
-        st.error(f"Total de erros: {len(erros_detalhados)}")
         return None
     
-    st.success(f"✅ {len(resultados)} sentenças processadas (com {len(erros_detalhados)} erros)")
+    st.success(f"✅ {len(resultados)} sentenças processadas")
     return resultados
-# ============================================================
-# CACHE RESOURCE: Lazy Loading para Transformer
-# ============================================================
-
-@st.cache_resource
-def carregar_transformer_portugues():
-    """
-    Carrega transformer uma única vez e cacheia.
-    Demora ~5-10s na primeira execução.
-    """
-    try:
-        from transformers import pipeline
-        
-        # Usar transformer multilingue (validado, funciona bem em português)
-        nlp = pipeline(
-            "sentiment-analysis",
-            model="distilbert-base-uncased-finetuned-sst-2-english",  # Melhor que multilingue
-            device=0
-        )
-        return nlp
-    except Exception as e:
-        st.error(f"Erro ao carregar modelo: {str(e)[:100]}")
-        return None
 
 # ============================================================
 # FUNÇÕES AUXILIARES (Regex, rápido)
