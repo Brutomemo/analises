@@ -1140,28 +1140,7 @@ else:
 
             # PERCEPÇÃO DE AGRESSIVIDADE/RECEPTIVIDADE LINHA DE TENDENCIA
             # Otimização: Normaliza e mapeia as colunas do Airtable apenas uma vez por APA
-            # PERCEPÇÃO DE AGRESSIVIDADE/RECEPTIVIDADE LINHA DE TENDENCIA
             
-            
-        if st.session_state.get('stats_calculados'):
-            stats = st.session_state['stats_calculados']
-
-            tab_pc1, tab_pc2 = st.tabs([
-                "✔️ Linha de Tendência",
-                "✔️ Visão Geral"                    
-            ])
-        
-            with tab_pc1:
-                    st.markdown("""
-                    <div class='info-card'>
-                    <h5 style='color: #ffae42; margin-top: 0;'>✔️ Linha de tendência individualizada da Percepção de agressividade e reptividade do causador</h5>
-                    <p style='font-size:1rem;color:#ddd;'>
-                    Percepção individalizada dos negociadores sobre a receptividade e agressividade do causador no início e encerramento da ocorrência.
-                    </p>
-                    </div>
-                    """, unsafe_allow_html=True)           
-            
-                        
             colunas_norm = {col: unicodedata.normalize('NFKD', str(col)).encode('ASCII', 'ignore').decode('ASCII').lower() for col in df_apa.index}
             
             def buscar_percepcao(papel, metrica, momento):
@@ -1269,19 +1248,6 @@ else:
             fig_trend.update_traces(connectgaps=False)
             
             st.plotly_chart(fig_trend, use_container_width=True)
-
-
-            #VISÃO GERAL
-                
-            with tab_pc2:
-                    st.markdown("""
-                    <div class='info-card'>
-                    <h5 style='color: #ffae42; margin-top: 0;'>✔️ Visão geral da Percepção de agressividade e reptividade do causador</h5>
-                    <p style='font-size:1rem;color:#ddd;'>
-                    Percepção dos negociadores sobre a receptividade e agressividade do causador no início e encerramento da ocorrência.
-                    </p>
-                    </div>
-                    """, unsafe_allow_html=True)
 
             st.markdown("### ✔ Percepção dos negociadores sobre a receptividade e agressividade do causador no início e encerramento da ocorrência (Textual)")
             tab_chegada, tab_encerramento = st.tabs(["🏳 Na Chegada à Ocorrência", "🏴 No Encerramento"])
