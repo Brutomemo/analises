@@ -364,7 +364,46 @@ import streamlit as st
 import re
 from collections import Counter
 
+def normalizar_girias_pt(texto):
+    """Substitui gírias por palavras formais."""
+    import re
+    
+    GIRIAS_MAP = {
+        r'\bmano\b': 'amigo',
+        r'\bparça\b': 'amigo',
+        r'\btá\b': 'está',
+        r'\btá bom\b': 'está bem',
+        r'\btá certo\b': 'está certo',
+        r'\bmó\b': 'muito',
+        r'\bpapo\b': 'conversa',
+        r'\bpapo reto\b': 'conversa direta',
+        r'\blegal\b': 'bom',
+        r'\btranquilo\b': 'tranquilo',
+        r'\bcalma\b': 'calma',
+        r'\bbeleza\b': 'beleza',
+        r'\bcê\b': 'você',
+        r'\bvcs\b': 'vocês',
+    }
+    
+    texto_normalizado = texto
+    for giria, formal in GIRIAS_MAP.items():
+        texto_normalizado = re.sub(giria, formal, texto_normalizado, flags=re.IGNORECASE)
+    
+    return texto_normalizado
 
+def traduzir_sentenca(sentenca, tradutor):
+    """Traduz uma sentença de português para inglês."""
+    try:
+        if not tradutor or not sentenca.strip():
+            return None
+        
+        # ✅ NOVO: Normalizar gírias primeiro!
+        sentenca_normalizada = normalizar_girias_pt(sentenca)
+        
+        traducao = tradutor.translate(sentenca_normalizada)
+        return traducao if traducao else None
+    except Exception as e:
+        return None
 # ============================================================
 # TRADUÇÃO + ANÁLISE COM TRANSFORMER
 # Adicione ISTO em analise.py
