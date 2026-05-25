@@ -22,3 +22,4 @@ transformers
 torch
 seaborn
 google-trans-new
+deep-translator

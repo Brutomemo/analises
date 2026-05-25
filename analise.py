@@ -372,33 +372,24 @@ from collections import Counter
 
 import streamlit as st
 
-# ============================================================
-# TRADUÇÃO: Português → Inglês
-# ============================================================
-
 @st.cache_resource
 def carregar_tradutor():
-    """
-    Carrega o Google Translate.
-    Rápido, sem dependências pesadas.
-    """
+    """Carrega o tradutor deep-translator."""
     try:
-        from google_trans_new import google_translator
-        return google_translator()
+        from deep_translator import GoogleTranslator
+        return GoogleTranslator(source='pt', target='en')
     except ImportError:
-        st.warning("⚠️ Instale: pip install google-trans-new")
+        st.warning("⚠️ Instale: pip install deep-translator")
         return None
 
 def traduzir_sentenca(sentenca, tradutor):
-    """
-    Traduz uma sentença de português para inglês.
-    """
+    """Traduz uma sentença de português para inglês."""
     try:
-        if not tradutor:
+        if not tradutor or not sentenca.strip():
             return None
         
-        traducao = tradutor.translate(sentenca, lang_src='pt', lang_tgt='en')
-        return traducao
+        traducao = tradutor.translate(sentenca)
+        return traducao if traducao else None
     except Exception as e:
         return None
 
@@ -416,7 +407,7 @@ def analise_sentimento_transformer_com_traducao(texto, nlp_model):
         st.warning("⚠️ Nenhuma sentença encontrada para análise")
         return None
     
-    st.info(f"📊 Analisando {len(sentencas_pt)} sentenças...")
+    st.info(f"✔️ Analisando {len(sentencas_pt)} sentenças...")
     
     # Carregar tradutor
     tradutor = carregar_tradutor()
