@@ -3360,9 +3360,9 @@ else:
         
         st.markdown("""
                         <div class='info-card'>
-                        <h5 style='color: #FFD700; margin-top: 0;'>Ranking de Técnicas Aplicadas</h5>
+                        <h5 style='color: #FFD700; margin-top: 0;'>Ranking e Efetividade das Técnicas Aplicadas</h5>
                         <p style='font-size:1.2rem;color:#ddd;'>
-                        Técnicas mais usadas pelos Negociadores</strong>                 
+                        Técnicas mais usadas pelos Negociadores e sua Efetividade</strong>                 
                         </p>
                         </div>
                         """, unsafe_allow_html=True)        
@@ -3677,7 +3677,15 @@ else:
             # ANÁLISE: CONVERGÊNCIA TEMÁTICA
             # ============================================================
 
-        st.markdown("<h5 style='color: #FFD700;'>Convergência Temática: Quanto de sincronização temática existe entre negociador e causador</h5>", unsafe_allow_html=True)
+        st.markdown("""
+                        <div class='info-card'>
+                        <h5 style='color: #FFD700; margin-top: 0;'>Convergência Temática: Quanto de sincronização temática existe entre negociador e causador</h5>
+                        <p style='font-size:1.2rem;color:#ddd;'>
+                        Análise descritiva da média de convergência temática</strong>                 
+                        </p>
+                        </div>
+                        """, unsafe_allow_html=True)         
+        
 
         # ── BOTÃO TOGGLE ───────────────────────────────────────────
         col_left, col_center, col_right = st.columns([1, 1, 1])
