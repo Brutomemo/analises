@@ -1765,226 +1765,226 @@ else:
                     st.markdown("---")
            
 
-            #ETAPA 2 — ANÁLISE SEMÂNTICA PRÁTICA (Para compreender o que REALMENTE está acontecendo)
+        #ETAPA 2 — ANÁLISE SEMÂNTICA PRÁTICA (Para compreender o que REALMENTE está acontecendo)
 
-            st.markdown("""
-            <h3 style='color: #FFD700;'>✔ Etapa 2: Análise Semântica </h3>
-            <p style='color: #aaa; font-size: 0.95rem; margin-top: -10px;'>
-            <strong>O que o causador REALMENTE sente, quer e teme.</strong> 
-            Enquanto Similitude conta palavras repetidas, Semântica lê entre as linhas: intenções escondidas, 
-            gatilhos emocionais e pontos de alavanca para resolução.
-            </p></p>
-            """, unsafe_allow_html=True)
+        st.markdown("""
+        <h3 style='color: #FFD700;'>✔ Etapa 2: Análise Semântica </h3>
+        <p style='color: #aaa; font-size: 0.95rem; margin-top: -10px;'>
+        <strong>O que o causador REALMENTE sente, quer e teme.</strong> 
+        Enquanto Similitude conta palavras repetidas, Semântica lê entre as linhas: intenções escondidas, 
+        gatilhos emocionais e pontos de alavanca para resolução.
+        </p></p>
+        """, unsafe_allow_html=True)
 
-            # --- INÍCIO DO BLOCO DE EXPLICAÇÃO ---
-            if "show_explicacao" not in st.session_state:
-                st.session_state["show_explicacao"] = False
+        # --- INÍCIO DO BLOCO DE EXPLICAÇÃO ---
+        if "show_explicacao" not in st.session_state:
+            st.session_state["show_explicacao"] = False
 
-            label_btn = "▲ Ocultar Guia" if st.session_state["show_explicacao"] else "▼ Entenda como ler a Análise"
-            if st.button(label_btn, key="btn_explicacao_semantica"):
-                st.session_state["show_explicacao"] = not st.session_state["show_explicacao"]
+        label_btn = "▲ Ocultar Guia" if st.session_state["show_explicacao"] else "▼ Entenda como ler a Análise"
+        if st.button(label_btn, key="btn_explicacao_semantica"):
+            st.session_state["show_explicacao"] = not st.session_state["show_explicacao"]
 
-            if st.session_state["show_explicacao"]:
+        if st.session_state["show_explicacao"]:
 
-                tab_pratica, tab_framework, tab_ngramas, tab_limitacoes = st.tabs([
-                    "✔ Aplicação Prática",
-                    "✔ Os Três Vetores",
-                    "✔ Padrões & Fixações",
-                    "✔ Limitações"
-                ])
+            tab_pratica, tab_framework, tab_ngramas, tab_limitacoes = st.tabs([
+                "✔ Aplicação Prática",
+                "✔ Os Três Vetores",
+                "✔ Padrões & Fixações",
+                "✔ Limitações"
+            ])
 
-                with tab_pratica:
-                    st.markdown("""
-                    <div class='info-card'>
-                    <h5 style='color:#FFD700;margin-top:0;'>Como ler os dados na prática?</h5>
-                    <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
-                    A análise semântica responde uma pergunta simples: <strong>"O que esse sujeito está vivendo agora?"</strong>
-                    </p>
-                    <hr style='border-color:#444;margin:12px 0;'>
-                    <h5 style='color:#FFD700;'>📌 Passo 1: Identifique o ESTADO EMOCIONAL</h5>
-                    <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
-                    <strong>Procure por:</strong> Quanto de <strong>medo, raiva, desespero</strong> o causador está carregando?<br><br>
-                    • <em>"vou me matar"</em> + <em>"não aguento mais"</em> → Desespero acima do limite (risco iminente)<br>
-                    • <em>"ninguém entra aqui"</em> + <em>"vou atirar"</em> → Raiva/defesa (hostilidade)<br>
-                    • <em>"perdi tudo"</em> + <em>"ninguém se importa"</em> → Abandono/desesperança (depressão)<br><br>
-                    <strong>Por quê?</strong> Segundo William Ury (Harvard), antes de negociar, você precisa entender o <u>estado de espírito</u> 
-                    da outra parte. Emoção descontrolada = impossível raciocínio lógico.
-                    </p>
-                    <hr style='border-color:#444;margin:12px 0;'>
-                    <h5 style='color:#FFD700;'>📌 Passo 2: Identifique as EXIGÊNCIAS REAIS</h5>
-                    <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
-                    <strong>Procure por:</strong> O que esse sujeito <strong>quer concretamente</strong>? (não apenas ameaça)<br><br>
-                    • <em>"quero a imprensa aqui"</em> → Exigência instrumental (segurança/poder/reconhecimento)<br>
-                    • <em>"Quero que a imprensa saiba o que aconteceu"</em> → Exigência moral (dignidade)<br>
-                    • <em>"preciso de dinheiro"</em> → Exigência material (sobrevivência)<br><br>
-                    <strong>Por quê?</strong> Segundo William Ury (Harvard Negotiation Project), 
-                    reconhecer a legitimidade da exigência (mesmo que você não possa cumprir) 
-                    reduz hostilidade. O FBI e Chris Voss confirmam isso através de 
-                    <u>escuta ativa</u> em negociações críticas. 
-                    (mesmo que você não possa cumprir) reduz hostilidade. O causador quer ser OUVIDO, não necessariamente atendido.
-                    </p>
-                    <hr style='border-color:#444;margin:12px 0;'>
-                    <h5 style='color:#FFD700;'>📌 Passo 3: Encontre os GANCHOS PARA DESESCALADA</h5>
-                    <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
-                    <strong>Procure por:</strong> Onde há <strong>abertura, ambivalência, vínculo</strong>?<br><br>
-                    • <em>"me ajuda"</em> (mesmo que velado) → Pedido de ajuda (ponto de conexão)<br>
-                    • <em>"fala comigo"</em> → Busca por contato (rapport possível)<br>
-                    • <em>"minha filha"</em> → Vínculo afetivo (alavanca para mudança de decisão)<br><br>
-                    <strong>Por quê?</strong> O Manual do FBI de Negociação enfatiza que <u>pequenos sinais de cooperação</u> 
-                    devem ser amplificados. "Minha filha" não é só uma palavra — é a ponte entre desespero e vida.
-                    </p>
-                    <hr style='border-color:#444;margin:12px 0;'>
-                    <h5 style='color:#FFD700;'>📌 Passo 4: Analise a ABORDAGEM DO NEGOCIADOR</h5>
-                    <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
-                    <strong>Procure por:</strong> Como o negociador respondeu? Conseguiu <strong>sincronizar?</strong><br><br>
-                    • Se Causador diz <em>"ninguém me entende"</em> e Negociador responde <em>"entendo sua dor"</em> → Conversa bem dirigida ✅<br>
-                    • Se Causador diz <em>"quero a imprensa"</em> e Negociador ignora → Falta de legitimação ❌<br>
-                    • Se Negociador repete <em>"fica calmo"</em> 10 vezes → Não está ouvindo, está impondo ❌<br><br>
-                    <strong>Por quê?</strong> Harvard explica que <u>validar a emoção da outra parte</u> 
-                    não significa concordar com a ação — é reconhecer o estado emocional como real.
-                    </p>
-                    </div>
-                    """, unsafe_allow_html=True)
+            with tab_pratica:
+                st.markdown("""
+                <div class='info-card'>
+                <h5 style='color:#FFD700;margin-top:0;'>Como ler os dados na prática?</h5>
+                <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
+                A análise semântica responde uma pergunta simples: <strong>"O que esse sujeito está vivendo agora?"</strong>
+                </p>
+                <hr style='border-color:#444;margin:12px 0;'>
+                <h5 style='color:#FFD700;'>📌 Passo 1: Identifique o ESTADO EMOCIONAL</h5>
+                <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
+                <strong>Procure por:</strong> Quanto de <strong>medo, raiva, desespero</strong> o causador está carregando?<br><br>
+                • <em>"vou me matar"</em> + <em>"não aguento mais"</em> → Desespero acima do limite (risco iminente)<br>
+                • <em>"ninguém entra aqui"</em> + <em>"vou atirar"</em> → Raiva/defesa (hostilidade)<br>
+                • <em>"perdi tudo"</em> + <em>"ninguém se importa"</em> → Abandono/desesperança (depressão)<br><br>
+                <strong>Por quê?</strong> Segundo William Ury (Harvard), antes de negociar, você precisa entender o <u>estado de espírito</u> 
+                da outra parte. Emoção descontrolada = impossível raciocínio lógico.
+                </p>
+                <hr style='border-color:#444;margin:12px 0;'>
+                <h5 style='color:#FFD700;'>📌 Passo 2: Identifique as EXIGÊNCIAS REAIS</h5>
+                <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
+                <strong>Procure por:</strong> O que esse sujeito <strong>quer concretamente</strong>? (não apenas ameaça)<br><br>
+                • <em>"quero a imprensa aqui"</em> → Exigência instrumental (segurança/poder/reconhecimento)<br>
+                • <em>"Quero que a imprensa saiba o que aconteceu"</em> → Exigência moral (dignidade)<br>
+                • <em>"preciso de dinheiro"</em> → Exigência material (sobrevivência)<br><br>
+                <strong>Por quê?</strong> Segundo William Ury (Harvard Negotiation Project), 
+                reconhecer a legitimidade da exigência (mesmo que você não possa cumprir) 
+                reduz hostilidade. O FBI e Chris Voss confirmam isso através de 
+                <u>escuta ativa</u> em negociações críticas. 
+                (mesmo que você não possa cumprir) reduz hostilidade. O causador quer ser OUVIDO, não necessariamente atendido.
+                </p>
+                <hr style='border-color:#444;margin:12px 0;'>
+                <h5 style='color:#FFD700;'>📌 Passo 3: Encontre os GANCHOS PARA DESESCALADA</h5>
+                <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
+                <strong>Procure por:</strong> Onde há <strong>abertura, ambivalência, vínculo</strong>?<br><br>
+                • <em>"me ajuda"</em> (mesmo que velado) → Pedido de ajuda (ponto de conexão)<br>
+                • <em>"fala comigo"</em> → Busca por contato (rapport possível)<br>
+                • <em>"minha filha"</em> → Vínculo afetivo (alavanca para mudança de decisão)<br><br>
+                <strong>Por quê?</strong> O Manual do FBI de Negociação enfatiza que <u>pequenos sinais de cooperação</u> 
+                devem ser amplificados. "Minha filha" não é só uma palavra — é a ponte entre desespero e vida.
+                </p>
+                <hr style='border-color:#444;margin:12px 0;'>
+                <h5 style='color:#FFD700;'>📌 Passo 4: Analise a ABORDAGEM DO NEGOCIADOR</h5>
+                <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
+                <strong>Procure por:</strong> Como o negociador respondeu? Conseguiu <strong>sincronizar?</strong><br><br>
+                • Se Causador diz <em>"ninguém me entende"</em> e Negociador responde <em>"entendo sua dor"</em> → Conversa bem dirigida ✅<br>
+                • Se Causador diz <em>"quero a imprensa"</em> e Negociador ignora → Falta de legitimação ❌<br>
+                • Se Negociador repete <em>"fica calmo"</em> 10 vezes → Não está ouvindo, está impondo ❌<br><br>
+                <strong>Por quê?</strong> Harvard explica que <u>validar a emoção da outra parte</u> 
+                não significa concordar com a ação — é reconhecer o estado emocional como real.
+                </p>
+                </div>
+                """, unsafe_allow_html=True)
 
-                with tab_framework:
-                    st.markdown("""
-                    <div class='info-card'>
-                    <h5 style='color:#FFD700;margin-top:0;'>Os Três Vetores Explicados (e como interpretar)</h5>
-                    <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
-                    Pense nos vetores como três forças que estão em <strong>cabo de guerra</strong> dentro do causador.
-                    </p>
-                    <hr style='border-color:#444;margin:12px 0;'>
-                    <div style='margin:12px 0;padding:12px;border-radius:10px;background:rgba(239,68,68,0.08);border-left:4px solid #ef4444;'>
-                    <h5 style='color:#ef4444;margin-top:0;'>🔴 RISCO OBSERVADO — "Quanto de ameaça real há aqui?"</h5>
-                    <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
-                    Mede a <strong>densidade de linguagem agressiva/suicida</strong> no discurso do causador.<br><br>
-                    <strong>Exemplos de alto risco:</strong><br>
-                    • <em>"vou matar você"</em> (declaração direta)<br>
-                    • <em>"tenho uma arma"</em> (capacidade + intenção)<br>
-                    • <em>"quero morrer"</em> (risco para si mesmo)<br><br>
-                    <strong>Interpretação para APA:</strong><br>
-                    Se Risco Observado = 15% → Ameaça verbalizada, mas sem densidade alta<br>
-                    Se Risco Observado = 25%+ → Linguagem carregada, escalada provável se negligenciada<br><br>
-                    <strong>O que o negociador deveria fazer?</strong><br>
-                    Alto risco = mudar de abordagem RÁPIDO. Deixar o causador falar (validar) antes de oferecer soluções.
-                    </p>
-                    </div>
-                    <hr style='border-color:#444;margin:12px 0;'>
-                    <div style='margin:12px 0;padding:12px;border-radius:10px;background:rgba(16,185,129,0.08);border-left:4px solid #10b981;'>
-                    <h5 style='color:#10b981;margin-top:0;'>🟢 ABERTURA OBSERVADA — "Tem esperança aqui? Há ponte de desescalada?"</h5>
-                    <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
-                    Mede <strong>sinais de cooperação, rendição, pedido de ajuda</strong> (velado ou não) no causador.<br><br>
-                    <strong>Exemplos de alta abertura:</strong><br>
-                    • <em>"me ajuda"</em> (pedido direto)<br>
-                    • <em>"minha filha está aqui"</em> (reconhecimento de terceiro, responsabilidade)<br>
-                    • <em>"pode entrar"</em> (permissão = abandono da posição hostil)<br><br>
-                    <strong>Interpretação para APA:</strong><br>
-                    Se Abertura = 5% → Causador muito fechado, difícil entrada. Precisa mais validação.<br>
-                    Se Abertura = 15%+ → Janela de oportunidade aberta. Negociador pode começar a propor.<br><br>
-                    <strong>O que o negociador deveria fazer?</strong><br>
-                    Sinais de abertura = AMPLIFICAR. "Você pediu ajuda? Estou aqui para isso." (FBI)
-                    </p>
-                    </div>
-                    <hr style='border-color:#444;margin:12px 0;'>
-                    <div style='margin:12px 0;padding:12px;border-radius:10px;background:rgba(251,146,60,0.08);border-left:4px solid #f97316;'>
-                    <h5 style='color:#f97316;margin-top:0;'>🟡 RAIZ OBSERVADA — "Por que ele está assim? Qual é a verdadeira causa?"</h5>
-                    <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
-                    Mede <strong>gatilhos emocionais, perdas, traumas</strong> que explicam o estado atual.<br><br>
-                    <strong>Exemplos de raiz clara:</strong><br>
-                    • <em>"perdi meu emprego"</em> (causa: desespero financeiro)<br>
-                    • <em>"ela me traiu"</em> (causa: abandono/humilhação)<br>
-                    • <em>"ninguém se importa comigo"</em> (causa: isolamento/rejeição)<br><br>
-                    <strong>Interpretação para APA:</strong><br>
-                    Se Raiz = 8% → Causador talvez tenha gatilho recente ou bem localizado.<br>
-                    If Raiz = 12%+ → Acúmulo de perdas, histórico de trauma. Mais difícil de resolver rápido.<br><br>
-                    <strong>O que o negociador deveria fazer?</strong><br>
-                    Ury diz: "Separe a pessoa do problema." A raiz é o PROBLEMA. Validá-la não é concordar, é RECONHECER.<br>
-                    Ex: "Entendo que perder o emprego é devastador. Mas matar não resolve. Vamos pensar em saídas."
-                    </p>
-                    </div>
-                    <hr style='border-color:#444;margin:12px 0;'>
-                    <h5 style='color:#FFD700;'>⚖️ COMO OS TRÊS TRABALHAM JUNTOS</h5>
-                    <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
-                    <strong>Cenário 1: Alto Risco + Baixa Abertura + Raiz Clara</strong><br>
-                    → Sujeito desesperado (raiz conhecida) mas barricado (nenhuma ponte). Técnica: Validar a raiz + oferecer saída.
-                    <br><br>
-                    <strong>Cenário 2: Alto Risco + Alta Abertura + Raiz Clara</strong><br>
-                    → Sujeito em crise mas aberto à ajuda. JANELA CRÍTICA. Técnica: Rápida proposição de alternativa.
-                    <br><br>
-                    <strong>Cenário 3: Baixo Risco + Alta Abertura + Raiz Clara</strong><br>
-                    → Sujeito já está em conversação. Técnica: Escuta ativa + proposição colaborativa.
-                    </p>
-                    </div>
-                    """, unsafe_allow_html=True)
+            with tab_framework:
+                st.markdown("""
+                <div class='info-card'>
+                <h5 style='color:#FFD700;margin-top:0;'>Os Três Vetores Explicados (e como interpretar)</h5>
+                <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
+                Pense nos vetores como três forças que estão em <strong>cabo de guerra</strong> dentro do causador.
+                </p>
+                <hr style='border-color:#444;margin:12px 0;'>
+                <div style='margin:12px 0;padding:12px;border-radius:10px;background:rgba(239,68,68,0.08);border-left:4px solid #ef4444;'>
+                <h5 style='color:#ef4444;margin-top:0;'>🔴 RISCO OBSERVADO — "Quanto de ameaça real há aqui?"</h5>
+                <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
+                Mede a <strong>densidade de linguagem agressiva/suicida</strong> no discurso do causador.<br><br>
+                <strong>Exemplos de alto risco:</strong><br>
+                • <em>"vou matar você"</em> (declaração direta)<br>
+                • <em>"tenho uma arma"</em> (capacidade + intenção)<br>
+                • <em>"quero morrer"</em> (risco para si mesmo)<br><br>
+                <strong>Interpretação para APA:</strong><br>
+                Se Risco Observado = 15% → Ameaça verbalizada, mas sem densidade alta<br>
+                Se Risco Observado = 25%+ → Linguagem carregada, escalada provável se negligenciada<br><br>
+                <strong>O que o negociador deveria fazer?</strong><br>
+                Alto risco = mudar de abordagem RÁPIDO. Deixar o causador falar (validar) antes de oferecer soluções.
+                </p>
+                </div>
+                <hr style='border-color:#444;margin:12px 0;'>
+                <div style='margin:12px 0;padding:12px;border-radius:10px;background:rgba(16,185,129,0.08);border-left:4px solid #10b981;'>
+                <h5 style='color:#10b981;margin-top:0;'>🟢 ABERTURA OBSERVADA — "Tem esperança aqui? Há ponte de desescalada?"</h5>
+                <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
+                Mede <strong>sinais de cooperação, rendição, pedido de ajuda</strong> (velado ou não) no causador.<br><br>
+                <strong>Exemplos de alta abertura:</strong><br>
+                • <em>"me ajuda"</em> (pedido direto)<br>
+                • <em>"minha filha está aqui"</em> (reconhecimento de terceiro, responsabilidade)<br>
+                • <em>"pode entrar"</em> (permissão = abandono da posição hostil)<br><br>
+                <strong>Interpretação para APA:</strong><br>
+                Se Abertura = 5% → Causador muito fechado, difícil entrada. Precisa mais validação.<br>
+                Se Abertura = 15%+ → Janela de oportunidade aberta. Negociador pode começar a propor.<br><br>
+                <strong>O que o negociador deveria fazer?</strong><br>
+                Sinais de abertura = AMPLIFICAR. "Você pediu ajuda? Estou aqui para isso." (FBI)
+                </p>
+                </div>
+                <hr style='border-color:#444;margin:12px 0;'>
+                <div style='margin:12px 0;padding:12px;border-radius:10px;background:rgba(251,146,60,0.08);border-left:4px solid #f97316;'>
+                <h5 style='color:#f97316;margin-top:0;'>🟡 RAIZ OBSERVADA — "Por que ele está assim? Qual é a verdadeira causa?"</h5>
+                <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
+                Mede <strong>gatilhos emocionais, perdas, traumas</strong> que explicam o estado atual.<br><br>
+                <strong>Exemplos de raiz clara:</strong><br>
+                • <em>"perdi meu emprego"</em> (causa: desespero financeiro)<br>
+                • <em>"ela me traiu"</em> (causa: abandono/humilhação)<br>
+                • <em>"ninguém se importa comigo"</em> (causa: isolamento/rejeição)<br><br>
+                <strong>Interpretação para APA:</strong><br>
+                Se Raiz = 8% → Causador talvez tenha gatilho recente ou bem localizado.<br>
+                If Raiz = 12%+ → Acúmulo de perdas, histórico de trauma. Mais difícil de resolver rápido.<br><br>
+                <strong>O que o negociador deveria fazer?</strong><br>
+                Ury diz: "Separe a pessoa do problema." A raiz é o PROBLEMA. Validá-la não é concordar, é RECONHECER.<br>
+                Ex: "Entendo que perder o emprego é devastador. Mas matar não resolve. Vamos pensar em saídas."
+                </p>
+                </div>
+                <hr style='border-color:#444;margin:12px 0;'>
+                <h5 style='color:#FFD700;'>⚖️ COMO OS TRÊS TRABALHAM JUNTOS</h5>
+                <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
+                <strong>Cenário 1: Alto Risco + Baixa Abertura + Raiz Clara</strong><br>
+                → Sujeito desesperado (raiz conhecida) mas barricado (nenhuma ponte). Técnica: Validar a raiz + oferecer saída.
+                <br><br>
+                <strong>Cenário 2: Alto Risco + Alta Abertura + Raiz Clara</strong><br>
+                → Sujeito em crise mas aberto à ajuda. JANELA CRÍTICA. Técnica: Rápida proposição de alternativa.
+                <br><br>
+                <strong>Cenário 3: Baixo Risco + Alta Abertura + Raiz Clara</strong><br>
+                → Sujeito já está em conversação. Técnica: Escuta ativa + proposição colaborativa.
+                </p>
+                </div>
+                """, unsafe_allow_html=True)
 
-                with tab_ngramas:
-                    st.markdown("""
-                    <div class='info-card'>
-                    <h5 style='color:#FFD700;margin-top:0;'>Padrões Repetidos & Loop Cognitivo</h5>
-                    <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
-                    <strong>N-gramas:</strong> Frases de 2-3 palavras que o sujeito repete obessivamente.
-                    </p>
-                    <hr style='border-color:#444;margin:12px 0;'>
-                    <h5 style='color:#FFD700;'>O que significa?</h5>
-                    <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
-                    Sob estresse extremo, o cérebro entra em <strong>loop cognitivo</strong>. 
-                    A frase repetida é o <u>mantra da crise</u> — o que o sujeito está preso em pensar.<br><br>
-                    <strong>Exemplos e interpretações:</strong><br><br>
-                    • <em>"não aguento mais"</em> (repetido 5+ vezes)<br>
-                    &nbsp;&nbsp; → Estado: Exaustão emocional severa. Risco: Iminente (suicida ou agressivo descontrolado)<br>
-                    &nbsp;&nbsp; → Técnica: Validar o esgotamento, oferecer repouso/alívio imediato<br><br>
-                    • <em>"cadê a imprensa"</em> (repetido 3+ vezes)<br>
-                    &nbsp;&nbsp; → Estado: Fixação instrumental. O sujeito quer RECONHECIMENTO público<br>
-                    &nbsp;&nbsp; → Técnica: Negociar sobre o que pode ser oferecido (não prometa imprensa se não há)<br><br>
-                    • <em>"fica calmo"</em> (negociador repetindo)<br>
-                    &nbsp;&nbsp; → Estado: Negociador não está OUVINDO. Está tentando impor.<br>
-                    &nbsp;&nbsp; → Técnica: MUDAR DE ABORDAGEM. Perguntar em vez de ordenar<br><br>
-                    </p>
-                    <hr style='border-color:#444;margin:12px 0;'>
-                    <h5 style='color:#FFD700;'>Nuvem de Palavras — O que cada interlocutor REALMENTE está focando</h5>
-                    <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
-                    A nuvem mostra visualmente o <strong>universo mental</strong> de cada um.<br><br>
-                    <strong>Leitura prática:</strong><br>
-                    Se a nuvem do Causador tem <em>"arma, polícia, morte"</em> gigantes → Fixação em escalada<br>
-                    Se a nuvem tem <em>"filha, família, vida"</em> grandes → Ambivalência (quer viver mas está preso no medo)<br>
-                    Se a nuvem do Negociador tem <em>"calma, tranquilo, relaxa"</em> → Talvez não esteja validando o real estado emocional<br><br>
-                    <strong>Comparação:</strong><br>
-                    Nuvem do Causador com "morte" grande + Nuvem do Negociador com "vida" grande = Boa direção<br>
-                    Nuvem do Causador com "morte" grande + Nuvem do Negociador com "relaxa" grande = Desconexão
-                    </p>
-                    <div style='margin-top:12px;padding:12px;border-radius:10px;background:rgba(255,215,0,0.06);border:1px solid rgba(255,215,0,0.15);'>
-                    <p style='font-size:0.9rem;color:#ddd;margin:0;line-height:1.6;'>
-                    <strong>Atenção:</strong> Um padrão repetido não é risco por si. É um <u>sinal de fixação mental</u>. 
-                    Pode ser esperança ("vou me entregar"), desespero ("vou morrer") ou instrumento ("exijo reconhecimento").
-                    </p>
-                    </div>
-                    </div>
-                    """, unsafe_allow_html=True)
+            with tab_ngramas:
+                st.markdown("""
+                <div class='info-card'>
+                <h5 style='color:#FFD700;margin-top:0;'>Padrões Repetidos & Loop Cognitivo</h5>
+                <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
+                <strong>N-gramas:</strong> Frases de 2-3 palavras que o sujeito repete obessivamente.
+                </p>
+                <hr style='border-color:#444;margin:12px 0;'>
+                <h5 style='color:#FFD700;'>O que significa?</h5>
+                <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
+                Sob estresse extremo, o cérebro entra em <strong>loop cognitivo</strong>. 
+                A frase repetida é o <u>mantra da crise</u> — o que o sujeito está preso em pensar.<br><br>
+                <strong>Exemplos e interpretações:</strong><br><br>
+                • <em>"não aguento mais"</em> (repetido 5+ vezes)<br>
+                &nbsp;&nbsp; → Estado: Exaustão emocional severa. Risco: Iminente (suicida ou agressivo descontrolado)<br>
+                &nbsp;&nbsp; → Técnica: Validar o esgotamento, oferecer repouso/alívio imediato<br><br>
+                • <em>"cadê a imprensa"</em> (repetido 3+ vezes)<br>
+                &nbsp;&nbsp; → Estado: Fixação instrumental. O sujeito quer RECONHECIMENTO público<br>
+                &nbsp;&nbsp; → Técnica: Negociar sobre o que pode ser oferecido (não prometa imprensa se não há)<br><br>
+                • <em>"fica calmo"</em> (negociador repetindo)<br>
+                &nbsp;&nbsp; → Estado: Negociador não está OUVINDO. Está tentando impor.<br>
+                &nbsp;&nbsp; → Técnica: MUDAR DE ABORDAGEM. Perguntar em vez de ordenar<br><br>
+                </p>
+                <hr style='border-color:#444;margin:12px 0;'>
+                <h5 style='color:#FFD700;'>Nuvem de Palavras — O que cada interlocutor REALMENTE está focando</h5>
+                <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
+                A nuvem mostra visualmente o <strong>universo mental</strong> de cada um.<br><br>
+                <strong>Leitura prática:</strong><br>
+                Se a nuvem do Causador tem <em>"arma, polícia, morte"</em> gigantes → Fixação em escalada<br>
+                Se a nuvem tem <em>"filha, família, vida"</em> grandes → Ambivalência (quer viver mas está preso no medo)<br>
+                Se a nuvem do Negociador tem <em>"calma, tranquilo, relaxa"</em> → Talvez não esteja validando o real estado emocional<br><br>
+                <strong>Comparação:</strong><br>
+                Nuvem do Causador com "morte" grande + Nuvem do Negociador com "vida" grande = Boa direção<br>
+                Nuvem do Causador com "morte" grande + Nuvem do Negociador com "relaxa" grande = Desconexão
+                </p>
+                <div style='margin-top:12px;padding:12px;border-radius:10px;background:rgba(255,215,0,0.06);border:1px solid rgba(255,215,0,0.15);'>
+                <p style='font-size:0.9rem;color:#ddd;margin:0;line-height:1.6;'>
+                <strong>Atenção:</strong> Um padrão repetido não é risco por si. É um <u>sinal de fixação mental</u>. 
+                Pode ser esperança ("vou me entregar"), desespero ("vou morrer") ou instrumento ("exijo reconhecimento").
+                </p>
+                </div>
+                </div>
+                """, unsafe_allow_html=True)
 
-                with tab_limitacoes:
-                    st.markdown("""
-                    <div class='info-card'>
-                    <h5 style='color:#FFD700;margin-top:0;'>Limitações — O que o sistema NÃO consegue ver</h5>
-                    <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
-                    Esta é uma <strong>ferramenta de leitura</strong>, não bola de cristal. Os números descrevem o que foi DITO, 
-                    não o que vai acontecer.
-                    </p>
-                    <hr style='border-color:#444;margin:12px 0;'>
-                    <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
-                    ❌ <strong>Não vê o histórico do sujeito:</strong> Esse é o 1º suicida ou o 5º? Faz diferença.<br>
-                    ❌ <strong>Não vê o contexto real:</strong> Há reféns? Há arma de verdade? O sistema não sabe.<br>
-                    ❌ <strong>Não vê gírias/ironia:</strong> <em>"Vou me matar de rir"</em> aparece como risco, mas é brincadeira.<br>
-                    ❌ <strong>Não vê o tom de voz:</strong> <em>"vou sair"</em> dito com calma é diferente de grito.<br>
-                    ❌ <strong>Não vê interrupções:</strong> Se o transcrição está quebrada, a análise fica incompleta.
-                    </p>
-                    <div style='margin-top:12px;padding:12px;border-radius:10px;background:rgba(255,215,0,0.06);border:1px solid rgba(255,215,0,0.15);'>
-                    <p style='font-size:0.9rem;color:#ddd;margin:0;line-height:1.6;'>
-                    <strong>Regra de ouro para APA:</strong> Use estes dados + seu julgamento + contexto operacional. 
-                    O sistema ILUMINA. A decisão é HUMANA.
-                    </p>
-                    </div>
-                    </div>
-                    """, unsafe_allow_html=True)
+            with tab_limitacoes:
+                st.markdown("""
+                <div class='info-card'>
+                <h5 style='color:#FFD700;margin-top:0;'>Limitações — O que o sistema NÃO consegue ver</h5>
+                <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
+                Esta é uma <strong>ferramenta de leitura</strong>, não bola de cristal. Os números descrevem o que foi DITO, 
+                não o que vai acontecer.
+                </p>
+                <hr style='border-color:#444;margin:12px 0;'>
+                <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
+                ❌ <strong>Não vê o histórico do sujeito:</strong> Esse é o 1º suicida ou o 5º? Faz diferença.<br>
+                ❌ <strong>Não vê o contexto real:</strong> Há reféns? Há arma de verdade? O sistema não sabe.<br>
+                ❌ <strong>Não vê gírias/ironia:</strong> <em>"Vou me matar de rir"</em> aparece como risco, mas é brincadeira.<br>
+                ❌ <strong>Não vê o tom de voz:</strong> <em>"vou sair"</em> dito com calma é diferente de grito.<br>
+                ❌ <strong>Não vê interrupções:</strong> Se o transcrição está quebrada, a análise fica incompleta.
+                </p>
+                <div style='margin-top:12px;padding:12px;border-radius:10px;background:rgba(255,215,0,0.06);border:1px solid rgba(255,215,0,0.15);'>
+                <p style='font-size:0.9rem;color:#ddd;margin:0;line-height:1.6;'>
+                <strong>Regra de ouro para APA:</strong> Use estes dados + seu julgamento + contexto operacional. 
+                O sistema ILUMINA. A decisão é HUMANA.
+                </p>
+                </div>
+                </div>
+                """, unsafe_allow_html=True)
 
             # --- FIM DO BLOCO DE EXPLICAÇÃO ---
 
