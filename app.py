@@ -2537,12 +2537,9 @@ else:
                             )
                         
                         # Detalhes
-                        # Detalhes
-                        # Detalhes
                         st.markdown("---")
                         st.markdown("#### ✔️ Detalhes das Palavras-Chave Encontradas")
-
-                        # SEPARADO: Negociador vs Causador
+                        
                         st.markdown("### 🟢 NEGOCIADOR PRINCIPAL")
 
                         col_val, col_conf = st.columns(2)
@@ -2570,8 +2567,7 @@ else:
                                     st.write(f"  • {palavra}: {freq}x")
                             else:
                                 st.write("  (nenhuma encontrada)")
-
-                        # CAUSADOR
+                        
                         st.markdown("---")
                         st.markdown("### 🔴 CAUSADOR")
 
@@ -2650,33 +2646,45 @@ else:
                                 resultado_neg = analise.analise_sentimento_transformer(txt_neg, nlp_model)
                             
                             if resultado_neg:
-                                # Contar positivos/negativos
-                                positivos = sum(1 for r in resultado_neg if r['label'] == 'POSITIVE')
-                                negativos = sum(1 for r in resultado_neg if r['label'] == 'NEGATIVE')
+                                # Contar positivos/negativos/neutros
+                                positivos = sum(1 for r in resultado_neg if r['label'] in ['POSITIVE', 'LABEL_2'])
+                                negativos = sum(1 for r in resultado_neg if r['label'] in ['NEGATIVE', 'LABEL_0'])
+                                neutros = sum(1 for r in resultado_neg if r['label'] in ['NEUTRAL', 'LABEL_1'])
                                 total_sent = len(resultado_neg)
                                 
-                                col1, col2, col3 = st.columns(3)
+                                col1, col2, col3, col4 = st.columns(4)
+                                
                                 with col1:
                                     st.metric("Positivos", f"{positivos}/{total_sent}")
+                                
                                 with col2:
-                                    st.metric("Negativos", f"{negativos}/{total_sent}")
+                                    st.metric("Neutros", f"{neutros}/{total_sent}")
+                                
                                 with col3:
+                                    st.metric("Negativos", f"{negativos}/{total_sent}")
+                                
+                                with col4:
                                     pct_positivo = (positivos / total_sent * 100) if total_sent > 0 else 0
                                     st.metric("% Positivo", f"{pct_positivo:.0f}%")
                                 
                                 # Mostrar exemplos
                                 st.markdown("**Exemplos de Sentenças:**")
                                 
-                                col_pos, col_neg_ex = st.columns(2)
+                                col_pos, col_neu, col_neg = st.columns(3)
                                 
                                 with col_pos:
-                                    st.markdown("✅ **Positivas/Neutras:**")
-                                    for r in [x for x in resultado_neg if x['label'] in ['POSITIVE', 'NEUTRAL']][:5]:
+                                    st.markdown("✅ **Positivas:**")
+                                    for r in [x for x in resultado_neg if x['label'] in ['POSITIVE', 'LABEL_2']][:5]:
                                         st.write(f"  • {r['sentenca']}...")
                                 
-                                with col_neg_ex:
+                                with col_neu:
+                                    st.markdown("⚪ **Neutras:**")
+                                    for r in [x for x in resultado_neg if x['label'] in ['NEUTRAL', 'LABEL_1']][:5]:
+                                        st.write(f"  • {r['sentenca']}...")
+                                
+                                with col_neg:
                                     st.markdown("❌ **Negativas:**")
-                                    for r in [x for x in resultado_neg if x['label'] == 'NEGATIVE'][:5]:
+                                    for r in [x for x in resultado_neg if x['label'] in ['NEGATIVE', 'LABEL_0']][:5]:
                                         st.write(f"  • {r['sentenca']}...")
                             
                             # Analisar causador
