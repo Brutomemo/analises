@@ -1139,7 +1139,21 @@ else:
             st.markdown("---")
 
             # PERCEPÇÃO DE AGRESSIVIDADE/RECEPTIVIDADE LINHA DE TENDENCIA
-            # Otimização: Normaliza e mapeia as colunas do Airtable apenas uma vez por APA
+
+        st.markdown("<h5 style='color: #FFD700;'> Agressividade e Receptividade do causador</h5>", unsafe_allow_html=True)
+
+        col_left, col_center, col_right = st.columns([1, 1, 1])  
+        with col_center:
+            is_percep_neg = render_toggle_button(
+                label="✔️ Abrir Percepção dos Negociadores",
+                session_key="percep_neg",
+                button_key="btn_percep_neg"
+            )
+
+        st.markdown("---")
+
+        if is_percep_neg:
+            
             
             colunas_norm = {col: unicodedata.normalize('NFKD', str(col)).encode('ASCII', 'ignore').decode('ASCII').lower() for col in df_apa.index}
             
