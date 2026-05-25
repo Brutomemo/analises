@@ -2561,47 +2561,7 @@ else:
                                 ):
                                     st.write(f"  • {palavra}: {freq}x")
                             else:
-                                st.write("  (nenhuma encontrada)")# Detalhes
-                        st.markdown("---")
-                        st.markdown("#### 📋 Detalhes das Palavras-Chave Encontradas")
-
-                        col_val, col_conf, col_emocao = st.columns(3)
-
-                        with col_val:
-                            st.markdown("**Validação (Negociador):**")
-                            if analise_rapida['validacao']:
-                                for palavra, freq in sorted(
-                                    analise_rapida['validacao'].items(),
-                                    key=lambda x: x[1],
-                                    reverse=True
-                                ):
-                                    st.write(f"  • {palavra}: {freq}x")
-                            else:
-                                st.write("  (nenhuma encontrada)")
-
-                        with col_conf:
-                            st.markdown("**Confronto (Negociador):**")
-                            if analise_rapida['confronto']:
-                                for palavra, freq in sorted(
-                                    analise_rapida['confronto'].items(),
-                                    key=lambda x: x[1],
-                                    reverse=True
-                                ):
-                                    st.write(f"  • {palavra}: {freq}x")
-                            else:
-                                st.write("  (nenhuma encontrada)")
-
-                        with col_emocao:
-                            st.markdown("**Emoção Alta (Causador):**")
-                            if analise_rapida['emocao_causador']:
-                                for palavra, freq in sorted(
-                                    analise_rapida['emocao_causador'].items(),
-                                    key=lambda x: x[1],
-                                    reverse=True
-                                ):
-                                    st.write(f"  • {palavra}: {freq}x")
-                            else:
-                                st.write("  (nenhuma encontrada)")
+                                st.write("  (nenhuma encontrada)")# Detalhes                        
                         
                         # Interpretação
                         st.markdown("---")
