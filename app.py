@@ -1153,9 +1153,9 @@ else:
                 with tab_ng1:
                         st.markdown("""
                         <div class='info-card'>
-                        <h5 style='color: #ffae42; margin-top: 0;'>✔️ Linha de tendência sobre a Percepção de agressividade e reptividade do causador</h5>
+                        <h5 style='color: #ffae42; margin-top: 0;'>✔️ Linha de tendência individualizada da Percepção de agressividade e reptividade do causador</h5>
                         <p style='font-size:1rem;color:#ddd;'>
-                        Percepção dos negociadores sobre a receptividade e agressividade do causador no início e encerramento da ocorrência.
+                        Percepção individalizada dos negociadores sobre a receptividade e agressividade do causador no início e encerramento da ocorrência.
                         </p>
                         </div>
                         """, unsafe_allow_html=True)
@@ -1274,7 +1274,7 @@ else:
                     <div class='info-card'>
                     <h5 style='color: #ffae42; margin-top: 0;'>✔️ Visão geral da Percepção de agressividade e reptividade do causador</h5>
                     <p style='font-size:1rem;color:#ddd;'>
-                    Percepção Geral dos negociadores sobre a receptividade e agressividade do causador no início e encerramento da ocorrência.
+                    Percepção dos negociadores sobre a receptividade e agressividade do causador no início e encerramento da ocorrência.
                     </p>
                     </div>
                     """, unsafe_allow_html=True)
@@ -3619,7 +3619,7 @@ else:
                 else:
                     st.info("⚠️ Nenhuma técnica encontrada para os filtros selecionados.")
 
-            st.markdown("---")
+        st.markdown("---")
 
             
             # ============================================================
