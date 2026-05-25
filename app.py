@@ -2710,6 +2710,9 @@ else:
                         # CONFIGURAÇÃO: Lazy Loading para Transformer
                         # ============================================================
 
+                    with tab_ng8:
+                        st.markdown("### 📢 Escuta e Sentimento")    
+                        
                         @st.cache_resource
                         def carregar_transformer_portugues():
                             """
