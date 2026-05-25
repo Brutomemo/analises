@@ -356,6 +356,46 @@ def gerar_wordcloud(texto):
     return fig
 
 # ============================================================
+# 5. ANALISE DE SENTIMENTO
+# ============================================================
+
+def analise_rapida_discurso(texto_neg, texto_caus):
+    """
+    Análise RÁPIDA usando Regex.
+    Roda instantaneamente, sem Transformer.
+    """
+    
+    VALIDACAO_PALAVRAS = [
+        'entendi', 'entendo', 'compreendo', 'entendimento',
+        'respeito', 'respeitado', 'hombridade', 'papo',
+        'tranquilo', 'calma', 'beleza', 'certo', 'ok'
+    ]
+    
+    CONFRONTO_PALAVRAS = [
+        'não', 'errado', 'mentira', 'fake', 'louco',
+        'precisa', 'tem que', 'deve', 'merda'
+    ]
+    
+    EMOCAO_ALTA = [
+        'arrebentar', 'bater', 'matar', 'caralho', 'foda-se',
+        'preso', 'cadeia', 'merda', 'pelo amor', 'infelizmente',
+        'desesperado', 'morte', 'morrer'
+    ]
+    
+    validacao_count = contar_palavra_chave(texto_neg, VALIDACAO_PALAVRAS)
+    confronto_count = contar_palavra_chave(texto_neg, CONFRONTO_PALAVRAS)
+    emocao_caus = contar_palavra_chave(texto_caus, EMOCAO_ALTA)
+    
+    return {
+        'validacao': validacao_count,
+        'confronto': confronto_count,
+        'emocao_causador': emocao_caus,
+        'total_validacao': sum(validacao_count.values()),
+        'total_confronto': sum(confronto_count.values()),
+        'total_emocao': sum(emocao_caus.values()),
+    }
+
+# ============================================================
 # FUNÇÕES AUXILIARES (Regex, rápido)
 # ============================================================
 
