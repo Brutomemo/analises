@@ -1989,6 +1989,18 @@ else:
                 # --- FIM DO BLOCO DE EXPLICAÇÃO ---
 
 
+        col_left, col_center, col_right = st.columns([1, 1, 1])
+        with col_center:
+            is_analise_negociacao = render_toggle_button(
+                label="✔️ Análise da Negociação",
+                session_key="analise_negociacao",
+                button_key="btn_analise_negociacao"
+            )
+        
+        st.markdown("---")
+    
+        if is_analise_negociacao: 
+            
             def extrair_temas_e_metricas(resultado_lista):
                 """
                 Separa os temas das métricas APA.
