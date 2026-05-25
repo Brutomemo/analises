@@ -4161,7 +4161,15 @@ else:
         # SEÇÃO: ENTENDA OS TESTES ESTATÍSTICOS
         # ══════════════════════════════════════════════════════════════════════════════
 
-        st.markdown("<h5 style='color: #FFD700;'>Entenda melhor os testes estatísticos de correlação e associação</h5>", unsafe_allow_html=True)
+        st.markdown("""
+                        <div class='info-card'>
+                        <h5 style='color: #FFD700; margin-top: 0;'>Entenda melhor os testes estatísticos de correlação e associação</h5>
+                        <p style='font-size:1.2rem;color:#ddd;'>
+                        Instruções</strong>                 
+                        </p>
+                        </div>
+                        """, unsafe_allow_html=True)
+                
 
         col_left, col_center, col_right = st.columns([1, 1, 1])
         with col_center:
