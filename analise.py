@@ -356,44 +356,37 @@ def gerar_wordcloud(texto):
     return fig
 
 # ============================================================
-# 5. ANALISE DE SENTIMENTO
+# FUNÇÕES PARA TAB 8: QUALIDADE DO DISCURSO
+# Adicione TUDO isso em analise.py
 # ============================================================
 
-def analise_rapida_discurso(texto_neg, texto_caus):
+import streamlit as st
+import re
+from collections import Counter
+
+# ============================================================
+# CACHE RESOURCE: Lazy Loading para Transformer
+# ============================================================
+
+@st.cache_resource
+def carregar_transformer_portugues():
     """
-    Análise RÁPIDA usando Regex.
-    Roda instantaneamente, sem Transformer.
+    Carrega transformer uma única vez e cacheia.
+    Demora ~5-10s na primeira execução.
     """
-    
-    VALIDACAO_PALAVRAS = [
-        'entendi', 'entendo', 'compreendo', 'entendimento',
-        'respeito', 'respeitado', 'hombridade', 'papo',
-        'tranquilo', 'calma', 'beleza', 'certo', 'ok'
-    ]
-    
-    CONFRONTO_PALAVRAS = [
-        'não', 'errado', 'mentira', 'fake', 'louco',
-        'precisa', 'tem que', 'deve', 'merda'
-    ]
-    
-    EMOCAO_ALTA = [
-        'arrebentar', 'bater', 'matar', 'caralho', 'foda-se',
-        'preso', 'cadeia', 'merda', 'pelo amor', 'infelizmente',
-        'desesperado', 'morte', 'morrer'
-    ]
-    
-    validacao_count = contar_palavra_chave(texto_neg, VALIDACAO_PALAVRAS)
-    confronto_count = contar_palavra_chave(texto_neg, CONFRONTO_PALAVRAS)
-    emocao_caus = contar_palavra_chave(texto_caus, EMOCAO_ALTA)
-    
-    return {
-        'validacao': validacao_count,
-        'confronto': confronto_count,
-        'emocao_causador': emocao_caus,
-        'total_validacao': sum(validacao_count.values()),
-        'total_confronto': sum(confronto_count.values()),
-        'total_emocao': sum(emocao_caus.values()),
-    }
+    try:
+        from transformers import pipeline
+        
+        # Usar transformer português (validado, contextual)
+        nlp = pipeline(
+            "sentiment-analysis",
+            model="bert-base-portuguese-cased",
+            device=0  # GPU se disponível, CPU caso contrário
+        )
+        return nlp
+    except Exception as e:
+        st.error(f"Erro ao carregar modelo: {str(e)[:100]}")
+        return None
 
 # ============================================================
 # FUNÇÕES AUXILIARES (Regex, rápido)
@@ -472,7 +465,7 @@ def analise_sentimento_transformer(texto, nlp_model):
         return None
     
     resultados = []
-    for sentenca in sentencas[:20]:  # Limitar a 20 sentenças para não ficar muito lento
+    for sentenca in sentencas[:20]:  # Limitar a 20 sentenças
         try:
             resultado = nlp_model(sentenca[:512])  # BERT tem limite de 512 tokens
             resultados.append({
