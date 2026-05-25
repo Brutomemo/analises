@@ -473,6 +473,30 @@ def limpar_sentenca(sentenca):
     return sentenca.strip()
 
 # ============================================================
+# CARREGAR TRANSFORMER
+# ============================================================
+
+@st.cache_resource
+def carregar_transformer_portugues():
+    """
+    Carrega transformer uma única vez e cacheia.
+    Demora ~5-10s na primeira execução.
+    """
+    try:
+        from transformers import pipeline
+        
+        # Usar transformer multilingue (validado, funciona bem em português)
+        nlp = pipeline(
+            "sentiment-analysis",
+            model="nlptown/bert-base-multilingual-uncased-sentiment",
+            device=0  # GPU se disponível, CPU caso contrário
+        )
+        return nlp
+    except Exception as e:
+        st.error(f"Erro ao carregar modelo: {str(e)[:100]}")
+        return None
+
+# ============================================================
 # ANÁLISE COM TRANSFORMER OTIMIZADO
 # ============================================================
 
