@@ -1332,28 +1332,28 @@ else:
 
                     st.markdown("---")
 
-                st.markdown("### ✔ Transcrições")
+                    st.markdown("### ✔ Transcrições")
 
-                # Inicializa estado do toggle
-                if "show_transcricoes" not in st.session_state:
-                    st.session_state["show_transcricoes"] = False
+                    # Inicializa estado do toggle
+                    if "show_transcricoes" not in st.session_state:
+                        st.session_state["show_transcricoes"] = False
 
-                # Botão toggle
-                label = "▲ Ocultar transcrições" if st.session_state["show_transcricoes"] else "▼ Ver transcrições completas da ocorrência"
-                if st.button(label, key="btn_transcricoes"):
-                    st.session_state["show_transcricoes"] = not st.session_state["show_transcricoes"]
+                    # Botão toggle
+                    label = "▲ Ocultar transcrições" if st.session_state["show_transcricoes"] else "▼ Ver transcrições completas da ocorrência"
+                    if st.button(label, key="btn_transcricoes"):
+                        st.session_state["show_transcricoes"] = not st.session_state["show_transcricoes"]
 
-                # Conteúdo condicional
-                if st.session_state["show_transcricoes"]:
-                    st.markdown("**Causador do Incidente:**")
-                    st.write(limpar_valor(df_apa.get('TRANSCRIÇÃO DO CAUSADOR')))
-                    st.markdown("**Negociador Principal:**")
-                    st.write(limpar_valor(df_apa.get('TRANSCRIÇÃO DO NEGOCIADOR PRINCIPAL')))
-                    st.markdown("**Negociador Secundário:**")
-                    st.write(limpar_valor(df_apa.get('TRANSCRIÇÃO DO NEGOCIADOR SECUNDÁRIO')))
+                    # Conteúdo condicional
+                    if st.session_state["show_transcricoes"]:
+                        st.markdown("**Causador do Incidente:**")
+                        st.write(limpar_valor(df_apa.get('TRANSCRIÇÃO DO CAUSADOR')))
+                        st.markdown("**Negociador Principal:**")
+                        st.write(limpar_valor(df_apa.get('TRANSCRIÇÃO DO NEGOCIADOR PRINCIPAL')))
+                        st.markdown("**Negociador Secundário:**")
+                        st.write(limpar_valor(df_apa.get('TRANSCRIÇÃO DO NEGOCIADOR SECUNDÁRIO')))
 
-                st.markdown("---")
-               
+                    st.markdown("---")
+                
             
                 # #TABELA DE FREQUENCIA
         
@@ -1392,391 +1392,390 @@ else:
                             </p>
                             </div>
                             """, unsafe_allow_html=True)
+                    
+                            if not df_tec.empty:
+                                col_vinculo = next((c for c in df_tec.columns if 'VINCULO' in c.upper() or 'VÍNCULO' in c.upper()), None)
+                                
+                                if col_vinculo:
+                                    id_visivel = str(apa_selecionada).strip()
+                                    df_tec['Vinculo_Str'] = df_tec[col_vinculo].astype(str).str.replace(r"[\[\]'\"]", "", regex=True).str.strip()
+                                    df_tec_filtrado = df_tec[df_tec['Vinculo_Str'] == id_visivel]
+                                    
+                                    if df_tec_filtrado.empty and 'Airtable_Record_ID' in df_apa:
+                                        id_interno = str(df_apa['Airtable_Record_ID']).strip()
+                                        df_tec_filtrado = df_tec[df_tec[col_vinculo].astype(str).str.contains(id_interno, na=False, regex=False)]
+                                    
+                                    if not df_tec_filtrado.empty:
+                                        col_tecnica = next((col for col in ['TÉCNICAS', 'TECNICAS', 'TÉCNICA', 'TECNICA'] if col in df_tec_filtrado.columns), None)
+                                        if col_tecnica:
+                                            freq_abs = df_tec_filtrado[col_tecnica].value_counts()
+                                            freq_rel = (df_tec_filtrado[col_tecnica].value_counts(normalize=True) * 100).round(1)
+                                            df_freq = pd.DataFrame({'Frequência Absoluta': freq_abs, 'Frequência Relativa (%)': freq_rel}).reset_index().rename(columns={col_tecnica: 'Técnica Empregada'})
+                                            
+                                            st.dataframe(df_freq, use_container_width=True, hide_index=True)
+                                            
+                                            st.markdown("<h4 style='text-align:center; color: #FFFF; margin-top: 20px;'>Frequencias das Técnicas Aplicadas (Treemap)</h4>", unsafe_allow_html=True)
+                                            fig_tree = px.treemap(df_freq, path=['Técnica Empregada'], values='Frequência Absoluta', color='Frequência Absoluta', color_continuous_scale='Oranges')
+                                            fig_tree.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font_color="#FFF", margin=dict(t=10, l=10, r=10, b=10))
+                                            
+                                            # ✅ SALVAR NO SESSION_STATE
+                                            st.session_state['treemap_freq'] = fig_tree
+                                            st.success("✅ Treemap gerado!")
+                                        else:
+                                            st.warning("Técnicas encontradas, mas a coluna 'TÉCNICAS' não foi identificada no Airtable.")
+                                    else:
+                                        st.info(f"Nenhuma técnica cruzou com a APA atual.")
+                                else:
+                                    st.warning("A coluna de vínculo (ex: 'Vinculo_APA') não foi encontrada na aba de técnicas.")
+                            else:
+                                st.warning("Tabela de técnicas vazia no Airtable.")
 
-                    if st.button("✔ Calcular Frequência de Técnicas", key="btn_freq_tecnicas"):
-                        if not df_tec.empty:
-                            col_vinculo = next((c for c in df_tec.columns if 'VINCULO' in c.upper() or 'VÍNCULO' in c.upper()), None)
+                        # ✅ EXIBIR TREEMAP SE FOI GERADO (FORA DO BOTÃO)
+                        if st.session_state.get('treemap_freq'):
+                            st.plotly_chart(st.session_state['treemap_freq'], use_container_width=True)
                             
-                            if col_vinculo:
-                                id_visivel = str(apa_selecionada).strip()
-                                df_tec['Vinculo_Str'] = df_tec[col_vinculo].astype(str).str.replace(r"[\[\]'\"]", "", regex=True).str.strip()
-                                df_tec_filtrado = df_tec[df_tec['Vinculo_Str'] == id_visivel]
-                                
-                                if df_tec_filtrado.empty and 'Airtable_Record_ID' in df_apa:
-                                    id_interno = str(df_apa['Airtable_Record_ID']).strip()
-                                    df_tec_filtrado = df_tec[df_tec[col_vinculo].astype(str).str.contains(id_interno, na=False, regex=False)]
-                                
-                                if not df_tec_filtrado.empty:
-                                    col_tecnica = next((col for col in ['TÉCNICAS', 'TECNICAS', 'TÉCNICA', 'TECNICA'] if col in df_tec_filtrado.columns), None)
-                                    if col_tecnica:
-                                        freq_abs = df_tec_filtrado[col_tecnica].value_counts()
-                                        freq_rel = (df_tec_filtrado[col_tecnica].value_counts(normalize=True) * 100).round(1)
-                                        df_freq = pd.DataFrame({'Frequência Absoluta': freq_abs, 'Frequência Relativa (%)': freq_rel}).reset_index().rename(columns={col_tecnica: 'Técnica Empregada'})
-                                        
-                                        st.dataframe(df_freq, use_container_width=True, hide_index=True)
-                                        
-                                        st.markdown("<h4 style='text-align:center; color: #FFFF; margin-top: 20px;'>Frequencias das Técnicas Aplicadas (Treemap)</h4>", unsafe_allow_html=True)
-                                        fig_tree = px.treemap(df_freq, path=['Técnica Empregada'], values='Frequência Absoluta', color='Frequência Absoluta', color_continuous_scale='Oranges')
-                                        fig_tree.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font_color="#FFF", margin=dict(t=10, l=10, r=10, b=10))
-                                        
-                                        # ✅ SALVAR NO SESSION_STATE
-                                        st.session_state['treemap_freq'] = fig_tree
-                                        st.success("✅ Treemap gerado!")
-                                    else:
-                                        st.warning("Técnicas encontradas, mas a coluna 'TÉCNICAS' não foi identificada no Airtable.")
-                                else:
-                                    st.info(f"Nenhuma técnica cruzou com a APA atual.")
+                        st.markdown("<div style='margin-bottom: 20px;'></div>", unsafe_allow_html=True)
+                        st.markdown("---")
+
+
+                
+                # === SEÇÃO 2: ANÁLISE DE TÉCNICAS × REAÇÃO DO CAUSADOR ===
+                st.markdown("""
+                <div style='margin-top:20px;'>
+                <h5 style='color:#FFD700;'>✔️ Efetividade das Técnicas</h5>
+                <p style='color:#aaa;font-size:0.9rem;'>
+                Cruza cada técnica usada com a reação do causador.
+                Permite identificar quais abordagens foram efetivas nesta ocorrência.
+                </p>
+                </div>
+                """, unsafe_allow_html=True)
+
+                if st.button("✔ 1. Analisar Efetividade das Técnicas", key="btn_efetividade_tecnicas"):
+                    with st.spinner("Cruzando técnicas com reação do causador..."):
+                        try:
+                            # ── Buscar ID do registro atual ──────────────────────
+                            record_id_atual = df_apa.get('Airtable_Record_ID')
+
+                            if not record_id_atual:
+                                st.warning("⚠️ ID do registro não encontrado.")
                             else:
-                                st.warning("A coluna de vínculo (ex: 'Vinculo_APA') não foi encontrada na aba de técnicas.")
-                        else:
-                            st.warning("Tabela de técnicas vazia no Airtable.")
+                                # ── Buscar df_tec do session_state ───────────────
+                                df_tec = st.session_state.get("df_tec", pd.DataFrame())
 
-                    # ✅ EXIBIR TREEMAP SE FOI GERADO (FORA DO BOTÃO)
-                    if st.session_state.get('treemap_freq'):
-                        st.plotly_chart(st.session_state['treemap_freq'], use_container_width=True)
-                        
-                    st.markdown("<div style='margin-bottom: 20px;'></div>", unsafe_allow_html=True)
-                    st.markdown("---")
-
-
-            
-            # === SEÇÃO 2: ANÁLISE DE TÉCNICAS × REAÇÃO DO CAUSADOR ===
-            st.markdown("""
-            <div style='margin-top:20px;'>
-            <h5 style='color:#FFD700;'>✔️ Efetividade das Técnicas</h5>
-            <p style='color:#aaa;font-size:0.9rem;'>
-            Cruza cada técnica usada com a reação do causador.
-            Permite identificar quais abordagens foram efetivas nesta ocorrência.
-            </p>
-            </div>
-            """, unsafe_allow_html=True)
-
-            if st.button("✔ 1. Analisar Efetividade das Técnicas", key="btn_efetividade_tecnicas"):
-                with st.spinner("Cruzando técnicas com reação do causador..."):
-                    try:
-                        # ── Buscar ID do registro atual ──────────────────────
-                        record_id_atual = df_apa.get('Airtable_Record_ID')
-
-                        if not record_id_atual:
-                            st.warning("⚠️ ID do registro não encontrado.")
-                        else:
-                            # ── Buscar df_tec do session_state ───────────────
-                            df_tec = st.session_state.get("df_tec", pd.DataFrame())
-
-                            if df_tec.empty:
-                                st.warning("⚠️ Tabela de técnicas não carregada. Atualize os dados.")
-                            else:
-                                # ── Filtrar técnicas desta APA ────────────────
-                                def vinculo_contem(val, record_id):
-                                    if isinstance(val, list):
-                                        return record_id in val
-                                    return str(val) == record_id
-
-                                mask = df_tec['Vinculo_APA'].apply(
-                                    lambda x: vinculo_contem(x, record_id_atual)
-                                )
-                                df_tec_apa = df_tec[mask].copy()
-
-                                if df_tec_apa.empty:
-                                    st.info("Nenhuma técnica registrada para esta ocorrência.")
+                                if df_tec.empty:
+                                    st.warning("⚠️ Tabela de técnicas não carregada. Atualize os dados.")
                                 else:
-                                    # ── Normalizar coluna de reação ───────────
-                                    def normalizar_reacao(val):
-                                        if val is None:
-                                            return None
-                                        s = str(val).strip()
-                                        if s in ["-1", "-1.0", "🔴 Reação Negativa", "Reação Negativa"]:
-                                            return -1
-                                        elif s in ["0", "0.0", "⚪ Reação Neutra", "Reação Neutra"]:
-                                            return 0
-                                        elif s in ["1", "1.0", "🟢 Reação Positiva", "Reação Positiva"]:
-                                            return 1
-                                        else:
-                                            return None
+                                    # ── Filtrar técnicas desta APA ────────────────
+                                    def vinculo_contem(val, record_id):
+                                        if isinstance(val, list):
+                                            return record_id in val
+                                        return str(val) == record_id
 
-                                    # Detectar coluna de reação
-                                    col_reacao = None
-                                    for c in ['ATITUDE DO CAUSADOR', 'Atitude do Causador', 'atitude_causador']:
-                                        if c in df_tec_apa.columns:
-                                            col_reacao = c
-                                            break
+                                    mask = df_tec['Vinculo_APA'].apply(
+                                        lambda x: vinculo_contem(x, record_id_atual)
+                                    )
+                                    df_tec_apa = df_tec[mask].copy()
 
-                                    col_tecnica = None
-                                    for c in ['TÉCNICAS', 'Técnicas', 'tecnicas']:
-                                        if c in df_tec_apa.columns:
-                                            col_tecnica = c
-                                            break
-
-                                    if not col_tecnica:
-                                        st.warning("⚠️ Coluna TÉCNICAS não encontrada.")
+                                    if df_tec_apa.empty:
+                                        st.info("Nenhuma técnica registrada para esta ocorrência.")
                                     else:
-                                        if col_reacao:
-                                            df_tec_apa['_reacao_num'] = df_tec_apa[col_reacao].apply(normalizar_reacao)
-                                        else:
-                                            df_tec_apa['_reacao_num'] = None
-
-                                        # ── Agrupar por técnica ───────────────
-                                        resumo = []
-                                        for tecnica, grupo in df_tec_apa.groupby(col_tecnica):
-                                            total    = len(grupo)
-                                            positivo = (grupo['_reacao_num'] == 1).sum()
-                                            neutro   = (grupo['_reacao_num'] == 0).sum()
-                                            negativo = (grupo['_reacao_num'] == -1).sum()
-                                            inaud    = grupo['_reacao_num'].isna().sum()
-
-                                            # Score: (positivos - negativos) / observados
-                                            observados = positivo + neutro + negativo
-                                            if observados > 0:
-                                                score = round(((positivo - negativo) / observados) * 100, 1)
+                                        # ── Normalizar coluna de reação ───────────
+                                        def normalizar_reacao(val):
+                                            if val is None:
+                                                return None
+                                            s = str(val).strip()
+                                            if s in ["-1", "-1.0", "🔴 Reação Negativa", "Reação Negativa"]:
+                                                return -1
+                                            elif s in ["0", "0.0", "⚪ Reação Neutra", "Reação Neutra"]:
+                                                return 0
+                                            elif s in ["1", "1.0", "🟢 Reação Positiva", "Reação Positiva"]:
+                                                return 1
                                             else:
-                                                score = None
+                                                return None
 
-                                            resumo.append({
-                                                "Técnica":        tecnica,
-                                                "Total":          total,
-                                                "🟢 Positiva":    int(positivo),
-                                                "⚪ Neutra":      int(neutro),
-                                                "🔴 Negativa":    int(negativo),
-                                                "❓ Inaudível":   int(inaud),
-                                                "Score (%)":      score
-                                            })
+                                        # Detectar coluna de reação
+                                        col_reacao = None
+                                        for c in ['ATITUDE DO CAUSADOR', 'Atitude do Causador', 'atitude_causador']:
+                                            if c in df_tec_apa.columns:
+                                                col_reacao = c
+                                                break
 
-                                        df_resumo = pd.DataFrame(resumo)
-                                        df_resumo = df_resumo.sort_values("Score (%)", ascending=False, na_position='last')
+                                        col_tecnica = None
+                                        for c in ['TÉCNICAS', 'Técnicas', 'tecnicas']:
+                                            if c in df_tec_apa.columns:
+                                                col_tecnica = c
+                                                break
 
-                                        # ✅ SALVAR NO SESSION_STATE
-                                        st.session_state['tecnicas_analisadas'] = df_resumo
-                                        st.success(f"✅ {len(df_resumo)} técnicas analisadas!")
+                                        if not col_tecnica:
+                                            st.warning("⚠️ Coluna TÉCNICAS não encontrada.")
+                                        else:
+                                            if col_reacao:
+                                                df_tec_apa['_reacao_num'] = df_tec_apa[col_reacao].apply(normalizar_reacao)
+                                            else:
+                                                df_tec_apa['_reacao_num'] = None
+
+                                            # ── Agrupar por técnica ───────────────
+                                            resumo = []
+                                            for tecnica, grupo in df_tec_apa.groupby(col_tecnica):
+                                                total    = len(grupo)
+                                                positivo = (grupo['_reacao_num'] == 1).sum()
+                                                neutro   = (grupo['_reacao_num'] == 0).sum()
+                                                negativo = (grupo['_reacao_num'] == -1).sum()
+                                                inaud    = grupo['_reacao_num'].isna().sum()
+
+                                                # Score: (positivos - negativos) / observados
+                                                observados = positivo + neutro + negativo
+                                                if observados > 0:
+                                                    score = round(((positivo - negativo) / observados) * 100, 1)
+                                                else:
+                                                    score = None
+
+                                                resumo.append({
+                                                    "Técnica":        tecnica,
+                                                    "Total":          total,
+                                                    "🟢 Positiva":    int(positivo),
+                                                    "⚪ Neutra":      int(neutro),
+                                                    "🔴 Negativa":    int(negativo),
+                                                    "❓ Inaudível":   int(inaud),
+                                                    "Score (%)":      score
+                                                })
+
+                                            df_resumo = pd.DataFrame(resumo)
+                                            df_resumo = df_resumo.sort_values("Score (%)", ascending=False, na_position='last')
+
+                                            # ✅ SALVAR NO SESSION_STATE
+                                            st.session_state['tecnicas_analisadas'] = df_resumo
+                                            st.success(f"✅ {len(df_resumo)} técnicas analisadas!")
+
+                        except Exception as e:
+                            st.error(f"Erro ao analisar técnicas: {str(e)[:80]}")
+
+                # ✅ EXIBIÇÃO DOS RESULTADOS (FORA DO BOTÃO)
+                if st.session_state.get('tecnicas_analisadas') is not None:
+                    df_resumo = st.session_state['tecnicas_analisadas']
+
+                    # ── SCORECARD GERAL ───────────────────────────────────────────
+                    total_usos     = int(df_resumo["Total"].sum())
+                    total_positivo = int(df_resumo["🟢 Positiva"].sum())
+                    total_neutro   = int(df_resumo["⚪ Neutra"].sum())
+                    total_negativo = int(df_resumo["🔴 Negativa"].sum())
+                    observados_total = total_positivo + total_neutro + total_negativo
+                    score_geral    = round(((total_positivo - total_negativo) / max(1, observados_total)) * 100, 1)
+
+                    st.markdown("### ✔️ Resumo Geral")
+                    col1, col2, col3, col4 = st.columns(4)
+                    with col1:
+                        st.metric("Total de Usos", total_usos)
+                    with col2:
+                        st.metric("🟢 Positivas", total_positivo)
+                    with col3:
+                        st.metric("🔴 Negativas", total_negativo)
+                    with col4:
+                        st.metric("Score Geral", f"{score_geral:+.1f}%")
+
+                    # ── TABELA DETALHADA ──────────────────────────────────────────
+                    st.markdown("### ✔️ Efetividade por Técnica")
+                    st.dataframe(
+                        df_resumo,
+                        use_container_width=True,
+                        hide_index=True
+                    )
+
+                    # ── GRÁFICO DE BARRAS EMPILHADAS ─────────────────────────────
+                    st.markdown("### ✔️ Distribuição de Reações por Técnica")
+                    try:
+                        import plotly.graph_objects as go
+
+                        tecnicas   = df_resumo["Técnica"].tolist()
+                        positivos  = df_resumo["🟢 Positiva"].tolist()
+                        neutros    = df_resumo["⚪ Neutra"].tolist()
+                        negativos  = df_resumo["🔴 Negativa"].tolist()
+
+                        fig_barras = go.Figure()
+
+                        fig_barras.add_trace(go.Bar(
+                            name="🟢 Positiva",
+                            x=tecnicas, y=positivos,
+                            marker_color="#10b981"
+                        ))
+                        fig_barras.add_trace(go.Bar(
+                            name="⚪ Neutra",
+                            x=tecnicas, y=neutros,
+                            marker_color="#6b7280"
+                        ))
+                        fig_barras.add_trace(go.Bar(
+                            name="🔴 Negativa",
+                            x=tecnicas, y=negativos,
+                            marker_color="#ef4444"
+                        ))
+
+                        fig_barras.update_layout(
+                            barmode="stack",
+                            paper_bgcolor="rgba(0,0,0,0)",
+                            plot_bgcolor="rgba(0,0,0,0)",
+                            font=dict(color="#fff"),
+                            legend=dict(
+                                font=dict(color="#fff"),
+                                bgcolor="rgba(0,0,0,0.4)"
+                            ),
+                            xaxis=dict(
+                                tickfont=dict(color="#FFD700"),
+                                gridcolor="#333"
+                            ),
+                            yaxis=dict(
+                                tickfont=dict(color="#aaa"),
+                                gridcolor="#333"
+                            ),
+                            height=420,
+                            margin=dict(t=20, b=120, l=40, r=40)
+                        )
+
+                        st.plotly_chart(fig_barras, use_container_width=True)
 
                     except Exception as e:
-                        st.error(f"Erro ao analisar técnicas: {str(e)[:80]}")
+                        st.error(f"Erro ao gerar gráfico: {str(e)[:80]}")
 
-            # ✅ EXIBIÇÃO DOS RESULTADOS (FORA DO BOTÃO)
-            if st.session_state.get('tecnicas_analisadas') is not None:
-                df_resumo = st.session_state['tecnicas_analisadas']
+                    # ── NARRATIVA AUTOMÁTICA (CORRIGIDA) ────────────────────────
+                    st.markdown("---")
+                    st.markdown("### ✔️ Leitura Operacional")
 
-                # ── SCORECARD GERAL ───────────────────────────────────────────
-                total_usos     = int(df_resumo["Total"].sum())
-                total_positivo = int(df_resumo["🟢 Positiva"].sum())
-                total_neutro   = int(df_resumo["⚪ Neutra"].sum())
-                total_negativo = int(df_resumo["🔴 Negativa"].sum())
-                observados_total = total_positivo + total_neutro + total_negativo
-                score_geral    = round(((total_positivo - total_negativo) / max(1, observados_total)) * 100, 1)
-
-                st.markdown("### ✔️ Resumo Geral")
-                col1, col2, col3, col4 = st.columns(4)
-                with col1:
-                    st.metric("Total de Usos", total_usos)
-                with col2:
-                    st.metric("🟢 Positivas", total_positivo)
-                with col3:
-                    st.metric("🔴 Negativas", total_negativo)
-                with col4:
-                    st.metric("Score Geral", f"{score_geral:+.1f}%")
-
-                # ── TABELA DETALHADA ──────────────────────────────────────────
-                st.markdown("### ✔️ Efetividade por Técnica")
-                st.dataframe(
-                    df_resumo,
-                    use_container_width=True,
-                    hide_index=True
-                )
-
-                # ── GRÁFICO DE BARRAS EMPILHADAS ─────────────────────────────
-                st.markdown("### ✔️ Distribuição de Reações por Técnica")
-                try:
-                    import plotly.graph_objects as go
-
-                    tecnicas   = df_resumo["Técnica"].tolist()
-                    positivos  = df_resumo["🟢 Positiva"].tolist()
-                    neutros    = df_resumo["⚪ Neutra"].tolist()
-                    negativos  = df_resumo["🔴 Negativa"].tolist()
-
-                    fig_barras = go.Figure()
-
-                    fig_barras.add_trace(go.Bar(
-                        name="🟢 Positiva",
-                        x=tecnicas, y=positivos,
-                        marker_color="#10b981"
-                    ))
-                    fig_barras.add_trace(go.Bar(
-                        name="⚪ Neutra",
-                        x=tecnicas, y=neutros,
-                        marker_color="#6b7280"
-                    ))
-                    fig_barras.add_trace(go.Bar(
-                        name="🔴 Negativa",
-                        x=tecnicas, y=negativos,
-                        marker_color="#ef4444"
-                    ))
-
-                    fig_barras.update_layout(
-                        barmode="stack",
-                        paper_bgcolor="rgba(0,0,0,0)",
-                        plot_bgcolor="rgba(0,0,0,0)",
-                        font=dict(color="#fff"),
-                        legend=dict(
-                            font=dict(color="#fff"),
-                            bgcolor="rgba(0,0,0,0.4)"
-                        ),
-                        xaxis=dict(
-                            tickfont=dict(color="#FFD700"),
-                            gridcolor="#333"
-                        ),
-                        yaxis=dict(
-                            tickfont=dict(color="#aaa"),
-                            gridcolor="#333"
-                        ),
-                        height=420,
-                        margin=dict(t=20, b=120, l=40, r=40)
-                    )
-
-                    st.plotly_chart(fig_barras, use_container_width=True)
-
-                except Exception as e:
-                    st.error(f"Erro ao gerar gráfico: {str(e)[:80]}")
-
-                # ── NARRATIVA AUTOMÁTICA (CORRIGIDA) ────────────────────────
-                st.markdown("---")
-                st.markdown("### ✔️ Leitura Operacional")
-
-                # ── 1. TÉCNICA MAIS EFETIVA (com desempate) ────────────────
-                df_com_score = df_resumo[df_resumo["Score (%)"].notna()]
-                
-                if not df_com_score.empty:
-                    score_maximo = df_com_score["Score (%)"].max()
-                    tecnicas_maximas = df_com_score[df_com_score["Score (%)"] == score_maximo]
+                    # ── 1. TÉCNICA MAIS EFETIVA (com desempate) ────────────────
+                    df_com_score = df_resumo[df_resumo["Score (%)"].notna()]
                     
-                    if len(tecnicas_maximas) == 1:
-                        melhor = tecnicas_maximas.iloc[0]
-                        txt_melhor = (
-                            f"✅ <strong>Técnicas mais efetivas:</strong> {melhor['Técnica']} "
-                            f"— Score {melhor['Score (%)']:+.1f}% "
-                            f"({int(melhor['🟢 Positiva'])} positivo / {int(melhor['Total'])} usos)"
-                        )
-                    else:
-                        # Múltiplas técnicas com mesmo score máximo
-                        tecnicas_nomes = ", ".join(tecnicas_maximas['Técnica'].tolist())
-                        txt_melhor = (
-                            f"✅ <strong>Técnicas mais efetivas (empate):</strong> {tecnicas_nomes} "
-                            f"— Score {score_maximo:+.1f}%"
-                        )
-                    
+                    if not df_com_score.empty:
+                        score_maximo = df_com_score["Score (%)"].max()
+                        tecnicas_maximas = df_com_score[df_com_score["Score (%)"] == score_maximo]
+                        
+                        if len(tecnicas_maximas) == 1:
+                            melhor = tecnicas_maximas.iloc[0]
+                            txt_melhor = (
+                                f"✅ <strong>Técnicas mais efetivas:</strong> {melhor['Técnica']} "
+                                f"— Score {melhor['Score (%)']:+.1f}% "
+                                f"({int(melhor['🟢 Positiva'])} positivo / {int(melhor['Total'])} usos)"
+                            )
+                        else:
+                            # Múltiplas técnicas com mesmo score máximo
+                            tecnicas_nomes = ", ".join(tecnicas_maximas['Técnica'].tolist())
+                            txt_melhor = (
+                                f"✅ <strong>Técnicas mais efetivas (empate):</strong> {tecnicas_nomes} "
+                                f"— Score {score_maximo:+.1f}%"
+                            )
+                        
+                        st.markdown(f"""
+                        <div style='background:rgba(16,185,129,0.08);padding:12px;border-radius:8px;border-left:3px solid #10b981;margin-bottom:10px;'>
+                        <p style='color:#ddd;font-size:0.9rem;margin:0;'>
+                        {txt_melhor}
+                        </p>
+                        </div>
+                        """, unsafe_allow_html=True)
+
+                    # ── 2. TÉCNICA MENOS EFETIVA (com desempate) ────────────────
+                    if not df_com_score.empty:
+                        score_minimo = df_com_score["Score (%)"].min()
+                        tecnicas_minimas = df_com_score[df_com_score["Score (%)"] == score_minimo]
+                        
+                        if len(tecnicas_minimas) == 1:
+                            pior = tecnicas_minimas.iloc[0]
+                            txt_pior = (
+                                f"⚠️ <strong>Técnica menos efetiva:</strong> {pior['Técnica']} "
+                                f"— Score {pior['Score (%)']:+.1f}% "
+                                f"({int(pior['🔴 Negativa'])} negativo / {int(pior['Total'])} usos)"
+                            )
+                        else:
+                            # Múltiplas técnicas com mesmo score mínimo
+                            tecnicas_nomes = ", ".join(tecnicas_minimas['Técnica'].tolist())
+                            txt_pior = (
+                                f"⚠️ <strong>Técnicas menos efetivas (empate):</strong> {tecnicas_nomes} "
+                                f"— Score {score_minimo:+.1f}%"
+                            )
+                        
+                        st.markdown(f"""
+                        <div style='background:rgba(239,68,68,0.08);padding:12px;border-radius:8px;border-left:3px solid #ef4444;margin-bottom:10px;'>
+                        <p style='color:#ddd;font-size:0.9rem;margin:0;'>
+                        {txt_pior}
+                        </p>
+                        </div>
+                        """, unsafe_allow_html=True)
+
+                    # ── 3. SCORE GERAL COM EXPLICAÇÃO DA BASE ──────────────────
+                    st.markdown("---")
+                    st.markdown("### ✔️ Efetividade Geral do Repertório Técnico")
+
+                    # Baseline: média de todas as técnicas
+                    media_geral = round(df_com_score["Score (%)"].mean(), 1) if not df_com_score.empty else 0
+
                     st.markdown(f"""
-                    <div style='background:rgba(16,185,129,0.08);padding:12px;border-radius:8px;border-left:3px solid #10b981;margin-bottom:10px;'>
-                    <p style='color:#ddd;font-size:0.9rem;margin:0;'>
-                    {txt_melhor}
+                    <div style='background:rgba(255,215,0,0.06);padding:12px;border-radius:8px;border:1px solid rgba(255,215,0,0.15);margin-bottom:15px;'>
+                    <p style='font-size:0.85rem;color:#FFD700;margin:0 0 8px 0;'>
+                    <strong>ℹ️ Como é medido:</strong>
+                    </p>
+                    <p style='font-size:0.85rem;color:#ddd;margin:0;line-height:1.6;'>
+                    Efetividade Geral = Média dos scores de todas as técnicas<br>
+                    Score de cada técnica = (positivas - negativas) / observadas × 100%<br>
+                    <strong>Baseline desta análise:</strong> {media_geral:+.1f}%
                     </p>
                     </div>
                     """, unsafe_allow_html=True)
 
-                # ── 2. TÉCNICA MENOS EFETIVA (com desempate) ────────────────
-                if not df_com_score.empty:
-                    score_minimo = df_com_score["Score (%)"].min()
-                    tecnicas_minimas = df_com_score[df_com_score["Score (%)"] == score_minimo]
-                    
-                    if len(tecnicas_minimas) == 1:
-                        pior = tecnicas_minimas.iloc[0]
-                        txt_pior = (
-                            f"⚠️ <strong>Técnica menos efetiva:</strong> {pior['Técnica']} "
-                            f"— Score {pior['Score (%)']:+.1f}% "
-                            f"({int(pior['🔴 Negativa'])} negativo / {int(pior['Total'])} usos)"
+                    # Interpretação comparativa
+                    if score_geral >= 50:
+                        cor = "🟢"
+                        status = "ÓTIMA"
+                        explicacao = (
+                            f"O repertório técnico teve {score_geral:+.1f}% de efetividade geral "
+                            f"(acima do baseline de {media_geral:+.1f}%). "
+                            "Isso significa que positivas superaram negativas de forma significativa. "
+                            "Indicativo de estratégia técnica bem-sucedida nesta ocorrência."
+                        )
+                    elif score_geral >= 0:
+                        cor = "🟡"
+                        status = "MODERADA"
+                        explicacao = (
+                            f"O repertório técnico teve {score_geral:+.1f}% de efetividade geral "
+                            f"(próximo ao baseline de {media_geral:+.1f}%). "
+                            "Positivas e negativas estão equilibradas. "
+                            "Há oportunidade de aprimoramento — algumas técnicas funcionaram melhor que outras."
                         )
                     else:
-                        # Múltiplas técnicas com mesmo score mínimo
-                        tecnicas_nomes = ", ".join(tecnicas_minimas['Técnica'].tolist())
-                        txt_pior = (
-                            f"⚠️ <strong>Técnicas menos efetivas (empate):</strong> {tecnicas_nomes} "
-                            f"— Score {score_minimo:+.1f}%"
+                        cor = "🔴"
+                        status = "FRACA"
+                        explicacao = (
+                            f"O repertório técnico teve {score_geral:+.1f}% de efetividade geral "
+                            f"(abaixo do baseline de {media_geral:+.1f}%). "
+                            "Negativas superaram positivas. "
+                            "Indicativo de mismatch entre técnicas empregadas e dinâmica do causador."
                         )
-                    
+
                     st.markdown(f"""
-                    <div style='background:rgba(239,68,68,0.08);padding:12px;border-radius:8px;border-left:3px solid #ef4444;margin-bottom:10px;'>
-                    <p style='color:#ddd;font-size:0.9rem;margin:0;'>
-                    {txt_pior}
+                    <div style='background:rgba(0,0,0,0.3);padding:14px;border-radius:8px;border-left:4px solid {"#10b981" if score_geral >= 50 else "#f59e0b" if score_geral >= 0 else "#ef4444"};margin-bottom:15px;'>
+                    <p style='font-size:0.95rem;color:#ddd;margin:0;'>
+                    {cor} <strong>Efetividade Geral: {status}</strong><br><br>
+                    {explicacao}
                     </p>
                     </div>
                     """, unsafe_allow_html=True)
 
-                # ── 3. SCORE GERAL COM EXPLICAÇÃO DA BASE ──────────────────
-                st.markdown("---")
-                st.markdown("### ✔️ Efetividade Geral do Repertório Técnico")
+                    # ── 4. CONTEXTO COMPARATIVO ────────────────────────────────
+                    st.markdown("### 📈 Contexto Comparativo")
 
-                # Baseline: média de todas as técnicas
-                media_geral = round(df_com_score["Score (%)"].mean(), 1) if not df_com_score.empty else 0
+                    st.markdown(f"""
+                    <p style='font-size:0.9rem;color:#aaa;line-height:1.6;'>
+                    <strong>Técnicas com score positivo:</strong> {(df_com_score["Score (%)"] > 0).sum()} de {len(df_com_score)}<br>
+                    <strong>Técnicas com score negativo:</strong> {(df_com_score["Score (%)"] < 0).sum()} de {len(df_com_score)}<br>
+                    <strong>Técnicas neutras (0%):</strong> {(df_com_score["Score (%)"] == 0).sum()} de {len(df_com_score)}<br>
+                    <strong>Variação entre técnicas:</strong> {df_com_score["Score (%)"].max() - df_com_score["Score (%)"].min():.1f} pontos percentuais<br>
+                    <strong>Confiabilidade (volume de usos):</strong> {int(df_resumo["Total"].sum())} técnicas empregadas no total
+                    </p>
+                    """, unsafe_allow_html=True)
 
-                st.markdown(f"""
-                <div style='background:rgba(255,215,0,0.06);padding:12px;border-radius:8px;border:1px solid rgba(255,215,0,0.15);margin-bottom:15px;'>
-                <p style='font-size:0.85rem;color:#FFD700;margin:0 0 8px 0;'>
-                <strong>ℹ️ Como é medido:</strong>
-                </p>
-                <p style='font-size:0.85rem;color:#ddd;margin:0;line-height:1.6;'>
-                Efetividade Geral = Média dos scores de todas as técnicas<br>
-                Score de cada técnica = (positivas - negativas) / observadas × 100%<br>
-                <strong>Baseline desta análise:</strong> {media_geral:+.1f}%
-                </p>
-                </div>
-                """, unsafe_allow_html=True)
+                    if score_geral >= 50:
+                        txt_geral = "✅ Repertório técnico com boa efetividade geral nesta ocorrência."
+                    elif score_geral >= 0:
+                        txt_geral = "⚠️ Repertório técnico com efetividade moderada — oportunidade de melhoria."
+                    else:
+                        txt_geral = "🔴 Repertório técnico com baixa efetividade — maioria das técnicas gerou reação negativa."
 
-                # Interpretação comparativa
-                if score_geral >= 50:
-                    cor = "🟢"
-                    status = "ÓTIMA"
-                    explicacao = (
-                        f"O repertório técnico teve {score_geral:+.1f}% de efetividade geral "
-                        f"(acima do baseline de {media_geral:+.1f}%). "
-                        "Isso significa que positivas superaram negativas de forma significativa. "
-                        "Indicativo de estratégia técnica bem-sucedida nesta ocorrência."
-                    )
-                elif score_geral >= 0:
-                    cor = "🟡"
-                    status = "MODERADA"
-                    explicacao = (
-                        f"O repertório técnico teve {score_geral:+.1f}% de efetividade geral "
-                        f"(próximo ao baseline de {media_geral:+.1f}%). "
-                        "Positivas e negativas estão equilibradas. "
-                        "Há oportunidade de aprimoramento — algumas técnicas funcionaram melhor que outras."
-                    )
-                else:
-                    cor = "🔴"
-                    status = "FRACA"
-                    explicacao = (
-                        f"O repertório técnico teve {score_geral:+.1f}% de efetividade geral "
-                        f"(abaixo do baseline de {media_geral:+.1f}%). "
-                        "Negativas superaram positivas. "
-                        "Indicativo de mismatch entre técnicas empregadas e dinâmica do causador."
-                    )
-
-                st.markdown(f"""
-                <div style='background:rgba(0,0,0,0.3);padding:14px;border-radius:8px;border-left:4px solid {"#10b981" if score_geral >= 50 else "#f59e0b" if score_geral >= 0 else "#ef4444"};margin-bottom:15px;'>
-                <p style='font-size:0.95rem;color:#ddd;margin:0;'>
-                {cor} <strong>Efetividade Geral: {status}</strong><br><br>
-                {explicacao}
-                </p>
-                </div>
-                """, unsafe_allow_html=True)
-
-                # ── 4. CONTEXTO COMPARATIVO ────────────────────────────────
-                st.markdown("### 📈 Contexto Comparativo")
-
-                st.markdown(f"""
-                <p style='font-size:0.9rem;color:#aaa;line-height:1.6;'>
-                <strong>Técnicas com score positivo:</strong> {(df_com_score["Score (%)"] > 0).sum()} de {len(df_com_score)}<br>
-                <strong>Técnicas com score negativo:</strong> {(df_com_score["Score (%)"] < 0).sum()} de {len(df_com_score)}<br>
-                <strong>Técnicas neutras (0%):</strong> {(df_com_score["Score (%)"] == 0).sum()} de {len(df_com_score)}<br>
-                <strong>Variação entre técnicas:</strong> {df_com_score["Score (%)"].max() - df_com_score["Score (%)"].min():.1f} pontos percentuais<br>
-                <strong>Confiabilidade (volume de usos):</strong> {int(df_resumo["Total"].sum())} técnicas empregadas no total
-                </p>
-                """, unsafe_allow_html=True)
-
-                if score_geral >= 50:
-                    txt_geral = "✅ Repertório técnico com boa efetividade geral nesta ocorrência."
-                elif score_geral >= 0:
-                    txt_geral = "⚠️ Repertório técnico com efetividade moderada — oportunidade de melhoria."
-                else:
-                    txt_geral = "🔴 Repertório técnico com baixa efetividade — maioria das técnicas gerou reação negativa."
-
-                st.info(txt_geral)
+                    st.info(txt_geral)
 
             
             #ETAPA 2 — ANÁLISE SEMÂNTICA PRÁTICA (Para compreender o que REALMENTE está acontecendo)
