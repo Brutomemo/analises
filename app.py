@@ -1361,8 +1361,8 @@ else:
                     stats = st.session_state['stats_calculados']
 
                     tab_ng1, tab_ng2 = st.tabs([
-                        "✔️ Frequência das Técnicas",
-                        "✔️ Efetividade das Técnicas"                    
+                        "✔️ Frequência",
+                        "✔️ Efetividade"                    
                     ])
                                         
                 
