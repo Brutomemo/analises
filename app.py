@@ -2513,16 +2513,17 @@ else:
 
                                 else:
                                     st.warning("Não foi possível gerar análise de crise")
+
                             except Exception as e:
                                 st.error(f"Erro ao analisar crise: {str(e)[:80]}")
 
-                            else:
-                                st.warning("⚠️ Nenhuma transcrição disponível para análise")
-
-
-                            # ============================================================
-                            # TAB 8: QUALIDADE DO DISCURSO COM TRANSFORMER
-                            # ============================================================
+                        else:
+                            st.warning("⚠️ Nenhuma transcrição disponível para análise")                    
+                                                
+# ============================================================
+# TAB 8: QUALIDADE DO DISCURSO COM TRANSFORMER (LAZY LOADING)
+# Cole TUDO isso DENTRO do: with tab_ng8:
+# ============================================================
 
                             st.markdown("### ✔️ Escuta e Sentimento")
 
@@ -2531,27 +2532,28 @@ else:
 
                             if col_caus not in df_apa or col_neg not in df_apa:
                                 st.warning("⚠️ Colunas de transcrição não encontradas")
-
                             else:
                                 txt_caus = str(df_apa[col_caus]).strip()
                                 txt_neg = str(df_apa[col_neg]).strip()
-
+                                
                                 if not txt_caus or not txt_neg or len(txt_caus) < 20 or len(txt_neg) < 20:
                                     st.warning("⚠️ Transcrições insuficientes para análise")
-
                                 else:
-
+                                    
+                                    # =========================================================
+                                    # SEÇÃO 1: ANÁLISE RÁPIDA (com toggle)
+                                    # =========================================================
+                                    
                                     col_left, col_center, col_right = st.columns([1, 1, 1])
-
                                     with col_center:
                                         is_analise_rapida = render_toggle_button(
                                             label="✔️ Análise Rápida (Padrões Léxicos)",
                                             session_key="tab8_analise_rapida",
                                             button_key="btn_tab8_analise_rapida"
                                         )
-
+                                    
                                     st.markdown("---")
-                                                                
+                                    
                                     if is_analise_rapida:
                                         st.markdown("""
                                         <p style='color: #aaa; font-size: 0.9rem; margin-bottom: 1rem;'>
