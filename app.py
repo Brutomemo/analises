@@ -2484,48 +2484,68 @@ else:
                         <strong>Não usa modelo de IA.</strong> Rápido e transparente.
                         </p>
                         """, unsafe_allow_html=True)
-                        
+
                         # Rodar análise rápida
                         analise_rapida = analise.analise_rapida_discurso(txt_neg, txt_caus)
-                        
-                        # Scorecard
-                        col1, col2, col3, col4 = st.columns(4)
-                        
+
+                        # SCORECARD - NEGOCIADOR
+                        st.markdown("### 🟢 NEGOCIADOR PRINCIPAL")
+
+                        col1, col2, col3 = st.columns(3)
+
                         with col1:
                             st.metric(
-                                "Validação (Negociador)",
+                                "Validação",
                                 analise_rapida['total_validacao'],
                                 f"x ocorrências"
                             )
-                        
+
                         with col2:
                             st.metric(
-                                "Confronto (Negociador)",
+                                "Confronto",
                                 analise_rapida['total_confronto'],
                                 f"x ocorrências"
                             )
-                        
+
                         with col3:
+                            total_palavras_neg = len(txt_neg.split())
                             st.metric(
-                                "Emoção Alta (Causador)",
+                                "Tamanho (Palavras)",
+                                total_palavras_neg,
+                                f"palavras"
+                            )
+
+                        # SCORECARD - CAUSADOR
+                        st.markdown("---")
+                        st.markdown("### 🔴 CAUSADOR")
+
+                        col1, col2 = st.columns(2)
+
+                        with col1:
+                            st.metric(
+                                "Emoção Alta",
                                 analise_rapida['total_emocao'],
                                 f"x palavras fortes"
                             )
-                        
-                        with col4:
-                            total_palavras_neg = len(txt_neg.split())
+
+                        with col2:
+                            total_palavras_caus = len(txt_caus.split())
                             st.metric(
-                                "Tamanho (Negociador)",
-                                total_palavras_neg,
+                                "Tamanho (Palavras)",
+                                total_palavras_caus,
                                 f"palavras"
                             )
                         
                         # Detalhes
                         # Detalhes
+                        # Detalhes
                         st.markdown("---")
-                        st.markdown("#### 📋 Detalhes das Palavras-Chave Encontradas")
+                        st.markdown("#### ✔️ Detalhes das Palavras-Chave Encontradas")
 
-                        col_val, col_conf, col_emocao = st.columns(3)
+                        # SEPARADO: Negociador vs Causador
+                        st.markdown("### 🟢 NEGOCIADOR PRINCIPAL")
+
+                        col_val, col_conf = st.columns(2)
 
                         with col_val:
                             st.markdown("**Validação (Negociador):**")
@@ -2551,17 +2571,20 @@ else:
                             else:
                                 st.write("  (nenhuma encontrada)")
 
-                        with col_emocao:
-                            st.markdown("**Emoção Alta (Causador):**")
-                            if analise_rapida['emocao_causador']:
-                                for palavra, freq in sorted(
-                                    analise_rapida['emocao_causador'].items(),
-                                    key=lambda x: x[1],
-                                    reverse=True
-                                ):
-                                    st.write(f"  • {palavra}: {freq}x")
-                            else:
-                                st.write("  (nenhuma encontrada)")# Detalhes                        
+                        # CAUSADOR
+                        st.markdown("---")
+                        st.markdown("### 🔴 CAUSADOR")
+
+                        st.markdown("**Emoção Alta (Causador):**")
+                        if analise_rapida['emocao_causador']:
+                            for palavra, freq in sorted(
+                                analise_rapida['emocao_causador'].items(),
+                                key=lambda x: x[1],
+                                reverse=True
+                            ):
+                                st.write(f"  • {palavra}: {freq}x")
+                        else:
+                            st.write("  (nenhuma encontrada)")                     
                         
                         # Interpretação
                         st.markdown("---")

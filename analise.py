@@ -414,7 +414,7 @@ def dividir_em_sentencas(texto):
 def analise_rapida_discurso(texto_neg, texto_caus):
     """
     Análise RÁPIDA usando Regex.
-    Roda instantaneamente, sem Transformer.
+    Retorna análise SEPARADA por interlocutor.
     """
     
     VALIDACAO_PALAVRAS = [
@@ -434,22 +434,28 @@ def analise_rapida_discurso(texto_neg, texto_caus):
         'desesperado', 'morte', 'morrer'
     ]
     
-    # Contar no NEGOCIADOR
+    # NEGOCIADOR PRINCIPAL - Validação e Confronto
     validacao_count = contar_palavra_chave(texto_neg, VALIDACAO_PALAVRAS)
     confronto_count = contar_palavra_chave(texto_neg, CONFRONTO_PALAVRAS)
     
-    # Contar no CAUSADOR
+    # CAUSADOR - Emoção Alta
     emocao_caus = contar_palavra_chave(texto_caus, EMOCAO_ALTA)
     
     return {
+        # NEGOCIADOR
         'validacao': validacao_count,
         'confronto': confronto_count,
-        'emocao_causador': emocao_caus,
         'total_validacao': sum(validacao_count.values()),
         'total_confronto': sum(confronto_count.values()),
+        
+        # CAUSADOR
+        'emocao_causador': emocao_caus,
         'total_emocao': sum(emocao_caus.values()),
+        
+        # TEXTOS BRUTOS (para referência)
+        'texto_neg': texto_neg,
+        'texto_caus': texto_caus,
     }
-
 # ============================================================
 # ANÁLISE COM TRANSFORMER (LENTA, SOB DEMANDA)
 # ============================================================
