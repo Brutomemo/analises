@@ -1728,8 +1728,9 @@ else:
                     txt_geral = "🔴 Repertório técnico com baixa efetividade — maioria das técnicas gerou reação negativa."
 
                 st.info(txt_geral)
-           
 
+                st.markdown("---")
+           
 
             #ETAPA 2 — ANÁLISE SEMÂNTICA PRÁTICA (Para compreender o que REALMENTE está acontecendo)
 
@@ -3619,7 +3620,7 @@ else:
                 else:
                     st.info("⚠️ Nenhuma técnica encontrada para os filtros selecionados.")
 
-        st.markdown("---")
+            st.markdown("---")
 
             
             # ============================================================
