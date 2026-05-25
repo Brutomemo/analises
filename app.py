@@ -2012,7 +2012,7 @@ else:
 
             
 
-            if st.button("✔ 2. Gerar Padrões Mentais & Nuvem de Palavras", key="btn_ngramas_semantica"):
+            if st.button("✔ 2. Gerar Análise Temática e Detalhes da Transcrição", key="btn_ngramas_semantica"):
                 with st.spinner("Processando padrões mentais, temas dominantes e gerando nuvens de palavras..."):
                     try:
                         texto_c  = analise.limpar_valor(df_apa.get('TRANSCRIÇÃO DO CAUSADOR', ''))
@@ -2097,14 +2097,14 @@ else:
                     "✔️ Comparativo das Nuvens de Palavras",
                     "✔️ Convergência Temática",
                     "✔️ Estado da Crise",
-                    "✔️ Escuta e Sentimento"
+                    "✔️ Detalhes da Transcrição"
                 ])
               
                 # --- TAB 1: CAUSADOR ---
                 with tab_ng1:
                     st.markdown("""
                     <div class='info-card'>
-                    <h5 style='color: #ef4444; margin-top: 0;'>🔴 CAUSADOR — O que ele estava REALMENTE focando?</h5>
+                    <h5 style='color: #ef4444; margin-top: 0;'>🔴 CAUSADOR — Em que ele estava REALMENTE focando?</h5>
                     <p style='font-size:0.9rem;color:#ddd;'>
                     Os temas dominantes abaixo revelam a <strong>obsessão mental</strong> do causador. 
                     Se "morte" é tema 1, o risco estava alto. Se "filha" aparece, há ambivalência.
@@ -2129,7 +2129,7 @@ else:
                 with tab_ng2:
                     st.markdown("""
                     <div class='info-card'>
-                    <h5 style='color: #10b981; margin-top: 0;'>🟢 NEGOCIADOR PRINCIPAL — Qual foi a estratégia dele?</h5>
+                    <h5 style='color: #10b981; margin-top: 0;'>🟢 NEGOCIADOR PRINCIPAL — Acompanhou os temas expostos pelo Causador?</h5>
                     <p style='font-size:0.9rem;color:#ddd;'>
                     Os temas do negociador mostram <strong>em que ele está focando</strong>. 
                     Compare com o causador: convergência = boa sintonia; divergência = falha de rapport.
@@ -2154,7 +2154,7 @@ else:
                 with tab_ng3:
                     st.markdown("""
                     <div class='info-card'>
-                    <h5 style='color: #3b82f6; margin-top: 0;'>🔵 NEGOCIADOR SECUNDÁRIO — Qual era o papel dele?</h5>
+                    <h5 style='color: #3b82f6; margin-top: 0;'>🔵 NEGOCIADOR SECUNDÁRIO — Destacou alguma participação na transcrição?</h5>
                     <p style='font-size:0.9rem;color:#ddd;'>
                     Geralmente suporte. Seus temas indicam se estava reforçando a mensagem do principal ou dispersando esforços.
                     </p>
@@ -2194,7 +2194,7 @@ else:
                 with tab_ng5:
                     st.markdown("""
                     <div class='info-card'>
-                    <h5 style='color: #FFD700; margin-top: 0;'>✔️ NUVEM DE PALAVRAS LADO-A-LADO — Sincronização Mental</h5>
+                    <h5 style='color: #FFD700; margin-top: 0;'>✔️ NUVEM DE PALAVRAS LADO-A-LADO — Sincronização</h5>
                     <p style='font-size:0.9rem;color:#ddd;'>
                     Compare as nuvens visualmente. Se causador fala de "morte" e negociador de "vida", há conversação. 
                     Se causador de "morte" e negociador de "calma", há desconexão.
@@ -2516,7 +2516,7 @@ else:
             # Cole TUDO isso DENTRO do: with tab_ng8:
             # ============================================================
 
-            st.markdown("### ✔️ Escuta e Sentimento")
+            st.markdown("### ✔️ Detalhes da Transcrição")
 
             col_caus = "TRANSCRIÇÃO DO CAUSADOR"
             col_neg = "TRANSCRIÇÃO DO NEGOCIADOR PRINCIPAL"
