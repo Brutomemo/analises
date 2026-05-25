@@ -377,10 +377,10 @@ def carregar_transformer_portugues():
     try:
         from transformers import pipeline
         
-        # Usar transformer português (validado, contextual)
+        # Usar transformer multilingue (validado, funciona bem em português)
         nlp = pipeline(
             "sentiment-analysis",
-            model="bert-base-portuguese-cased",
+            model="nlptown/bert-base-multilingual-uncased-sentiment",
             device=0  # GPU se disponível, CPU caso contrário
         )
         return nlp
