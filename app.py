@@ -1034,7 +1034,7 @@ else:
     # ====
     #ETAPA 1
     with aba_individual:
-        st.markdown("<h4 style='font-size: 20px; font-weight: 500; margin-bottom: 0.5rem;'>✔ Etapa 1: Seleção e Metadados da Ocorrência</h4>", unsafe_allow_html=True)
+        st.markdown("<h4 style='font-size: 20px; font-weight: 500; margin-bottom: 0.5rem;'>✔ Seleção e Metadados da Ocorrência</h4>", unsafe_allow_html=True)
 
         df_quali['Neg_Limpo'] = df_quali['Negociador Principal'].apply(limpar_valor)
         df_quali['Tip_Limpa'] = df_quali['Tipologia'].apply(limpar_valor)
@@ -1268,6 +1268,7 @@ else:
                 
                 st.plotly_chart(fig_trend, use_container_width=True)
 
+            #VISÃO GERAL
             
             with tab_ng2:
                     st.markdown("""
@@ -1342,394 +1343,427 @@ else:
             
             #TABELA DE FREQUENCIA
 
-            st.markdown("<h5 style='color: #FFD700;'>✔ Frequência das Técnicas Aplicadas (Nesta APA)</h5>", unsafe_allow_html=True)
+            st.markdown("<h5 style='color: #FFD700;'>✔ Análise das Técnicas Aplicadas (Nesta APA)</h5>", unsafe_allow_html=True)
 
-            if st.button("✔ Calcular Frequência de Técnicas", key="btn_freq_tecnicas"):
-                if not df_tec.empty:
-                    col_vinculo = next((c for c in df_tec.columns if 'VINCULO' in c.upper() or 'VÍNCULO' in c.upper()), None)
-                    
-                    if col_vinculo:
-                        id_visivel = str(apa_selecionada).strip()
-                        df_tec['Vinculo_Str'] = df_tec[col_vinculo].astype(str).str.replace(r"[\[\]'\"]", "", regex=True).str.strip()
-                        df_tec_filtrado = df_tec[df_tec['Vinculo_Str'] == id_visivel]
-                        
-                        if df_tec_filtrado.empty and 'Airtable_Record_ID' in df_apa:
-                            id_interno = str(df_apa['Airtable_Record_ID']).strip()
-                            df_tec_filtrado = df_tec[df_tec[col_vinculo].astype(str).str.contains(id_interno, na=False, regex=False)]
-                        
-                        if not df_tec_filtrado.empty:
-                            col_tecnica = next((col for col in ['TÉCNICAS', 'TECNICAS', 'TÉCNICA', 'TECNICA'] if col in df_tec_filtrado.columns), None)
-                            if col_tecnica:
-                                freq_abs = df_tec_filtrado[col_tecnica].value_counts()
-                                freq_rel = (df_tec_filtrado[col_tecnica].value_counts(normalize=True) * 100).round(1)
-                                df_freq = pd.DataFrame({'Frequência Absoluta': freq_abs, 'Frequência Relativa (%)': freq_rel}).reset_index().rename(columns={col_tecnica: 'Técnica Empregada'})
-                                
-                                st.dataframe(df_freq, use_container_width=True, hide_index=True)
-                                
-                                st.markdown("<h4 style='text-align:center; color: #FFFF; margin-top: 20px;'>Frequencias das Técnicas Aplicadas (Treemap)</h4>", unsafe_allow_html=True)
-                                fig_tree = px.treemap(df_freq, path=['Técnica Empregada'], values='Frequência Absoluta', color='Frequência Absoluta', color_continuous_scale='Oranges')
-                                fig_tree.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font_color="#FFF", margin=dict(t=10, l=10, r=10, b=10))
-                                
-                                # ✅ SALVAR NO SESSION_STATE
-                                st.session_state['treemap_freq'] = fig_tree
-                                st.success("✅ Treemap gerado!")
-                            else:
-                                st.warning("Técnicas encontradas, mas a coluna 'TÉCNICAS' não foi identificada no Airtable.")
-                        else:
-                            st.info(f"Nenhuma técnica cruzou com a APA atual.")
-                    else:
-                        st.warning("A coluna de vínculo (ex: 'Vinculo_APA') não foi encontrada na aba de técnicas.")
-                else:
-                    st.warning("Tabela de técnicas vazia no Airtable.")
-
-            # ✅ EXIBIR TREEMAP SE FOI GERADO (FORA DO BOTÃO)
-            if st.session_state.get('treemap_freq'):
-                st.plotly_chart(st.session_state['treemap_freq'], use_container_width=True)
-                
-            st.markdown("<div style='margin-bottom: 20px;'></div>", unsafe_allow_html=True)
-            st.markdown("---")
-
-
-            
-            # === SEÇÃO 2: ANÁLISE DE TÉCNICAS × REAÇÃO DO CAUSADOR ===
-            st.markdown("""
-            <div style='margin-top:20px;'>
-            <h5 style='color:#FFD700;'>✔️ Efetividade das Técnicas</h5>
-            <p style='color:#aaa;font-size:0.9rem;'>
-            Cruza cada técnica usada com a reação do causador.
-            Permite identificar quais abordagens foram efetivas nesta ocorrência.
-            </p>
-            </div>
-            """, unsafe_allow_html=True)
-
-            if st.button("✔ 1. Analisar Efetividade das Técnicas", key="btn_efetividade_tecnicas"):
-                with st.spinner("Cruzando técnicas com reação do causador..."):
-                    try:
-                        # ── Buscar ID do registro atual ──────────────────────
-                        record_id_atual = df_apa.get('Airtable_Record_ID')
-
-                        if not record_id_atual:
-                            st.warning("⚠️ ID do registro não encontrado.")
-                        else:
-                            # ── Buscar df_tec do session_state ───────────────
-                            df_tec = st.session_state.get("df_tec", pd.DataFrame())
-
-                            if df_tec.empty:
-                                st.warning("⚠️ Tabela de técnicas não carregada. Atualize os dados.")
-                            else:
-                                # ── Filtrar técnicas desta APA ────────────────
-                                def vinculo_contem(val, record_id):
-                                    if isinstance(val, list):
-                                        return record_id in val
-                                    return str(val) == record_id
-
-                                mask = df_tec['Vinculo_APA'].apply(
-                                    lambda x: vinculo_contem(x, record_id_atual)
-                                )
-                                df_tec_apa = df_tec[mask].copy()
-
-                                if df_tec_apa.empty:
-                                    st.info("Nenhuma técnica registrada para esta ocorrência.")
-                                else:
-                                    # ── Normalizar coluna de reação ───────────
-                                    def normalizar_reacao(val):
-                                        if val is None:
-                                            return None
-                                        s = str(val).strip()
-                                        if s in ["-1", "-1.0", "🔴 Reação Negativa", "Reação Negativa"]:
-                                            return -1
-                                        elif s in ["0", "0.0", "⚪ Reação Neutra", "Reação Neutra"]:
-                                            return 0
-                                        elif s in ["1", "1.0", "🟢 Reação Positiva", "Reação Positiva"]:
-                                            return 1
-                                        else:
-                                            return None
-
-                                    # Detectar coluna de reação
-                                    col_reacao = None
-                                    for c in ['ATITUDE DO CAUSADOR', 'Atitude do Causador', 'atitude_causador']:
-                                        if c in df_tec_apa.columns:
-                                            col_reacao = c
-                                            break
-
-                                    col_tecnica = None
-                                    for c in ['TÉCNICAS', 'Técnicas', 'tecnicas']:
-                                        if c in df_tec_apa.columns:
-                                            col_tecnica = c
-                                            break
-
-                                    if not col_tecnica:
-                                        st.warning("⚠️ Coluna TÉCNICAS não encontrada.")
-                                    else:
-                                        if col_reacao:
-                                            df_tec_apa['_reacao_num'] = df_tec_apa[col_reacao].apply(normalizar_reacao)
-                                        else:
-                                            df_tec_apa['_reacao_num'] = None
-
-                                        # ── Agrupar por técnica ───────────────
-                                        resumo = []
-                                        for tecnica, grupo in df_tec_apa.groupby(col_tecnica):
-                                            total    = len(grupo)
-                                            positivo = (grupo['_reacao_num'] == 1).sum()
-                                            neutro   = (grupo['_reacao_num'] == 0).sum()
-                                            negativo = (grupo['_reacao_num'] == -1).sum()
-                                            inaud    = grupo['_reacao_num'].isna().sum()
-
-                                            # Score: (positivos - negativos) / observados
-                                            observados = positivo + neutro + negativo
-                                            if observados > 0:
-                                                score = round(((positivo - negativo) / observados) * 100, 1)
-                                            else:
-                                                score = None
-
-                                            resumo.append({
-                                                "Técnica":        tecnica,
-                                                "Total":          total,
-                                                "🟢 Positiva":    int(positivo),
-                                                "⚪ Neutra":      int(neutro),
-                                                "🔴 Negativa":    int(negativo),
-                                                "❓ Inaudível":   int(inaud),
-                                                "Score (%)":      score
-                                            })
-
-                                        df_resumo = pd.DataFrame(resumo)
-                                        df_resumo = df_resumo.sort_values("Score (%)", ascending=False, na_position='last')
-
-                                        # ✅ SALVAR NO SESSION_STATE
-                                        st.session_state['tecnicas_analisadas'] = df_resumo
-                                        st.success(f"✅ {len(df_resumo)} técnicas analisadas!")
-
-                    except Exception as e:
-                        st.error(f"Erro ao analisar técnicas: {str(e)[:80]}")
-
-            # ✅ EXIBIÇÃO DOS RESULTADOS (FORA DO BOTÃO)
-            if st.session_state.get('tecnicas_analisadas') is not None:
-                df_resumo = st.session_state['tecnicas_analisadas']
-
-                # ── SCORECARD GERAL ───────────────────────────────────────────
-                total_usos     = int(df_resumo["Total"].sum())
-                total_positivo = int(df_resumo["🟢 Positiva"].sum())
-                total_neutro   = int(df_resumo["⚪ Neutra"].sum())
-                total_negativo = int(df_resumo["🔴 Negativa"].sum())
-                observados_total = total_positivo + total_neutro + total_negativo
-                score_geral    = round(((total_positivo - total_negativo) / max(1, observados_total)) * 100, 1)
-
-                st.markdown("### ✔️ Resumo Geral")
-                col1, col2, col3, col4 = st.columns(4)
-                with col1:
-                    st.metric("Total de Usos", total_usos)
-                with col2:
-                    st.metric("🟢 Positivas", total_positivo)
-                with col3:
-                    st.metric("🔴 Negativas", total_negativo)
-                with col4:
-                    st.metric("Score Geral", f"{score_geral:+.1f}%")
-
-                # ── TABELA DETALHADA ──────────────────────────────────────────
-                st.markdown("### ✔️ Efetividade por Técnica")
-                st.dataframe(
-                    df_resumo,
-                    use_container_width=True,
-                    hide_index=True
+            col_left, col_center, col_right = st.columns([1, 1, 1])
+            with col_center:
+                is_frequencia_tecnicas = render_toggle_button(
+                    label="✔️ Análise de Técnicas",
+                    session_key="frequencia_tecnicas",
+                    button_key="btn_frequencia_tecnicas"
                 )
-
-                # ── GRÁFICO DE BARRAS EMPILHADAS ─────────────────────────────
-                st.markdown("### ✔️ Distribuição de Reações por Técnica")
-                try:
-                    import plotly.graph_objects as go
-
-                    tecnicas   = df_resumo["Técnica"].tolist()
-                    positivos  = df_resumo["🟢 Positiva"].tolist()
-                    neutros    = df_resumo["⚪ Neutra"].tolist()
-                    negativos  = df_resumo["🔴 Negativa"].tolist()
-
-                    fig_barras = go.Figure()
-
-                    fig_barras.add_trace(go.Bar(
-                        name="🟢 Positiva",
-                        x=tecnicas, y=positivos,
-                        marker_color="#10b981"
-                    ))
-                    fig_barras.add_trace(go.Bar(
-                        name="⚪ Neutra",
-                        x=tecnicas, y=neutros,
-                        marker_color="#6b7280"
-                    ))
-                    fig_barras.add_trace(go.Bar(
-                        name="🔴 Negativa",
-                        x=tecnicas, y=negativos,
-                        marker_color="#ef4444"
-                    ))
-
-                    fig_barras.update_layout(
-                        barmode="stack",
-                        paper_bgcolor="rgba(0,0,0,0)",
-                        plot_bgcolor="rgba(0,0,0,0)",
-                        font=dict(color="#fff"),
-                        legend=dict(
-                            font=dict(color="#fff"),
-                            bgcolor="rgba(0,0,0,0.4)"
-                        ),
-                        xaxis=dict(
-                            tickfont=dict(color="#FFD700"),
-                            gridcolor="#333"
-                        ),
-                        yaxis=dict(
-                            tickfont=dict(color="#aaa"),
-                            gridcolor="#333"
-                        ),
-                        height=420,
-                        margin=dict(t=20, b=120, l=40, r=40)
-                    )
-
-                    st.plotly_chart(fig_barras, use_container_width=True)
-
-                except Exception as e:
-                    st.error(f"Erro ao gerar gráfico: {str(e)[:80]}")
-
-                # ── NARRATIVA AUTOMÁTICA (CORRIGIDA) ────────────────────────
-                st.markdown("---")
-                st.markdown("### ✔️ Leitura Operacional")
-
-                # ── 1. TÉCNICA MAIS EFETIVA (com desempate) ────────────────
-                df_com_score = df_resumo[df_resumo["Score (%)"].notna()]
+            
+            st.markdown("---")
+        
+            if is_frequencia_tecnicas: 
                 
-                if not df_com_score.empty:
-                    score_maximo = df_com_score["Score (%)"].max()
-                    tecnicas_maximas = df_com_score[df_com_score["Score (%)"] == score_maximo]
+                if st.session_state.get('stats_calculados'):
+                    stats = st.session_state['stats_calculados']
+
+                    tab_ng1, tab_ng2 = st.tabs([
+                        "✔️ Frequência",
+                        "✔️ Efetividade"                    
+                    ])
+                                        
+                
+                    with tab_ng1:
+                                st.markdown("""
+                                <div class='info-card'>
+                                <h5 style='color: #ffae42; margin-top: 0;'>✔️ Frequência das Técnicas Aplicadas</h5>
+                                <p style='font-size:1rem;color:#ddd;'>
+                                Percepção individalizada dos negociadores sobre a receptividade e agressividade do causador no início e encerramento da ocorrência.
+                                </p>
+                                </div>
+                                """, unsafe_allow_html=True)
+                                    
                     
-                    if len(tecnicas_maximas) == 1:
-                        melhor = tecnicas_maximas.iloc[0]
-                        txt_melhor = (
-                            f"✅ <strong>Técnicas mais efetivas:</strong> {melhor['Técnica']} "
-                            f"— Score {melhor['Score (%)']:+.1f}% "
-                            f"({int(melhor['🟢 Positiva'])} positivo / {int(melhor['Total'])} usos)"
-                        )
-                    else:
-                        # Múltiplas técnicas com mesmo score máximo
-                        tecnicas_nomes = ", ".join(tecnicas_maximas['Técnica'].tolist())
-                        txt_melhor = (
-                            f"✅ <strong>Técnicas mais efetivas (empate):</strong> {tecnicas_nomes} "
-                            f"— Score {score_maximo:+.1f}%"
-                        )
+                                if not df_tec.empty:
+                                    col_vinculo = next((c for c in df_tec.columns if 'VINCULO' in c.upper() or 'VÍNCULO' in c.upper()), None)
+                                    
+                                    if col_vinculo:
+                                        id_visivel = str(apa_selecionada).strip()
+                                        df_tec['Vinculo_Str'] = df_tec[col_vinculo].astype(str).str.replace(r"[\[\]'\"]", "", regex=True).str.strip()
+                                        df_tec_filtrado = df_tec[df_tec['Vinculo_Str'] == id_visivel]
+                                        
+                                        if df_tec_filtrado.empty and 'Airtable_Record_ID' in df_apa:
+                                            id_interno = str(df_apa['Airtable_Record_ID']).strip()
+                                            df_tec_filtrado = df_tec[df_tec[col_vinculo].astype(str).str.contains(id_interno, na=False, regex=False)]
+                                        
+                                        if not df_tec_filtrado.empty:
+                                            col_tecnica = next((col for col in ['TÉCNICAS', 'TECNICAS', 'TÉCNICA', 'TECNICA'] if col in df_tec_filtrado.columns), None)
+                                            if col_tecnica:
+                                                freq_abs = df_tec_filtrado[col_tecnica].value_counts()
+                                                freq_rel = (df_tec_filtrado[col_tecnica].value_counts(normalize=True) * 100).round(1)
+                                                df_freq = pd.DataFrame({'Frequência Absoluta': freq_abs, 'Frequência Relativa (%)': freq_rel}).reset_index().rename(columns={col_tecnica: 'Técnica Empregada'})
+                                                
+                                                st.dataframe(df_freq, use_container_width=True, hide_index=True)
+                                                
+                                                st.markdown("<h4 style='text-align:center; color: #FFFF; margin-top: 20px;'>Frequencias das Técnicas Aplicadas (Treemap)</h4>", unsafe_allow_html=True)
+                                                fig_tree = px.treemap(df_freq, path=['Técnica Empregada'], values='Frequência Absoluta', color='Frequência Absoluta', color_continuous_scale='Oranges')
+                                                fig_tree.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font_color="#FFF", margin=dict(t=10, l=10, r=10, b=10))
+                                                
+                                                # ✅ SALVAR NO SESSION_STATE
+                                                st.session_state['treemap_freq'] = fig_tree
+                                                st.success("✅ Treemap gerado!")
+                                            else:
+                                                st.warning("Técnicas encontradas, mas a coluna 'TÉCNICAS' não foi identificada no Airtable.")
+                                        else:
+                                            st.info(f"Nenhuma técnica cruzou com a APA atual.")
+                                    else:
+                                        st.warning("A coluna de vínculo (ex: 'Vinculo_APA') não foi encontrada na aba de técnicas.")
+                                else:
+                                    st.warning("Tabela de técnicas vazia no Airtable.")
+
+                            # ✅ EXIBIR TREEMAP SE FOI GERADO (FORA DO BOTÃO)
+                                if st.session_state.get('treemap_freq'):
+                                        st.plotly_chart(st.session_state['treemap_freq'], use_container_width=True)
+                                        
+                                st.markdown("<div style='margin-bottom: 20px;'></div>", unsafe_allow_html=True)
+                                st.markdown("---")
+
+
                     
-                    st.markdown(f"""
-                    <div style='background:rgba(16,185,129,0.08);padding:12px;border-radius:8px;border-left:3px solid #10b981;margin-bottom:10px;'>
-                    <p style='color:#ddd;font-size:0.9rem;margin:0;'>
-                    {txt_melhor}
-                    </p>
-                    </div>
-                    """, unsafe_allow_html=True)
+                    # === SEÇÃO 2: ANÁLISE DE efetividade × REAÇÃO DO CAUSADOR ===
+                with tab_ng2:
+                            st.markdown("""
+                            <div class='info-card'>
+                            <h5 style='color: #ffae42; margin-top: 0;'>✔️ Efetividade das Técnicas Aplicadas</h5>
+                            <p style='font-size:1rem;color:#ddd;'>
+                            Percepção individalizada dos negociadores sobre a receptividade e agressividade do causador no início e encerramento da ocorrência.
+                            </p>
+                            </div>
+                            """, unsafe_allow_html=True)
+                
+                            
+                            
+                            with st.spinner("Cruzando técnicas com reação do causador..."):
+                                try:
+                                    # ── Buscar ID do registro atual ──────────────────────
+                                    record_id_atual = df_apa.get('Airtable_Record_ID')
 
-                # ── 2. TÉCNICA MENOS EFETIVA (com desempate) ────────────────
-                if not df_com_score.empty:
-                    score_minimo = df_com_score["Score (%)"].min()
-                    tecnicas_minimas = df_com_score[df_com_score["Score (%)"] == score_minimo]
-                    
-                    if len(tecnicas_minimas) == 1:
-                        pior = tecnicas_minimas.iloc[0]
-                        txt_pior = (
-                            f"⚠️ <strong>Técnica menos efetiva:</strong> {pior['Técnica']} "
-                            f"— Score {pior['Score (%)']:+.1f}% "
-                            f"({int(pior['🔴 Negativa'])} negativo / {int(pior['Total'])} usos)"
-                        )
-                    else:
-                        # Múltiplas técnicas com mesmo score mínimo
-                        tecnicas_nomes = ", ".join(tecnicas_minimas['Técnica'].tolist())
-                        txt_pior = (
-                            f"⚠️ <strong>Técnicas menos efetivas (empate):</strong> {tecnicas_nomes} "
-                            f"— Score {score_minimo:+.1f}%"
-                        )
-                    
-                    st.markdown(f"""
-                    <div style='background:rgba(239,68,68,0.08);padding:12px;border-radius:8px;border-left:3px solid #ef4444;margin-bottom:10px;'>
-                    <p style='color:#ddd;font-size:0.9rem;margin:0;'>
-                    {txt_pior}
-                    </p>
-                    </div>
-                    """, unsafe_allow_html=True)
+                                    if not record_id_atual:
+                                        st.warning("⚠️ ID do registro não encontrado.")
+                                    else:
+                                        # ── Buscar df_tec do session_state ───────────────
+                                        df_tec = st.session_state.get("df_tec", pd.DataFrame())
 
-                # ── 3. SCORE GERAL COM EXPLICAÇÃO DA BASE ──────────────────
-                st.markdown("---")
-                st.markdown("### ✔️ Efetividade Geral do Repertório Técnico")
+                                        if df_tec.empty:
+                                            st.warning("⚠️ Tabela de técnicas não carregada. Atualize os dados.")
+                                        else:
+                                            # ── Filtrar técnicas desta APA ────────────────
+                                            def vinculo_contem(val, record_id):
+                                                if isinstance(val, list):
+                                                    return record_id in val
+                                                return str(val) == record_id
 
-                # Baseline: média de todas as técnicas
-                media_geral = round(df_com_score["Score (%)"].mean(), 1) if not df_com_score.empty else 0
+                                            mask = df_tec['Vinculo_APA'].apply(
+                                                lambda x: vinculo_contem(x, record_id_atual)
+                                            )
+                                            df_tec_apa = df_tec[mask].copy()
 
-                st.markdown(f"""
-                <div style='background:rgba(255,215,0,0.06);padding:12px;border-radius:8px;border:1px solid rgba(255,215,0,0.15);margin-bottom:15px;'>
-                <p style='font-size:0.85rem;color:#FFD700;margin:0 0 8px 0;'>
-                <strong>ℹ️ Como é medido:</strong>
-                </p>
-                <p style='font-size:0.85rem;color:#ddd;margin:0;line-height:1.6;'>
-                Efetividade Geral = Média dos scores de todas as técnicas<br>
-                Score de cada técnica = (positivas - negativas) / observadas × 100%<br>
-                <strong>Baseline desta análise:</strong> {media_geral:+.1f}%
-                </p>
-                </div>
-                """, unsafe_allow_html=True)
+                                            if df_tec_apa.empty:
+                                                st.info("Nenhuma técnica registrada para esta ocorrência.")
+                                            else:
+                                                # ── Normalizar coluna de reação ───────────
+                                                def normalizar_reacao(val):
+                                                    if val is None:
+                                                        return None
+                                                    s = str(val).strip()
+                                                    if s in ["-1", "-1.0", "🔴 Reação Negativa", "Reação Negativa"]:
+                                                        return -1
+                                                    elif s in ["0", "0.0", "⚪ Reação Neutra", "Reação Neutra"]:
+                                                        return 0
+                                                    elif s in ["1", "1.0", "🟢 Reação Positiva", "Reação Positiva"]:
+                                                        return 1
+                                                    else:
+                                                        return None
 
-                # Interpretação comparativa
-                if score_geral >= 50:
-                    cor = "🟢"
-                    status = "ÓTIMA"
-                    explicacao = (
-                        f"O repertório técnico teve {score_geral:+.1f}% de efetividade geral "
-                        f"(acima do baseline de {media_geral:+.1f}%). "
-                        "Isso significa que positivas superaram negativas de forma significativa. "
-                        "Indicativo de estratégia técnica bem-sucedida nesta ocorrência."
-                    )
-                elif score_geral >= 0:
-                    cor = "🟡"
-                    status = "MODERADA"
-                    explicacao = (
-                        f"O repertório técnico teve {score_geral:+.1f}% de efetividade geral "
-                        f"(próximo ao baseline de {media_geral:+.1f}%). "
-                        "Positivas e negativas estão equilibradas. "
-                        "Há oportunidade de aprimoramento — algumas técnicas funcionaram melhor que outras."
-                    )
-                else:
-                    cor = "🔴"
-                    status = "FRACA"
-                    explicacao = (
-                        f"O repertório técnico teve {score_geral:+.1f}% de efetividade geral "
-                        f"(abaixo do baseline de {media_geral:+.1f}%). "
-                        "Negativas superaram positivas. "
-                        "Indicativo de mismatch entre técnicas empregadas e dinâmica do causador."
-                    )
+                                                # Detectar coluna de reação
+                                                col_reacao = None
+                                                for c in ['ATITUDE DO CAUSADOR', 'Atitude do Causador', 'atitude_causador']:
+                                                    if c in df_tec_apa.columns:
+                                                        col_reacao = c
+                                                        break
 
-                st.markdown(f"""
-                <div style='background:rgba(0,0,0,0.3);padding:14px;border-radius:8px;border-left:4px solid {"#10b981" if score_geral >= 50 else "#f59e0b" if score_geral >= 0 else "#ef4444"};margin-bottom:15px;'>
-                <p style='font-size:0.95rem;color:#ddd;margin:0;'>
-                {cor} <strong>Efetividade Geral: {status}</strong><br><br>
-                {explicacao}
-                </p>
-                </div>
-                """, unsafe_allow_html=True)
+                                                col_tecnica = None
+                                                for c in ['TÉCNICAS', 'Técnicas', 'tecnicas']:
+                                                    if c in df_tec_apa.columns:
+                                                        col_tecnica = c
+                                                        break
 
-                # ── 4. CONTEXTO COMPARATIVO ────────────────────────────────
-                st.markdown("### 📈 Contexto Comparativo")
+                                                if not col_tecnica:
+                                                    st.warning("⚠️ Coluna TÉCNICAS não encontrada.")
+                                                else:
+                                                    if col_reacao:
+                                                        df_tec_apa['_reacao_num'] = df_tec_apa[col_reacao].apply(normalizar_reacao)
+                                                    else:
+                                                        df_tec_apa['_reacao_num'] = None
 
-                st.markdown(f"""
-                <p style='font-size:0.9rem;color:#aaa;line-height:1.6;'>
-                <strong>Técnicas com score positivo:</strong> {(df_com_score["Score (%)"] > 0).sum()} de {len(df_com_score)}<br>
-                <strong>Técnicas com score negativo:</strong> {(df_com_score["Score (%)"] < 0).sum()} de {len(df_com_score)}<br>
-                <strong>Técnicas neutras (0%):</strong> {(df_com_score["Score (%)"] == 0).sum()} de {len(df_com_score)}<br>
-                <strong>Variação entre técnicas:</strong> {df_com_score["Score (%)"].max() - df_com_score["Score (%)"].min():.1f} pontos percentuais<br>
-                <strong>Confiabilidade (volume de usos):</strong> {int(df_resumo["Total"].sum())} técnicas empregadas no total
-                </p>
-                """, unsafe_allow_html=True)
+                                                    # ── Agrupar por técnica ───────────────
+                                                    resumo = []
+                                                    for tecnica, grupo in df_tec_apa.groupby(col_tecnica):
+                                                        total    = len(grupo)
+                                                        positivo = (grupo['_reacao_num'] == 1).sum()
+                                                        neutro   = (grupo['_reacao_num'] == 0).sum()
+                                                        negativo = (grupo['_reacao_num'] == -1).sum()
+                                                        inaud    = grupo['_reacao_num'].isna().sum()
 
-                if score_geral >= 50:
-                    txt_geral = "✅ Repertório técnico com boa efetividade geral nesta ocorrência."
-                elif score_geral >= 0:
-                    txt_geral = "⚠️ Repertório técnico com efetividade moderada — oportunidade de melhoria."
-                else:
-                    txt_geral = "🔴 Repertório técnico com baixa efetividade — maioria das técnicas gerou reação negativa."
+                                                        # Score: (positivos - negativos) / observados
+                                                        observados = positivo + neutro + negativo
+                                                        if observados > 0:
+                                                            score = round(((positivo - negativo) / observados) * 100, 1)
+                                                        else:
+                                                            score = None
 
-                st.info(txt_geral)
-           
+                                                        resumo.append({
+                                                            "Técnica":        tecnica,
+                                                            "Total":          total,
+                                                            "🟢 Positiva":    int(positivo),
+                                                            "⚪ Neutra":      int(neutro),
+                                                            "🔴 Negativa":    int(negativo),
+                                                            "❓ Inaudível":   int(inaud),
+                                                            "Score (%)":      score
+                                                        })
 
+                                                    df_resumo = pd.DataFrame(resumo)
+                                                    df_resumo = df_resumo.sort_values("Score (%)", ascending=False, na_position='last')
+
+                                                    # ✅ SALVAR NO SESSION_STATE
+                                                    st.session_state['tecnicas_analisadas'] = df_resumo
+                                                    st.success(f"✅ {len(df_resumo)} técnicas analisadas!")
+
+                                except Exception as e:
+                                    st.error(f"Erro ao analisar técnicas: {str(e)[:80]}")
+
+                                # ✅ EXIBIÇÃO DOS RESULTADOS (FORA DO BOTÃO)
+                            if st.session_state.get('tecnicas_analisadas') is not None:
+                                    df_resumo = st.session_state['tecnicas_analisadas']
+
+                                    # ── SCORECARD GERAL ───────────────────────────────────────────
+                                    total_usos     = int(df_resumo["Total"].sum())
+                                    total_positivo = int(df_resumo["🟢 Positiva"].sum())
+                                    total_neutro   = int(df_resumo["⚪ Neutra"].sum())
+                                    total_negativo = int(df_resumo["🔴 Negativa"].sum())
+                                    observados_total = total_positivo + total_neutro + total_negativo
+                                    score_geral    = round(((total_positivo - total_negativo) / max(1, observados_total)) * 100, 1)
+
+                                    st.markdown("### ✔️ Resumo Geral")
+                                    col1, col2, col3, col4 = st.columns(4)
+                                    with col1:
+                                        st.metric("Total de Usos", total_usos)
+                                    with col2:
+                                        st.metric("🟢 Positivas", total_positivo)
+                                    with col3:
+                                        st.metric("🔴 Negativas", total_negativo)
+                                    with col4:
+                                        st.metric("Score Geral", f"{score_geral:+.1f}%")
+
+                                    # ── TABELA DETALHADA ──────────────────────────────────────────
+                                    st.markdown("### ✔️ Efetividade por Técnica")
+                                    st.dataframe(
+                                        df_resumo,
+                                        use_container_width=True,
+                                        hide_index=True
+                                    )
+
+                                    # ── GRÁFICO DE BARRAS EMPILHADAS ─────────────────────────────
+                                    st.markdown("### ✔️ Distribuição de Reações por Técnica")
+                                    try:
+                                        import plotly.graph_objects as go
+
+                                        tecnicas   = df_resumo["Técnica"].tolist()
+                                        positivos  = df_resumo["🟢 Positiva"].tolist()
+                                        neutros    = df_resumo["⚪ Neutra"].tolist()
+                                        negativos  = df_resumo["🔴 Negativa"].tolist()
+
+                                        fig_barras = go.Figure()
+
+                                        fig_barras.add_trace(go.Bar(
+                                            name="🟢 Positiva",
+                                            x=tecnicas, y=positivos,
+                                            marker_color="#10b981"
+                                        ))
+                                        fig_barras.add_trace(go.Bar(
+                                            name="⚪ Neutra",
+                                            x=tecnicas, y=neutros,
+                                            marker_color="#6b7280"
+                                        ))
+                                        fig_barras.add_trace(go.Bar(
+                                            name="🔴 Negativa",
+                                            x=tecnicas, y=negativos,
+                                            marker_color="#ef4444"
+                                        ))
+
+                                        fig_barras.update_layout(
+                                            barmode="stack",
+                                            paper_bgcolor="rgba(0,0,0,0)",
+                                            plot_bgcolor="rgba(0,0,0,0)",
+                                            font=dict(color="#fff"),
+                                            legend=dict(
+                                                font=dict(color="#fff"),
+                                                bgcolor="rgba(0,0,0,0.4)"
+                                            ),
+                                            xaxis=dict(
+                                                tickfont=dict(color="#FFD700"),
+                                                gridcolor="#333"
+                                            ),
+                                            yaxis=dict(
+                                                tickfont=dict(color="#aaa"),
+                                                gridcolor="#333"
+                                            ),
+                                            height=420,
+                                            margin=dict(t=20, b=120, l=40, r=40)
+                                        )
+
+                                        st.plotly_chart(fig_barras, use_container_width=True)
+
+                                    except Exception as e:
+                                        st.error(f"Erro ao gerar gráfico: {str(e)[:80]}")
+
+                                    # ── NARRATIVA AUTOMÁTICA (CORRIGIDA) ────────────────────────
+                                    st.markdown("---")
+                                    st.markdown("### ✔️ Leitura Operacional")
+
+                                    # ── 1. TÉCNICA MAIS EFETIVA (com desempate) ────────────────
+                                    df_com_score = df_resumo[df_resumo["Score (%)"].notna()]
+                                    
+                                    if not df_com_score.empty:
+                                        score_maximo = df_com_score["Score (%)"].max()
+                                        tecnicas_maximas = df_com_score[df_com_score["Score (%)"] == score_maximo]
+                                        
+                                        if len(tecnicas_maximas) == 1:
+                                            melhor = tecnicas_maximas.iloc[0]
+                                            txt_melhor = (
+                                                f"✅ <strong>Técnicas mais efetivas:</strong> {melhor['Técnica']} "
+                                                f"— Score {melhor['Score (%)']:+.1f}% "
+                                                f"({int(melhor['🟢 Positiva'])} positivo / {int(melhor['Total'])} usos)"
+                                            )
+                                        else:
+                                            # Múltiplas técnicas com mesmo score máximo
+                                            tecnicas_nomes = ", ".join(tecnicas_maximas['Técnica'].tolist())
+                                            txt_melhor = (
+                                                f"✅ <strong>Técnicas mais efetivas (empate):</strong> {tecnicas_nomes} "
+                                                f"— Score {score_maximo:+.1f}%"
+                                            )
+                                        
+                                        st.markdown(f"""
+                                        <div style='background:rgba(16,185,129,0.08);padding:12px;border-radius:8px;border-left:3px solid #10b981;margin-bottom:10px;'>
+                                        <p style='color:#ddd;font-size:0.9rem;margin:0;'>
+                                        {txt_melhor}
+                                        </p>
+                                        </div>
+                                        """, unsafe_allow_html=True)
+
+                                    # ── 2. TÉCNICA MENOS EFETIVA (com desempate) ────────────────
+                                    if not df_com_score.empty:
+                                        score_minimo = df_com_score["Score (%)"].min()
+                                        tecnicas_minimas = df_com_score[df_com_score["Score (%)"] == score_minimo]
+                                        
+                                        if len(tecnicas_minimas) == 1:
+                                            pior = tecnicas_minimas.iloc[0]
+                                            txt_pior = (
+                                                f"⚠️ <strong>Técnica menos efetiva:</strong> {pior['Técnica']} "
+                                                f"— Score {pior['Score (%)']:+.1f}% "
+                                                f"({int(pior['🔴 Negativa'])} negativo / {int(pior['Total'])} usos)"
+                                            )
+                                        else:
+                                            # Múltiplas técnicas com mesmo score mínimo
+                                            tecnicas_nomes = ", ".join(tecnicas_minimas['Técnica'].tolist())
+                                            txt_pior = (
+                                                f"⚠️ <strong>Técnicas menos efetivas (empate):</strong> {tecnicas_nomes} "
+                                                f"— Score {score_minimo:+.1f}%"
+                                            )
+                                        
+                                        st.markdown(f"""
+                                        <div style='background:rgba(239,68,68,0.08);padding:12px;border-radius:8px;border-left:3px solid #ef4444;margin-bottom:10px;'>
+                                        <p style='color:#ddd;font-size:0.9rem;margin:0;'>
+                                        {txt_pior}
+                                        </p>
+                                        </div>
+                                        """, unsafe_allow_html=True)
+
+                                    # ── 3. SCORE GERAL COM EXPLICAÇÃO DA BASE ──────────────────
+                                    st.markdown("---")
+                                    st.markdown("### ✔️ Efetividade Geral do Repertório Técnico")
+
+                                    # Baseline: média de todas as técnicas
+                                    media_geral = round(df_com_score["Score (%)"].mean(), 1) if not df_com_score.empty else 0
+
+                                    st.markdown(f"""
+                                    <div style='background:rgba(255,215,0,0.06);padding:12px;border-radius:8px;border:1px solid rgba(255,215,0,0.15);margin-bottom:15px;'>
+                                    <p style='font-size:0.85rem;color:#FFD700;margin:0 0 8px 0;'>
+                                    <strong>ℹ️ Como é medido:</strong>
+                                    </p>
+                                    <p style='font-size:0.85rem;color:#ddd;margin:0;line-height:1.6;'>
+                                    Efetividade Geral = Média dos scores de todas as técnicas<br>
+                                    Score de cada técnica = (positivas - negativas) / observadas × 100%<br>
+                                    <strong>Baseline desta análise:</strong> {media_geral:+.1f}%
+                                    </p>
+                                    </div>
+                                    """, unsafe_allow_html=True)
+
+                                    # Interpretação comparativa
+                                    if score_geral >= 50:
+                                        cor = "🟢"
+                                        status = "ÓTIMA"
+                                        explicacao = (
+                                            f"O repertório técnico teve {score_geral:+.1f}% de efetividade geral "
+                                            f"(acima do baseline de {media_geral:+.1f}%). "
+                                            "Isso significa que positivas superaram negativas de forma significativa. "
+                                            "Indicativo de estratégia técnica bem-sucedida nesta ocorrência."
+                                        )
+                                    elif score_geral >= 0:
+                                        cor = "🟡"
+                                        status = "MODERADA"
+                                        explicacao = (
+                                            f"O repertório técnico teve {score_geral:+.1f}% de efetividade geral "
+                                            f"(próximo ao baseline de {media_geral:+.1f}%). "
+                                            "Positivas e negativas estão equilibradas. "
+                                            "Há oportunidade de aprimoramento — algumas técnicas funcionaram melhor que outras."
+                                        )
+                                    else:
+                                        cor = "🔴"
+                                        status = "FRACA"
+                                        explicacao = (
+                                            f"O repertório técnico teve {score_geral:+.1f}% de efetividade geral "
+                                            f"(abaixo do baseline de {media_geral:+.1f}%). "
+                                            "Negativas superaram positivas. "
+                                            "Indicativo de mismatch entre técnicas empregadas e dinâmica do causador."
+                                        )
+
+                                    st.markdown(f"""
+                                    <div style='background:rgba(0,0,0,0.3);padding:14px;border-radius:8px;border-left:4px solid {"#10b981" if score_geral >= 50 else "#f59e0b" if score_geral >= 0 else "#ef4444"};margin-bottom:15px;'>
+                                    <p style='font-size:0.95rem;color:#ddd;margin:0;'>
+                                    {cor} <strong>Efetividade Geral: {status}</strong><br><br>
+                                    {explicacao}
+                                    </p>
+                                    </div>
+                                    """, unsafe_allow_html=True)
+
+                                    # ── 4. CONTEXTO COMPARATIVO ────────────────────────────────
+                                    st.markdown("### ✔️ Contexto Comparativo")
+
+                                    st.markdown(f"""
+                                    <p style='font-size:0.9rem;color:#aaa;line-height:1.6;'>
+                                    <strong>Técnicas com score positivo:</strong> {(df_com_score["Score (%)"] > 0).sum()} de {len(df_com_score)}<br>
+                                    <strong>Técnicas com score negativo:</strong> {(df_com_score["Score (%)"] < 0).sum()} de {len(df_com_score)}<br>
+                                    <strong>Técnicas neutras (0%):</strong> {(df_com_score["Score (%)"] == 0).sum()} de {len(df_com_score)}<br>
+                                    <strong>Variação entre técnicas:</strong> {df_com_score["Score (%)"].max() - df_com_score["Score (%)"].min():.1f} pontos percentuais<br>
+                                    <strong>Confiabilidade (volume de usos):</strong> {int(df_resumo["Total"].sum())} técnicas empregadas no total
+                                    </p>
+                                    """, unsafe_allow_html=True)
+
+                                    if score_geral >= 50:
+                                        txt_geral = "✅ Repertório técnico com boa efetividade geral nesta ocorrência."
+                                    elif score_geral >= 0:
+                                        txt_geral = "⚠️ Repertório técnico com efetividade moderada — oportunidade de melhoria."
+                                    else:
+                                        txt_geral = "🔴 Repertório técnico com baixa efetividade — maioria das técnicas gerou reação negativa."
+
+                                    st.info(txt_geral)
+
+                                    st.markdown("---")
+            
 
             #ETAPA 2 — ANÁLISE SEMÂNTICA PRÁTICA (Para compreender o que REALMENTE está acontecendo)
 
@@ -1737,8 +1771,8 @@ else:
             <h3 style='color: #FFD700;'>✔ Etapa 2: Análise Semântica </h3>
             <p style='color: #aaa; font-size: 0.95rem; margin-top: -10px;'>
             <strong>O que o causador REALMENTE sente, quer e teme.</strong> 
-            Enquanto Similitude conta palavras repetidas, Semântica lê entre as linhas: intenções escondidas, 
-            gatilhos emocionais e pontos de alavanca para resolução.
+            Análise detalhada da transcrição da negociação, como: temas mais usados pelo Causador e Negociadores,
+            nuvem de palavras, convergência de temas, estado emocional do Causador segundo a transcrição e Analise detalhada da negociação.
             </p></p>
             """, unsafe_allow_html=True)
 
@@ -1952,892 +1986,902 @@ else:
                     </div>
                     """, unsafe_allow_html=True)
 
-            # --- FIM DO BLOCO DE EXPLICAÇÃO ---
+                # --- FIM DO BLOCO DE EXPLICAÇÃO ---
 
 
-            def extrair_temas_e_metricas(resultado_lista):
-                """
-                Separa os temas das métricas APA.
-                Métricas começam com ** e contêm: Risco, Abertura, Raiz, Intensidade, Direção, Volatilidade
-                """
-                temas = []
-                metricas = []
-                
-                for linha in resultado_lista:
-                    if any(keyword in linha for keyword in ['Risco Observado', 'Abertura Observada', 'Raiz Observada', 
-                                                            'Intensidade Geral', 'Direção:', 'Volatilidade', 
-                                                            'Classificação APA', 'Leitura Operacional']):
-                        metricas.append(linha)
-                    else:
-                        temas.append(linha)
-                
-                return temas, metricas
-
+            col_left, col_center, col_right = st.columns([1, 1, 1])
+            with col_center:
+                is_analise_negociacao = render_toggle_button(
+                    label="✔️ Análise da Negociação",
+                    session_key="analise_negociacao",
+                    button_key="btn_analise_negociacao"
+                )
             
-
-            if st.button("✔ 2. Gerar Padrões Mentais & Nuvem de Palavras", key="btn_ngramas_semantica"):
-                with st.spinner("Processando padrões mentais, temas dominantes e gerando nuvens de palavras..."):
-                    try:
-                        texto_c  = analise.limpar_valor(df_apa.get('TRANSCRIÇÃO DO CAUSADOR', ''))
-                        texto_np = analise.limpar_valor(df_apa.get('TRANSCRIÇÃO DO NEGOCIADOR PRINCIPAL', ''))
-                        texto_ns = analise.limpar_valor(df_apa.get('TRANSCRIÇÃO DO NEGOCIADOR SECUNDÁRIO', ''))
-                        texto_total = f"{texto_c} {texto_np} {texto_ns}"
-
-                        resolucao_raw = analise.limpar_valor(
-                            df_apa.get('Resolução', df_apa.get('RESOLUÇÃO', df_apa.get('resolucao', '')))
-                        ).strip()
-
-                        # ✅ CORRIGIDO: detecta os 3 tipos reais GATE/PMESP
-                        resolucao_norm = resolucao_raw.lower()
-                        if not resolucao_norm:
-                            resolucao_tipo = "desconhecida"
-                        elif "tática" in resolucao_norm or "tatica" in resolucao_norm:
-                            resolucao_tipo = "Negociação Tática"
-                        elif "real" in resolucao_norm or "negocia" in resolucao_norm:
-                            resolucao_tipo = "Negociação Real"
-                        elif "interven" in resolucao_norm:
-                            resolucao_tipo = "Intervenção"
+            st.markdown("---")
+        
+            if is_analise_negociacao: 
+                
+                def extrair_temas_e_metricas(resultado_lista):
+                    """
+                    Separa os temas das métricas APA.
+                    Métricas começam com ** e contêm: Risco, Abertura, Raiz, Intensidade, Direção, Volatilidade
+                    """
+                    temas = []
+                    metricas = []
+                    
+                    for linha in resultado_lista:
+                        if any(keyword in linha for keyword in ['Risco Observado', 'Abertura Observada', 'Raiz Observada', 
+                                                                'Intensidade Geral', 'Direção:', 'Volatilidade', 
+                                                                'Classificação APA', 'Leitura Operacional']):
+                            metricas.append(linha)
                         else:
-                            resolucao_tipo = "desconhecida"
-
-                        # ✅ NOVO: extrair tempos do Airtable com segurança
-                        def extrair_tempo(valor):
-                            try:
-                                return int(float(str(analise.limpar_valor(valor)).replace(',', '.') or 0))
-                            except Exception:
-                                return 0
-
-                        tempo_neg_real = extrair_tempo(
-                            df_apa.get('TEMPO NEGOCIAÇÃO REAL',
-                            df_apa.get('Tempo Negociação Real',
-                            df_apa.get('tempo_negociacao_real', 0)))
-                        )
-                        tempo_neg_tatica = extrair_tempo(
-                            df_apa.get('TEMPO NEGOCIAÇÃO TÁTICA',
-                            df_apa.get('Tempo Negociação Tática',
-                            df_apa.get('tempo_negociacao_tatica', 0)))
-                        )
-
-                        # ✅ NOVO: Separar temas e métricas
-                        resultado_total = analise.extrair_topicos_ngrams(texto_total, resolucao_tipo=resolucao_tipo) if len(texto_total) > 10 else ["Texto insuficiente"]
-                        resultado_c = analise.extrair_topicos_ngrams(texto_c, resolucao_tipo=resolucao_tipo) if len(texto_c) > 10 else ["Texto insuficiente"]
-                        resultado_np = analise.extrair_topicos_ngrams(texto_np, resolucao_tipo=resolucao_tipo) if len(texto_np) > 10 else ["Texto insuficiente"]
-                        resultado_ns = analise.extrair_topicos_ngrams(texto_ns, resolucao_tipo=resolucao_tipo) if len(texto_ns) > 10 else ["Texto insuficiente"]
-
-                        temas_total, metricas_total = extrair_temas_e_metricas(resultado_total)
-                        temas_c, metricas_c = extrair_temas_e_metricas(resultado_c)
-                        temas_np, metricas_np = extrair_temas_e_metricas(resultado_np)
-                        temas_ns, metricas_ns = extrair_temas_e_metricas(resultado_ns)
-
-                        st.session_state['stats_calculados'] = {
-                            "temas":       temas_total,
-                            "temas_c":     temas_c,
-                            "temas_np":    temas_np,
-                            "temas_ns":    temas_ns,
-                            "wc_c":        analise.gerar_wordcloud(texto_c)  if len(texto_c)  > 5 else None,
-                            "wc_np":       analise.gerar_wordcloud(texto_np) if len(texto_np) > 5 else None,
-                            "wc_ns":       analise.gerar_wordcloud(texto_ns) if len(texto_ns) > 5 else None,
-                            "texto_c_raw":      texto_c,
-                            "texto_np_raw":     texto_np,
-                            "texto_ns_raw":     texto_ns,
-                            "resolucao_tipo":   resolucao_tipo,
-                            "resolucao_raw":    resolucao_raw,
-                            "tempo_neg_real":   tempo_neg_real,
-                            "tempo_neg_tatica": tempo_neg_tatica,
-                        }
-                        st.success("✅ Padrões mentais processados!")
-                    except Exception as e:
-                        st.error(f"Erro ao processar: {str(e)[:80]}")
-
-            if st.session_state.get('stats_calculados'):
-                stats = st.session_state['stats_calculados']
-
-                tab_ng1, tab_ng2, tab_ng3, tab_ng4, tab_ng5, tab_ng6, tab_ng7, tab_ng8 = st.tabs([
-                    "🔴 Causador",
-                    "🟢 Negociador Principal",
-                    "🔵 Negociador Secundário",
-                    "✔️ Análise Global",
-                    "✔️ Comparativo das Nuvens de Palavras",
-                    "✔️ Convergência Temática",
-                    "✔️ Estado da Crise",
-                    "✔️ Escuta e Sentimento"
-                ])
-              
-                # --- TAB 1: CAUSADOR ---
-                with tab_ng1:
-                    st.markdown("""
-                    <div class='info-card'>
-                    <h5 style='color: #ef4444; margin-top: 0;'>🔴 CAUSADOR — O que ele estava REALMENTE focando?</h5>
-                    <p style='font-size:0.9rem;color:#ddd;'>
-                    Os temas dominantes abaixo revelam a <strong>obsessão mental</strong> do causador. 
-                    Se "morte" é tema 1, o risco estava alto. Se "filha" aparece, há ambivalência.
-                    </p>
-                    </div>
-                    """, unsafe_allow_html=True)
-
-                    topicos_c = stats.get('temas_c', ["Análise individual ainda não gerada."])
-                    for t in topicos_c:
-                        st.markdown(t)
-
-                    wc_c = stats.get('wc_c')
-                    if wc_c:
-                        st.markdown("#### Nuvem de Palavras — Foco Mental do Causador")
-                        st.pyplot(wc_c)
-                    else:
-                        st.info("Sem transcrição suficiente para gerar nuvem.")
+                            temas.append(linha)
                     
+                    return temas, metricas
+
+                
+
+                if st.button("✔ 2. Gerar Padrões Mentais & Nuvem de Palavras", key="btn_ngramas_semantica"):
+                    with st.spinner("Processando padrões mentais, temas dominantes e gerando nuvens de palavras..."):
+                        try:
+                            texto_c  = analise.limpar_valor(df_apa.get('TRANSCRIÇÃO DO CAUSADOR', ''))
+                            texto_np = analise.limpar_valor(df_apa.get('TRANSCRIÇÃO DO NEGOCIADOR PRINCIPAL', ''))
+                            texto_ns = analise.limpar_valor(df_apa.get('TRANSCRIÇÃO DO NEGOCIADOR SECUNDÁRIO', ''))
+                            texto_total = f"{texto_c} {texto_np} {texto_ns}"
+
+                            resolucao_raw = analise.limpar_valor(
+                                df_apa.get('Resolução', df_apa.get('RESOLUÇÃO', df_apa.get('resolucao', '')))
+                            ).strip()
+
+                            # ✅ CORRIGIDO: detecta os 3 tipos reais GATE/PMESP
+                            resolucao_norm = resolucao_raw.lower()
+                            if not resolucao_norm:
+                                resolucao_tipo = "desconhecida"
+                            elif "tática" in resolucao_norm or "tatica" in resolucao_norm:
+                                resolucao_tipo = "Negociação Tática"
+                            elif "real" in resolucao_norm or "negocia" in resolucao_norm:
+                                resolucao_tipo = "Negociação Real"
+                            elif "interven" in resolucao_norm:
+                                resolucao_tipo = "Intervenção"
+                            else:
+                                resolucao_tipo = "desconhecida"
+
+                            # ✅ NOVO: extrair tempos do Airtable com segurança
+                            def extrair_tempo(valor):
+                                try:
+                                    return int(float(str(analise.limpar_valor(valor)).replace(',', '.') or 0))
+                                except Exception:
+                                    return 0
+
+                            tempo_neg_real = extrair_tempo(
+                                df_apa.get('TEMPO NEGOCIAÇÃO REAL',
+                                df_apa.get('Tempo Negociação Real',
+                                df_apa.get('tempo_negociacao_real', 0)))
+                            )
+                            tempo_neg_tatica = extrair_tempo(
+                                df_apa.get('TEMPO NEGOCIAÇÃO TÁTICA',
+                                df_apa.get('Tempo Negociação Tática',
+                                df_apa.get('tempo_negociacao_tatica', 0)))
+                            )
+
+                            # ✅ NOVO: Separar temas e métricas
+                            resultado_total = analise.extrair_topicos_ngrams(texto_total, resolucao_tipo=resolucao_tipo) if len(texto_total) > 10 else ["Texto insuficiente"]
+                            resultado_c = analise.extrair_topicos_ngrams(texto_c, resolucao_tipo=resolucao_tipo) if len(texto_c) > 10 else ["Texto insuficiente"]
+                            resultado_np = analise.extrair_topicos_ngrams(texto_np, resolucao_tipo=resolucao_tipo) if len(texto_np) > 10 else ["Texto insuficiente"]
+                            resultado_ns = analise.extrair_topicos_ngrams(texto_ns, resolucao_tipo=resolucao_tipo) if len(texto_ns) > 10 else ["Texto insuficiente"]
+
+                            temas_total, metricas_total = extrair_temas_e_metricas(resultado_total)
+                            temas_c, metricas_c = extrair_temas_e_metricas(resultado_c)
+                            temas_np, metricas_np = extrair_temas_e_metricas(resultado_np)
+                            temas_ns, metricas_ns = extrair_temas_e_metricas(resultado_ns)
+
+                            st.session_state['stats_calculados'] = {
+                                "temas":       temas_total,
+                                "temas_c":     temas_c,
+                                "temas_np":    temas_np,
+                                "temas_ns":    temas_ns,
+                                "wc_c":        analise.gerar_wordcloud(texto_c)  if len(texto_c)  > 5 else None,
+                                "wc_np":       analise.gerar_wordcloud(texto_np) if len(texto_np) > 5 else None,
+                                "wc_ns":       analise.gerar_wordcloud(texto_ns) if len(texto_ns) > 5 else None,
+                                "texto_c_raw":      texto_c,
+                                "texto_np_raw":     texto_np,
+                                "texto_ns_raw":     texto_ns,
+                                "resolucao_tipo":   resolucao_tipo,
+                                "resolucao_raw":    resolucao_raw,
+                                "tempo_neg_real":   tempo_neg_real,
+                                "tempo_neg_tatica": tempo_neg_tatica,
+                            }
+                            st.success("✅ Padrões mentais processados!")
+                        except Exception as e:
+                            st.error(f"Erro ao processar: {str(e)[:80]}")
+
+                if st.session_state.get('stats_calculados'):
+                    stats = st.session_state['stats_calculados']
+
+                    tab_ng1, tab_ng2, tab_ng3, tab_ng4, tab_ng5, tab_ng6, tab_ng7, tab_ng8 = st.tabs([
+                        "🔴 Causador",
+                        "🟢 Negociador Principal",
+                        "🔵 Negociador Secundário",
+                        "✔️ Análise Global",
+                        "✔️ Comparativo das Nuvens de Palavras",
+                        "✔️ Convergência Temática",
+                        "✔️ Estado da Crise",
+                        "✔️ Escuta e Sentimento"
+                    ])
                     
+                    # --- TAB 1: CAUSADOR ---
+                    with tab_ng1:
+                        st.markdown("""
+                        <div class='info-card'>
+                        <h5 style='color: #ef4444; margin-top: 0;'>🔴 CAUSADOR — O que ele estava REALMENTE focando?</h5>
+                        <p style='font-size:0.9rem;color:#ddd;'>
+                        Os temas dominantes abaixo revelam a <strong>obsessão mental</strong> do causador. 
+                        Se "morte" é tema 1, o risco estava alto. Se "filha" aparece, há ambivalência.
+                        </p>
+                        </div>
+                        """, unsafe_allow_html=True)
 
-                # --- TAB 2: NEGOCIADOR PRINCIPAL ---
-                with tab_ng2:
-                    st.markdown("""
-                    <div class='info-card'>
-                    <h5 style='color: #10b981; margin-top: 0;'>🟢 NEGOCIADOR PRINCIPAL — Qual foi a estratégia dele?</h5>
-                    <p style='font-size:0.9rem;color:#ddd;'>
-                    Os temas do negociador mostram <strong>em que ele está focando</strong>. 
-                    Compare com o causador: convergência = boa sintonia; divergência = falha de rapport.
-                    </p>
-                    </div>
-                    """, unsafe_allow_html=True)
+                        topicos_c = stats.get('temas_c', ["Análise individual ainda não gerada."])
+                        for t in topicos_c:
+                            st.markdown(t)
 
-                    topicos_np = stats.get('temas_np', ["Análise individual ainda não gerada."])
-                    for t in topicos_np:
-                        st.markdown(t)
-
-                    wc_np = stats.get('wc_np')
-                    if wc_np:
-                        st.markdown("#### Nuvem de Palavras — Estratégia do Negociador")
-                        st.pyplot(wc_np)
-                    else:
-                        st.info("Sem transcrição suficiente para gerar nuvem.")
-                    
-                    
-
-                # --- TAB 3: NEGOCIADOR SECUNDÁRIO ---
-                with tab_ng3:
-                    st.markdown("""
-                    <div class='info-card'>
-                    <h5 style='color: #3b82f6; margin-top: 0;'>🔵 NEGOCIADOR SECUNDÁRIO — Qual era o papel dele?</h5>
-                    <p style='font-size:0.9rem;color:#ddd;'>
-                    Geralmente suporte. Seus temas indicam se estava reforçando a mensagem do principal ou dispersando esforços.
-                    </p>
-                    </div>
-                    """, unsafe_allow_html=True)
-
-                    topicos_ns = stats.get('temas_ns', ["Análise individual ainda não gerada."])
-                    for t in topicos_ns:
-                        st.markdown(t)
-
-                    wc_ns = stats.get('wc_ns')
-                    if wc_ns:
-                        st.markdown("#### Nuvem de Palavras — Atuação do Secundário")
-                        st.pyplot(wc_ns)
-                    else:
-                        st.info("Sem transcrição suficiente para gerar nuvem.")
-                    
-                    
-                # --- TAB 4: ANÁLISE GERAL ---
-                with tab_ng4:
-                    st.markdown("""
-                    <div class='info-card'>
-                    <h5 style='color: #f97316; margin-top: 0;'>✔️ VISÃO GERAL — Os temas gerais do incidente</h5>
-                    <p style='font-size:0.9rem;color:#ddd;'>
-                    Agregando causador + negociadores, quais eram os assuntos DOMINANTES na negociação?
-                    </p>
-                    </div>
-                    """, unsafe_allow_html=True)
-
-                    topicos_globais = stats.get('temas', ["Sem dados"])
-                    for t in topicos_globais:
-                        st.markdown(t)
-                    
-                    
-
-                # --- TAB 5: MAPAS COMPARATIVOS ---
-                with tab_ng5:
-                    st.markdown("""
-                    <div class='info-card'>
-                    <h5 style='color: #FFD700; margin-top: 0;'>✔️ NUVEM DE PALAVRAS LADO-A-LADO — Sincronização Mental</h5>
-                    <p style='font-size:0.9rem;color:#ddd;'>
-                    Compare as nuvens visualmente. Se causador fala de "morte" e negociador de "vida", há conversação. 
-                    Se causador de "morte" e negociador de "calma", há desconexão.
-                    </p>
-                    </div>
-                    """, unsafe_allow_html=True)
-
-                    col_wc_g1, col_wc_g2, col_wc_g3 = st.columns(3)
-
-                    with col_wc_g1:
-                        st.markdown("**Causador**")
                         wc_c = stats.get('wc_c')
                         if wc_c:
-                            st.pyplot(wc_c, clear_figure=True)
+                            st.markdown("#### Nuvem de Palavras — Foco Mental do Causador")
+                            st.pyplot(wc_c)
                         else:
-                            st.info("Sem nuvem.")
+                            st.info("Sem transcrição suficiente para gerar nuvem.")
+                        
+                        
 
-                    with col_wc_g2:
-                        st.markdown("**Negociador Principal**")
+                    # --- TAB 2: NEGOCIADOR PRINCIPAL ---
+                    with tab_ng2:
+                        st.markdown("""
+                        <div class='info-card'>
+                        <h5 style='color: #10b981; margin-top: 0;'>🟢 NEGOCIADOR PRINCIPAL — Qual foi a estratégia dele?</h5>
+                        <p style='font-size:0.9rem;color:#ddd;'>
+                        Os temas do negociador mostram <strong>em que ele está focando</strong>. 
+                        Compare com o causador: convergência = boa sintonia; divergência = falha de rapport.
+                        </p>
+                        </div>
+                        """, unsafe_allow_html=True)
+
+                        topicos_np = stats.get('temas_np', ["Análise individual ainda não gerada."])
+                        for t in topicos_np:
+                            st.markdown(t)
+
                         wc_np = stats.get('wc_np')
                         if wc_np:
-                            st.pyplot(wc_np, clear_figure=True)
+                            st.markdown("#### Nuvem de Palavras — Estratégia do Negociador")
+                            st.pyplot(wc_np)
                         else:
-                            st.info("Sem nuvem.")
+                            st.info("Sem transcrição suficiente para gerar nuvem.")
+                        
+                        
 
-                    with col_wc_g3:
-                        st.markdown("**Negociador Secundário**")
+                    # --- TAB 3: NEGOCIADOR SECUNDÁRIO ---
+                    with tab_ng3:
+                        st.markdown("""
+                        <div class='info-card'>
+                        <h5 style='color: #3b82f6; margin-top: 0;'>🔵 NEGOCIADOR SECUNDÁRIO — Qual era o papel dele?</h5>
+                        <p style='font-size:0.9rem;color:#ddd;'>
+                        Geralmente suporte. Seus temas indicam se estava reforçando a mensagem do principal ou dispersando esforços.
+                        </p>
+                        </div>
+                        """, unsafe_allow_html=True)
+
+                        topicos_ns = stats.get('temas_ns', ["Análise individual ainda não gerada."])
+                        for t in topicos_ns:
+                            st.markdown(t)
+
                         wc_ns = stats.get('wc_ns')
                         if wc_ns:
-                            st.pyplot(wc_ns, clear_figure=True)
+                            st.markdown("#### Nuvem de Palavras — Atuação do Secundário")
+                            st.pyplot(wc_ns)
                         else:
-                            st.info("Sem nuvem.")
+                            st.info("Sem transcrição suficiente para gerar nuvem.")
+                        
+                        
+                    # --- TAB 4: ANÁLISE GERAL ---
+                    with tab_ng4:
+                        st.markdown("""
+                        <div class='info-card'>
+                        <h5 style='color: #f97316; margin-top: 0;'>✔️ VISÃO GERAL — Os temas gerais do incidente</h5>
+                        <p style='font-size:0.9rem;color:#ddd;'>
+                        Agregando causador + negociadores, quais eram os assuntos DOMINANTES na negociação?
+                        </p>
+                        </div>
+                        """, unsafe_allow_html=True)
 
-                # --- TAB 6: CONVERGÊNCIA TEMÁTICA (CORRIGIDO) ---
-                with tab_ng6:
-                    st.markdown("""
-                    <div class='info-card'>
-                    <h4 style='color:#FFD700; margin-top:0;'>✔️ CONVERGÊNCIA TEMÁTICA — Quanto cada tema foi abordado?</h4>
-                    <p style='color:#ccc; font-size:0.9rem; margin-bottom:1rem;'>
-                    Compara a <strong>intensidade (score)</strong> de cada tema abordado por causador e negociador.
-                    Polígonos sobrepostos = abordagem similar. Divergência = ênfase diferente.
-                    </p>
-                    </div>
-                    """, unsafe_allow_html=True)
+                        topicos_globais = stats.get('temas', ["Sem dados"])
+                        for t in topicos_globais:
+                            st.markdown(t)
+                        
+                        
 
-                    texto_c_raw  = stats.get('texto_c_raw', '')
-                    texto_np_raw = stats.get('texto_np_raw', '')
-                    texto_ns_raw = stats.get('texto_ns_raw', '')
+                    # --- TAB 5: MAPAS COMPARATIVOS ---
+                    with tab_ng5:
+                        st.markdown("""
+                        <div class='info-card'>
+                        <h5 style='color: #FFD700; margin-top: 0;'>✔️ NUVEM DE PALAVRAS LADO-A-LADO — Sincronização Mental</h5>
+                        <p style='font-size:0.9rem;color:#ddd;'>
+                        Compare as nuvens visualmente. Se causador fala de "morte" e negociador de "vida", há conversação. 
+                        Se causador de "morte" e negociador de "calma", há desconexão.
+                        </p>
+                        </div>
+                        """, unsafe_allow_html=True)
 
-                    if not texto_c_raw or not texto_np_raw:
-                        st.warning("⚠️ Transcrições insuficientes para analisar convergência temática.")
-                    else:
-                        try:
-                            # ── Extrair temas reais ──────────────────────────
-                            temas_c = analise.extrair_temas_unicos(
-                                texto_c_raw,
-                                resolucao_tipo=stats.get('resolucao_tipo', 'desconhecida')
-                            )
-                            temas_np = analise.extrair_temas_unicos(
-                                texto_np_raw,
-                                resolucao_tipo=stats.get('resolucao_tipo', 'desconhecida')
-                            )
+                        col_wc_g1, col_wc_g2, col_wc_g3 = st.columns(3)
 
-                            # ── Calcular convergência ────────────────────────
-                            conv_tematica = analise.calcular_convergencia_tematica(temas_c, temas_np)
+                        with col_wc_g1:
+                            st.markdown("**Causador**")
+                            wc_c = stats.get('wc_c')
+                            if wc_c:
+                                st.pyplot(wc_c, clear_figure=True)
+                            else:
+                                st.info("Sem nuvem.")
 
-                            # ── SCORECARD ────────────────────────────────────
-                            st.markdown("### ✔️ Resumo da Convergência")
-                            
-                            col1, col2, col3, col4 = st.columns(4)
-                            
-                            with col1:
-                                conv_geral = conv_tematica["convergencia_geral"]
-                                st.metric(
-                                    "Convergência Geral",
-                                    f"{conv_geral:.1f}%"
-                                )
-                            
-                            with col2:
-                                compartilhados = len(conv_tematica["temas_compartilhados"])
-                                st.metric(
-                                    "Temas Compartilhados",
-                                    compartilhados
-                                )
-                            
-                            with col3:
-                                excl_c = len(conv_tematica["temas_exclusivos_causador"])
-                                st.metric(
-                                    "Só Causador",
-                                    excl_c
-                                )
-                            
-                            with col4:
-                                excl_np = len(conv_tematica["temas_exclusivos_negociador"])
-                                st.metric(
-                                    "Só Negociador",
-                                    excl_np
-                                )
+                        with col_wc_g2:
+                            st.markdown("**Negociador Principal**")
+                            wc_np = stats.get('wc_np')
+                            if wc_np:
+                                st.pyplot(wc_np, clear_figure=True)
+                            else:
+                                st.info("Sem nuvem.")
 
-                            # ── RADAR TEMÁTICO (INTENSIDADE) ────────────────
-                            st.markdown("---")
-                            st.markdown("### ✔️ Intensidade de Abordagem por Tema (Radar)")
-                            st.markdown("""
-                            <p style='font-size:0.85rem;color:#aaa;'>
-                            Polígono vermelho = intensidade do causador. 
-                            Polígono verde = intensidade do negociador.
-                            Quanto maior o polígono, mais o tema foi abordado.
-                            </p>
-                            """, unsafe_allow_html=True)
-                            
+                        with col_wc_g3:
+                            st.markdown("**Negociador Secundário**")
+                            wc_ns = stats.get('wc_ns')
+                            if wc_ns:
+                                st.pyplot(wc_ns, clear_figure=True)
+                            else:
+                                st.info("Sem nuvem.")
+
+                    # --- TAB 6: CONVERGÊNCIA TEMÁTICA (CORRIGIDO) ---
+                    with tab_ng6:
+                        st.markdown("""
+                        <div class='info-card'>
+                        <h4 style='color:#FFD700; margin-top:0;'>✔️ CONVERGÊNCIA TEMÁTICA — Quanto cada tema foi abordado?</h4>
+                        <p style='color:#ccc; font-size:0.9rem; margin-bottom:1rem;'>
+                        Compara a <strong>intensidade (score)</strong> de cada tema abordado por causador e negociador.
+                        Polígonos sobrepostos = abordagem similar. Divergência = ênfase diferente.
+                        </p>
+                        </div>
+                        """, unsafe_allow_html=True)
+
+                        texto_c_raw  = stats.get('texto_c_raw', '')
+                        texto_np_raw = stats.get('texto_np_raw', '')
+                        texto_ns_raw = stats.get('texto_ns_raw', '')
+
+                        if not texto_c_raw or not texto_np_raw:
+                            st.warning("⚠️ Transcrições insuficientes para analisar convergência temática.")
+                        else:
                             try:
-                                fig_radar_tematico = analise.gerar_radar_convergencia_tematica_corrigido(
-                                    temas_c,
-                                    temas_np,
-                                    conv_tematica["convergencia_por_tema"]
+                                # ── Extrair temas reais ──────────────────────────
+                                temas_c = analise.extrair_temas_unicos(
+                                    texto_c_raw,
+                                    resolucao_tipo=stats.get('resolucao_tipo', 'desconhecida')
                                 )
-                                st.plotly_chart(fig_radar_tematico, use_container_width=True)
-                            except Exception as e:
-                                st.error(f"Erro ao gerar radar: {str(e)[:80]}")
-
-                            # ── GRÁFICO DE BARRAS (ALTERNATIVA) ─────────────
-                            st.markdown("---")
-                            st.markdown("### ✔️ Intensidade por Tema (Gráfico de Barras)")
-                            st.markdown("""
-                            <p style='font-size:0.85rem;color:#aaa;'>
-                            Visualização alternativa: compare a altura das barras para cada tema.
-                            </p>
-                            """, unsafe_allow_html=True)
-                            
-                            try:
-                                fig_barras = analise.gerar_grafico_barras_intensidade_temas(
-                                    conv_tematica["convergencia_por_tema"]
+                                temas_np = analise.extrair_temas_unicos(
+                                    texto_np_raw,
+                                    resolucao_tipo=stats.get('resolucao_tipo', 'desconhecida')
                                 )
-                                st.plotly_chart(fig_barras, use_container_width=True)
-                            except Exception as e:
-                                st.error(f"Erro ao gerar gráfico: {str(e)[:80]}")
 
-                            # ── TABELA DETALHADA ─────────────────────────────
-                            st.markdown("---")
-                            st.markdown("### 📋 Convergência Detalhada por Tema")
-                            
-                            df_conv_tab = analise.gerar_tabela_convergencia_tematica(conv_tematica)
-                            st.dataframe(
-                                df_conv_tab,
-                                use_container_width=True,
-                                hide_index=True
-                            )
+                                # ── Calcular convergência ────────────────────────
+                                conv_tematica = analise.calcular_convergencia_tematica(temas_c, temas_np)
 
-                            # ── ANÁLISE NARRATIVA ────────────────────────────
-                            st.markdown("---")
-                            st.markdown("### 📖 Análise Detalhada")
-                            
-                            st.markdown(conv_tematica["analise_detalhada"])
-
-                            # ── INTERPRETAÇÃO GERAL ─────────────────────────
-                            st.markdown("---")
-                            st.markdown("### 💡 O que significa")
-                            
-                            conv_pct = conv_tematica["convergencia_geral"]
-                            
-                            st.markdown(f"""
-                                **Convergência Temática Observada: {conv_pct:.1f}%**
+                                # ── SCORECARD ────────────────────────────────────
+                                st.markdown("### ✔️ Resumo da Convergência")
                                 
-                                **O que é medido:**
-                                - Intensidade com que causador e negociador abordam cada tema compartilhado
-                                - Média das similitudes de score para os temas em comum
-                                - Escala: 0% (completamente divergentes) a 100% (perfeitamente alinhados)
+                                col1, col2, col3, col4 = st.columns(4)
                                 
-                                **Interpretação Descritiva (sem classificação):**
-                                
-                                | Range | O que significa |
-                                |-------|---|
-                                | **90-100%** | Ambos abordam os temas com intensidades praticamente idênticas |
-                                | **70-90%** | Maioria dos temas tem intensidades próximas, com variações pequenas |
-                                | **50-70%** | Alguns temas com intensidades similares, outros com diferenças notáveis |
-                                | **30-50%** | Intensidades frequentemente divergentes — énfases diferentes |
-                                | **0-30%** | Abordagens muito diferentes — possivelmente universos mentais distintos |
-                                
-                                **Seu caso: {conv_pct:.1f}%**
-                                
-                                - **Temas compartilhados:** {len(conv_tematica["temas_compartilhados"])}
-                                - **Temas só do causador:** {len(conv_tematica["temas_exclusivos_causador"])}
-                                - **Temas só do negociador:** {len(conv_tematica["temas_exclusivos_negociador"])}
-                                
-                                **Atenção:**
-                                Este é um índice DESCRITIVO. Não é preditivo de desfecho.
-                                Próxima etapa: comparar com histórico de 50+ APAs para validar padrões.
-                                """)
-
-                        except Exception as e:
-                            st.error(f"Erro ao analisar convergência temática: {str(e)[:80]}")
-
-                # --- TAB 7: ESTADO DO CAUSADOR ---
-                with tab_ng7:
-                    st.markdown("""
-                    <div class='info-card'>
-                    <h5 style='color:#FFD700; margin-top:0;'>✔️ ESTADO DO CAUSADOR (APA)</h5>
-                    <p style='color:#ccc; font-size:0.9rem;'>
-                    Análise estruturada do estado emocional/comportamental do causador.
-                    </p>
-                    </div>
-                    """, unsafe_allow_html=True)
-
-                    texto_c_raw = stats.get('texto_c_raw', '')
-
-                    if texto_c_raw:
-                        try:
-                            analise_crise = analise.analisar_crise_direcional(
-                                texto_c_raw,
-                                resolucao_tipo=stats.get('resolucao_tipo', 'desconhecida')
-                            )
-
-                            if analise_crise and 'sumario' in analise_crise:
-                                sumario = analise_crise['sumario']
-
-                                risco_observado    = sumario.get('risco_observado')
-                                abertura_observada = sumario.get('abertura_observada')
-                                raiz_observada     = sumario.get('raiz_observada')
-                                volatilidade_index = sumario.get('volatilidade_index')
-                                intensidade_index  = sumario.get('intensidade_index')
-                                direcao_index      = sumario.get('direcao_index')
-                                classificacao      = sumario.get('classificacao')
-                                leitura            = sumario.get('leitura')
-                                resolucao_tipo     = stats.get('resolucao_tipo', 'desconhecida')
-
-                                # ── SCORECARD ──────────────────────────────
-                                st.markdown("### ✔️ Resumo da Análise")
-                                col1, col2, col3 = st.columns(3)
-
                                 with col1:
+                                    conv_geral = conv_tematica["convergencia_geral"]
                                     st.metric(
-                                        "🔴 Risco Observado",
-                                        f"{risco_observado:.1f}%" if risco_observado is not None else "N/D"
+                                        "Convergência Geral",
+                                        f"{conv_geral:.1f}%"
                                     )
+                                
                                 with col2:
+                                    compartilhados = len(conv_tematica["temas_compartilhados"])
                                     st.metric(
-                                        "🟢 Abertura Observada",
-                                        f"{abertura_observada:.1f}%" if abertura_observada is not None else "N/D"
+                                        "Temas Compartilhados",
+                                        compartilhados
                                     )
+                                
                                 with col3:
+                                    excl_c = len(conv_tematica["temas_exclusivos_causador"])
                                     st.metric(
-                                        "🟡 Raiz Observada",
-                                        f"{raiz_observada:.1f}%" if raiz_observada is not None else "N/D"
+                                        "Só Causador",
+                                        excl_c
                                     )
-
-                                col4, col5, col6 = st.columns(3)
-
+                                
                                 with col4:
+                                    excl_np = len(conv_tematica["temas_exclusivos_negociador"])
                                     st.metric(
-                                        "⚡ Intensidade Global",
-                                        f"{intensidade_index:.2f}" if intensidade_index is not None else "N/D"
-                                    )
-                                with col5:
-                                    st.metric(
-                                        "➡️ Direção",
-                                        f"{direcao_index:+.2f}" if direcao_index is not None else "N/D"
-                                    )
-                                with col6:
-                                    st.metric(
-                                        "✔️ Volatilidade",
-                                        f"{volatilidade_index:.2f}" if volatilidade_index is not None else "N/D"
+                                        "Só Negociador",
+                                        excl_np
                                     )
 
-                                # ── CLASSIFICAÇÃO ───────────────────────────
+                                # ── RADAR TEMÁTICO (INTENSIDADE) ────────────────
                                 st.markdown("---")
-                                st.markdown(f"### 🚨 Classificação: `{classificacao}`")
-                                st.info(leitura)
-
-                                # ── RADAR ───────────────────────────────────
-                                st.markdown("---")
-                                st.markdown("### ✔️ Padrão de Crise (Radar)")
+                                st.markdown("### ✔️ Intensidade de Abordagem por Tema (Radar)")
+                                st.markdown("""
+                                <p style='font-size:0.85rem;color:#aaa;'>
+                                Polígono vermelho = intensidade do causador. 
+                                Polígono verde = intensidade do negociador.
+                                Quanto maior o polígono, mais o tema foi abordado.
+                                </p>
+                                """, unsafe_allow_html=True)
+                                
                                 try:
-                                    fig_crise = analise.gerar_radar_crise_individual(
-                                        risco_observado    if risco_observado    is not None else 0,
-                                        abertura_observada if abertura_observada is not None else 0,
-                                        raiz_observada     if raiz_observada     is not None else 0,
-                                        volatilidade_index if volatilidade_index is not None else 0
+                                    fig_radar_tematico = analise.gerar_radar_convergencia_tematica_corrigido(
+                                        temas_c,
+                                        temas_np,
+                                        conv_tematica["convergencia_por_tema"]
                                     )
-                                    st.plotly_chart(fig_crise, use_container_width=True)
+                                    st.plotly_chart(fig_radar_tematico, use_container_width=True)
                                 except Exception as e:
                                     st.error(f"Erro ao gerar radar: {str(e)[:80]}")
 
-                                # ── NARRATIVA PARA LEIGOS ───────────────────
+                                # ── GRÁFICO DE BARRAS (ALTERNATIVA) ─────────────
                                 st.markdown("---")
-                                st.markdown("### ✔️ Leitura Operacional (Linguagem Acessível)")
-
+                                st.markdown("### ✔️ Intensidade por Tema (Gráfico de Barras)")
                                 st.markdown("""
-                                <div style='background:rgba(255,215,0,0.04);padding:4px 12px;border-left:3px solid #FFD700;margin-bottom:12px;'>
-                                <p style='color:#aaa;font-size:0.82rem;margin:6px 0;'>
-                                Interpretação automática dos indicadores em linguagem acessível.
-                                Destinada a leitura rápida por gestores, auditores e instrutores.
+                                <p style='font-size:0.85rem;color:#aaa;'>
+                                Visualização alternativa: compare a altura das barras para cada tema.
                                 </p>
-                                </div>
                                 """, unsafe_allow_html=True)
-
-                                narrativa = analise.gerar_narrativa_crise(
-                                    risco_observado    = risco_observado    or 0,
-                                    abertura_observada = abertura_observada or 0,
-                                    raiz_observada     = raiz_observada     or 0,
-                                    intensidade_index  = intensidade_index  or 0,
-                                    direcao_index      = direcao_index      or 0,
-                                    volatilidade_index = volatilidade_index or 0,
-                                    classificacao      = classificacao      or "INDETERMINADO",
-                                    resolucao_tipo     = resolucao_tipo
-                                )
-                                st.markdown(narrativa)
-
-                            else:
-                                st.warning("Não foi possível gerar análise de crise")
-
-                        except Exception as e:
-                            st.error(f"Erro ao analisar crise: {str(e)[:80]}")
-
-                    else:
-                        st.warning("⚠️ Nenhuma transcrição disponível para análise")                    
-                                                
-            # ============================================================
-            # TAB 8: QUALIDADE DO DISCURSO COM TRANSFORMER (LAZY LOADING)
-            # Cole TUDO isso DENTRO do: with tab_ng8:
-            # ============================================================
-
-            st.markdown("### ✔️ Escuta e Sentimento")
-
-            col_caus = "TRANSCRIÇÃO DO CAUSADOR"
-            col_neg = "TRANSCRIÇÃO DO NEGOCIADOR PRINCIPAL"
-
-            if col_caus not in df_apa or col_neg not in df_apa:
-                st.warning("⚠️ Colunas de transcrição não encontradas")
-            else:
-                txt_caus = str(df_apa[col_caus]).strip()
-                txt_neg = str(df_apa[col_neg]).strip()
-                
-                if not txt_caus or not txt_neg or len(txt_caus) < 20 or len(txt_neg) < 20:
-                    st.warning("⚠️ Transcrições insuficientes para análise")
-                else:
-                    
-                    # =========================================================
-                    # SEÇÃO 1: ANÁLISE RÁPIDA (com toggle)
-                    # =========================================================
-                    
-                    col_left, col_center, col_right = st.columns([1, 1, 1])
-                    with col_center:
-                        is_analise_rapida = render_toggle_button(
-                            label="✔️ Análise Rápida (Padrões Léxicos)",
-                            session_key="tab8_analise_rapida",
-                            button_key="btn_tab8_analise_rapida"
-                        )
-                    
-                    st.markdown("---")
-                    
-                    if is_analise_rapida:
-                        st.markdown("""
-                        <p style='color: #aaa; font-size: 0.9rem; margin-bottom: 1rem;'>
-                        Análise imediata baseada em frequência de palavras-chave.
-                        <strong>Não usa modelo de IA.</strong> Rápido e transparente.
-                        </p>
-                        """, unsafe_allow_html=True)
-
-                        # Rodar análise rápida
-                        analise_rapida = analise.analise_rapida_discurso(txt_neg, txt_caus)
-
-                        # SCORECARD - NEGOCIADOR
-                        st.markdown("### 🟢 NEGOCIADOR PRINCIPAL")
-
-                        col1, col2, col3 = st.columns(3)
-
-                        with col1:
-                            st.metric(
-                                "Validação",
-                                analise_rapida['total_validacao'],
-                                f"x ocorrências"
-                            )
-
-                        with col2:
-                            st.metric(
-                                "Confronto",
-                                analise_rapida['total_confronto'],
-                                f"x ocorrências"
-                            )
-
-                        with col3:
-                            total_palavras_neg = len(txt_neg.split())
-                            st.metric(
-                                "Tamanho (Palavras)",
-                                total_palavras_neg,
-                                f"palavras"
-                            )
-
-                        # SCORECARD - CAUSADOR
-                        st.markdown("---")
-                        st.markdown("### 🔴 CAUSADOR")
-
-                        col1, col2 = st.columns(2)
-
-                        with col1:
-                            st.metric(
-                                "Emoção Alta",
-                                analise_rapida['total_emocao'],
-                                f"x palavras fortes"
-                            )
-
-                        with col2:
-                            total_palavras_caus = len(txt_caus.split())
-                            st.metric(
-                                "Tamanho (Palavras)",
-                                total_palavras_caus,
-                                f"palavras"
-                            )
-                        
-                        # Detalhes
-                        st.markdown("---")
-                        st.markdown("#### ✔️ Detalhes das Palavras-Chave Encontradas")
-                        
-                        st.markdown("### 🟢 NEGOCIADOR PRINCIPAL")
-
-                        col_val, col_conf = st.columns(2)
-
-                        with col_val:
-                            st.markdown("**Validação (Negociador):**")
-                            if analise_rapida['validacao']:
-                                for palavra, freq in sorted(
-                                    analise_rapida['validacao'].items(),
-                                    key=lambda x: x[1],
-                                    reverse=True
-                                ):
-                                    st.write(f"  • {palavra}: {freq}x")
-                            else:
-                                st.write("  (nenhuma encontrada)")
-
-                        with col_conf:
-                            st.markdown("**Confronto (Negociador):**")
-                            if analise_rapida['confronto']:
-                                for palavra, freq in sorted(
-                                    analise_rapida['confronto'].items(),
-                                    key=lambda x: x[1],
-                                    reverse=True
-                                ):
-                                    st.write(f"  • {palavra}: {freq}x")
-                            else:
-                                st.write("  (nenhuma encontrada)")
-                        
-                        st.markdown("---")
-                        st.markdown("### 🔴 CAUSADOR")
-
-                        st.markdown("**Emoção Alta (Causador):**")
-                        if analise_rapida['emocao_causador']:
-                            for palavra, freq in sorted(
-                                analise_rapida['emocao_causador'].items(),
-                                key=lambda x: x[1],
-                                reverse=True
-                            ):
-                                st.write(f"  • {palavra}: {freq}x")
-                        else:
-                            st.write("  (nenhuma encontrada)")                     
-                        
-                        # Interpretação
-                        st.markdown("---")
-                        st.markdown("#### 💡 O Que Significa")
-                        st.markdown("""
-                        - **Validação**: Palavras que indicam reconhecimento, escuta, empatia
-                        - **Confronto**: Palavras que indicam discordância, negação, imposição
-                        - **Emoção Alta**: Indicadores de stress, medo, raiva no causador
-                        
-                        **Nota:** Essa análise conta frequência, não interpreta contexto.
-                        "Não" pode ser "não vou bater" (protetor) ou "não faço isso" (negação).
-                        Use como descritor, não como julgamento.
-                        """)
-                    
-                    # ============================================================
-                    # TAB 8: TRANSFORMER OTIMIZADO (SEM TRADUÇÃO - RÁPIDO)
-                    # SUBSTITUA a seção do Transformer em seu_app.py
-                    # ============================================================
-
-                    st.markdown("---")
-                    st.markdown("""
-                    <div style='background: rgba(76, 175, 80, 0.1); border-left: 4px solid #4CAF50; padding: 15px; border-radius: 8px; margin-bottom: 20px;'>
-                    <h5 style='color: #4CAF50; margin-top: 0;'>🤖 Análise Avançada com Transformer (Otimizado)</h5>
-                    <p style='color: #aaa; font-size: 0.9rem; margin-bottom: 10px;'>
-                    Análise com Transformer português otimizado: remove gírias e stopwords para melhor compreensão.
-                    </p>
-                    <ul style='color: #bbb; font-size: 0.9rem; line-height: 1.6; margin: 10px 0;'>
-                    <li><strong>Pré-processamento:</strong> Normaliza gírias + remove stopwords</li>
-                    <li><strong>Análise:</strong> Transformer direto no português limpo</li>
-                    <li><strong>Tempo:</strong> ~10-15 segundos (muito mais rápido!)</li>
-                    <li><strong>Mostrada:</strong> Original + Limpa</li>
-                    </ul>
-                    <p style='color: #4CAF50; font-size: 0.85rem; font-weight: bold; margin-bottom: 0;'>
-                    Clique no botão abaixo para carregar a análise.
-                    </p>
-                    </div>
-                    """, unsafe_allow_html=True)
-
-                    col_left, col_center, col_right = st.columns([1, 1, 1])
-                    with col_center:
-                        is_transformer = render_toggle_button(
-                            label="✔️ Transformer Otimizado (10-15s)",
-                            session_key="tab8_transformer_otimizado",
-                            button_key="btn_tab8_transformer_otimizado"
-                        )
-
-                    st.markdown("---")
-
-                    if is_transformer:
-                        # Mostrar exemplo de limpeza
-                        with st.expander("✔️ Como funciona a limpeza (exemplo)"):
-                            st.markdown("**Exemplo: Primeiras 3 sentenças**")
-                            
-                            exemplo_linhas = analise.dividir_em_sentencas(txt_neg)[:3]
-                            
-                            for idx, sentenca in enumerate(exemplo_linhas, 1):
-                                original = sentenca
-                                limpa = analise.limpar_sentenca(sentenca)
                                 
-                                col1, col2 = st.columns([1, 1])
-                                with col1:
-                                    st.markdown(f"**Original ({len(original.split())} palavras):**")
-                                    st.write(f"_{original}_")
-                                with col2:
-                                    st.markdown(f"**Limpa ({len(limpa.split())} palavras):**")
-                                    st.write(f"_{limpa}_")
+                                try:
+                                    fig_barras = analise.gerar_grafico_barras_intensidade_temas(
+                                        conv_tematica["convergencia_por_tema"]
+                                    )
+                                    st.plotly_chart(fig_barras, use_container_width=True)
+                                except Exception as e:
+                                    st.error(f"Erro ao gerar gráfico: {str(e)[:80]}")
+
+                                # ── TABELA DETALHADA ─────────────────────────────
                                 st.markdown("---")
-                        
-                        with st.spinner("⏳ Carregando modelo Transformer..."):
-                            nlp_model = analise.carregar_transformer_portugues()
-                        
-                        if nlp_model is None:
-                            st.error("❌ Erro ao carregar modelo. Verifique instalação de `transformers`")
-                        else:
-                            st.success("✔️ Modelo carregado com sucesso!")
-                            
-                            # Analisar negociador
-                            st.markdown("---")
-                            st.markdown("#### 🟢 Sentimento do Negociador")
-                            
-                            with st.spinner("Analisando fala do negociador..."):
-                                resultado_neg = analise.analise_sentimento_transformer_otimizado(txt_neg, nlp_model)
-                            
-                            if resultado_neg:
-                                # Contar positivos/negativos/neutros
-                                positivos = sum(1 for r in resultado_neg if r['label'] in ['POSITIVE', 'LABEL_2'])
-                                negativos = sum(1 for r in resultado_neg if r['label'] in ['NEGATIVE', 'LABEL_0'])
-                                neutros = sum(1 for r in resultado_neg if r['label'] in ['NEUTRAL', 'LABEL_1'])
-                                total_sent = len(resultado_neg)
+                                st.markdown("### 📋 Convergência Detalhada por Tema")
                                 
-                                col1, col2, col3, col4 = st.columns(4)
+                                df_conv_tab = analise.gerar_tabela_convergencia_tematica(conv_tematica)
+                                st.dataframe(
+                                    df_conv_tab,
+                                    use_container_width=True,
+                                    hide_index=True
+                                )
+
+                                # ── ANÁLISE NARRATIVA ────────────────────────────
+                                st.markdown("---")
+                                st.markdown("### 📖 Análise Detalhada")
                                 
-                                with col1:
-                                    st.metric("Positivos", f"{positivos}/{total_sent}")
+                                st.markdown(conv_tematica["analise_detalhada"])
+
+                                # ── INTERPRETAÇÃO GERAL ─────────────────────────
+                                st.markdown("---")
+                                st.markdown("### 💡 O que significa")
                                 
-                                with col2:
-                                    st.metric("Neutros", f"{neutros}/{total_sent}")
-                                
-                                with col3:
-                                    st.metric("Negativos", f"{negativos}/{total_sent}")
-                                
-                                with col4:
-                                    pct_positivo = (positivos / total_sent * 100) if total_sent > 0 else 0
-                                    st.metric("% Positivo", f"{pct_positivo:.0f}%")
-                                
-                                # Mostrar exemplos
-                                st.markdown("**Exemplos de Sentenças (Original → Limpa):**")
-                                
-                                col_pos, col_neu, col_neg = st.columns(3)
-                                
-                                with col_pos:
-                                    st.markdown("✅ **Positivas:**")
-                                    for r in [x for x in resultado_neg if x['label'] in ['POSITIVE', 'LABEL_2']][:3]:
-                                        st.write(f"🇧🇷 _{r['sentenca_pt']}_")
-                                        st.write(f"✂️ _{r['sentenca_limpa']}_")
-                                        st.write("")
-                                
-                                with col_neu:
-                                    st.markdown("⚪ **Neutras:**")
-                                    for r in [x for x in resultado_neg if x['label'] in ['NEUTRAL', 'LABEL_1']][:3]:
-                                        st.write(f"🇧🇷 _{r['sentenca_pt']}_")
-                                        st.write(f"✂️ _{r['sentenca_limpa']}_")
-                                        st.write("")
-                                
-                                with col_neg:
-                                    st.markdown("❌ **Negativas:**")
-                                    for r in [x for x in resultado_neg if x['label'] in ['NEGATIVE', 'LABEL_0']][:3]:
-                                        st.write(f"🇧🇷 _{r['sentenca_pt']}_")
-                                        st.write(f"✂️ _{r['sentenca_limpa']}_")
-                                        st.write("")
-                            
-                            # Analisar causador
-                            st.markdown("---")
-                            st.markdown("#### 🔴 Sentimento do Causador")
-                            
-                            with st.spinner("Analisando fala do causador..."):
-                                resultado_caus = analise.analise_sentimento_transformer_otimizado(txt_caus, nlp_model)
-                            
-                            if resultado_caus:
-                                # Contar positivos/negativos/neutros
-                                positivos = sum(1 for r in resultado_caus if r['label'] in ['POSITIVE', 'LABEL_2'])
-                                negativos = sum(1 for r in resultado_caus if r['label'] in ['NEGATIVE', 'LABEL_0'])
-                                neutros = sum(1 for r in resultado_caus if r['label'] in ['NEUTRAL', 'LABEL_1'])
-                                total_sent = len(resultado_caus)
-                                
-                                col1, col2, col3, col4 = st.columns(4)
-                                
-                                with col1:
-                                    st.metric("Positivos", f"{positivos}/{total_sent}")
-                                
-                                with col2:
-                                    st.metric("Neutros", f"{neutros}/{total_sent}")
-                                
-                                with col3:
-                                    st.metric("Negativos", f"{negativos}/{total_sent}")
-                                
-                                with col4:
-                                    pct_negativo = (negativos / total_sent * 100) if total_sent > 0 else 0
-                                    st.metric("% Negativo", f"{pct_negativo:.0f}%")
-                                
-                                # Mostrar exemplos
-                                st.markdown("**Exemplos de Sentenças:**")
-                                
-                                col_pos, col_neu, col_neg = st.columns(3)
-                                
-                                with col_pos:
-                                    st.markdown("✅ **Positivas:**")
-                                    for r in [x for x in resultado_caus if x['label'] in ['POSITIVE', 'LABEL_2']][:3]:
-                                        st.write(f"🇧🇷 _{r['sentenca_pt']}_")
-                                        st.write(f"✂️ _{r['sentenca_limpa']}_")
-                                        st.write("")
-                                
-                                with col_neu:
-                                    st.markdown("⚪ **Neutras:**")
-                                    for r in [x for x in resultado_caus if x['label'] in ['NEUTRAL', 'LABEL_1']][:3]:
-                                        st.write(f"🇧🇷 _{r['sentenca_pt']}_")
-                                        st.write(f"✂️ _{r['sentenca_limpa']}_")
-                                        st.write("")
-                                
-                                with col_neg:
-                                    st.markdown("❌ **Negativas:**")
-                                    for r in [x for x in resultado_caus if x['label'] in ['NEGATIVE', 'LABEL_0']][:3]:
-                                        st.write(f"🇧🇷 _{r['sentenca_pt']}_")
-                                        st.write(f"✂️ _{r['sentenca_limpa']}_")
-                                        st.write("")
-                            
-                            # Análise Comparativa
-                            st.markdown("---")
-                            st.markdown("#### ✔️ Comparativo")
-                            
-                            if resultado_neg and resultado_caus:
-                                col1, col2 = st.columns(2)
-                                
-                                with col1:
-                                    pct_pos_neg = (sum(1 for r in resultado_neg if r['label'] in ['POSITIVE', 'LABEL_2']) / len(resultado_neg) * 100)
-                                    st.metric("Negociador % Positivo", f"{pct_pos_neg:.0f}%")
-                                
-                                with col2:
-                                    pct_pos_caus = (sum(1 for r in resultado_caus if r['label'] in ['POSITIVE', 'LABEL_2']) / len(resultado_caus) * 100)
-                                    st.metric("Causador % Positivo", f"{pct_pos_caus:.0f}%")
+                                conv_pct = conv_tematica["convergencia_geral"]
                                 
                                 st.markdown(f"""
-                                **Interpretação:**
-                                - Negociador {pct_pos_neg:.0f}% positivo → {"Mantendo tom construtivo" if pct_pos_neg > 60 else "Tom mais técnico/neutro" if pct_pos_neg > 30 else "Tom defensivo"}
-                                - Causador {pct_pos_caus:.0f}% positivo → {"Muito receptivo" if pct_pos_caus > 60 else "Moderadamente receptivo" if pct_pos_caus > 40 else "Resistente, preocupado"}
-                                """)
+                                    **Convergência Temática Observada: {conv_pct:.1f}%**
+                                    
+                                    **O que é medido:**
+                                    - Intensidade com que causador e negociador abordam cada tema compartilhado
+                                    - Média das similitudes de score para os temas em comum
+                                    - Escala: 0% (completamente divergentes) a 100% (perfeitamente alinhados)
+                                    
+                                    **Interpretação Descritiva (sem classificação):**
+                                    
+                                    | Range | O que significa |
+                                    |-------|---|
+                                    | **90-100%** | Ambos abordam os temas com intensidades praticamente idênticas |
+                                    | **70-90%** | Maioria dos temas tem intensidades próximas, com variações pequenas |
+                                    | **50-70%** | Alguns temas com intensidades similares, outros com diferenças notáveis |
+                                    | **30-50%** | Intensidades frequentemente divergentes — énfases diferentes |
+                                    | **0-30%** | Abordagens muito diferentes — possivelmente universos mentais distintos |
+                                    
+                                    **Seu caso: {conv_pct:.1f}%**
+                                    
+                                    - **Temas compartilhados:** {len(conv_tematica["temas_compartilhados"])}
+                                    - **Temas só do causador:** {len(conv_tematica["temas_exclusivos_causador"])}
+                                    - **Temas só do negociador:** {len(conv_tematica["temas_exclusivos_negociador"])}
+                                    
+                                    **Atenção:**
+                                    Este é um índice DESCRITIVO. Não é preditivo de desfecho.
+                                    Próxima etapa: comparar com histórico de 50+ APAs para validar padrões.
+                                    """)
 
-                    st.markdown("---")
-                    st.markdown("""
-                                        
-                    ⚠️ **Limitações:**
-                    
-                    - Modelo treinado em resenhas de produtos em inglês
-                    - Português coloquial pode ser mal interpretado
-                    - "Entendi", "tranquilo" podem ser classificados errado            
-                    - Gírias muito locais podem confundir
-                    - Sarcasmo ainda pode não ser detectado
-                    - Use como complemento da Análise Rápida
-                    """)
+                            except Exception as e:
+                                st.error(f"Erro ao analisar convergência temática: {str(e)[:80]}")
 
-            st.markdown("---")
+                    # --- TAB 7: ESTADO DO CAUSADOR ---
+                    with tab_ng7:
+                        st.markdown("""
+                        <div class='info-card'>
+                        <h5 style='color:#FFD700; margin-top:0;'>✔️ ESTADO DO CAUSADOR (APA)</h5>
+                        <p style='color:#ccc; font-size:0.9rem;'>
+                        Análise estruturada do estado emocional/comportamental do causador.
+                        </p>
+                        </div>
+                        """, unsafe_allow_html=True)
 
+                        texto_c_raw = stats.get('texto_c_raw', '')
 
-            
-            st.markdown("---")
+                        if texto_c_raw:
+                            try:
+                                analise_crise = analise.analisar_crise_direcional(
+                                    texto_c_raw,
+                                    resolucao_tipo=stats.get('resolucao_tipo', 'desconhecida')
+                                )
+
+                                if analise_crise and 'sumario' in analise_crise:
+                                    sumario = analise_crise['sumario']
+
+                                    risco_observado    = sumario.get('risco_observado')
+                                    abertura_observada = sumario.get('abertura_observada')
+                                    raiz_observada     = sumario.get('raiz_observada')
+                                    volatilidade_index = sumario.get('volatilidade_index')
+                                    intensidade_index  = sumario.get('intensidade_index')
+                                    direcao_index      = sumario.get('direcao_index')
+                                    classificacao      = sumario.get('classificacao')
+                                    leitura            = sumario.get('leitura')
+                                    resolucao_tipo     = stats.get('resolucao_tipo', 'desconhecida')
+
+                                    # ── SCORECARD ──────────────────────────────
+                                    st.markdown("### ✔️ Resumo da Análise")
+                                    col1, col2, col3 = st.columns(3)
+
+                                    with col1:
+                                        st.metric(
+                                            "🔴 Risco Observado",
+                                            f"{risco_observado:.1f}%" if risco_observado is not None else "N/D"
+                                        )
+                                    with col2:
+                                        st.metric(
+                                            "🟢 Abertura Observada",
+                                            f"{abertura_observada:.1f}%" if abertura_observada is not None else "N/D"
+                                        )
+                                    with col3:
+                                        st.metric(
+                                            "🟡 Raiz Observada",
+                                            f"{raiz_observada:.1f}%" if raiz_observada is not None else "N/D"
+                                        )
+
+                                    col4, col5, col6 = st.columns(3)
+
+                                    with col4:
+                                        st.metric(
+                                            "⚡ Intensidade Global",
+                                            f"{intensidade_index:.2f}" if intensidade_index is not None else "N/D"
+                                        )
+                                    with col5:
+                                        st.metric(
+                                            "➡️ Direção",
+                                            f"{direcao_index:+.2f}" if direcao_index is not None else "N/D"
+                                        )
+                                    with col6:
+                                        st.metric(
+                                            "✔️ Volatilidade",
+                                            f"{volatilidade_index:.2f}" if volatilidade_index is not None else "N/D"
+                                        )
+
+                                    # ── CLASSIFICAÇÃO ───────────────────────────
+                                    st.markdown("---")
+                                    st.markdown(f"### 🚨 Classificação: `{classificacao}`")
+                                    st.info(leitura)
+
+                                    # ── RADAR ───────────────────────────────────
+                                    st.markdown("---")
+                                    st.markdown("### ✔️ Padrão de Crise (Radar)")
+                                    try:
+                                        fig_crise = analise.gerar_radar_crise_individual(
+                                            risco_observado    if risco_observado    is not None else 0,
+                                            abertura_observada if abertura_observada is not None else 0,
+                                            raiz_observada     if raiz_observada     is not None else 0,
+                                            volatilidade_index if volatilidade_index is not None else 0
+                                        )
+                                        st.plotly_chart(fig_crise, use_container_width=True)
+                                    except Exception as e:
+                                        st.error(f"Erro ao gerar radar: {str(e)[:80]}")
+
+                                    # ── NARRATIVA PARA LEIGOS ───────────────────
+                                    st.markdown("---")
+                                    st.markdown("### ✔️ Leitura Operacional (Linguagem Acessível)")
+
+                                    st.markdown("""
+                                    <div style='background:rgba(255,215,0,0.04);padding:4px 12px;border-left:3px solid #FFD700;margin-bottom:12px;'>
+                                    <p style='color:#aaa;font-size:0.82rem;margin:6px 0;'>
+                                    Interpretação automática dos indicadores em linguagem acessível.
+                                    Destinada a leitura rápida por gestores, auditores e instrutores.
+                                    </p>
+                                    </div>
+                                    """, unsafe_allow_html=True)
+
+                                    narrativa = analise.gerar_narrativa_crise(
+                                        risco_observado    = risco_observado    or 0,
+                                        abertura_observada = abertura_observada or 0,
+                                        raiz_observada     = raiz_observada     or 0,
+                                        intensidade_index  = intensidade_index  or 0,
+                                        direcao_index      = direcao_index      or 0,
+                                        volatilidade_index = volatilidade_index or 0,
+                                        classificacao      = classificacao      or "INDETERMINADO",
+                                        resolucao_tipo     = resolucao_tipo
+                                    )
+                                    st.markdown(narrativa)
+
+                                else:
+                                    st.warning("Não foi possível gerar análise de crise")
+
+                            except Exception as e:
+                                st.error(f"Erro ao analisar crise: {str(e)[:80]}")
+
+                        else:
+                            st.warning("⚠️ Nenhuma transcrição disponível para análise")                    
+                                                
+                        # ============================================================
+                        # TAB 8: QUALIDADE DO DISCURSO COM TRANSFORMER (LAZY LOADING)
+                        # Cole TUDO isso DENTRO do: with tab_ng8:
+                        # ============================================================
+
+                        with tab_ng8:
+                            st.markdown("### ✔️ Escuta e Sentimento")
+
+                            col_caus = "TRANSCRIÇÃO DO CAUSADOR"
+                            col_neg = "TRANSCRIÇÃO DO NEGOCIADOR PRINCIPAL"
+
+                            if col_caus not in df_apa or col_neg not in df_apa:
+                                st.warning("⚠️ Colunas de transcrição não encontradas")
+                            else:
+                                txt_caus = str(df_apa[col_caus]).strip()
+                                txt_neg = str(df_apa[col_neg]).strip()
                                 
+                                if not txt_caus or not txt_neg or len(txt_caus) < 20 or len(txt_neg) < 20:
+                                    st.warning("⚠️ Transcrições insuficientes para análise")
+                                else:
+                                    
+                                    # =========================================================
+                                    # SEÇÃO 1: ANÁLISE RÁPIDA (com toggle)
+                                    # =========================================================
+                                    
+                                    col_left, col_center, col_right = st.columns([1, 1, 1])
+                                    with col_center:
+                                        is_analise_rapida = render_toggle_button(
+                                            label="✔️ Análise Rápida (Padrões Léxicos)",
+                                            session_key="tab8_analise_rapida",
+                                            button_key="btn_tab8_analise_rapida"
+                                        )
+                                    
+                                    st.markdown("---")
+                                    
+                                    if is_analise_rapida:
+                                        st.markdown("""
+                                        <p style='color: #aaa; font-size: 0.9rem; margin-bottom: 1rem;'>
+                                        Análise imediata baseada em frequência de palavras-chave.
+                                        <strong>Não usa modelo de IA.</strong> Rápido e transparente.
+                                        </p>
+                                        """, unsafe_allow_html=True)
+
+                                        # Rodar análise rápida
+                                        analise_rapida = analise.analise_rapida_discurso(txt_neg, txt_caus)
+
+                                        # SCORECARD - NEGOCIADOR
+                                        st.markdown("### 🟢 NEGOCIADOR PRINCIPAL")
+
+                                        col1, col2, col3 = st.columns(3)
+
+                                        with col1:
+                                            st.metric(
+                                                "Validação",
+                                                analise_rapida['total_validacao'],
+                                                f"x ocorrências"
+                                            )
+
+                                        with col2:
+                                            st.metric(
+                                                "Confronto",
+                                                analise_rapida['total_confronto'],
+                                                f"x ocorrências"
+                                            )
+
+                                        with col3:
+                                            total_palavras_neg = len(txt_neg.split())
+                                            st.metric(
+                                                "Tamanho (Palavras)",
+                                                total_palavras_neg,
+                                                f"palavras"
+                                            )
+
+                                        # SCORECARD - CAUSADOR
+                                        st.markdown("---")
+                                        st.markdown("### 🔴 CAUSADOR")
+
+                                        col1, col2 = st.columns(2)
+
+                                        with col1:
+                                            st.metric(
+                                                "Emoção Alta",
+                                                analise_rapida['total_emocao'],
+                                                f"x palavras fortes"
+                                            )
+
+                                        with col2:
+                                            total_palavras_caus = len(txt_caus.split())
+                                            st.metric(
+                                                "Tamanho (Palavras)",
+                                                total_palavras_caus,
+                                                f"palavras"
+                                            )
+                                        
+                                        # Detalhes
+                                        st.markdown("---")
+                                        st.markdown("#### ✔️ Detalhes das Palavras-Chave Encontradas")
+                                        
+                                        st.markdown("### 🟢 NEGOCIADOR PRINCIPAL")
+
+                                        col_val, col_conf = st.columns(2)
+
+                                        with col_val:
+                                            st.markdown("**Validação (Negociador):**")
+                                            if analise_rapida['validacao']:
+                                                for palavra, freq in sorted(
+                                                    analise_rapida['validacao'].items(),
+                                                    key=lambda x: x[1],
+                                                    reverse=True
+                                                ):
+                                                    st.write(f"  • {palavra}: {freq}x")
+                                            else:
+                                                st.write("  (nenhuma encontrada)")
+
+                                        with col_conf:
+                                            st.markdown("**Confronto (Negociador):**")
+                                            if analise_rapida['confronto']:
+                                                for palavra, freq in sorted(
+                                                    analise_rapida['confronto'].items(),
+                                                    key=lambda x: x[1],
+                                                    reverse=True
+                                                ):
+                                                    st.write(f"  • {palavra}: {freq}x")
+                                            else:
+                                                st.write("  (nenhuma encontrada)")
+                                        
+                                        st.markdown("---")
+                                        st.markdown("### 🔴 CAUSADOR")
+
+                                        st.markdown("**Emoção Alta (Causador):**")
+                                        if analise_rapida['emocao_causador']:
+                                            for palavra, freq in sorted(
+                                                analise_rapida['emocao_causador'].items(),
+                                                key=lambda x: x[1],
+                                                reverse=True
+                                            ):
+                                                st.write(f"  • {palavra}: {freq}x")
+                                        else:
+                                            st.write("  (nenhuma encontrada)")                     
+                                        
+                                        # Interpretação
+                                        st.markdown("---")
+                                        st.markdown("#### 💡 O Que Significa")
+                                        st.markdown("""
+                                        - **Validação**: Palavras que indicam reconhecimento, escuta, empatia
+                                        - **Confronto**: Palavras que indicam discordância, negação, imposição
+                                        - **Emoção Alta**: Indicadores de stress, medo, raiva no causador
+                                        
+                                        **Nota:** Essa análise conta frequência, não interpreta contexto.
+                                        "Não" pode ser "não vou bater" (protetor) ou "não faço isso" (negação).
+                                        Use como descritor, não como julgamento.
+                                        """)
+                                    
+                                        # ============================================================
+                                        # TAB 8: TRANSFORMER OTIMIZADO (SEM TRADUÇÃO - RÁPIDO)
+                                        # ============================================================
+
+                                        st.markdown("""
+                                        <div style='background: rgba(76, 175, 80, 0.1); border-left: 4px solid #4CAF50; padding: 15px; border-radius: 8px; margin-bottom: 20px;'>
+                                        <h5 style='color: #4CAF50; margin-top: 0;'>🤖 Análise Avançada com Transformer (Otimizado)</h5>
+                                        <p style='color: #aaa; font-size: 0.9rem; margin-bottom: 10px;'>
+                                        Análise com Transformer português otimizado: remove gírias e stopwords para melhor compreensão.
+                                        </p>
+                                        <ul style='color: #bbb; font-size: 0.9rem; line-height: 1.6; margin: 10px 0;'>
+                                        <li><strong>Pré-processamento:</strong> Normaliza gírias + remove stopwords</li>
+                                        <li><strong>Análise:</strong> Transformer direto no português limpo</li>
+                                        <li><strong>Tempo:</strong> ~10-15 segundos (muito mais rápido!)</li>
+                                        <li><strong>Mostrada:</strong> Original + Limpa</li>
+                                        </ul>
+                                        <p style='color: #4CAF50; font-size: 0.85rem; font-weight: bold; margin-bottom: 0;'>
+                                        Clique no botão abaixo para carregar a análise.
+                                        </p>
+                                        </div>
+                                        """, unsafe_allow_html=True)
+
+                                        col_left, col_center, col_right = st.columns([1, 1, 1])
+                                        with col_center:
+                                            is_transformer = render_toggle_button(
+                                                label="✔️ Transformer Otimizado (10-15s)",
+                                                session_key="tab8_transformer_otimizado",
+                                                button_key="btn_tab8_transformer_otimizado"
+                                            )
+
+                                        st.markdown("---")
+
+                                        if is_transformer:
+                                            # Mostrar exemplo de limpeza
+                                            with st.expander("✔️ Como funciona a limpeza (exemplo)"):
+                                                st.markdown("**Exemplo: Primeiras 3 sentenças**")
+                                                
+                                                exemplo_linhas = analise.dividir_em_sentencas(txt_neg)[:3]
+                                                
+                                                for idx, sentenca in enumerate(exemplo_linhas, 1):
+                                                    original = sentenca
+                                                    limpa = analise.limpar_sentenca(sentenca)
+                                                    
+                                                    col1, col2 = st.columns([1, 1])
+                                                    with col1:
+                                                        st.markdown(f"**Original ({len(original.split())} palavras):**")
+                                                        st.write(f"_{original}_")
+                                                    with col2:
+                                                        st.markdown(f"**Limpa ({len(limpa.split())} palavras):**")
+                                                        st.write(f"_{limpa}_")
+                                                    st.markdown("---")
+                                            
+                                            with st.spinner("⏳ Carregando modelo Transformer..."):
+                                                nlp_model = analise.carregar_transformer_portugues()
+                                            
+                                            if nlp_model is None:
+                                                st.error("❌ Erro ao carregar modelo. Verifique instalação de `transformers`")
+                                            else:
+                                                st.success("✔️ Modelo carregado com sucesso!")
+                                                
+                                                # Analisar negociador
+                                                st.markdown("---")
+                                                st.markdown("#### 🟢 Sentimento do Negociador")
+                                                
+                                                with st.spinner("Analisando fala do negociador..."):
+                                                    resultado_neg = analise.analise_sentimento_transformer_otimizado(txt_neg, nlp_model)
+                                                
+                                                if resultado_neg:
+                                                    # Contar positivos/negativos/neutros
+                                                    positivos = sum(1 for r in resultado_neg if r['label'] in ['POSITIVE', 'LABEL_2'])
+                                                    negativos = sum(1 for r in resultado_neg if r['label'] in ['NEGATIVE', 'LABEL_0'])
+                                                    neutros = sum(1 for r in resultado_neg if r['label'] in ['NEUTRAL', 'LABEL_1'])
+                                                    total_sent = len(resultado_neg)
+                                                    
+                                                    col1, col2, col3, col4 = st.columns(4)
+                                                    
+                                                    with col1:
+                                                        st.metric("Positivos", f"{positivos}/{total_sent}")
+                                                    
+                                                    with col2:
+                                                        st.metric("Neutros", f"{neutros}/{total_sent}")
+                                                    
+                                                    with col3:
+                                                        st.metric("Negativos", f"{negativos}/{total_sent}")
+                                                    
+                                                    with col4:
+                                                        pct_positivo = (positivos / total_sent * 100) if total_sent > 0 else 0
+                                                        st.metric("% Positivo", f"{pct_positivo:.0f}%")
+                                                    
+                                                    # Mostrar exemplos
+                                                    st.markdown("**Exemplos de Sentenças (Original → Limpa):**")
+                                                    
+                                                    col_pos, col_neu, col_neg = st.columns(3)
+                                                    
+                                                    with col_pos:
+                                                        st.markdown("✅ **Positivas:**")
+                                                        for r in [x for x in resultado_neg if x['label'] in ['POSITIVE', 'LABEL_2']][:3]:
+                                                            st.write(f"🇧🇷 _{r['sentenca_pt']}_")
+                                                            st.write(f"✂️ _{r['sentenca_limpa']}_")
+                                                            st.write("")
+                                                    
+                                                    with col_neu:
+                                                        st.markdown("⚪ **Neutras:**")
+                                                        for r in [x for x in resultado_neg if x['label'] in ['NEUTRAL', 'LABEL_1']][:3]:
+                                                            st.write(f"🇧🇷 _{r['sentenca_pt']}_")
+                                                            st.write(f"✂️ _{r['sentenca_limpa']}_")
+                                                            st.write("")
+                                                    
+                                                    with col_neg:
+                                                        st.markdown("❌ **Negativas:**")
+                                                        for r in [x for x in resultado_neg if x['label'] in ['NEGATIVE', 'LABEL_0']][:3]:
+                                                            st.write(f"🇧🇷 _{r['sentenca_pt']}_")
+                                                            st.write(f"✂️ _{r['sentenca_limpa']}_")
+                                                            st.write("")
+                                                
+                                                # Analisar causador
+                                                st.markdown("---")
+                                                st.markdown("#### 🔴 Sentimento do Causador")
+                                                
+                                                with st.spinner("Analisando fala do causador..."):
+                                                    resultado_caus = analise.analise_sentimento_transformer_otimizado(txt_caus, nlp_model)
+                                                
+                                                if resultado_caus:
+                                                    # Contar positivos/negativos/neutros
+                                                    positivos = sum(1 for r in resultado_caus if r['label'] in ['POSITIVE', 'LABEL_2'])
+                                                    negativos = sum(1 for r in resultado_caus if r['label'] in ['NEGATIVE', 'LABEL_0'])
+                                                    neutros = sum(1 for r in resultado_caus if r['label'] in ['NEUTRAL', 'LABEL_1'])
+                                                    total_sent = len(resultado_caus)
+                                                    
+                                                    col1, col2, col3, col4 = st.columns(4)
+                                                    
+                                                    with col1:
+                                                        st.metric("Positivos", f"{positivos}/{total_sent}")
+                                                    
+                                                    with col2:
+                                                        st.metric("Neutros", f"{neutros}/{total_sent}")
+                                                    
+                                                    with col3:
+                                                        st.metric("Negativos", f"{negativos}/{total_sent}")
+                                                    
+                                                    with col4:
+                                                        pct_negativo = (negativos / total_sent * 100) if total_sent > 0 else 0
+                                                        st.metric("% Negativo", f"{pct_negativo:.0f}%")
+                                                    
+                                                    # Mostrar exemplos
+                                                    st.markdown("**Exemplos de Sentenças:**")
+                                                    
+                                                    col_pos, col_neu, col_neg = st.columns(3)
+                                                    
+                                                    with col_pos:
+                                                        st.markdown("✅ **Positivas:**")
+                                                        for r in [x for x in resultado_caus if x['label'] in ['POSITIVE', 'LABEL_2']][:3]:
+                                                            st.write(f"🇧🇷 _{r['sentenca_pt']}_")
+                                                            st.write(f"✂️ _{r['sentenca_limpa']}_")
+                                                            st.write("")
+                                                    
+                                                    with col_neu:
+                                                        st.markdown("⚪ **Neutras:**")
+                                                        for r in [x for x in resultado_caus if x['label'] in ['NEUTRAL', 'LABEL_1']][:3]:
+                                                            st.write(f"🇧🇷 _{r['sentenca_pt']}_")
+                                                            st.write(f"✂️ _{r['sentenca_limpa']}_")
+                                                            st.write("")
+                                                    
+                                                    with col_neg:
+                                                        st.markdown("❌ **Negativas:**")
+                                                        for r in [x for x in resultado_caus if x['label'] in ['NEGATIVE', 'LABEL_0']][:3]:
+                                                            st.write(f"🇧🇷 _{r['sentenca_pt']}_")
+                                                            st.write(f"✂️ _{r['sentenca_limpa']}_")
+                                                            st.write("")
+                                                
+                                                # Análise Comparativa
+                                                st.markdown("---")
+                                                st.markdown("#### ✔️ Comparativo")
+                                                
+                                                if resultado_neg and resultado_caus:
+                                                    col1, col2 = st.columns(2)
+                                                    
+                                                    with col1:
+                                                        pct_pos_neg = (sum(1 for r in resultado_neg if r['label'] in ['POSITIVE', 'LABEL_2']) / len(resultado_neg) * 100)
+                                                        st.metric("Negociador % Positivo", f"{pct_pos_neg:.0f}%")
+                                                    
+                                                    with col2:
+                                                        pct_pos_caus = (sum(1 for r in resultado_caus if r['label'] in ['POSITIVE', 'LABEL_2']) / len(resultado_caus) * 100)
+                                                        st.metric("Causador % Positivo", f"{pct_pos_caus:.0f}%")
+                                                    
+                                                    st.markdown(f"""
+                                                    **Interpretação:**
+                                                    - Negociador {pct_pos_neg:.0f}% positivo → {"Mantendo tom construtivo" if pct_pos_neg > 60 else "Tom mais técnico/neutro" if pct_pos_neg > 30 else "Tom defensivo"}
+                                                    - Causador {pct_pos_caus:.0f}% positivo → {"Muito receptivo" if pct_pos_caus > 60 else "Moderadamente receptivo" if pct_pos_caus > 40 else "Resistente, preocupado"}
+                                                    """)
+
+                                        st.markdown("---")
+                                        st.markdown("""
+                                                            
+                                        ⚠️ **Limitações:**
+                                        
+                                        - Modelo treinado em resenhas de produtos em inglês
+                                        - Português coloquial pode ser mal interpretado
+                                        - "Entendi", "tranquilo" podem ser classificados errado            
+                                        - Gírias muito locais podem confundir
+                                        - Sarcasmo ainda pode não ser detectado
+                                        - Use como complemento da Análise Rápida
+                                        """)
+
+                                st.markdown("---")
+
+
+                                            
+                                                
                     # ===== PRÓXIMO BOTÃO (FORA DA TAB) =====
             if st.button("✔ 3. GERAR ANALYTICS E EXPORTAR ANÁLISE (PDF)"):
                 with st.spinner("Compilando dados técnicos, consultando IA e desenhando PDF..."):
@@ -3096,15 +3140,15 @@ else:
     DELTA-NEGOCIAÇÃO — GATE/PMESP
     </span>
 
-    
+
     "O maior inimigo do conhecimento não é a ignorância, mas a ilusão do conhecimento."
     — Stephen Hawking.
 
-    
+
     “Sem dados, você é apenas mais uma pessoa com opinião.”
     — W. Edwards Deming.
 
-    
+
     Empenhados no desenvolvimento de treinamentos e na avaliação dos Negociadores, alicerçados no pensamento técnico-científico e no valor humano, guiados por dados.
 
     <br>
@@ -3129,1234 +3173,1234 @@ else:
     </div>
     """, unsafe_allow_html=True)
 
-    # ====
-    # ABA 2: PAINEL (HISTÓRICO)
-    # ====
-    with aba_geral:
-        st.markdown("### Série Histórica - Negociações GATE")
-        st.markdown("<h5 style='color: #f97;'>Filtros por: Negociador, Tipologia e Modalidade do Incidente</h5>", unsafe_allow_html=True)
-        
-        col_f1, col_f2, col_f3 = st.columns(3)
-        with col_f1:
-            lista_neg_g = ["Todos"] + sorted(df_quali[df_quali['Neg_Limpo'] != 'N/D']['Neg_Limpo'].unique().tolist())
-            filtro_neg_g = st.selectbox("Filtrar por Negociador:", lista_neg_g, key="f_neg_historico")
-        with col_f2:
-            lista_tip_g = ["Todas"] + sorted(df_quali[df_quali['Tip_Limpa'] != 'N/D']['Tip_Limpa'].unique().tolist())
-            filtro_tip_g = st.selectbox("Filtrar por Tipologia:", lista_tip_g, key="f_tip_historico")
-        with col_f3:
-            lista_mod_g = ["Todas"] + sorted(df_quali[df_quali['Mod_Limpa'] != 'N/D']['Mod_Limpa'].unique().tolist())
-            filtro_mod_g = st.selectbox("Filtrar por Modalidade:", lista_mod_g, key="f_mod_historico")
-
-        df_quali_filt = df_quali.copy()
-        if filtro_neg_g != "Todos": df_quali_filt = df_quali_filt[df_quali_filt['Neg_Limpo'] == filtro_neg_g]
-        if filtro_tip_g != "Todas": df_quali_filt = df_quali_filt[df_quali_filt['Tip_Limpa'] == filtro_tip_g]
-        if filtro_mod_g != "Todas": df_quali_filt = df_quali_filt[df_quali_filt['Mod_Limpa'] == filtro_mod_g]
-
-        st.markdown("---")
-        col_m1, col_m2, col_m3 = st.columns(3)
-        with col_m1: st.metric("Ocorrências Analisadas", len(df_quali_filt))
-        with col_m2: st.metric("Tempo Total de Negociação Real", somar_tempos_segundos(df_quali_filt.get('Tempo de Negociação Real', [])))
-        with col_m3: st.metric("Tempo Total de Negociação Tática", somar_tempos_segundos(df_quali_filt.get('Tempo de Negociação Tática', [])))
-
-        st.markdown("---")
-        
-        # ====
-        # NOVOS GRÁFICOS: VISÃO GERAL DA AMOSTRA
-        # ====
-        st.markdown("<h5 style='color: #FFD700;'>Visão Geral da Série Histórica</h5>", unsafe_allow_html=True)
-
-        # ── BOTÃO TOGGLE ───────────────────────────────────────────
-        col_left, col_center, col_right = st.columns([1, 1, 1])
-        with col_center:
-            is_visao_geral = render_toggle_button(
-                label="✔️ Abrir Visão Geral",
-                session_key="analise1_visao_geral",
-                button_key="btn_analise1_visao_geral"
-            )
-        
-        st.markdown("---")
-        
-        if is_visao_geral:     
+            # ====
+            # ABA 2: PAINEL (HISTÓRICO)
+            # ====
+            with aba_geral:
+                st.markdown("### Série Histórica - Negociações GATE")
+                st.markdown("<h5 style='color: #f97;'>Filtros por: Negociador, Tipologia e Modalidade do Incidente</h5>", unsafe_allow_html=True)
                 
-        
-            def gerar_grafico_resumo(df, coluna, titulo):
-                """Gera gráfico de rosca (donut) padronizado com o Design System."""
-                if coluna not in df.columns: return None
-                
-                # Limpa listas vazias e formata strings
-                serie = df[coluna].apply(lambda x: x[0] if isinstance(x, list) and len(x)>0 else str(x))
-                serie = serie[~serie.isin(["N/D", "nan", "", "None"])]
-                
-                if serie.empty: return None
-                
-                contagem = serie.value_counts().reset_index()
-                contagem.columns = [coluna, 'Frequência']
-                # para garantir que a maior fatia pegue a cor mais forte
-                contagem = contagem.sort_values('Frequência', ascending=False)
+                col_f1, col_f2, col_f3 = st.columns(3)
+                with col_f1:
+                    lista_neg_g = ["Todos"] + sorted(df_quali[df_quali['Neg_Limpo'] != 'N/D']['Neg_Limpo'].unique().tolist())
+                    filtro_neg_g = st.selectbox("Filtrar por Negociador:", lista_neg_g, key="f_neg_historico")
+                with col_f2:
+                    lista_tip_g = ["Todas"] + sorted(df_quali[df_quali['Tip_Limpa'] != 'N/D']['Tip_Limpa'].unique().tolist())
+                    filtro_tip_g = st.selectbox("Filtrar por Tipologia:", lista_tip_g, key="f_tip_historico")
+                with col_f3:
+                    lista_mod_g = ["Todas"] + sorted(df_quali[df_quali['Mod_Limpa'] != 'N/D']['Mod_Limpa'].unique().tolist())
+                    filtro_mod_g = st.selectbox("Filtrar por Modalidade:", lista_mod_g, key="f_mod_historico")
 
-                cores_contraste = ['#FF8C00', '#8B4513', "#A53A00", '#DEB887', "#EBE9E7" ]
+                df_quali_filt = df_quali.copy()
+                if filtro_neg_g != "Todos": df_quali_filt = df_quali_filt[df_quali_filt['Neg_Limpo'] == filtro_neg_g]
+                if filtro_tip_g != "Todas": df_quali_filt = df_quali_filt[df_quali_filt['Tip_Limpa'] == filtro_tip_g]
+                if filtro_mod_g != "Todas": df_quali_filt = df_quali_filt[df_quali_filt['Mod_Limpa'] == filtro_mod_g]
 
-                # Criação do Gráfico de Rosca
-                fig = px.pie(
-                    contagem, 
-                    values='Frequência', 
-                    names=coluna, 
-                    title=titulo,
-                    hole=0.5, # Define o buraco central para transformar em rosca
-                    color_discrete_sequence=cores_contraste
-                )
+                st.markdown("---")
+                col_m1, col_m2, col_m3 = st.columns(3)
+                with col_m1: st.metric("Ocorrências Analisadas", len(df_quali_filt))
+                with col_m2: st.metric("Tempo Total de Negociação Real", somar_tempos_segundos(df_quali_filt.get('Tempo de Negociação Real', [])))
+                with col_m3: st.metric("Tempo Total de Negociação Tática", somar_tempos_segundos(df_quali_filt.get('Tempo de Negociação Tática', [])))
+
+                st.markdown("---")
                 
-                # Configuração das legendas e rótulos
-                fig.update_traces(
-                    textinfo='value+percent', # Mostra o número absoluto e a porcentagem
-                    textposition='outside',   # Coloca os números para fora para não poluir
-                    marker=dict(line=dict(color='#FFFFFF', width=1))
-                )
-                
-                # Layout padronizado
-                fig.update_layout(
-                    paper_bgcolor="rgba(0,0,0,0)", 
-                    plot_bgcolor="rgba(0,0,0,0)", 
-                    font_color="#FFF", 
-                    margin=dict(t=50, b=10, l=10, r=10),
-                    showlegend=True,
-                    legend=dict(
-                        orientation="h",       # Legenda horizontal
-                        yanchor="bottom", 
-                        y=-0.3, 
-                        xanchor="center", 
-                        x=0.5
+                # ====
+                # NOVOS GRÁFICOS: VISÃO GERAL DA AMOSTRA
+                # ====
+                st.markdown("<h5 style='color: #FFD700;'>Visão Geral da Série Histórica</h5>", unsafe_allow_html=True)
+
+                # ── BOTÃO TOGGLE ───────────────────────────────────────────
+                col_left, col_center, col_right = st.columns([1, 1, 1])
+                with col_center:
+                    is_visao_geral = render_toggle_button(
+                        label="✔️ Abrir Visão Geral",
+                        session_key="analise1_visao_geral",
+                        button_key="btn_analise1_visao_geral"
                     )
-                )
-                return fig
-
-            c_g1, c_g2, c_g3 = st.columns(3)
-            
-            with c_g1:
-                fig_res = gerar_grafico_resumo(df_quali_filt, 'Resolução', 'Resolução do Incidente')
-                if fig_res: st.plotly_chart(fig_res, use_container_width=True)
-                else: st.info("Sem dados de Resolução para os filtros atuais.")
                 
-                fig_uni = gerar_grafico_resumo(df_quali_filt, 'Uniforme Usado', 'Uniforme Utilizado')
-                if fig_uni: st.plotly_chart(fig_uni, use_container_width=True)
-                else: st.info("Sem dados de Uniforme para os filtros atuais.")
-
-            with c_g2:
-                fig_trans = gerar_grafico_resumo(df_quali_filt, 'Forma de Transição', 'Forma de Transição')
-                if fig_trans: st.plotly_chart(fig_trans, use_container_width=True)
-                else: st.info("Sem dados de Transição para os filtros atuais.")
+                st.markdown("---")
                 
-                fig_sexo = gerar_grafico_resumo(df_quali_filt, 'Sexo do Causador', 'Sexo do Causador')
-                if fig_sexo: st.plotly_chart(fig_sexo, use_container_width=True)
-                else: st.info("Sem dados de Sexo para os filtros atuais.")
-
-
-            with c_g3:
-                fig_mod = gerar_grafico_resumo(df_quali_filt, 'Modalidade do incidente', 'Modalidade do incidente')
-                if fig_mod: st.plotly_chart(fig_mod, use_container_width=True)
-                else: st.info("Sem dados de Modalidade do incidente para os filtros atuais.")
+                if is_visao_geral:     
+                        
                 
-                fig_tip = gerar_grafico_resumo(df_quali_filt, 'Tipologia', 'Tipologia')
-                if fig_tip: st.plotly_chart(fig_tip, use_container_width=True)
-                else: st.info("Sem dados de Tipologia para os filtros atuais.")
+                    def gerar_grafico_resumo(df, coluna, titulo):
+                        """Gera gráfico de rosca (donut) padronizado com o Design System."""
+                        if coluna not in df.columns: return None
+                        
+                        # Limpa listas vazias e formata strings
+                        serie = df[coluna].apply(lambda x: x[0] if isinstance(x, list) and len(x)>0 else str(x))
+                        serie = serie[~serie.isin(["N/D", "nan", "", "None"])]
+                        
+                        if serie.empty: return None
+                        
+                        contagem = serie.value_counts().reset_index()
+                        contagem.columns = [coluna, 'Frequência']
+                        # para garantir que a maior fatia pegue a cor mais forte
+                        contagem = contagem.sort_values('Frequência', ascending=False)
 
-            st.markdown("---")
+                        cores_contraste = ['#FF8C00', '#8B4513', "#A53A00", '#DEB887', "#EBE9E7" ]
 
+                        # Criação do Gráfico de Rosca
+                        fig = px.pie(
+                            contagem, 
+                            values='Frequência', 
+                            names=coluna, 
+                            title=titulo,
+                            hole=0.5, # Define o buraco central para transformar em rosca
+                            color_discrete_sequence=cores_contraste
+                        )
+                        
+                        # Configuração das legendas e rótulos
+                        fig.update_traces(
+                            textinfo='value+percent', # Mostra o número absoluto e a porcentagem
+                            textposition='outside',   # Coloca os números para fora para não poluir
+                            marker=dict(line=dict(color='#FFFFFF', width=1))
+                        )
+                        
+                        # Layout padronizado
+                        fig.update_layout(
+                            paper_bgcolor="rgba(0,0,0,0)", 
+                            plot_bgcolor="rgba(0,0,0,0)", 
+                            font_color="#FFF", 
+                            margin=dict(t=50, b=10, l=10, r=10),
+                            showlegend=True,
+                            legend=dict(
+                                orientation="h",       # Legenda horizontal
+                                yanchor="bottom", 
+                                y=-0.3, 
+                                xanchor="center", 
+                                x=0.5
+                            )
+                        )
+                        return fig
 
-
-            # ══════════════════════════════════════════════════════════════════════════════
-            # SEÇÃO: INFORMAÇÃO LONGITUDINAL
-            # ══════════════════════════════════════════════════════════════════════════════
-
-            st.markdown("<h5 style='color: #FFD700;'>✔️ Informação Longitudinal</h5>", unsafe_allow_html=True)
-            st.markdown("<p style='color: #aaa; font-size: 0.95rem;'>Como tem evoluído o volume de negociações ao longo do tempo?</p>", unsafe_allow_html=True)
-
-            col_data = next((col for col in ['Data da ocorrência', 'Data', 'DATA'] if col in df_quali_filt.columns), None)
-            if col_data:
-                df_quali_filt['Data_DT'] = pd.to_datetime(df_quali_filt[col_data], errors='coerce')
-                df_time = df_quali_filt.dropna(subset=['Data_DT']).sort_values('Data_DT')
-                if not df_time.empty:
-                    df_time['Mes_Ano'] = df_time['Data_DT'].dt.to_period('M').astype(str)
-                    df_trend = df_time['Mes_Ano'].value_counts().sort_index().reset_index()
-                    df_trend.columns = ['Mês', 'Qtd Ocorrências']
+                    c_g1, c_g2, c_g3 = st.columns(3)
                     
-                    st.markdown(
-                        f"""
-                        **Resumo:** Total de {len(df_time)} ocorrências registradas de {df_trend['Mês'].min()} a {df_trend['Mês'].max()}
-                        """
+                    with c_g1:
+                        fig_res = gerar_grafico_resumo(df_quali_filt, 'Resolução', 'Resolução do Incidente')
+                        if fig_res: st.plotly_chart(fig_res, use_container_width=True)
+                        else: st.info("Sem dados de Resolução para os filtros atuais.")
+                        
+                        fig_uni = gerar_grafico_resumo(df_quali_filt, 'Uniforme Usado', 'Uniforme Utilizado')
+                        if fig_uni: st.plotly_chart(fig_uni, use_container_width=True)
+                        else: st.info("Sem dados de Uniforme para os filtros atuais.")
+
+                    with c_g2:
+                        fig_trans = gerar_grafico_resumo(df_quali_filt, 'Forma de Transição', 'Forma de Transição')
+                        if fig_trans: st.plotly_chart(fig_trans, use_container_width=True)
+                        else: st.info("Sem dados de Transição para os filtros atuais.")
+                        
+                        fig_sexo = gerar_grafico_resumo(df_quali_filt, 'Sexo do Causador', 'Sexo do Causador')
+                        if fig_sexo: st.plotly_chart(fig_sexo, use_container_width=True)
+                        else: st.info("Sem dados de Sexo para os filtros atuais.")
+
+
+                    with c_g3:
+                        fig_mod = gerar_grafico_resumo(df_quali_filt, 'Modalidade do incidente', 'Modalidade do incidente')
+                        if fig_mod: st.plotly_chart(fig_mod, use_container_width=True)
+                        else: st.info("Sem dados de Modalidade do incidente para os filtros atuais.")
+                        
+                        fig_tip = gerar_grafico_resumo(df_quali_filt, 'Tipologia', 'Tipologia')
+                        if fig_tip: st.plotly_chart(fig_tip, use_container_width=True)
+                        else: st.info("Sem dados de Tipologia para os filtros atuais.")
+
+                    st.markdown("---")
+
+
+
+                    # ══════════════════════════════════════════════════════════════════════════════
+                    # SEÇÃO: INFORMAÇÃO LONGITUDINAL
+                    # ══════════════════════════════════════════════════════════════════════════════
+
+                    st.markdown("<h5 style='color: #FFD700;'>✔️ Informação Longitudinal</h5>", unsafe_allow_html=True)
+                    st.markdown("<p style='color: #aaa; font-size: 0.95rem;'>Como tem evoluído o volume de negociações ao longo do tempo?</p>", unsafe_allow_html=True)
+
+                    col_data = next((col for col in ['Data da ocorrência', 'Data', 'DATA'] if col in df_quali_filt.columns), None)
+                    if col_data:
+                        df_quali_filt['Data_DT'] = pd.to_datetime(df_quali_filt[col_data], errors='coerce')
+                        df_time = df_quali_filt.dropna(subset=['Data_DT']).sort_values('Data_DT')
+                        if not df_time.empty:
+                            df_time['Mes_Ano'] = df_time['Data_DT'].dt.to_period('M').astype(str)
+                            df_trend = df_time['Mes_Ano'].value_counts().sort_index().reset_index()
+                            df_trend.columns = ['Mês', 'Qtd Ocorrências']
+                            
+                            st.markdown(
+                                f"""
+                                **Resumo:** Total de {len(df_time)} ocorrências registradas de {df_trend['Mês'].min()} a {df_trend['Mês'].max()}
+                                """
+                            )
+                            
+                            fig_time = px.line(
+                                df_trend, 
+                                x='Mês', 
+                                y='Qtd Ocorrências', 
+                                markers=True, 
+                                color_discrete_sequence=['#FFD700'],
+                                title="Evolução Temporal de Negociações"
+                            )
+                            fig_time.update_layout(
+                                paper_bgcolor="rgba(0,0,0,0)", 
+                                plot_bgcolor="rgba(0,0,0,0)", 
+                                font_color="#FFF",
+                                hovermode='x unified'
+                            )
+                            st.plotly_chart(fig_time, use_container_width=True)
+                        else: 
+                            st.info("⚠️ Sem datas válidas nos registros.")
+                    else: 
+                        st.info("⚠️ Coluna de Data não encontrada. Adicione uma coluna 'Data' ao seu formulário.")
+
+                    st.markdown("---")
+
+
+                # ============================================================
+                # BLOCO: Ranking de Técnicas + Padrões e Correlações
+                # ============================================================
+                
+                
+                st.markdown("<h5 style='color: #FFD700;'> Ranking de Técnicas Aplicadas</h5>", unsafe_allow_html=True)
+
+                col_left, col_center, col_right = st.columns([1, 1, 1])  
+                with col_center:
+                    is_ranking = render_toggle_button(
+                        label="✔️ Abrir Ranking de Técnicas",
+                        session_key="ranking_de_tecnicas_expanded",
+                        button_key="btn_ranking_tecnicas"
                     )
+
+                st.markdown("---")
+
+                if is_ranking:
                     
-                    fig_time = px.line(
-                        df_trend, 
-                        x='Mês', 
-                        y='Qtd Ocorrências', 
-                        markers=True, 
-                        color_discrete_sequence=['#FFD700'],
-                        title="Evolução Temporal de Negociações"
+                    if not df_tec.empty:
+                        df_tec["Neg_Limpo"] = (
+                            df_tec["Negociador Principal do incidente crítico"].apply(limpar_valor)
+                            if "Negociador Principal do incidente crítico" in df_tec.columns
+                            else "N/D"
+                        )
+                        df_tec["Tip_Limpa"] = (
+                            df_tec["Tipologia do incidente crítico"].apply(limpar_valor)
+                            if "Tipologia do incidente crítico" in df_tec.columns
+                            else "N/D"
+                        )
+                        df_tec["Mod_Limpa"] = (
+                            df_tec["Modalidade do incidente crítico"].apply(limpar_valor)
+                            if "Modalidade do incidente crítico" in df_tec.columns
+                            else "N/D"
+                        )
+
+                        df_tec_filt = df_tec.copy()
+                        if filtro_neg_g != "Todos":
+                            df_tec_filt = df_tec_filt[df_tec_filt["Neg_Limpo"] == filtro_neg_g]
+                        if filtro_tip_g != "Todas":
+                            df_tec_filt = df_tec_filt[df_tec_filt["Tip_Limpa"] == filtro_tip_g]
+                        if filtro_mod_g != "Todas":
+                            df_tec_filt = df_tec_filt[df_tec_filt["Mod_Limpa"] == filtro_mod_g]
+
+                    # ----------------------------------------------------------
+                    # Ranking visual
+                    # ----------------------------------------------------------
+                    if not df_tec_filt.empty:
+                        col_t = next(
+                            (
+                                col
+                                for col in ["TÉCNICAS", "TECNICAS", "TÉCNICA", "TECNICA"]
+                                if col in df_tec_filt.columns
+                            ),
+                            None,
+                        )
+                        if col_t:
+                            freq_global = df_tec_filt[col_t].value_counts().reset_index()
+                            freq_global.columns = ["Técnica", "Vezes Utilizada"]
+
+                            c_tab, c_tree = st.columns([1, 2])
+                            with c_tab:
+                                st.dataframe(freq_global, use_container_width=True, hide_index=True)
+                            with c_tree:
+                                fig_g = px.treemap(
+                                    freq_global,
+                                    path=["Técnica"],
+                                    values="Vezes Utilizada",
+                                    color="Vezes Utilizada",
+                                    color_continuous_scale="Oranges",
+                                )
+                                fig_g.update_layout(
+                                    paper_bgcolor="rgba(0,0,0,0)",
+                                    plot_bgcolor="rgba(0,0,0,0)",
+                                    font_color="#FFF",
+                                    margin=dict(t=0, l=0, r=0, b=0),
+                                )
+                                st.plotly_chart(fig_g, use_container_width=True)
+                        else:
+                            st.warning("Coluna 'TÉCNICAS' não encontrada.")
+                    else:
+                        st.info("Nenhuma técnica encontrada para os filtros selecionados.")
+
+                    st.markdown("---")
+
+
+                    #NOVAS ANALISES 21MAI
+
+                                
+                    # ============================================================
+                    # ANÁLISE 4: EFETIVIDADE DAS TÉCNICAS (SÉRIE HISTÓRICA)
+                    # ============================================================
+
+                    st.markdown("<h5 style='color: #FFD700;'>Efetividade das Técnicas</h5>", unsafe_allow_html=True)
+
+                    col_left, col_center, col_right = st.columns([1, 1, 1])
+                    with col_center:
+                        is_Efetividade_Técnicas = render_toggle_button(
+                            label="✔️ Abrir Efetividade das Técnicas",
+                            session_key="Efetividade_Técnicas",
+                            button_key="btn_Efetividade_Técnicas"
+                        )
+
+                    st.markdown("---")
+
+                    if is_Efetividade_Técnicas:
+                        if not df_tec_filt.empty:
+                            col_tecnica = next(
+                                (col for col in ['TÉCNICAS', 'TECNICAS', 'TÉCNICA', 'TECNICA'] if col in df_tec_filt.columns),
+                                None,
+                            )
+                            col_reacao = next(
+                                (col for col in df_tec_filt.columns if 'ATITUDE' in col.upper()),
+                                None,
+                            )
+
+                            if col_tecnica and col_reacao:
+
+                                def normalizar_reacao(val):
+                                    if val is None:
+                                        return None
+                                    s = str(val).strip()
+                                    if any(x in s for x in ["-1", "-1.0", "🔴", "Negativa", "negativa"]):
+                                        return -1
+                                    elif any(x in s for x in ["0", "0.0", "⚪", "Neutra", "neutra"]):
+                                        return 0
+                                    elif any(x in s for x in ["1", "1.0", "🟢", "Positiva", "positiva"]):
+                                        return 1
+                                    else:
+                                        return None
+
+                                df_ef = df_tec_filt.copy()
+                                df_ef['_reacao_num'] = df_ef[col_reacao].apply(normalizar_reacao)
+
+                                # ── Agrupar por técnica ───────────────────────────────
+                                resumo = []
+                                for tecnica, grupo in df_ef.groupby(col_tecnica):
+                                    total    = len(grupo)
+                                    positivo = (grupo['_reacao_num'] == 1).sum()
+                                    neutro   = (grupo['_reacao_num'] == 0).sum()
+                                    negativo = (grupo['_reacao_num'] == -1).sum()
+                                    inaud    = grupo['_reacao_num'].isna().sum()
+
+                                    observados = positivo + neutro + negativo
+                                    if observados > 0:
+                                        score = round(((positivo - negativo) / observados) * 100, 1)
+                                    else:
+                                        score = None
+
+                                    resumo.append({
+                                        "Técnica":      tecnica,
+                                        "Total":        total,
+                                        "Positivas":    int(positivo),
+                                        "Neutras":      int(neutro),
+                                        "Negativas":    int(negativo),
+                                        "Inaudível":    int(inaud),
+                                        "Score":        score
+                                    })
+
+                                df_resumo_tec = pd.DataFrame(resumo).sort_values("Score", ascending=False, na_position='last')
+
+                                # ── SCORECARD GERAL ───────────────────────────────────
+                                st.markdown("### ✔️ Resumo Geral")
+
+                                total_usos     = int(df_resumo_tec["Total"].sum())
+                                total_positivo = int(df_resumo_tec["Positivas"].sum())
+                                total_negativo = int(df_resumo_tec["Negativas"].sum())
+                                observados_total = total_positivo + int(df_resumo_tec["Neutras"].sum()) + total_negativo
+                                score_geral    = round(((total_positivo - total_negativo) / max(1, observados_total)) * 100, 1)
+
+                                col_eg1, col_eg2, col_eg3, col_eg4 = st.columns(4)
+                                with col_eg1:
+                                    st.metric('Total de Usos', total_usos)
+                                with col_eg2:
+                                    st.metric('Positivas', total_positivo, delta='🟢')
+                                with col_eg3:
+                                    st.metric('Negativas', total_negativo, delta='🔴')
+                                with col_eg4:
+                                    st.metric('Score Geral', f'{score_geral:+.1f}%')
+
+                                # ── TABELA + GRÁFICO ──────────────────────────────────
+                                st.markdown("### ✔️ Efetividade por Técnica")
+
+                                col_ef1, col_ef2 = st.columns([1, 2])
+
+                                with col_ef1:
+                                    st.dataframe(
+                                        df_resumo_tec[['Técnica', 'Total', 'Positivas', 'Negativas', 'Score']].head(10),
+                                        use_container_width=True,
+                                        hide_index=True
+                                    )
+
+                                with col_ef2:
+                                    # ── GRÁFICO BARRAS EMPILHADAS (igual Aba Individual) ──
+                                    import plotly.graph_objects as go
+
+                                    tecnicas  = df_resumo_tec["Técnica"].tolist()
+                                    positivos = df_resumo_tec["Positivas"].tolist()
+                                    neutros   = df_resumo_tec["Neutras"].tolist()
+                                    negativos = df_resumo_tec["Negativas"].tolist()
+
+                                    fig_barras = go.Figure()
+
+                                    fig_barras.add_trace(go.Bar(
+                                        name="🟢 Positiva",
+                                        x=tecnicas, y=positivos,
+                                        marker_color="#10b981"
+                                    ))
+                                    fig_barras.add_trace(go.Bar(
+                                        name="⚪ Neutra",
+                                        x=tecnicas, y=neutros,
+                                        marker_color="#6b7280"
+                                    ))
+                                    fig_barras.add_trace(go.Bar(
+                                        name="🔴 Negativa",
+                                        x=tecnicas, y=negativos,
+                                        marker_color="#ef4444"
+                                    ))
+
+                                    fig_barras.update_layout(
+                                        barmode="stack",
+                                        paper_bgcolor="rgba(0,0,0,0)",
+                                        plot_bgcolor="rgba(0,0,0,0)",
+                                        font=dict(color="#fff"),
+                                        legend=dict(
+                                            font=dict(color="#fff"),
+                                            bgcolor="rgba(0,0,0,0.4)"
+                                        ),
+                                        xaxis=dict(tickfont=dict(color="#FFD700"), gridcolor="#333"),
+                                        yaxis=dict(tickfont=dict(color="#aaa"), gridcolor="#333"),
+                                        height=420,
+                                        margin=dict(t=20, b=120, l=40, r=40)
+                                    )
+
+                                    st.plotly_chart(fig_barras, use_container_width=True)
+
+                                # ── LEITURA OPERACIONAL ───────────────────────────────
+                                st.markdown("---")
+                                st.markdown("### ✔️ Leitura Operacional")
+
+                                # Só técnicas com pelo menos 2 usos observados
+                                df_com_score = df_resumo_tec[
+                                    df_resumo_tec["Score"].notna() &
+                                    (df_resumo_tec["Total"] >= 2)
+                                ]
+                                if df_com_score.empty:
+                                    df_com_score = df_resumo_tec[df_resumo_tec["Score"].notna()]
+
+                                if not df_com_score.empty:
+
+                                    # Mais efetiva
+                                    score_maximo = df_com_score["Score"].max()
+                                    tecnicas_maximas = df_com_score[df_com_score["Score"] == score_maximo]
+
+                                    if len(tecnicas_maximas) == 1:
+                                        melhor = tecnicas_maximas.iloc[0]
+                                        txt_melhor = (
+                                            f"✅ <strong>Técnica mais efetiva:</strong> {melhor['Técnica']} "
+                                            f"— Score {melhor['Score']:+.1f}% "
+                                            f"({int(melhor['Positivas'])} positivas / {int(melhor['Total'])} usos)"
+                                        )
+                                    else:
+                                        tecnicas_nomes = ", ".join(tecnicas_maximas['Técnica'].tolist())
+                                        txt_melhor = (
+                                            f"✅ <strong>Técnicas mais efetivas (empate):</strong> {tecnicas_nomes} "
+                                            f"— Score {score_maximo:+.1f}%"
+                                        )
+
+                                    st.markdown(f"""
+                                    <div style='background:rgba(16,185,129,0.08);padding:12px;border-radius:8px;border-left:3px solid #10b981;margin-bottom:10px;'>
+                                    <p style='color:#ddd;font-size:0.9rem;margin:0;'>{txt_melhor}</p>
+                                    </div>
+                                    """, unsafe_allow_html=True)
+
+                                    # Menos efetiva
+                                    score_minimo = df_com_score["Score"].min()
+                                    tecnicas_minimas = df_com_score[df_com_score["Score"] == score_minimo]
+
+                                    if len(tecnicas_minimas) == 1:
+                                        pior = tecnicas_minimas.iloc[0]
+                                        txt_pior = (
+                                            f"⚠️ <strong>Técnica menos efetiva:</strong> {pior['Técnica']} "
+                                            f"— Score {pior['Score']:+.1f}% "
+                                            f"({int(pior['Negativas'])} negativas / {int(pior['Total'])} usos)"
+                                        )
+                                    else:
+                                        tecnicas_nomes = ", ".join(tecnicas_minimas['Técnica'].tolist())
+                                        txt_pior = (
+                                            f"⚠️ <strong>Técnicas menos efetivas (empate):</strong> {tecnicas_nomes} "
+                                            f"— Score {score_minimo:+.1f}%"
+                                        )
+
+                                    st.markdown(f"""
+                                    <div style='background:rgba(239,68,68,0.08);padding:12px;border-radius:8px;border-left:3px solid #ef4444;margin-bottom:10px;'>
+                                    <p style='color:#ddd;font-size:0.9rem;margin:0;'>{txt_pior}</p>
+                                    </div>
+                                    """, unsafe_allow_html=True)
+
+                                st.markdown("""
+                                **Interpretação:**
+                                - **Score > 50%** = Técnica efetiva (mais sucessos que fracassos)
+                                - **Score próximo a 0%** = Técnica neutra (sucessos ≈ fracassos)
+                                - **Score < -50%** = Técnica contraproducente (mais fracassos que sucessos)
+                                """)
+
+                            else:
+                                st.warning("⚠️ Colunas necessárias não encontradas (TÉCNICAS e ATITUDE).")
+                        else:
+                            st.info("⚠️ Nenhuma técnica encontrada para os filtros selecionados.")
+
+                    st.markdown("---")
+
+                    
+                    # ============================================================
+                    # ANÁLISE: CONVERGÊNCIA TEMÁTICA
+                    # ============================================================
+
+                st.markdown("<h5 style='color: #FFD700;'>Convergência Temática: Quanto de sincronização temática existe entre negociador e causador</h5>", unsafe_allow_html=True)
+
+                # ── BOTÃO TOGGLE ───────────────────────────────────────────
+                col_left, col_center, col_right = st.columns([1, 1, 1])
+                with col_center:
+                    is_convergencia = render_toggle_button(
+                        label="✔️ Abrir Convergência Temática",
+                        session_key="analise5_convergencia_tematica",
+                        button_key="btn_analise5_convergencia_tematica"
                     )
-                    fig_time.update_layout(
-                        paper_bgcolor="rgba(0,0,0,0)", 
-                        plot_bgcolor="rgba(0,0,0,0)", 
-                        font_color="#FFF",
-                        hovermode='x unified'
+
+                st.markdown("---")
+
+                if is_convergencia:                   
+
+                    if not df_quali_filt.empty:
+                        col_texto_c = 'TRANSCRIÇÃO DO CAUSADOR'
+                        col_texto_np = 'TRANSCRIÇÃO DO NEGOCIADOR PRINCIPAL'
+                        
+                        if col_texto_c in df_quali_filt.columns and col_texto_np in df_quali_filt.columns:
+                            try:
+                                # Calcular convergência para CADA APA
+                                convergencias_apas = []
+                                
+                                for idx, row in df_quali_filt.iterrows():
+                                    txt_c = str(row[col_texto_c]).strip()
+                                    txt_np = str(row[col_texto_np]).strip()
+                                    
+                                    if len(txt_c.split()) > 5 and len(txt_np.split()) > 5:
+                                        try:
+                                            temas_c = analise.extrair_temas_unicos(txt_c, resolucao_tipo='desconhecida')
+                                            temas_np = analise.extrair_temas_unicos(txt_np, resolucao_tipo='desconhecida')
+                                            
+                                            if temas_c and temas_np:
+                                                conv = analise.calcular_convergencia_tematica(temas_c, temas_np)
+                                                convergencias_apas.append({
+                                                    'APA': idx,
+                                                    'Convergencia': conv['convergencia_geral'],
+                                                    'Compartilhados': len(conv['temas_compartilhados']),
+                                                    'So_Causador': len(conv['temas_exclusivos_causador']),
+                                                    'So_Negociador': len(conv['temas_exclusivos_negociador'])
+                                                })
+                                        except:
+                                            pass
+                                
+                                if convergencias_apas:
+                                    df_conv_agg = pd.DataFrame(convergencias_apas)
+                                    
+                                    media_conv = df_conv_agg['Convergencia'].mean()
+                                    mediana_conv = df_conv_agg['Convergencia'].median()
+                                    dp_conv = df_conv_agg['Convergencia'].std()
+                                    media_compartilhados = df_conv_agg['Compartilhados'].mean()
+                                    
+                                    # ── SCORECARD ────────────────────────────────
+                                    st.markdown("### Resumo da Convergência Temática")
+                                    
+                                    col_cv1, col_cv2, col_cv3, col_cv4 = st.columns(4)
+                                    
+                                    with col_cv1:
+                                        st.metric('Convergência Média', f'{media_conv:.1f}%')
+                                        st.caption(f'DP: ±{dp_conv:.1f}%')
+                                    
+                                    with col_cv2:
+                                        st.metric('Mediana', f'{mediana_conv:.1f}%')
+                                        st.caption(f'N = {len(df_conv_agg)} APAs')
+                                    
+                                    with col_cv3:
+                                        st.metric('Temas Compartilhados (Média)', f'{media_compartilhados:.1f}')
+                                        st.caption('Média por APA')
+                                    
+                                    with col_cv4:
+                                        st.metric('Range', f'{df_conv_agg["Convergencia"].min():.1f}% - {df_conv_agg["Convergencia"].max():.1f}%')
+                                        st.caption(f'Amplitude: {df_conv_agg["Convergencia"].max() - df_conv_agg["Convergencia"].min():.1f}%')
+                                    
+                                    # ── DISTRIBUIÇÃO ─────────────────────────────
+                                    st.markdown("---")
+                                    st.markdown("### ✔️ Distribuição da Convergência")
+                                    
+                                    st.markdown("""
+                                    **O que são esses gráficos?**
+                                    
+                                    Imagine 6 negociações diferentes. Em cada uma, calculamos quanto o negociador e o causador falam dos **mesmos temas** (convergência).
+                                    
+                                    - **Negociação 1:** 45% de sintonia temática
+                                    - **Negociação 2:** 52% de sintonia temática
+                                    - **Negociação 3:** 38% de sintonia temática
+                                    - ... e assim por diante
+                                    
+                                    Esses dois gráficos mostram como essas porcentagens se distribuem:
+                                    
+                                    **Gráfico da Esquerda (Histograma):** "Em quantas negociações tivemos cada nível de sintonia?"
+                                    - Se há uma barra alta em 45%, significa que muitas negociações tiveram ~45% de convergência
+                                    - Se a distribuição é espalhada, significa que a sintonia varia muito de ocorrência para ocorrência
+                                    
+                                    **Gráfico da Direita (Box Plot):** "Qual é a faixa típica de sintonia?"
+                                    - **A linha do meio (mediana):** 50% das negociações tiveram sintonia até esse valor
+                                    - **A caixa:** Mostra onde estão a maioria dos valores (do 25º ao 75º percentil)
+                                    - **Os pontinhos:** Ocorrências com sintonia muito diferente das outras (outliers)
+                                    """)
+                                    
+                                    col_cv_hist1, col_cv_hist2 = st.columns(2)
+                                    
+                                    with col_cv_hist1:
+                                        fig_conv_hist = px.histogram(
+                                            df_conv_agg,
+                                            x='Convergencia',
+                                            nbins=8,
+                                            title='Distribuição da Convergência Temática'
+                                        )
+                                        fig_conv_hist.update_traces(marker_color='#FF8C00')
+                                        fig_conv_hist.update_layout(
+                                            paper_bgcolor='rgba(0,0,0,0)',
+                                            plot_bgcolor='rgba(0,0,0,0)',
+                                            font_color='#FFF',
+                                            height=300,
+                                            xaxis_title='Convergência (%)',
+                                            yaxis_title='Número de Negociações'
+                                        )
+                                        st.plotly_chart(fig_conv_hist, use_container_width=True)
+                                    
+                                    with col_cv_hist2:
+                                        fig_box_conv = px.box(
+                                            df_conv_agg,
+                                            y='Convergencia',
+                                            title='Faixa Típica de Convergência'
+                                        )
+                                        fig_box_conv.update_traces(marker_color='#FF8C00')
+                                        fig_box_conv.update_layout(
+                                            paper_bgcolor='rgba(0,0,0,0)',
+                                            plot_bgcolor='rgba(0,0,0,0)',
+                                            font_color='#FFF',
+                                            height=300,
+                                            yaxis_title='Convergência (%)'
+                                        )
+                                        st.plotly_chart(fig_box_conv, use_container_width=True)
+                                    
+                                    st.markdown("""
+                                    **Como interpretar os números na prática:**
+                                    
+                                    - **Convergência 40-60%:** Normal — há sempre alguma diferença de perspectiva entre negociador e causador
+                                    - **Convergência > 60%:** Excelente — o negociador está na "mesma frequência" que o causador
+                                    - **Convergência < 40%:** Alerta — há risco de desencontro de comunicação
+                                    
+                                    **Dica:** Se a maioria das suas negociações tem convergência > 50%, sua equipe está fazendo escuta ativa de forma consistente! 🎯
+                                    """)
+                                    
+                                    # ── ANÁLISE POR NEGOCIADOR (SE FILTRADO) ──────
+                                    if filtro_neg_g != "Todos":
+                                        st.markdown("---")
+                                        st.markdown("#### ✔️ Análise Específica do Negociador")
+                                        
+                                        conv_neg = df_conv_agg['Convergencia'].mean()
+                                        
+                                        if conv_neg >= 60:
+                                            status = "✅ Excelente — Alta sintonia temática com causadores"
+                                            cor = "🟢"
+                                        elif conv_neg >= 40:
+                                            status = "⚠️ Moderado — Alguns temas divergentes"
+                                            cor = "🟡"
+                                        else:
+                                            status = "❌ Fraco — Muita divergência temática. Recomendado reforço em escuta ativa"
+                                            cor = f"{cor}"
+                                        
+                                        st.markdown(f"""
+                                        **Negociador:** {filtro_neg_g}
+                                        
+                                        **Convergência média:** {conv_neg:.1f}%
+                                        
+                                        **Status:** {status}
+                                        
+                                        **Recomendação:**
+                                        - Se convergência < 40%: Investir em treinamento de escuta ativa
+                                        - Se convergência 40-60%: Consolidar técnicas de rapport
+                                        - Se convergência > 60%: Excelente! Usar como referência para equipe
+                                        """)
+                                    
+                                    # ── LEITURA OPERACIONAL ──────────────────────
+                                    st.markdown("---")
+                                    st.markdown("### ✔️ Leitura Operacional")
+                                    
+                                    st.markdown(f"""
+                                    **O que os dados mostram:**
+                                    
+                                    - **Convergência média de {media_conv:.1f}%:** Em média, há {media_conv:.0f}% de sincronização temática
+                                    - **Variação (DP ±{dp_conv:.1f}%):** Há oscilação significativa entre ocorrências
+                                    - **Temas compartilhados (média {media_compartilhados:.1f}):** Cada negociador-causador compartilha ~{media_compartilhados:.0f} temas em comum
+                                    
+                                    **Interpretação:**
+                                    - Convergência alta (> 60%) = Negociador e causador falam dos mesmos assuntos
+                                    - Convergência baixa (< 40%) = Universos temáticos diferentes = risco de desencontro
+                                    
+                                    **Ação Recomendada:**
+                                    Se convergência < 40%, implementar treinamento focado em:
+                                    1. **Escuta Ativa** — Entender os temas do causador antes de impor a agenda
+                                    2. **Validação Emocional** — Reconhecer as preocupações mesmo que diferentes
+                                    3. **Ponte Temática** — Conectar temas do causador aos temas da resolução
+                                    """)
+                                
+                                else:
+                                    st.info('⚠️ Sem dados suficientes para calcular convergência temática nos filtros atuais.')
+                            
+                            except Exception as e:
+                                st.warning(f'⚠️ Erro ao processar convergência: {str(e)[:80]}')
+                        else:
+                            st.warning('⚠️ Colunas de transcrição não encontradas.')
+                # ──────────────────────────────────────────────────────────
+                # ANÁLISE: CORRELAÇÕES E ASSOCIAÇÕES
+                # ──────────────────────────────────────────────────────────
+
+                st.markdown("<h5 style='color: #FFD700;'>O que os Dados dizem sobre a Resolução das Ocorrências?</h5>", unsafe_allow_html=True)
+
+                # ──────────────────────────────────────────────────────────
+                # Helpers estatísticos locais
+                # ──────────────────────────────────────────────────────────
+                import unicodedata
+
+                def norm_col(t):
+                    return (
+                        unicodedata.normalize("NFKD", str(t))
+                        .encode("ASCII", "ignore")
+                        .decode("ASCII")
+                        .lower()
                     )
-                    st.plotly_chart(fig_time, use_container_width=True)
-                else: 
-                    st.info("⚠️ Sem datas válidas nos registros.")
-            else: 
-                st.info("⚠️ Coluna de Data não encontrada. Adicione uma coluna 'Data' ao seu formulário.")
 
-            st.markdown("---")
+                def achar_coluna(df, papel, metrica, momento):
+                    for col in df.columns:
+                        cn = norm_col(col)
+                        if norm_col(papel) in cn and norm_col(metrica) in cn and norm_col(momento) in cn:
+                            return col
+                    return None
 
+                def tempo_para_minutos(val):
+                    """Converte segundos (inteiro ou lista) para minutos float."""
+                    try:
+                        if isinstance(val, list):
+                            val = val[0]
+                        if pd.isna(val) or str(val).strip().lower() in ("", "n/d", "nan", "none"):
+                            return None
+                        segundos = float(val)
+                        return segundos / 60 if segundos > 0 else None
+                    except Exception:
+                        return None
 
-        # ============================================================
-        # BLOCO: Ranking de Técnicas + Padrões e Correlações
-        # ============================================================
-        
-        
-        st.markdown("<h5 style='color: #FFD700;'> Ranking de Técnicas Aplicadas</h5>", unsafe_allow_html=True)
+                # ──────────────────────────────────────────────────────────
+                # Configurações iniciais (APENAS COM df_quali_filt)
+                # ──────────────────────────────────────────────────────────
+                lixo = {"none", "nan", "n/d", "", "null", "[]"}
 
-        col_left, col_center, col_right = st.columns([1, 1, 1])  
-        with col_center:
-            is_ranking = render_toggle_button(
-                label="✔️ Abrir Ranking de Técnicas",
-                session_key="ranking_de_tecnicas_expanded",
-                button_key="btn_ranking_tecnicas"
-            )
+                col_agr_c = achar_coluna(df_quali_filt, "Principal", "Agressividade", "Chegada")
+                col_agr_e = achar_coluna(df_quali_filt, "Principal", "Agressividade", "Encerramento")
 
-        st.markdown("---")
-
-        if is_ranking:
-            
-            if not df_tec.empty:
-                df_tec["Neg_Limpo"] = (
-                    df_tec["Negociador Principal do incidente crítico"].apply(limpar_valor)
-                    if "Negociador Principal do incidente crítico" in df_tec.columns
-                    else "N/D"
-                )
-                df_tec["Tip_Limpa"] = (
-                    df_tec["Tipologia do incidente crítico"].apply(limpar_valor)
-                    if "Tipologia do incidente crítico" in df_tec.columns
-                    else "N/D"
-                )
-                df_tec["Mod_Limpa"] = (
-                    df_tec["Modalidade do incidente crítico"].apply(limpar_valor)
-                    if "Modalidade do incidente crítico" in df_tec.columns
-                    else "N/D"
-                )
-
-                df_tec_filt = df_tec.copy()
-                if filtro_neg_g != "Todos":
-                    df_tec_filt = df_tec_filt[df_tec_filt["Neg_Limpo"] == filtro_neg_g]
-                if filtro_tip_g != "Todas":
-                    df_tec_filt = df_tec_filt[df_tec_filt["Tip_Limpa"] == filtro_tip_g]
-                if filtro_mod_g != "Todas":
-                    df_tec_filt = df_tec_filt[df_tec_filt["Mod_Limpa"] == filtro_mod_g]
-
-            # ----------------------------------------------------------
-            # Ranking visual
-            # ----------------------------------------------------------
-            if not df_tec_filt.empty:
-                col_t = next(
-                    (
-                        col
-                        for col in ["TÉCNICAS", "TECNICAS", "TÉCNICA", "TECNICA"]
-                        if col in df_tec_filt.columns
-                    ),
+                id_col = next(
+                    (c for c in df_quali_filt.columns if "ID" in c.upper() or "VINCULO" in c.upper()),
                     None,
                 )
-                if col_t:
-                    freq_global = df_tec_filt[col_t].value_counts().reset_index()
-                    freq_global.columns = ["Técnica", "Vezes Utilizada"]
 
-                    c_tab, c_tree = st.columns([1, 2])
-                    with c_tab:
-                        st.dataframe(freq_global, use_container_width=True, hide_index=True)
-                    with c_tree:
-                        fig_g = px.treemap(
-                            freq_global,
-                            path=["Técnica"],
-                            values="Vezes Utilizada",
-                            color="Vezes Utilizada",
-                            color_continuous_scale="Oranges",
-                        )
-                        fig_g.update_layout(
-                            paper_bgcolor="rgba(0,0,0,0)",
-                            plot_bgcolor="rgba(0,0,0,0)",
-                            font_color="#FFF",
-                            margin=dict(t=0, l=0, r=0, b=0),
-                        )
-                        st.plotly_chart(fig_g, use_container_width=True)
-                else:
-                    st.warning("Coluna 'TÉCNICAS' não encontrada.")
-            else:
-                st.info("Nenhuma técnica encontrada para os filtros selecionados.")
-
-            st.markdown("---")
-
-
-            #NOVAS ANALISES 21MAI
-
-                        
-            # ============================================================
-            # ANÁLISE 4: EFETIVIDADE DAS TÉCNICAS (SÉRIE HISTÓRICA)
-            # ============================================================
-
-            st.markdown("<h5 style='color: #FFD700;'>Efetividade das Técnicas</h5>", unsafe_allow_html=True)
-
-            col_left, col_center, col_right = st.columns([1, 1, 1])
-            with col_center:
-                is_Efetividade_Técnicas = render_toggle_button(
-                    label="✔️ Abrir Efetividade das Técnicas",
-                    session_key="Efetividade_Técnicas",
-                    button_key="btn_Efetividade_Técnicas"
-                )
-
-            st.markdown("---")
-
-            if is_Efetividade_Técnicas:
-                if not df_tec_filt.empty:
-                    col_tecnica = next(
-                        (col for col in ['TÉCNICAS', 'TECNICAS', 'TÉCNICA', 'TECNICA'] if col in df_tec_filt.columns),
-                        None,
-                    )
-                    col_reacao = next(
-                        (col for col in df_tec_filt.columns if 'ATITUDE' in col.upper()),
-                        None,
+                # ──────────────────────────────────────────────────────────
+                # BOTÃO TOGGLE (Centralizado)
+                # ──────────────────────────────────────────────────────────
+                col_left, col_center, col_right = st.columns([1, 1, 1])
+                with col_center:
+                    is_correlacao_associacao = render_toggle_button(
+                        label="✔️ Abrir Correlações e Associações",
+                        session_key="correlacao_associacao",
+                        button_key="btn_correlacao_associacao"
                     )
 
-                    if col_tecnica and col_reacao:
+                st.markdown("---")
 
-                        def normalizar_reacao(val):
-                            if val is None:
-                                return None
-                            s = str(val).strip()
-                            if any(x in s for x in ["-1", "-1.0", "🔴", "Negativa", "negativa"]):
-                                return -1
-                            elif any(x in s for x in ["0", "0.0", "⚪", "Neutra", "neutra"]):
-                                return 0
-                            elif any(x in s for x in ["1", "1.0", "🟢", "Positiva", "positiva"]):
-                                return 1
-                            else:
-                                return None
-
-                        df_ef = df_tec_filt.copy()
-                        df_ef['_reacao_num'] = df_ef[col_reacao].apply(normalizar_reacao)
-
-                        # ── Agrupar por técnica ───────────────────────────────
-                        resumo = []
-                        for tecnica, grupo in df_ef.groupby(col_tecnica):
-                            total    = len(grupo)
-                            positivo = (grupo['_reacao_num'] == 1).sum()
-                            neutro   = (grupo['_reacao_num'] == 0).sum()
-                            negativo = (grupo['_reacao_num'] == -1).sum()
-                            inaud    = grupo['_reacao_num'].isna().sum()
-
-                            observados = positivo + neutro + negativo
-                            if observados > 0:
-                                score = round(((positivo - negativo) / observados) * 100, 1)
-                            else:
-                                score = None
-
-                            resumo.append({
-                                "Técnica":      tecnica,
-                                "Total":        total,
-                                "Positivas":    int(positivo),
-                                "Neutras":      int(neutro),
-                                "Negativas":    int(negativo),
-                                "Inaudível":    int(inaud),
-                                "Score":        score
-                            })
-
-                        df_resumo_tec = pd.DataFrame(resumo).sort_values("Score", ascending=False, na_position='last')
-
-                        # ── SCORECARD GERAL ───────────────────────────────────
-                        st.markdown("### ✔️ Resumo Geral")
-
-                        total_usos     = int(df_resumo_tec["Total"].sum())
-                        total_positivo = int(df_resumo_tec["Positivas"].sum())
-                        total_negativo = int(df_resumo_tec["Negativas"].sum())
-                        observados_total = total_positivo + int(df_resumo_tec["Neutras"].sum()) + total_negativo
-                        score_geral    = round(((total_positivo - total_negativo) / max(1, observados_total)) * 100, 1)
-
-                        col_eg1, col_eg2, col_eg3, col_eg4 = st.columns(4)
-                        with col_eg1:
-                            st.metric('Total de Usos', total_usos)
-                        with col_eg2:
-                            st.metric('Positivas', total_positivo, delta='🟢')
-                        with col_eg3:
-                            st.metric('Negativas', total_negativo, delta='🔴')
-                        with col_eg4:
-                            st.metric('Score Geral', f'{score_geral:+.1f}%')
-
-                        # ── TABELA + GRÁFICO ──────────────────────────────────
-                        st.markdown("### ✔️ Efetividade por Técnica")
-
-                        col_ef1, col_ef2 = st.columns([1, 2])
-
-                        with col_ef1:
-                            st.dataframe(
-                                df_resumo_tec[['Técnica', 'Total', 'Positivas', 'Negativas', 'Score']].head(10),
-                                use_container_width=True,
-                                hide_index=True
-                            )
-
-                        with col_ef2:
-                            # ── GRÁFICO BARRAS EMPILHADAS (igual Aba Individual) ──
-                            import plotly.graph_objects as go
-
-                            tecnicas  = df_resumo_tec["Técnica"].tolist()
-                            positivos = df_resumo_tec["Positivas"].tolist()
-                            neutros   = df_resumo_tec["Neutras"].tolist()
-                            negativos = df_resumo_tec["Negativas"].tolist()
-
-                            fig_barras = go.Figure()
-
-                            fig_barras.add_trace(go.Bar(
-                                name="🟢 Positiva",
-                                x=tecnicas, y=positivos,
-                                marker_color="#10b981"
-                            ))
-                            fig_barras.add_trace(go.Bar(
-                                name="⚪ Neutra",
-                                x=tecnicas, y=neutros,
-                                marker_color="#6b7280"
-                            ))
-                            fig_barras.add_trace(go.Bar(
-                                name="🔴 Negativa",
-                                x=tecnicas, y=negativos,
-                                marker_color="#ef4444"
-                            ))
-
-                            fig_barras.update_layout(
-                                barmode="stack",
-                                paper_bgcolor="rgba(0,0,0,0)",
-                                plot_bgcolor="rgba(0,0,0,0)",
-                                font=dict(color="#fff"),
-                                legend=dict(
-                                    font=dict(color="#fff"),
-                                    bgcolor="rgba(0,0,0,0.4)"
-                                ),
-                                xaxis=dict(tickfont=dict(color="#FFD700"), gridcolor="#333"),
-                                yaxis=dict(tickfont=dict(color="#aaa"), gridcolor="#333"),
-                                height=420,
-                                margin=dict(t=20, b=120, l=40, r=40)
-                            )
-
-                            st.plotly_chart(fig_barras, use_container_width=True)
-
-                        # ── LEITURA OPERACIONAL ───────────────────────────────
-                        st.markdown("---")
-                        st.markdown("### ✔️ Leitura Operacional")
-
-                        # Só técnicas com pelo menos 2 usos observados
-                        df_com_score = df_resumo_tec[
-                            df_resumo_tec["Score"].notna() &
-                            (df_resumo_tec["Total"] >= 2)
-                        ]
-                        if df_com_score.empty:
-                            df_com_score = df_resumo_tec[df_resumo_tec["Score"].notna()]
-
-                        if not df_com_score.empty:
-
-                            # Mais efetiva
-                            score_maximo = df_com_score["Score"].max()
-                            tecnicas_maximas = df_com_score[df_com_score["Score"] == score_maximo]
-
-                            if len(tecnicas_maximas) == 1:
-                                melhor = tecnicas_maximas.iloc[0]
-                                txt_melhor = (
-                                    f"✅ <strong>Técnica mais efetiva:</strong> {melhor['Técnica']} "
-                                    f"— Score {melhor['Score']:+.1f}% "
-                                    f"({int(melhor['Positivas'])} positivas / {int(melhor['Total'])} usos)"
-                                )
-                            else:
-                                tecnicas_nomes = ", ".join(tecnicas_maximas['Técnica'].tolist())
-                                txt_melhor = (
-                                    f"✅ <strong>Técnicas mais efetivas (empate):</strong> {tecnicas_nomes} "
-                                    f"— Score {score_maximo:+.1f}%"
-                                )
-
-                            st.markdown(f"""
-                            <div style='background:rgba(16,185,129,0.08);padding:12px;border-radius:8px;border-left:3px solid #10b981;margin-bottom:10px;'>
-                            <p style='color:#ddd;font-size:0.9rem;margin:0;'>{txt_melhor}</p>
-                            </div>
-                            """, unsafe_allow_html=True)
-
-                            # Menos efetiva
-                            score_minimo = df_com_score["Score"].min()
-                            tecnicas_minimas = df_com_score[df_com_score["Score"] == score_minimo]
-
-                            if len(tecnicas_minimas) == 1:
-                                pior = tecnicas_minimas.iloc[0]
-                                txt_pior = (
-                                    f"⚠️ <strong>Técnica menos efetiva:</strong> {pior['Técnica']} "
-                                    f"— Score {pior['Score']:+.1f}% "
-                                    f"({int(pior['Negativas'])} negativas / {int(pior['Total'])} usos)"
-                                )
-                            else:
-                                tecnicas_nomes = ", ".join(tecnicas_minimas['Técnica'].tolist())
-                                txt_pior = (
-                                    f"⚠️ <strong>Técnicas menos efetivas (empate):</strong> {tecnicas_nomes} "
-                                    f"— Score {score_minimo:+.1f}%"
-                                )
-
-                            st.markdown(f"""
-                            <div style='background:rgba(239,68,68,0.08);padding:12px;border-radius:8px;border-left:3px solid #ef4444;margin-bottom:10px;'>
-                            <p style='color:#ddd;font-size:0.9rem;margin:0;'>{txt_pior}</p>
-                            </div>
-                            """, unsafe_allow_html=True)
-
-                        st.markdown("""
-                        **Interpretação:**
-                        - **Score > 50%** = Técnica efetiva (mais sucessos que fracassos)
-                        - **Score próximo a 0%** = Técnica neutra (sucessos ≈ fracassos)
-                        - **Score < -50%** = Técnica contraproducente (mais fracassos que sucessos)
-                        """)
-
-                    else:
-                        st.warning("⚠️ Colunas necessárias não encontradas (TÉCNICAS e ATITUDE).")
-                else:
-                    st.info("⚠️ Nenhuma técnica encontrada para os filtros selecionados.")
-
-            st.markdown("---")
-
-            
-            # ============================================================
-            # ANÁLISE: CONVERGÊNCIA TEMÁTICA
-            # ============================================================
-
-        st.markdown("<h5 style='color: #FFD700;'>Convergência Temática: Quanto de sincronização temática existe entre negociador e causador</h5>", unsafe_allow_html=True)
-
-        # ── BOTÃO TOGGLE ───────────────────────────────────────────
-        col_left, col_center, col_right = st.columns([1, 1, 1])
-        with col_center:
-            is_convergencia = render_toggle_button(
-                label="✔️ Abrir Convergência Temática",
-                session_key="analise5_convergencia_tematica",
-                button_key="btn_analise5_convergencia_tematica"
-            )
-
-        st.markdown("---")
-
-        if is_convergencia:                   
-
-            if not df_quali_filt.empty:
-                col_texto_c = 'TRANSCRIÇÃO DO CAUSADOR'
-                col_texto_np = 'TRANSCRIÇÃO DO NEGOCIADOR PRINCIPAL'
-                
-                if col_texto_c in df_quali_filt.columns and col_texto_np in df_quali_filt.columns:
-                    try:
-                        # Calcular convergência para CADA APA
-                        convergencias_apas = []
-                        
-                        for idx, row in df_quali_filt.iterrows():
-                            txt_c = str(row[col_texto_c]).strip()
-                            txt_np = str(row[col_texto_np]).strip()
-                            
-                            if len(txt_c.split()) > 5 and len(txt_np.split()) > 5:
-                                try:
-                                    temas_c = analise.extrair_temas_unicos(txt_c, resolucao_tipo='desconhecida')
-                                    temas_np = analise.extrair_temas_unicos(txt_np, resolucao_tipo='desconhecida')
-                                    
-                                    if temas_c and temas_np:
-                                        conv = analise.calcular_convergencia_tematica(temas_c, temas_np)
-                                        convergencias_apas.append({
-                                            'APA': idx,
-                                            'Convergencia': conv['convergencia_geral'],
-                                            'Compartilhados': len(conv['temas_compartilhados']),
-                                            'So_Causador': len(conv['temas_exclusivos_causador']),
-                                            'So_Negociador': len(conv['temas_exclusivos_negociador'])
-                                        })
-                                except:
-                                    pass
-                        
-                        if convergencias_apas:
-                            df_conv_agg = pd.DataFrame(convergencias_apas)
-                            
-                            media_conv = df_conv_agg['Convergencia'].mean()
-                            mediana_conv = df_conv_agg['Convergencia'].median()
-                            dp_conv = df_conv_agg['Convergencia'].std()
-                            media_compartilhados = df_conv_agg['Compartilhados'].mean()
-                            
-                            # ── SCORECARD ────────────────────────────────
-                            st.markdown("### Resumo da Convergência Temática")
-                            
-                            col_cv1, col_cv2, col_cv3, col_cv4 = st.columns(4)
-                            
-                            with col_cv1:
-                                st.metric('Convergência Média', f'{media_conv:.1f}%')
-                                st.caption(f'DP: ±{dp_conv:.1f}%')
-                            
-                            with col_cv2:
-                                st.metric('Mediana', f'{mediana_conv:.1f}%')
-                                st.caption(f'N = {len(df_conv_agg)} APAs')
-                            
-                            with col_cv3:
-                                st.metric('Temas Compartilhados (Média)', f'{media_compartilhados:.1f}')
-                                st.caption('Média por APA')
-                            
-                            with col_cv4:
-                                st.metric('Range', f'{df_conv_agg["Convergencia"].min():.1f}% - {df_conv_agg["Convergencia"].max():.1f}%')
-                                st.caption(f'Amplitude: {df_conv_agg["Convergencia"].max() - df_conv_agg["Convergencia"].min():.1f}%')
-                            
-                            # ── DISTRIBUIÇÃO ─────────────────────────────
-                            st.markdown("---")
-                            st.markdown("### ✔️ Distribuição da Convergência")
-                            
-                            st.markdown("""
-                            **O que são esses gráficos?**
-                            
-                            Imagine 6 negociações diferentes. Em cada uma, calculamos quanto o negociador e o causador falam dos **mesmos temas** (convergência).
-                            
-                            - **Negociação 1:** 45% de sintonia temática
-                            - **Negociação 2:** 52% de sintonia temática
-                            - **Negociação 3:** 38% de sintonia temática
-                            - ... e assim por diante
-                            
-                            Esses dois gráficos mostram como essas porcentagens se distribuem:
-                            
-                            **Gráfico da Esquerda (Histograma):** "Em quantas negociações tivemos cada nível de sintonia?"
-                            - Se há uma barra alta em 45%, significa que muitas negociações tiveram ~45% de convergência
-                            - Se a distribuição é espalhada, significa que a sintonia varia muito de ocorrência para ocorrência
-                            
-                            **Gráfico da Direita (Box Plot):** "Qual é a faixa típica de sintonia?"
-                            - **A linha do meio (mediana):** 50% das negociações tiveram sintonia até esse valor
-                            - **A caixa:** Mostra onde estão a maioria dos valores (do 25º ao 75º percentil)
-                            - **Os pontinhos:** Ocorrências com sintonia muito diferente das outras (outliers)
-                            """)
-                            
-                            col_cv_hist1, col_cv_hist2 = st.columns(2)
-                            
-                            with col_cv_hist1:
-                                fig_conv_hist = px.histogram(
-                                    df_conv_agg,
-                                    x='Convergencia',
-                                    nbins=8,
-                                    title='Distribuição da Convergência Temática'
-                                )
-                                fig_conv_hist.update_traces(marker_color='#FF8C00')
-                                fig_conv_hist.update_layout(
-                                    paper_bgcolor='rgba(0,0,0,0)',
-                                    plot_bgcolor='rgba(0,0,0,0)',
-                                    font_color='#FFF',
-                                    height=300,
-                                    xaxis_title='Convergência (%)',
-                                    yaxis_title='Número de Negociações'
-                                )
-                                st.plotly_chart(fig_conv_hist, use_container_width=True)
-                            
-                            with col_cv_hist2:
-                                fig_box_conv = px.box(
-                                    df_conv_agg,
-                                    y='Convergencia',
-                                    title='Faixa Típica de Convergência'
-                                )
-                                fig_box_conv.update_traces(marker_color='#FF8C00')
-                                fig_box_conv.update_layout(
-                                    paper_bgcolor='rgba(0,0,0,0)',
-                                    plot_bgcolor='rgba(0,0,0,0)',
-                                    font_color='#FFF',
-                                    height=300,
-                                    yaxis_title='Convergência (%)'
-                                )
-                                st.plotly_chart(fig_box_conv, use_container_width=True)
-                            
-                            st.markdown("""
-                            **Como interpretar os números na prática:**
-                            
-                            - **Convergência 40-60%:** Normal — há sempre alguma diferença de perspectiva entre negociador e causador
-                            - **Convergência > 60%:** Excelente — o negociador está na "mesma frequência" que o causador
-                            - **Convergência < 40%:** Alerta — há risco de desencontro de comunicação
-                            
-                            **Dica:** Se a maioria das suas negociações tem convergência > 50%, sua equipe está fazendo escuta ativa de forma consistente! 🎯
-                            """)
-                            
-                            # ── ANÁLISE POR NEGOCIADOR (SE FILTRADO) ──────
-                            if filtro_neg_g != "Todos":
-                                st.markdown("---")
-                                st.markdown("#### ✔️ Análise Específica do Negociador")
-                                
-                                conv_neg = df_conv_agg['Convergencia'].mean()
-                                
-                                if conv_neg >= 60:
-                                    status = "✅ Excelente — Alta sintonia temática com causadores"
-                                    cor = "🟢"
-                                elif conv_neg >= 40:
-                                    status = "⚠️ Moderado — Alguns temas divergentes"
-                                    cor = "🟡"
-                                else:
-                                    status = "❌ Fraco — Muita divergência temática. Recomendado reforço em escuta ativa"
-                                    cor = f"{cor}"
-                                
-                                st.markdown(f"""
-                                **Negociador:** {filtro_neg_g}
-                                
-                                **Convergência média:** {conv_neg:.1f}%
-                                
-                                **Status:** {status}
-                                
-                                **Recomendação:**
-                                - Se convergência < 40%: Investir em treinamento de escuta ativa
-                                - Se convergência 40-60%: Consolidar técnicas de rapport
-                                - Se convergência > 60%: Excelente! Usar como referência para equipe
-                                """)
-                            
-                            # ── LEITURA OPERACIONAL ──────────────────────
-                            st.markdown("---")
-                            st.markdown("### ✔️ Leitura Operacional")
-                            
-                            st.markdown(f"""
-                            **O que os dados mostram:**
-                            
-                            - **Convergência média de {media_conv:.1f}%:** Em média, há {media_conv:.0f}% de sincronização temática
-                            - **Variação (DP ±{dp_conv:.1f}%):** Há oscilação significativa entre ocorrências
-                            - **Temas compartilhados (média {media_compartilhados:.1f}):** Cada negociador-causador compartilha ~{media_compartilhados:.0f} temas em comum
-                            
-                            **Interpretação:**
-                            - Convergência alta (> 60%) = Negociador e causador falam dos mesmos assuntos
-                            - Convergência baixa (< 40%) = Universos temáticos diferentes = risco de desencontro
-                            
-                            **Ação Recomendada:**
-                            Se convergência < 40%, implementar treinamento focado em:
-                            1. **Escuta Ativa** — Entender os temas do causador antes de impor a agenda
-                            2. **Validação Emocional** — Reconhecer as preocupações mesmo que diferentes
-                            3. **Ponte Temática** — Conectar temas do causador aos temas da resolução
-                            """)
-                        
-                        else:
-                            st.info('⚠️ Sem dados suficientes para calcular convergência temática nos filtros atuais.')
+                # ──────────────────────────────────────────────────────────
+                # CONTEÚDO (Dentro do if)
+                # ──────────────────────────────────────────────────────────
+                if is_correlacao_associacao:
                     
-                    except Exception as e:
-                        st.warning(f'⚠️ Erro ao processar convergência: {str(e)[:80]}')
-                else:
-                    st.warning('⚠️ Colunas de transcrição não encontradas.')
-        # ──────────────────────────────────────────────────────────
-        # ANÁLISE: CORRELAÇÕES E ASSOCIAÇÕES
-        # ──────────────────────────────────────────────────────────
+                    # Layout das duas colunas de análise
+                    c_sp1, c_sp2 = st.columns(2)
 
-        st.markdown("<h5 style='color: #FFD700;'>O que os Dados dizem sobre a Resolução das Ocorrências?</h5>", unsafe_allow_html=True)
-
-        # ──────────────────────────────────────────────────────────
-        # Helpers estatísticos locais
-        # ──────────────────────────────────────────────────────────
-        import unicodedata
-
-        def norm_col(t):
-            return (
-                unicodedata.normalize("NFKD", str(t))
-                .encode("ASCII", "ignore")
-                .decode("ASCII")
-                .lower()
-            )
-
-        def achar_coluna(df, papel, metrica, momento):
-            for col in df.columns:
-                cn = norm_col(col)
-                if norm_col(papel) in cn and norm_col(metrica) in cn and norm_col(momento) in cn:
-                    return col
-            return None
-
-        def tempo_para_minutos(val):
-            """Converte segundos (inteiro ou lista) para minutos float."""
-            try:
-                if isinstance(val, list):
-                    val = val[0]
-                if pd.isna(val) or str(val).strip().lower() in ("", "n/d", "nan", "none"):
-                    return None
-                segundos = float(val)
-                return segundos / 60 if segundos > 0 else None
-            except Exception:
-                return None
-
-        # ──────────────────────────────────────────────────────────
-        # Configurações iniciais (APENAS COM df_quali_filt)
-        # ──────────────────────────────────────────────────────────
-        lixo = {"none", "nan", "n/d", "", "null", "[]"}
-
-        col_agr_c = achar_coluna(df_quali_filt, "Principal", "Agressividade", "Chegada")
-        col_agr_e = achar_coluna(df_quali_filt, "Principal", "Agressividade", "Encerramento")
-
-        id_col = next(
-            (c for c in df_quali_filt.columns if "ID" in c.upper() or "VINCULO" in c.upper()),
-            None,
-        )
-
-        # ──────────────────────────────────────────────────────────
-        # BOTÃO TOGGLE (Centralizado)
-        # ──────────────────────────────────────────────────────────
-        col_left, col_center, col_right = st.columns([1, 1, 1])
-        with col_center:
-            is_correlacao_associacao = render_toggle_button(
-                label="✔️ Abrir Correlações e Associações",
-                session_key="correlacao_associacao",
-                button_key="btn_correlacao_associacao"
-            )
-
-        st.markdown("---")
-
-        # ──────────────────────────────────────────────────────────
-        # CONTEÚDO (Dentro do if)
-        # ──────────────────────────────────────────────────────────
-        if is_correlacao_associacao:
-            
-            # Layout das duas colunas de análise
-            c_sp1, c_sp2 = st.columns(2)
-
-            # ══════════════════════════════════════════════════════════════════════════════
-            # COLUNA 1 — Spearman: Duração vs. Queda de Agressividade
-            # ══════════════════════════════════════════════════════════════════════════════
-            with c_sp1:
-                st.markdown(
-                    """
-                    <div class='info-card'>
-                    <strong>Ocorrências mais longas terminam com o causador menos agressivo?</strong><br>
-                    <span style='font-size: 0.82rem; color: #aaa;'>
-                    Verifica se existe uma relação matemática entre o tempo da negociação
-                    e a queda de agressividade do causador do início ao fim da ocorrência.
-                    </span>
-                    """,
-                    unsafe_allow_html=True,
-                )
-
-                df_sp = df_quali_filt.copy()
-
-                # Verificações de pré-requisito
-                colunas_ausentes = []
-                if not col_agr_c:
-                    colunas_ausentes.append("Agressividade na Chegada")
-                if not col_agr_e:
-                    colunas_ausentes.append("Agressividade no Encerramento")
-                if "Tempo de Negociação Real" not in df_sp.columns:
-                    colunas_ausentes.append("Tempo de Negociação Real")
-
-                if colunas_ausentes:
-                    st.warning(
-                        f"⚠️ Colunas ausentes nos dados: {', '.join(colunas_ausentes)}. "
-                        "Verifique o formulário de registro."
-                    )
-
-                else:
-                    # Converte escalas e remove "Não Observado" (0)
-                    df_sp["Agr_Inicio"] = (
-                        df_sp[col_agr_c].apply(converter_escala).replace(0, pd.NA)
-                    )
-                    df_sp["Agr_Fim"] = (
-                        df_sp[col_agr_e].apply(converter_escala).replace(0, pd.NA)
-                    )
-                    df_sp["Tempo_Min"] = df_sp["Tempo de Negociação Real"].apply(
-                        tempo_para_minutos
-                    )
-
-                    # Remove linhas sem os três valores necessários
-                    df_sp = df_sp.dropna(subset=["Agr_Inicio", "Agr_Fim", "Tempo_Min"])
-
-                    # Delta positivo = queda de agressividade (bom sinal)
-                    df_sp["Delta_Agressividade"] = df_sp["Agr_Inicio"] - df_sp["Agr_Fim"]
-
-                    n_valido = len(df_sp)
-
-                    if n_valido < 5:
-                        # Barra de progresso visual
-                        progresso = int((n_valido / 5) * 100)
-                        st.warning(
-                            f"⏳ **Aguardando mais dados (N={n_valido}/5)**\n\n"
-                            "São necessárias pelo menos **5 ocorrências encerradas** "
-                            "com agressividade registrada nos dois momentos para calcular "
-                            "este indicador de forma confiável."
+                    # ══════════════════════════════════════════════════════════════════════════════
+                    # COLUNA 1 — Spearman: Duração vs. Queda de Agressividade
+                    # ══════════════════════════════════════════════════════════════════════════════
+                    with c_sp1:
+                        st.markdown(
+                            """
+                            <div class='info-card'>
+                            <strong>Ocorrências mais longas terminam com o causador menos agressivo?</strong><br>
+                            <span style='font-size: 0.82rem; color: #aaa;'>
+                            Verifica se existe uma relação matemática entre o tempo da negociação
+                            e a queda de agressividade do causador do início ao fim da ocorrência.
+                            </span>
+                            """,
+                            unsafe_allow_html=True,
                         )
-                        st.progress(progresso)
 
-                    else:
-                        res_sp = analise.calcular_spearman(df_sp, "Tempo_Min", "Delta_Agressividade")
+                        df_sp = df_quali_filt.copy()
 
-                        if res_sp.get("valido", False):
-                            rho = res_sp["rho"]
-                            p = res_sp["p_value"]
-                            significativo = p < 0.05
+                        # Verificações de pré-requisito
+                        colunas_ausentes = []
+                        if not col_agr_c:
+                            colunas_ausentes.append("Agressividade na Chegada")
+                        if not col_agr_e:
+                            colunas_ausentes.append("Agressividade no Encerramento")
+                        if "Tempo de Negociação Real" not in df_sp.columns:
+                            colunas_ausentes.append("Tempo de Negociação Real")
 
-                            # Veredito em linguagem clara
-                            if significativo and rho > 0:
-                                icone = "✅"
-                                titulo_veredito = "Sim — ocorrências mais longas terminam com menos agressividade"
-                                cor_veredito = "success"
-                                forca_correlacao = "muito forte" if abs(rho) > 0.7 else "forte" if abs(rho) > 0.5 else "moderada"
-                                explicacao = (
-                                    f"**O que isso significa:** Existe uma **relação {forca_correlacao}** entre duração e queda de agressividade. "
-                                    f"Em outras palavras: quanto mais tempo a negociação leva, maior a chance de o causador terminar menos agressivo.\n\n"
-                                    f"**Por que temos certeza?** Analisamos {n_valido} ocorrências e o padrão encontrado é tão consistente "
-                                    f"que a probabilidade de ser mera coincidência é menor que 5% (p < 0,05). Isso significa que o padrão é **real**.\n\n"
-                                    f"**Métrica técnica:** Rho = {rho:.2f} (escala de -1 a +1, onde +1 = relação perfeita)."
+                        if colunas_ausentes:
+                            st.warning(
+                                f"⚠️ Colunas ausentes nos dados: {', '.join(colunas_ausentes)}. "
+                                "Verifique o formulário de registro."
+                            )
+
+                        else:
+                            # Converte escalas e remove "Não Observado" (0)
+                            df_sp["Agr_Inicio"] = (
+                                df_sp[col_agr_c].apply(converter_escala).replace(0, pd.NA)
+                            )
+                            df_sp["Agr_Fim"] = (
+                                df_sp[col_agr_e].apply(converter_escala).replace(0, pd.NA)
+                            )
+                            df_sp["Tempo_Min"] = df_sp["Tempo de Negociação Real"].apply(
+                                tempo_para_minutos
+                            )
+
+                            # Remove linhas sem os três valores necessários
+                            df_sp = df_sp.dropna(subset=["Agr_Inicio", "Agr_Fim", "Tempo_Min"])
+
+                            # Delta positivo = queda de agressividade (bom sinal)
+                            df_sp["Delta_Agressividade"] = df_sp["Agr_Inicio"] - df_sp["Agr_Fim"]
+
+                            n_valido = len(df_sp)
+
+                            if n_valido < 5:
+                                # Barra de progresso visual
+                                progresso = int((n_valido / 5) * 100)
+                                st.warning(
+                                    f"⏳ **Aguardando mais dados (N={n_valido}/5)**\n\n"
+                                    "São necessárias pelo menos **5 ocorrências encerradas** "
+                                    "com agressividade registrada nos dois momentos para calcular "
+                                    "este indicador de forma confiável."
                                 )
-                            elif significativo and rho < 0:
-                                icone = "⚠️"
-                                titulo_veredito = "Atenção — ocorrências mais longas terminam COM MAIS agressividade"
-                                cor_veredito = "warning"
-                                forca_correlacao = "muito forte" if abs(rho) > 0.7 else "forte" if abs(rho) > 0.5 else "moderada"
-                                explicacao = (
-                                    f"**O que isso significa:** Existe uma **relação {forca_correlacao} inversa**. "
-                                    f"Ocorrências que demoram mais tempo tendem a terminar com o causador **mais agressivo**, não menos.\n\n"
-                                    f"**Por que isso preocupa?** Isso pode indicar que:\n"
-                                    f"  • O tempo prolongado está gerando **desgaste ou frustração** no causador\n"
-                                    f"  • A estratégia de longa negociação pode não estar sendo efetiva em alguns cenários\n"
-                                    f"  • Pode haver um ponto de saturação após o qual continuar negociando piora as coisas\n\n"
-                                    f"**Por que temos certeza?** O padrão foi encontrado em {n_valido} ocorrências e é improvável ser coincidência (p < 0,05).\n\n"
-                                    f"**Métrica técnica:** Rho = {rho:.2f} (negativo indica relação inversa)."
-                                )
-                            elif not significativo and abs(rho) > 0.3:
-                                icone = "🔎"
-                                titulo_veredito = "Há uma tendência, mas ainda é cedo para confirmar"
-                                cor_veredito = "info"
-                                direcao = "positiva (mais tempo = menos agressividade)" if rho > 0 else "negativa (mais tempo = mais agressividade)"
-                                explicacao = (
-                                    f"**O que observamos:** Existe uma tendência {direcao}, mas com {n_valido} ocorrências, "
-                                    f"não podemos ter certeza se é um padrão real ou coincidência.\n\n"
-                                    f"**Por que não temos certeza?** A probabilidade de isso ser acaso é {p*100:.1f}% — acima do limite de 5% que os estatísticos usam como referência.\n\n"
-                                    f"**O que fazer?** Colete mais registros de negociações. Com 10-15 ocorrências a mais, essa tendência pode se confirmar ou se desfazer.\n\n"
-                                    f"**Métrica técnica:** Rho = {rho:.2f}, p = {p:.4f} (p > 0,05 = não significativo ainda)."
+                                st.progress(progresso)
+
+                            else:
+                                res_sp = analise.calcular_spearman(df_sp, "Tempo_Min", "Delta_Agressividade")
+
+                                if res_sp.get("valido", False):
+                                    rho = res_sp["rho"]
+                                    p = res_sp["p_value"]
+                                    significativo = p < 0.05
+
+                                    # Veredito em linguagem clara
+                                    if significativo and rho > 0:
+                                        icone = "✅"
+                                        titulo_veredito = "Sim — ocorrências mais longas terminam com menos agressividade"
+                                        cor_veredito = "success"
+                                        forca_correlacao = "muito forte" if abs(rho) > 0.7 else "forte" if abs(rho) > 0.5 else "moderada"
+                                        explicacao = (
+                                            f"**O que isso significa:** Existe uma **relação {forca_correlacao}** entre duração e queda de agressividade. "
+                                            f"Em outras palavras: quanto mais tempo a negociação leva, maior a chance de o causador terminar menos agressivo.\n\n"
+                                            f"**Por que temos certeza?** Analisamos {n_valido} ocorrências e o padrão encontrado é tão consistente "
+                                            f"que a probabilidade de ser mera coincidência é menor que 5% (p < 0,05). Isso significa que o padrão é **real**.\n\n"
+                                            f"**Métrica técnica:** Rho = {rho:.2f} (escala de -1 a +1, onde +1 = relação perfeita)."
+                                        )
+                                    elif significativo and rho < 0:
+                                        icone = "⚠️"
+                                        titulo_veredito = "Atenção — ocorrências mais longas terminam COM MAIS agressividade"
+                                        cor_veredito = "warning"
+                                        forca_correlacao = "muito forte" if abs(rho) > 0.7 else "forte" if abs(rho) > 0.5 else "moderada"
+                                        explicacao = (
+                                            f"**O que isso significa:** Existe uma **relação {forca_correlacao} inversa**. "
+                                            f"Ocorrências que demoram mais tempo tendem a terminar com o causador **mais agressivo**, não menos.\n\n"
+                                            f"**Por que isso preocupa?** Isso pode indicar que:\n"
+                                            f"  • O tempo prolongado está gerando **desgaste ou frustração** no causador\n"
+                                            f"  • A estratégia de longa negociação pode não estar sendo efetiva em alguns cenários\n"
+                                            f"  • Pode haver um ponto de saturação após o qual continuar negociando piora as coisas\n\n"
+                                            f"**Por que temos certeza?** O padrão foi encontrado em {n_valido} ocorrências e é improvável ser coincidência (p < 0,05).\n\n"
+                                            f"**Métrica técnica:** Rho = {rho:.2f} (negativo indica relação inversa)."
+                                        )
+                                    elif not significativo and abs(rho) > 0.3:
+                                        icone = "🔎"
+                                        titulo_veredito = "Há uma tendência, mas ainda é cedo para confirmar"
+                                        cor_veredito = "info"
+                                        direcao = "positiva (mais tempo = menos agressividade)" if rho > 0 else "negativa (mais tempo = mais agressividade)"
+                                        explicacao = (
+                                            f"**O que observamos:** Existe uma tendência {direcao}, mas com {n_valido} ocorrências, "
+                                            f"não podemos ter certeza se é um padrão real ou coincidência.\n\n"
+                                            f"**Por que não temos certeza?** A probabilidade de isso ser acaso é {p*100:.1f}% — acima do limite de 5% que os estatísticos usam como referência.\n\n"
+                                            f"**O que fazer?** Colete mais registros de negociações. Com 10-15 ocorrências a mais, essa tendência pode se confirmar ou se desfazer.\n\n"
+                                            f"**Métrica técnica:** Rho = {rho:.2f}, p = {p:.4f} (p > 0,05 = não significativo ainda)."
+                                        )
+                                    else:
+                                        icone = "➖"
+                                        titulo_veredito = "Nenhuma relação detectada entre duração e agressividade"
+                                        cor_veredito = "info"
+                                        explicacao = (
+                                            f"**O que isso significa:** A duração da ocorrência **não está associada** à queda de agressividade. "
+                                            f"Ocorrências longas terminam com queda de agressividade tão frequentemente quanto as curtas.\n\n"
+                                            f"**O que fazer?** Isso não é necessariamente ruim — significa que o tempo não é o fator determinante. "
+                                            f"Procure investigar outros fatores: técnicas usadas, perfil do causador, contexto da ocorrência, etc.\n\n"
+                                            f"**Por que temos certeza?** A relação encontrada (Rho = {rho:.2f}) é tão fraca que não conseguimos descartar coincidência (p = {p:.4f}).\n\n"
+                                            f"**Próximo passo:** Se quiser, rode os outros testes abaixo para explorar quais fatores **realmente** influenciam o desfecho."
+                                        )
+
+                                    # Exibe o veredito
+                                    getattr(st, cor_veredito)(f"{icone} **{titulo_veredito}**\n\n{explicacao}")
+                                else:
+                                    st.warning(res_sp.get("msg", "Dados insuficientes para o cálculo (N < 3)."))
+
+                        st.markdown("</div>", unsafe_allow_html=True)
+
+                    # ══════════════════════════════════════════════════════════════════════════════
+                    # COLUNA 2 — Distribuição de Características
+                    # ══════════════════════════════════════════════════════════════════════════════
+                    with c_sp2:
+                        st.markdown(
+                            """
+                            <div class='info-card'>
+                            <strong>Padrão de Características da Ocorrência</strong><br>
+                            <span style='font-size: 0.82rem; color: #aaa;'>
+                            Analisa como diferentes características estão distribuídas na série histórica.
+                            </span>
+                            """,
+                            unsafe_allow_html=True,
+                        )
+
+                        # Opções simples (usando df_quali_filt)
+                        opcoes_variaveis = {
+                            "Tipologia": "Tip_Limpa",
+                            "Negociador": "Neg_Limpo",
+                            "Modalidade": "Mod_Limpa",
+                        }
+
+                        var_analise = st.selectbox(
+                            "Analisar distribuição de:",
+                            list(opcoes_variaveis.keys()),
+                            index=0,
+                            key="selectbox_distribuicao"
+                        )
+                        col_v1_key = opcoes_variaveis[var_analise]
+
+                        # Análise simples da variável
+                        if col_v1_key in df_quali_filt.columns:
+                            df_anal = df_quali_filt[[col_v1_key]].dropna()
+                            df_anal = df_anal[~df_anal[col_v1_key].astype(str).str.strip().str.lower().isin(lixo)]
+
+                            if not df_anal.empty:
+                                distribuicao = df_anal[col_v1_key].value_counts()
+                                
+                                st.info(
+                                    f"**Distribuição de {var_analise}**\n\n"
+                                    f"Total de registros: {len(df_anal)}\n"
+                                    f"Categorias únicas: {df_anal[col_v1_key].nunique()}\n\n"
+                                    f"**Top 5 mais frequentes:**\n"
+                                    + "\n".join([f"• {cat}: {count} ({count/len(df_anal)*100:.1f}%)" 
+                                                for cat, count in distribuicao.head(5).items()])
                                 )
                             else:
-                                icone = "➖"
-                                titulo_veredito = "Nenhuma relação detectada entre duração e agressividade"
-                                cor_veredito = "info"
-                                explicacao = (
-                                    f"**O que isso significa:** A duração da ocorrência **não está associada** à queda de agressividade. "
-                                    f"Ocorrências longas terminam com queda de agressividade tão frequentemente quanto as curtas.\n\n"
-                                    f"**O que fazer?** Isso não é necessariamente ruim — significa que o tempo não é o fator determinante. "
-                                    f"Procure investigar outros fatores: técnicas usadas, perfil do causador, contexto da ocorrência, etc.\n\n"
-                                    f"**Por que temos certeza?** A relação encontrada (Rho = {rho:.2f}) é tão fraca que não conseguimos descartar coincidência (p = {p:.4f}).\n\n"
-                                    f"**Próximo passo:** Se quiser, rode os outros testes abaixo para explorar quais fatores **realmente** influenciam o desfecho."
-                                )
-
-                            # Exibe o veredito
-                            getattr(st, cor_veredito)(f"{icone} **{titulo_veredito}**\n\n{explicacao}")
+                                st.warning("Sem dados válidos para esta análise.")
                         else:
-                            st.warning(res_sp.get("msg", "Dados insuficientes para o cálculo (N < 3)."))
+                            st.warning(f"Coluna '{col_v1_key}' não encontrada nos dados.")
 
-                st.markdown("</div>", unsafe_allow_html=True)
+                        st.markdown("</div>", unsafe_allow_html=True)
 
-            # ══════════════════════════════════════════════════════════════════════════════
-            # COLUNA 2 — Distribuição de Características
-            # ══════════════════════════════════════════════════════════════════════════════
-            with c_sp2:
-                st.markdown(
-                    """
-                    <div class='info-card'>
-                    <strong>Padrão de Características da Ocorrência</strong><br>
-                    <span style='font-size: 0.82rem; color: #aaa;'>
-                    Analisa como diferentes características estão distribuídas na série histórica.
-                    </span>
-                    """,
-                    unsafe_allow_html=True,
-                )
+                st.markdown("---")
 
-                # Opções simples (usando df_quali_filt)
-                opcoes_variaveis = {
-                    "Tipologia": "Tip_Limpa",
-                    "Negociador": "Neg_Limpo",
-                    "Modalidade": "Mod_Limpa",
-                }
+                # ══════════════════════════════════════════════════════════════════════════════
+                # SEÇÃO: ENTENDA OS TESTES ESTATÍSTICOS
+                # ══════════════════════════════════════════════════════════════════════════════
 
-                var_analise = st.selectbox(
-                    "Analisar distribuição de:",
-                    list(opcoes_variaveis.keys()),
-                    index=0,
-                    key="selectbox_distribuicao"
-                )
-                col_v1_key = opcoes_variaveis[var_analise]
+                st.markdown("<h5 style='color: #FFD700;'>Entenda melhor os testes estatísticos de correlação e associação</h5>", unsafe_allow_html=True)
 
-                # Análise simples da variável
-                if col_v1_key in df_quali_filt.columns:
-                    df_anal = df_quali_filt[[col_v1_key]].dropna()
-                    df_anal = df_anal[~df_anal[col_v1_key].astype(str).str.strip().str.lower().isin(lixo)]
+                col_left, col_center, col_right = st.columns([1, 1, 1])
+                with col_center:
+                    is_entenda_testes = render_toggle_button(
+                        label="✔️ Entenda os testes estatísticos",
+                        session_key="entenda_testes",
+                        button_key="btn_entenda_testes"
+                    )
 
-                    if not df_anal.empty:
-                        distribuicao = df_anal[col_v1_key].value_counts()
-                        
-                        st.info(
-                            f"**Distribuição de {var_analise}**\n\n"
-                            f"Total de registros: {len(df_anal)}\n"
-                            f"Categorias únicas: {df_anal[col_v1_key].nunique()}\n\n"
-                            f"**Top 5 mais frequentes:**\n"
-                            + "\n".join([f"• {cat}: {count} ({count/len(df_anal)*100:.1f}%)" 
-                                        for cat, count in distribuicao.head(5).items()])
-                        )
-                    else:
-                        st.warning("Sem dados válidos para esta análise.")
-                else:
-                    st.warning(f"Coluna '{col_v1_key}' não encontrada nos dados.")
+                st.markdown("---")
 
-                st.markdown("</div>", unsafe_allow_html=True)
+                if is_entenda_testes:
+                    st.markdown("""
+                    ## ✔️ Guia de Entendimento dos Testes Estatísticos
 
-        st.markdown("---")
+                    Os dois testes acima buscam padrões nos dados de negociações. Aqui explicamos o que cada um faz em linguagem simples.
 
-        # ══════════════════════════════════════════════════════════════════════════════
-        # SEÇÃO: ENTENDA OS TESTES ESTATÍSTICOS
-        # ══════════════════════════════════════════════════════════════════════════════
+                    ---
 
-        st.markdown("<h5 style='color: #FFD700;'>Entenda melhor os testes estatísticos de correlação e associação</h5>", unsafe_allow_html=True)
+                    ### ✔️ Teste de Spearman (Coluna Esquerda)
 
-        col_left, col_center, col_right = st.columns([1, 1, 1])
-        with col_center:
-            is_entenda_testes = render_toggle_button(
-                label="✔️ Entenda os testes estatísticos",
-                session_key="entenda_testes",
-                button_key="btn_entenda_testes"
-            )
+                    **O que faz:** Verifica se duas coisas "andam juntas" — quando uma cresce, a outra cresce também?
 
-        st.markdown("---")
+                    **No seu caso:** "Ocorrências mais longas terminam com o causador menos agressivo?"
 
-        if is_entenda_testes:
-            st.markdown("""
-            ## ✔️ Guia de Entendimento dos Testes Estatísticos
+                    **Como entender:**
+                    - **Rho (Coeficiente):** Um número entre -1 e +1 que mede a força da relação
+                    - **+1.0** = relação perfeita (sempre que uma sobe, outra sobe)
+                    - **0.0** = sem relação (variam independentemente)
+                    - **-1.0** = relação inversa (quando uma sobe, outra desce)
 
-            Os dois testes acima buscam padrões nos dados de negociações. Aqui explicamos o que cada um faz em linguagem simples.
+                    - **P-Value:** Responde "é realmente um padrão ou coincidência?"
+                    - **p < 0.05** (5%) = ✅ É um padrão real (improvável ser acaso)
+                    - **p ≥ 0.05** = ⚠️ Pode ser coincidência
 
-            ---
+                    **Quando usar:** Para variáveis contínuas ou ordinais (como escalas de agressividade: baixa, média, alta)
 
-            ### ✔️ Teste de Spearman (Coluna Esquerda)
+                    ---
 
-            **O que faz:** Verifica se duas coisas "andam juntas" — quando uma cresce, a outra cresce também?
+                    ### ✔️ Teste Qui-Quadrado (Coluna Direita)
 
-            **No seu caso:** "Ocorrências mais longas terminam com o causador menos agressivo?"
+                    **O que faz:** Verifica se a escolha de uma coisa é **independente** de outra, ou se há uma relação.
 
-            **Como entender:**
-            - **Rho (Coeficiente):** Um número entre -1 e +1 que mede a força da relação
-            - **+1.0** = relação perfeita (sempre que uma sobe, outra sobe)
-            - **0.0** = sem relação (variam independentemente)
-            - **-1.0** = relação inversa (quando uma sobe, outra desce)
+                    **No seu caso:** "A técnica escolhida depende da Tipologia/Negociador/Modalidade?"
 
-            - **P-Value:** Responde "é realmente um padrão ou coincidência?"
-            - **p < 0.05** (5%) = ✅ É um padrão real (improvável ser acaso)
-            - **p ≥ 0.05** = ⚠️ Pode ser coincidência
+                    **Como entender:**
+                    - **χ² (Chi-Quadrado):** Um número que mede "quanto a realidade se desvia do acaso"
+                    - **χ² próximo de 0** = sem padrão (aleatório)
+                    - **χ² grande** = há um padrão (não é aleatório)
 
-            **Quando usar:** Para variáveis contínuas ou ordinais (como escalas de agressividade: baixa, média, alta)
+                    - **P-Value:** Mesma lógica do Spearman
+                    - **p < 0.05** = ✅ Há um padrão real
+                    - **p ≥ 0.05** = ⚠️ Pode ser acaso
 
-            ---
+                    **Quando usar:** Para variáveis categóricas (categorias, grupos) — não contínuas
 
-            ### ✔️ Teste Qui-Quadrado (Coluna Direita)
+                    ---
 
-            **O que faz:** Verifica se a escolha de uma coisa é **independente** de outra, ou se há uma relação.
+                    ### ✔️ Comparação Rápida
 
-            **No seu caso:** "A técnica escolhida depende da Tipologia/Negociador/Modalidade?"
+                    | Aspecto | Spearman | Qui-Quadrado |
+                    |---------|----------|--------------|
+                    | **Tipo de dado** | Contínuo ou ordinal | Categórico |
+                    | **Pergunta** | "Duas coisas andam juntas?" | "Escolher A depende de B?" |
+                    | **Resultado** | Rho (-1 a +1) | χ² (≥0) |
+                    | **Seu caso** | Duração × Agressividade | Técnica × Contexto |
 
-            **Como entender:**
-            - **χ² (Chi-Quadrado):** Um número que mede "quanto a realidade se desvia do acaso"
-            - **χ² próximo de 0** = sem padrão (aleatório)
-            - **χ² grande** = há um padrão (não é aleatório)
+                    ---
 
-            - **P-Value:** Mesma lógica do Spearman
-            - **p < 0.05** = ✅ Há um padrão real
-            - **p ≥ 0.05** = ⚠️ Pode ser acaso
+                    ### ✔️ O Que Fazer Com os Resultados
 
-            **Quando usar:** Para variáveis categóricas (categorias, grupos) — não contínuas
+                    **Se p-value < 0.05 (padrão real encontrado):**
+                    - ✅ Há um padrão consistente nos dados
+                    - Isso não é coincidência — é algo que realmente está acontecendo
+                    - Vale investigar por quê esse padrão existe
 
-            ---
+                    **Se p-value ≥ 0.05 (sem confirmação):**
+                    - ⚠️ Não há evidência estatística de padrão
+                    - Pode ser coincidência ou falta de dados suficientes
+                    - Coleta mais registros para confirmar ou refutar
 
-            ### ✔️ Comparação Rápida
+                    ---
 
-            | Aspecto | Spearman | Qui-Quadrado |
-            |---------|----------|--------------|
-            | **Tipo de dado** | Contínuo ou ordinal | Categórico |
-            | **Pergunta** | "Duas coisas andam juntas?" | "Escolher A depende de B?" |
-            | **Resultado** | Rho (-1 a +1) | χ² (≥0) |
-            | **Seu caso** | Duração × Agressividade | Técnica × Contexto |
+                    ### ⚠️ Limitações Importantes
 
-            ---
+                    **Spearman:**
+                    - Exige pelo menos 5 valores válidos para ser confiável
+                    - Valores "Não Observado" são excluídos automaticamente
 
-            ### ✔️ O Que Fazer Com os Resultados
+                    **Qui-Quadrado:**
+                    - Exige pelo menos 10 ocorrências distintas
+                    - Se alguma categoria tiver muito poucos casos (< 5), o teste fica impreciso
+                    - Funciona apenas com variáveis categóricas
+                    """)
+                st.markdown("---")
 
-            **Se p-value < 0.05 (padrão real encontrado):**
-            - ✅ Há um padrão consistente nos dados
-            - Isso não é coincidência — é algo que realmente está acontecendo
-            - Vale investigar por quê esse padrão existe
+                
+                st.markdown("<h5 style='color: #FFD700;'>Síntese Interpretativa Assistida por Inteligência Artificial</h5>", unsafe_allow_html=True)
+                
 
-            **Se p-value ≥ 0.05 (sem confirmação):**
-            - ⚠️ Não há evidência estatística de padrão
-            - Pode ser coincidência ou falta de dados suficientes
-            - Coleta mais registros para confirmar ou refutar
-
-            ---
-
-            ### ⚠️ Limitações Importantes
-
-            **Spearman:**
-            - Exige pelo menos 5 valores válidos para ser confiável
-            - Valores "Não Observado" são excluídos automaticamente
-
-            **Qui-Quadrado:**
-            - Exige pelo menos 10 ocorrências distintas
-            - Se alguma categoria tiver muito poucos casos (< 5), o teste fica impreciso
-            - Funciona apenas com variáveis categóricas
-            """)
-        st.markdown("---")
-
-        
-        st.markdown("<h5 style='color: #FFD700;'>Síntese Interpretativa Assistida por Inteligência Artificial</h5>", unsafe_allow_html=True)
-        
-
-        if st.button("✔ GERAR RELATÓRIO INTERPRETADO POR IA"):
-                with st.spinner("✔️ Processando análises e gerando interpretações..."):
-                    try:
-                        import ia_estatistica 
-                        
-                        # Coleta dados de todas as análises anteriores
-                        qui_data = None
-                        if 'res_chi' in locals() and isinstance(res_chi, dict) and res_chi.get('valido'):
-                            qui_data = {'p_valor_global': res_chi['p_value']}
-                        elif 'p' in locals() and isinstance(p, (int, float)):
-                            qui_data = {'p_valor_global': float(p)}
-                        
-                        ord_data = None
-                        if 'df_or' in locals() and not df_or.empty:
-                            ord_data = df_or.to_dict('records')
-                        
-                        gee_data = None
-                        if 'df_gee' in locals() and not df_gee.empty:
-                            gee_data = df_gee.to_dict('records')
-
-                        # Estrutura os dados para enviar para a IA
-                        payload_ia = ia_estatistica.estruturar_resultado_para_ia(
-                            amostra_total=len(df_quali_filt),
-                            resultados_chi=qui_data,
-                            resultados_ordinal=ord_data,
-                            resultados_gee=gee_data
-                        )
-
-                        relatorio_json = ia_estatistica.gerar_relatorio_com_ia(payload_ia)
-
-                        if "erro" in relatorio_json:
-                            st.error(f"Erro na geração do relatório: {relatorio_json['erro']}")
-                            with st.expander("🔍 Ver dados enviados"):
-                                st.json(payload_ia)
-                        else:
-                            # Renderiza cards com as interpretações
-                            st.success("✔ Relatório gerado com sucesso!")
-                            
-                            st.markdown("### ✔️ Principais Achados")
-                            st.markdown(relatorio_json.get("resultados_principais", "N/D"))
-                            
-                            st.markdown("### ✔️ O que isso Significa para a Prática")
-                            st.markdown(relatorio_json.get("interpretacao", "N/D"))
-                            
-                            st.markdown("### ✔️ Recomendações Estratégicas")
-                            st.markdown(relatorio_json.get("conclusao", "N/D"))
-                            
-                            with st.expander("✔️ Ver Análise Completa (Expandir)"):
-                                col_ia1, col_ia2 = st.columns(2)
-                                
-                                with col_ia1:
-                                    st.markdown("**Objetivo Analítico**")
-                                    st.markdown(relatorio_json.get("objetivo", "N/D"))
-                                    
-                                    st.markdown("**Premissas da Análise**")
-                                    st.markdown(relatorio_json.get("premissas", "N/D"))
-                                
-                                with col_ia2:
-                                    st.markdown("**Tamanho do Efeito**")
-                                    st.markdown(relatorio_json.get("tamanho_efeito", "N/D"))
-                                    
-                                    st.markdown("**Limitações Técnicas**")
-                                    st.markdown(relatorio_json.get("limitacoes", "N/D"))
-
-                            st.markdown("---")
-                            st.markdown("### 📥 Exportar Relatório em PDF")
-                            
+                if st.button("✔ GERAR RELATÓRIO INTERPRETADO POR IA"):
+                        with st.spinner("✔️ Processando análises e gerando interpretações..."):
                             try:
-                                from fpdf import FPDF
-                                import unicodedata
+                                import ia_estatistica 
                                 
-                                pdf_hist = FPDF()
-                                pdf_hist.add_page()
+                                # Coleta dados de todas as análises anteriores
+                                qui_data = None
+                                if 'res_chi' in locals() and isinstance(res_chi, dict) and res_chi.get('valido'):
+                                    qui_data = {'p_valor_global': res_chi['p_value']}
+                                elif 'p' in locals() and isinstance(p, (int, float)):
+                                    qui_data = {'p_valor_global': float(p)}
                                 
-                                # Cabeçalho
-                                pdf_hist.set_fill_color(249, 115, 22)
-                                pdf_hist.rect(0, 0, 210, 35, 'F')
-                                pdf_hist.set_font("Arial", "B", 14)
-                                pdf_hist.set_text_color(255, 255, 255)
-                                pdf_hist.cell(0, 12, "ANALISE ESTATISTICA - SERIE HISTORICA", ln=True, align="C")
-                                pdf_hist.set_font("Arial", "I", 10)
-                                pdf_hist.cell(0, 8, "GATE - Inteligencia de Apoio Decisorio (PMESP)", ln=True, align="C")
+                                ord_data = None
+                                if 'df_or' in locals() and not df_or.empty:
+                                    ord_data = df_or.to_dict('records')
                                 
-                                # Conteúdo
-                                pdf_hist.ln(10)
-                                pdf_hist.set_text_color(0, 0, 0)
-                                pdf_hist.set_font("Arial", "B", 12)
-                                pdf_hist.cell(0, 8, "Resultados Principais", ln=True)
-                                
-                                pdf_hist.set_font("Arial", "", 10)
-                                texto_limpo = unicodedata.normalize('NFKD', relatorio_json.get("resultados_principais", "")).encode('ASCII', 'ignore').decode('ASCII')
-                                pdf_hist.multi_cell(0, 5, txt=texto_limpo)
-                                
-                                pdf_hist.ln(5)
-                                pdf_hist.set_font("Arial", "B", 12)
-                                pdf_hist.cell(0, 8, "Interpretacao", ln=True)
-                                
-                                pdf_hist.set_font("Arial", "", 10)
-                                texto_limpo2 = unicodedata.normalize('NFKD', relatorio_json.get("interpretacao", "")).encode('ASCII', 'ignore').decode('ASCII')
-                                pdf_hist.multi_cell(0, 5, txt=texto_limpo2)
-                                
-                                pdf_saida = pdf_hist.output(dest="S")
-                                if isinstance(pdf_saida, str):
-                                    pdf_bytes = pdf_saida.encode('latin-1', errors='replace')
-                                else:
-                                    pdf_bytes = bytes(pdf_saida)
-                                
-                                st.download_button(
-                                    label="📥 Baixar Relatório (PDF)", 
-                                    data=pdf_bytes, 
-                                    file_name="Relatorio_Analise_GATE.pdf", 
-                                    mime="application/pdf"
+                                gee_data = None
+                                if 'df_gee' in locals() and not df_gee.empty:
+                                    gee_data = df_gee.to_dict('records')
+
+                                # Estrutura os dados para enviar para a IA
+                                payload_ia = ia_estatistica.estruturar_resultado_para_ia(
+                                    amostra_total=len(df_quali_filt),
+                                    resultados_chi=qui_data,
+                                    resultados_ordinal=ord_data,
+                                    resultados_gee=gee_data
                                 )
+
+                                relatorio_json = ia_estatistica.gerar_relatorio_com_ia(payload_ia)
+
+                                if "erro" in relatorio_json:
+                                    st.error(f"Erro na geração do relatório: {relatorio_json['erro']}")
+                                    with st.expander("🔍 Ver dados enviados"):
+                                        st.json(payload_ia)
+                                else:
+                                    # Renderiza cards com as interpretações
+                                    st.success("✔ Relatório gerado com sucesso!")
+                                    
+                                    st.markdown("### ✔️ Principais Achados")
+                                    st.markdown(relatorio_json.get("resultados_principais", "N/D"))
+                                    
+                                    st.markdown("### ✔️ O que isso Significa para a Prática")
+                                    st.markdown(relatorio_json.get("interpretacao", "N/D"))
+                                    
+                                    st.markdown("### ✔️ Recomendações Estratégicas")
+                                    st.markdown(relatorio_json.get("conclusao", "N/D"))
+                                    
+                                    with st.expander("✔️ Ver Análise Completa (Expandir)"):
+                                        col_ia1, col_ia2 = st.columns(2)
+                                        
+                                        with col_ia1:
+                                            st.markdown("**Objetivo Analítico**")
+                                            st.markdown(relatorio_json.get("objetivo", "N/D"))
+                                            
+                                            st.markdown("**Premissas da Análise**")
+                                            st.markdown(relatorio_json.get("premissas", "N/D"))
+                                        
+                                        with col_ia2:
+                                            st.markdown("**Tamanho do Efeito**")
+                                            st.markdown(relatorio_json.get("tamanho_efeito", "N/D"))
+                                            
+                                            st.markdown("**Limitações Técnicas**")
+                                            st.markdown(relatorio_json.get("limitacoes", "N/D"))
+
+                                    st.markdown("---")
+                                    st.markdown("### 📥 Exportar Relatório em PDF")
+                                    
+                                    try:
+                                        from fpdf import FPDF
+                                        import unicodedata
+                                        
+                                        pdf_hist = FPDF()
+                                        pdf_hist.add_page()
+                                        
+                                        # Cabeçalho
+                                        pdf_hist.set_fill_color(249, 115, 22)
+                                        pdf_hist.rect(0, 0, 210, 35, 'F')
+                                        pdf_hist.set_font("Arial", "B", 14)
+                                        pdf_hist.set_text_color(255, 255, 255)
+                                        pdf_hist.cell(0, 12, "ANALISE ESTATISTICA - SERIE HISTORICA", ln=True, align="C")
+                                        pdf_hist.set_font("Arial", "I", 10)
+                                        pdf_hist.cell(0, 8, "GATE - Inteligencia de Apoio Decisorio (PMESP)", ln=True, align="C")
+                                        
+                                        # Conteúdo
+                                        pdf_hist.ln(10)
+                                        pdf_hist.set_text_color(0, 0, 0)
+                                        pdf_hist.set_font("Arial", "B", 12)
+                                        pdf_hist.cell(0, 8, "Resultados Principais", ln=True)
+                                        
+                                        pdf_hist.set_font("Arial", "", 10)
+                                        texto_limpo = unicodedata.normalize('NFKD', relatorio_json.get("resultados_principais", "")).encode('ASCII', 'ignore').decode('ASCII')
+                                        pdf_hist.multi_cell(0, 5, txt=texto_limpo)
+                                        
+                                        pdf_hist.ln(5)
+                                        pdf_hist.set_font("Arial", "B", 12)
+                                        pdf_hist.cell(0, 8, "Interpretacao", ln=True)
+                                        
+                                        pdf_hist.set_font("Arial", "", 10)
+                                        texto_limpo2 = unicodedata.normalize('NFKD', relatorio_json.get("interpretacao", "")).encode('ASCII', 'ignore').decode('ASCII')
+                                        pdf_hist.multi_cell(0, 5, txt=texto_limpo2)
+                                        
+                                        pdf_saida = pdf_hist.output(dest="S")
+                                        if isinstance(pdf_saida, str):
+                                            pdf_bytes = pdf_saida.encode('latin-1', errors='replace')
+                                        else:
+                                            pdf_bytes = bytes(pdf_saida)
+                                        
+                                        st.download_button(
+                                            label="📥 Baixar Relatório (PDF)", 
+                                            data=pdf_bytes, 
+                                            file_name="Relatorio_Analise_GATE.pdf", 
+                                            mime="application/pdf"
+                                        )
+                                    except Exception as e:
+                                        st.warning(f"⚠️ Erro ao gerar PDF: {str(e)[:100]}")
+
+                            except ImportError as e:
+                                st.error(f"⚠️ Módulo 'ia_estatistica' não encontrado. Verifique a instalação.")
                             except Exception as e:
-                                st.warning(f"⚠️ Erro ao gerar PDF: {str(e)[:100]}")
+                                st.error(f"🚨 Erro na geração do relatório: {str(e)[:150]}")
 
-                    except ImportError as e:
-                        st.error(f"⚠️ Módulo 'ia_estatistica' não encontrado. Verifique a instalação.")
-                    except Exception as e:
-                        st.error(f"🚨 Erro na geração do relatório: {str(e)[:150]}")
+                st.markdown("<div style='margin-bottom: 20px;'></div>", unsafe_allow_html=True)
+                st.markdown("""
+            <div style='margin-top:20px; margin-bottom:100px; padding:15px; background-color:#111; border-radius:8px;'>
+            <p style="color:#bbb; font-size:13px; line-height:1.7; text-align:left;">
 
-        st.markdown("<div style='margin-bottom: 20px;'></div>", unsafe_allow_html=True)
-        st.markdown("""
-    <div style='margin-top:20px; margin-bottom:100px; padding:15px; background-color:#111; border-radius:8px;'>
-    <p style="color:#bbb; font-size:13px; line-height:1.7; text-align:left;">
+            <span style="color:#ffae42; font-weight:700; font-size:14px; letter-spacing:1px;">
+            DELTA-NEGOCIAÇÃO — GATE/PMESP
+            </span>
 
-    <span style="color:#ffae42; font-weight:700; font-size:14px; letter-spacing:1px;">
-    DELTA-NEGOCIAÇÃO — GATE/PMESP
-    </span>
+            
+            "O maior inimigo do conhecimento não é a ignorância, mas a ilusão do conhecimento."
+            — Stephen Hawking.
 
-    
-    "O maior inimigo do conhecimento não é a ignorância, mas a ilusão do conhecimento."
-    — Stephen Hawking.
+            
+            “Sem dados, você é apenas mais uma pessoa com opinião.”
+            — W. Edwards Deming.
 
-    
-    “Sem dados, você é apenas mais uma pessoa com opinião.”
-    — W. Edwards Deming.
+            
+            Empenhados no desenvolvimento de treinamentos e na avaliação dos Negociadores, alicerçados no pensamento técnico-científico e no valor humano, guiados por dados.
 
-    
-    Empenhados no desenvolvimento de treinamentos e na avaliação dos Negociadores, alicerçados no pensamento técnico-científico e no valor humano, guiados por dados.
+            <br>
 
-    <br>
+            <span style="color:#ffae42; font-weight:600;">
+            NEGOCIAÇÃO!
+            </span>
 
-    <span style="color:#ffae42; font-weight:600;">
-    NEGOCIAÇÃO!
-    </span>
+            <br>
 
-    <br>
+            <span style="color:#777; font-size:11px;">
+            Dados confidenciais, de uso exclusivo da equipe de Negociação do Grupo de Ações Táticas Especiais.
+            </span>
 
-    <span style="color:#777; font-size:11px;">
-    Dados confidenciais, de uso exclusivo da equipe de Negociação do Grupo de Ações Táticas Especiais.
-    </span>
+            </p>
 
-    </p>
+            <hr style="border:none; height:1px; background:linear-gradient(to right, transparent, rgba(255,174,66,0.6), transparent); margin-top:18px; margin-bottom:12px;">
 
-    <hr style="border:none; height:1px; background:linear-gradient(to right, transparent, rgba(255,174,66,0.6), transparent); margin-top:18px; margin-bottom:12px;">
-
-    <div style="text-align:center; font-size:11px; color:#666; line-height:1.5;">
-    © 2026 AXIOM - Strategic Intelligence Ltda — Todos os direitos reservados.<br>
-    Este sistema é protegido por direitos autorais e legislação aplicável. Reprodução, distribuição, engenharia reversa, modificação ou utilização não autorizada são proibidas.
-    </div>
-    """, unsafe_allow_html=True)
+            <div style="text-align:center; font-size:11px; color:#666; line-height:1.5;">
+            © 2026 AXIOM - Strategic Intelligence Ltda — Todos os direitos reservados.<br>
+            Este sistema é protegido por direitos autorais e legislação aplicável. Reprodução, distribuição, engenharia reversa, modificação ou utilização não autorizada são proibidas.
+            </div>
+            """, unsafe_allow_html=True)
 
 
 
