@@ -1360,43 +1360,42 @@ else:
     # ====
 
                 
-        st.markdown("<h5 style='color: #FFD700;'>✔ Frequência das Técnicas Aplicadas (Nesta APA)</h5>", unsafe_allow_html=True)
+            st.markdown("<h5 style='color: #FFD700;'>✔ Frequência das Técnicas Aplicadas (Nesta APA)</h5>", unsafe_allow_html=True)
 
-        col_left, col_center, col_right = st.columns([1, 1, 1])
+            
+            col_left, col_center, col_right = st.columns([1, 1, 1])  
+            with col_center:
+                is_analise_tecnicas = render_toggle_button(
+                    label="✔️ Abrir Análise das Técnicas",
+                    session_key="analise_tecnicas",
+                    button_key="btn_analise_tecnicas"
+                )
 
-        with col_center:
-            is_frequencia_tecnicas = render_toggle_button(
-                label="✔️ Frequência de Técnicas",
-                session_key="frequencia_tecnicas",
-                button_key="btn_frequencia_tecnicas"
-            )
+            st.markdown("---")
 
-        st.markdown("---")
+            if is_analise_tecnicas:
 
-        if is_frequencia_tecnicas:
 
-            if st.session_state.get('stats_calculados'):
-                stats = st.session_state['stats_calculados']
+                if st.session_state.get('stats_calculados'):
+                    stats = st.session_state['stats_calculados']
 
-                tab_ng1, tab_ng2 = st.tabs([
-                    "✔️ Frequência",
-                    "✔️ Efetividade"
-                ])
+                    tab_fq1, tab_ef2 = st.tabs([
+                        "✔️ Frequência",
+                        "✔️ Efetividade"                        
+                    ])
+                    
+                    # --- TAB 1: linha tendencia ---
+                    with tab_fq1:
+                        st.markdown("""
+                        <div class='info-card'>
+                        <h5 style='color: #FFD700; margin-top: 0;'>Linha de tendência individualizada da Percepção de agressividade e reptividade do causador</h5>
+                        <p style='font-size:1.2rem;color:#ddd;'>
+                        Percepção dos Negociadores <strong>no início e encerramento da ocorrência</strong>.                 
+                        </p>
+                        </div>
+                        """, unsafe_allow_html=True)
 
-                # =====================================================
-                # ABA 1 — FREQUÊNCIA
-                # =====================================================
-                with tab_ng1:
-
-                    st.markdown("""
-                    <div class='info-card'>
-                    <h5 style='color: #ffae42; margin-top: 0;'>✔️ Frequência das Técnicas Aplicadas</h5>
-                    <p style='font-size:1rem;color:#ddd;'>
-                    Percepção individalizada dos negociadores sobre a receptividade e agressividade do causador no início e encerramento da ocorrência.
-                    </p>
-                    </div>
-                    """, unsafe_allow_html=True)
-
+                if st.button("✔ Calcular Frequência de Técnicas", key="btn_freq_tecnicas"):
                     if not df_tec.empty:
                         col_vinculo = next((c for c in df_tec.columns if 'VINCULO' in c.upper() or 'VÍNCULO' in c.upper()), None)
                         
