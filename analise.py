@@ -379,10 +379,10 @@ def carregar_transformer_portugues():
         
         # Usar transformer multilingue (validado, funciona bem em português)
         nlp = pipeline(
-            "text-classification",
-            model="neuralmind/bert-base-portuguese-cased",  # Específico para português
-            device=0
-        )
+        "sentiment-analysis",
+        model="distilbert-base-multilingual-cased",  # Mais rápido, menos preciso
+        device=0
+    )
         return nlp
     except Exception as e:
         st.error(f"Erro ao carregar modelo: {str(e)[:100]}")
