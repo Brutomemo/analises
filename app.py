@@ -2525,21 +2525,21 @@ else:
 # Cole TUDO isso DENTRO do: with tab_ng8:
 # ============================================================
 
-                        st.markdown("### ✔️ Escuta e Sentimento")
+                            st.markdown("### ✔️ Escuta e Sentimento")
 
-                        col_caus = "TRANSCRIÇÃO DO CAUSADOR"
-                        col_neg = "TRANSCRIÇÃO DO NEGOCIADOR PRINCIPAL"
+                            col_caus = "TRANSCRIÇÃO DO CAUSADOR"
+                            col_neg = "TRANSCRIÇÃO DO NEGOCIADOR PRINCIPAL"
 
-                        if col_caus not in df_apa or col_neg not in df_apa:
-                            st.warning("⚠️ Colunas de transcrição não encontradas")
-                        else:
-                            txt_caus = str(df_apa[col_caus]).strip()
-                            txt_neg = str(df_apa[col_neg]).strip()
-                            
-                            if not txt_caus or not txt_neg or len(txt_caus) < 20 or len(txt_neg) < 20:
-                                st.warning("⚠️ Transcrições insuficientes para análise")
+                            if col_caus not in df_apa or col_neg not in df_apa:
+                                st.warning("⚠️ Colunas de transcrição não encontradas")
                             else:
+                                txt_caus = str(df_apa[col_caus]).strip()
+                                txt_neg = str(df_apa[col_neg]).strip()
                                 
+                                if not txt_caus or not txt_neg or len(txt_caus) < 20 or len(txt_neg) < 20:
+                                    st.warning("⚠️ Transcrições insuficientes para análise")
+                                else:
+                                    
                                     # =========================================================
                                     # SEÇÃO 1: ANÁLISE RÁPIDA (com toggle)
                                     # =========================================================
