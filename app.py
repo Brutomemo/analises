@@ -2524,6 +2524,7 @@ else:
                             # TAB 8: QUALIDADE DO DISCURSO COM TRANSFORMER
                             # ============================================================
 
+                        with tab_ng8:
                             st.markdown("### ✔️ Escuta e Sentimento")
 
                             col_caus = "TRANSCRIÇÃO DO CAUSADOR"
