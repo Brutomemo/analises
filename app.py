@@ -3200,7 +3200,15 @@ else:
         # ====
         # NOVOS GRÁFICOS: VISÃO GERAL DA AMOSTRA
         # ====
-        st.markdown("<h5 style='color: #FFD700;'>Visão Geral da Série Histórica</h5>", unsafe_allow_html=True)
+        st.markdown("""
+                        <div class='info-card'>
+                        <h5 style='color: #FFD700; margin-top: 0;'>Visão Geral da Série Histórica</h5>
+                        <p style='font-size:1.2rem;color:#ddd;'>
+                        Percepção dos Negociadores <strong>no início e encerramento da ocorrência</strong>.                 
+                        </p>
+                        </div>
+                        """, unsafe_allow_html=True)
+                
 
         # ── BOTÃO TOGGLE ───────────────────────────────────────────
         col_left, col_center, col_right = st.columns([1, 1, 1])
