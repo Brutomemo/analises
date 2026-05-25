@@ -2546,7 +2546,7 @@ else:
 
                                             with col_center:
                                                 is_analise_rapida = render_toggle_button(
-                                                    label="✔️ Análise Rápida (Padrões Léxicos)",
+                                                    label="✔️ Análise de Padrões Léxicos",
                                                     session_key="tab8_analise_rapida",
                                                     button_key="btn_tab8_analise_rapida"
                                                 )
@@ -2557,7 +2557,7 @@ else:
                                                 st.markdown("""
                                                 <p style='color: #aaa; font-size: 0.9rem; margin-bottom: 1rem;'>
                                                 Análise imediata baseada em frequência de palavras-chave.
-                                                <strong>Não usa modelo de IA.</strong> Rápido e transparente.
+                                                
                                                 </p>
                                                 """, unsafe_allow_html=True)
 
