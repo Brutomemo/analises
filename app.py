@@ -1139,204 +1139,204 @@ else:
 
             
             
-        # PERCEPÇÃO DE AGRESSIVIDADE/RECEPTIVIDADE LINHA DE TENDENCIA
+    # PERCEPÇÃO DE AGRESSIVIDADE/RECEPTIVIDADE LINHA DE TENDENCIA
+    
+    if st.session_state.get('stats_calculados'):
+        stats = st.session_state['stats_calculados']
+
+        tab_ng1, tab_ng2 = st.tabs([
+            "✔️ Linha de Tendência",
+            "✔️ Visão Geral"                    
+        ])
+    
+        with tab_ng1:
+            st.markdown("""
+            <div class='info-card'>
+            <h5 style='color: #ffae42; margin-top: 0;'>✔️ Linha de tendência individualizada da Percepção de agressividade e reptividade do causador</h5>
+            <p style='font-size:1rem;color:#ddd;'>
+            Percepção individalizada dos negociadores sobre a receptividade e agressividade do causador no início e encerramento da ocorrência.
+            </p>
+            </div>
+            """, unsafe_allow_html=True)
         
-        if st.session_state.get('stats_calculados'):
-            stats = st.session_state['stats_calculados']
+            colunas_norm = {col: unicodedata.normalize('NFKD', str(col)).encode('ASCII', 'ignore').decode('ASCII').lower() for col in df_apa.index}
+            
+            def buscar_percepcao(papel, metrica, momento):
+                p_n = unicodedata.normalize('NFKD', str(papel)).encode('ASCII', 'ignore').decode('ASCII').lower()
+                m_n = unicodedata.normalize('NFKD', str(metrica)).encode('ASCII', 'ignore').decode('ASCII').lower()
+                mo_n = unicodedata.normalize('NFKD', str(momento)).encode('ASCII', 'ignore').decode('ASCII').lower()
+                
+                for col_orig, col_n in colunas_norm.items():
+                    if p_n in col_n and m_n in col_n and mo_n in col_n:
+                        return limpar_valor(df_apa[col_orig])
+                return "N/D"
+            
+            # Principal
+            p_agr_c_txt = buscar_percepcao('Principal', 'Agressividade', 'Chegada')
+            p_rec_c_txt = buscar_percepcao('Principal', 'Receptividade', 'Chegada')
+            p_agr_e_txt = buscar_percepcao('Principal', 'Agressividade', 'Encerramento')
+            p_rec_e_txt = buscar_percepcao('Principal', 'Receptividade', 'Encerramento')
 
-            tab_ng1, tab_ng2 = st.tabs([
-                "✔️ Linha de Tendência",
-                "✔️ Visão Geral"                    
-            ])
+            # Secundário
+            s_agr_c_txt = buscar_percepcao('Secundario', 'Agressividade', 'Chegada')
+            s_rec_c_txt = buscar_percepcao('Secundario', 'Receptividade', 'Chegada')
+            s_agr_e_txt = buscar_percepcao('Secundario', 'Agressividade', 'Encerramento')
+            s_rec_e_txt = buscar_percepcao('Secundario', 'Receptividade', 'Encerramento')
+
+            # Líder
+            l_agr_c_txt = buscar_percepcao('Lider', 'Agressividade', 'Chegada')
+            l_rec_c_txt = buscar_percepcao('Lider', 'Receptividade', 'Chegada')
+            l_agr_e_txt = buscar_percepcao('Lider', 'Agressividade', 'Encerramento')
+            l_rec_e_txt = buscar_percepcao('Lider', 'Receptividade', 'Encerramento')
+
+            # Numéricos
+            p_agr_c_num, p_rec_c_num = converter_escala(p_agr_c_txt), converter_escala(p_rec_c_txt)
+            p_agr_e_num, p_rec_e_num = converter_escala(p_agr_e_txt), converter_escala(p_rec_e_txt)
+            
+            s_agr_c_num, s_rec_c_num = converter_escala(s_agr_c_txt), converter_escala(s_rec_c_txt)
+            s_agr_e_num, s_rec_e_num = converter_escala(s_agr_e_txt), converter_escala(s_rec_e_txt)
+            
+            l_agr_c_num, l_rec_c_num = converter_escala(l_agr_c_txt), converter_escala(l_rec_c_txt)
+            l_agr_e_num, l_rec_e_num = converter_escala(l_agr_e_txt), converter_escala(l_rec_e_txt)
+
+            
+            p_escolhida = st.selectbox(
+                "Visualizar evolução sob a perspectiva do:", 
+                ["Negociador Principal", "Negociador Secundário", "Negociador Líder"],
+                key="selecao_negociador_grafico"
+            )
+
+            if p_escolhida == "Negociador Principal":
+                v_agr_c, v_rec_c = p_agr_c_num, p_rec_c_num
+                v_agr_e, v_rec_e = p_agr_e_num, p_rec_e_num
+            elif p_escolhida == "Negociador Secundário":
+                v_agr_c, v_rec_c = s_agr_c_num, s_rec_c_num
+                v_agr_e, v_rec_e = s_agr_e_num, s_rec_e_num
+            else:
+                v_agr_c, v_rec_c = l_agr_c_num, l_rec_c_num
+                v_agr_e, v_rec_e = l_agr_e_num, l_rec_e_num
+
+            # Filtro inteligente: converte 0 (Não observado) em None para o gráfico não "despencar"
+            plot_agr_c = v_agr_c if v_agr_c > 0 else None
+            plot_agr_e = v_agr_e if v_agr_e > 0 else None
+            plot_rec_c = v_rec_c if v_rec_c > 0 else None
+            plot_rec_e = v_rec_e if v_rec_e > 0 else None
+
+            fig_trend = go.Figure()
+            
+            fig_trend.add_trace(go.Scatter(
+                x=["Chegada", "Encerramento"], 
+                y=[plot_agr_c, plot_agr_e], 
+                mode='lines+markers', 
+                name='Agressividade', 
+                line=dict(color='#ef4444', width=4), 
+                marker=dict(size=12)
+            ))
+            
+            fig_trend.add_trace(go.Scatter(
+                x=["Chegada", "Encerramento"], 
+                y=[plot_rec_c, plot_rec_e], 
+                mode='lines+markers', 
+                name='Receptividade', 
+                line=dict(color='#22c55e', width=4), 
+                marker=dict(size=12)
+            ))
+            
+            # Eixo Y atualizado:
+            fig_trend.update_layout(
+                paper_bgcolor="rgba(0,0,0,0)", 
+                plot_bgcolor="rgba(0,0,0,0)", 
+                font_color="#FFF",
+                yaxis=dict(
+                    tickvals=[1, 2, 3, 4, 5], 
+                    ticktext=[
+                    "1 - Não agressivo <br>não receptivo", 
+                    "2 - Neutro", 
+                    "3 - Parc. agressivo <br>parc. receptivo",
+                    "4 - Agressivo <br>receptivo", 
+                    "5 - Muito agressivo <br>muito receptivo"
+                    ], 
+                    range=[0.5, 5.5] 
+                ),
+                xaxis=dict(title=None), 
+                legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
+            )
+            
+            # Connectgaps=False garante que se houver um None, a linha é interrompida
+            fig_trend.update_traces(connectgaps=False)
+            
+            st.plotly_chart(fig_trend, use_container_width=True)
+
+        # VISÃO GERAL
         
-            with tab_ng1:
-                st.markdown("""
-                <div class='info-card'>
-                <h5 style='color: #ffae42; margin-top: 0;'>✔️ Linha de tendência individualizada da Percepção de agressividade e reptividade do causador</h5>
-                <p style='font-size:1rem;color:#ddd;'>
-                Percepção individalizada dos negociadores sobre a receptividade e agressividade do causador no início e encerramento da ocorrência.
-                </p>
-                </div>
-                """, unsafe_allow_html=True)
-            
-                colunas_norm = {col: unicodedata.normalize('NFKD', str(col)).encode('ASCII', 'ignore').decode('ASCII').lower() for col in df_apa.index}
-                
-                def buscar_percepcao(papel, metrica, momento):
-                    p_n = unicodedata.normalize('NFKD', str(papel)).encode('ASCII', 'ignore').decode('ASCII').lower()
-                    m_n = unicodedata.normalize('NFKD', str(metrica)).encode('ASCII', 'ignore').decode('ASCII').lower()
-                    mo_n = unicodedata.normalize('NFKD', str(momento)).encode('ASCII', 'ignore').decode('ASCII').lower()
-                    
-                    for col_orig, col_n in colunas_norm.items():
-                        if p_n in col_n and m_n in col_n and mo_n in col_n:
-                            return limpar_valor(df_apa[col_orig])
-                    return "N/D"
-                
-                # Principal
-                p_agr_c_txt = buscar_percepcao('Principal', 'Agressividade', 'Chegada')
-                p_rec_c_txt = buscar_percepcao('Principal', 'Receptividade', 'Chegada')
-                p_agr_e_txt = buscar_percepcao('Principal', 'Agressividade', 'Encerramento')
-                p_rec_e_txt = buscar_percepcao('Principal', 'Receptividade', 'Encerramento')
+        with tab_ng2:
+            st.markdown("""
+            <div class='info-card'>
+            <h5 style='color: #ffae42; margin-top: 0;'>✔️ Visão geral da Percepção de agressividade e reptividade do causador</h5>
+            <p style='font-size:1rem;color:#ddd;'>
+            Percepção dos negociadores sobre a receptividade e agressividade do causador no início e encerramento da ocorrência.
+            </p>
+            </div>
+            """, unsafe_allow_html=True)
 
-                # Secundário
-                s_agr_c_txt = buscar_percepcao('Secundario', 'Agressividade', 'Chegada')
-                s_rec_c_txt = buscar_percepcao('Secundario', 'Receptividade', 'Chegada')
-                s_agr_e_txt = buscar_percepcao('Secundario', 'Agressividade', 'Encerramento')
-                s_rec_e_txt = buscar_percepcao('Secundario', 'Receptividade', 'Encerramento')
+            tab_chegada, tab_encerramento = st.tabs(["🏳 Na Chegada à Ocorrência", "🏴 No Encerramento"])
+        
+            def render_card(label, valor, cor_classe):
+                return f"<div class='info-card {cor_classe}' style='padding: 12px; margin-top: 5px; margin-bottom: 5px;'><strong style='color: #bbb;'>{label}:</strong><br><span style='font-size: 1.1rem; font-weight: bold;'>{valor}</span></div>"
 
-                # Líder
-                l_agr_c_txt = buscar_percepcao('Lider', 'Agressividade', 'Chegada')
-                l_rec_c_txt = buscar_percepcao('Lider', 'Receptividade', 'Chegada')
-                l_agr_e_txt = buscar_percepcao('Lider', 'Agressividade', 'Encerramento')
-                l_rec_e_txt = buscar_percepcao('Lider', 'Receptividade', 'Encerramento')
+            with tab_chegada:
+                col_p_c, col_s_c, col_l_c = st.columns(3)
+                with col_p_c:
+                    st.markdown("**Negociador Principal**")
+                    st.markdown(render_card("Agressividade", p_agr_c_txt, "card-red"), unsafe_allow_html=True)
+                    st.markdown(render_card("Receptividade", p_rec_c_txt, "card-green"), unsafe_allow_html=True)
+                with col_s_c:
+                    st.markdown("**Negociador Secundário**")
+                    st.markdown(render_card("Agressividade", s_agr_c_txt, "card-red"), unsafe_allow_html=True)
+                    st.markdown(render_card("Receptividade", s_rec_c_txt, "card-green"), unsafe_allow_html=True)
+                with col_l_c:
+                    st.markdown("**Negociador Líder**")
+                    st.markdown(render_card("Agressividade", l_agr_c_txt, "card-red"), unsafe_allow_html=True)
+                    st.markdown(render_card("Receptividade", l_rec_c_txt, "card-green"), unsafe_allow_html=True)
 
-                # Numéricos
-                p_agr_c_num, p_rec_c_num = converter_escala(p_agr_c_txt), converter_escala(p_rec_c_txt)
-                p_agr_e_num, p_rec_e_num = converter_escala(p_agr_e_txt), converter_escala(p_rec_e_txt)
-                
-                s_agr_c_num, s_rec_c_num = converter_escala(s_agr_c_txt), converter_escala(s_rec_c_txt)
-                s_agr_e_num, s_rec_e_num = converter_escala(s_agr_e_txt), converter_escala(s_rec_e_txt)
-                
-                l_agr_c_num, l_rec_c_num = converter_escala(l_agr_c_txt), converter_escala(l_rec_c_txt)
-                l_agr_e_num, l_rec_e_num = converter_escala(l_agr_e_txt), converter_escala(l_rec_e_txt)
+            with tab_encerramento:
+                col_p_e, col_s_e, col_l_e = st.columns(3)
+                with col_p_e:
+                    st.markdown("**Negociador Principal**")
+                    st.markdown(render_card("Agressividade", p_agr_e_txt, "card-red"), unsafe_allow_html=True)
+                    st.markdown(render_card("Receptividade", p_rec_e_txt, "card-green"), unsafe_allow_html=True)
+                with col_s_e:
+                    st.markdown("**Negociador Secundário**")
+                    st.markdown(render_card("Agressividade", s_agr_e_txt, "card-red"), unsafe_allow_html=True)
+                    st.markdown(render_card("Receptividade", s_rec_e_txt, "card-green"), unsafe_allow_html=True)
+                with col_l_e:
+                    st.markdown("**Negociador Líder**")
+                    st.markdown(render_card("Agressividade", l_agr_e_txt, "card-red"), unsafe_allow_html=True)
+                    st.markdown(render_card("Receptividade", l_rec_e_txt, "card-green"), unsafe_allow_html=True)
 
-                
-                p_escolhida = st.selectbox(
-                    "Visualizar evolução sob a perspectiva do:", 
-                    ["Negociador Principal", "Negociador Secundário", "Negociador Líder"],
-                    key="selecao_negociador_grafico"
-                )
+            st.markdown("---")
 
-                if p_escolhida == "Negociador Principal":
-                    v_agr_c, v_rec_c = p_agr_c_num, p_rec_c_num
-                    v_agr_e, v_rec_e = p_agr_e_num, p_rec_e_num
-                elif p_escolhida == "Negociador Secundário":
-                    v_agr_c, v_rec_c = s_agr_c_num, s_rec_c_num
-                    v_agr_e, v_rec_e = s_agr_e_num, s_rec_e_num
-                else:
-                    v_agr_c, v_rec_c = l_agr_c_num, l_rec_c_num
-                    v_agr_e, v_rec_e = l_agr_e_num, l_rec_e_num
+            st.markdown("### ✔ Transcrições")
 
-                # Filtro inteligente: converte 0 (Não observado) em None para o gráfico não "despencar"
-                plot_agr_c = v_agr_c if v_agr_c > 0 else None
-                plot_agr_e = v_agr_e if v_agr_e > 0 else None
-                plot_rec_c = v_rec_c if v_rec_c > 0 else None
-                plot_rec_e = v_rec_e if v_rec_e > 0 else None
+                # Inicializa estado do toggle
+            if "show_transcricoes" not in st.session_state:
+                st.session_state["show_transcricoes"] = False
 
-                fig_trend = go.Figure()
-                
-                fig_trend.add_trace(go.Scatter(
-                    x=["Chegada", "Encerramento"], 
-                    y=[plot_agr_c, plot_agr_e], 
-                    mode='lines+markers', 
-                    name='Agressividade', 
-                    line=dict(color='#ef4444', width=4), 
-                    marker=dict(size=12)
-                ))
-                
-                fig_trend.add_trace(go.Scatter(
-                    x=["Chegada", "Encerramento"], 
-                    y=[plot_rec_c, plot_rec_e], 
-                    mode='lines+markers', 
-                    name='Receptividade', 
-                    line=dict(color='#22c55e', width=4), 
-                    marker=dict(size=12)
-                ))
-                
-                # Eixo Y atualizado:
-                fig_trend.update_layout(
-                    paper_bgcolor="rgba(0,0,0,0)", 
-                    plot_bgcolor="rgba(0,0,0,0)", 
-                    font_color="#FFF",
-                    yaxis=dict(
-                        tickvals=[1, 2, 3, 4, 5], 
-                        ticktext=[
-                        "1 - Não agressivo <br>não receptivo", 
-                        "2 - Neutro", 
-                        "3 - Parc. agressivo <br>parc. receptivo",
-                        "4 - Agressivo <br>receptivo", 
-                        "5 - Muito agressivo <br>muito receptivo"
-                        ], 
-                        range=[0.5, 5.5] 
-                    ),
-                    xaxis=dict(title=None), 
-                    legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
-                )
-                
-                # Connectgaps=False garante que se houver um None, a linha é interrompida
-                fig_trend.update_traces(connectgaps=False)
-                
-                st.plotly_chart(fig_trend, use_container_width=True)
+            # Botão toggle
+            label = "▲ Ocultar transcrições" if st.session_state["show_transcricoes"] else "▼ Ver transcrições completas da ocorrência"
+            if st.button(label, key="btn_transcricoes"):
+                st.session_state["show_transcricoes"] = not st.session_state["show_transcricoes"]
 
-            # VISÃO GERAL
-            
-            with tab_ng2:
-                st.markdown("""
-                <div class='info-card'>
-                <h5 style='color: #ffae42; margin-top: 0;'>✔️ Visão geral da Percepção de agressividade e reptividade do causador</h5>
-                <p style='font-size:1rem;color:#ddd;'>
-                Percepção dos negociadores sobre a receptividade e agressividade do causador no início e encerramento da ocorrência.
-                </p>
-                </div>
-                """, unsafe_allow_html=True)
+            # Conteúdo condicional
+            if st.session_state["show_transcricoes"]:
+                st.markdown("**Causador do Incidente:**")
+                st.write(limpar_valor(df_apa.get('TRANSCRIÇÃO DO CAUSADOR')))
+                st.markdown("**Negociador Principal:**")
+                st.write(limpar_valor(df_apa.get('TRANSCRIÇÃO DO NEGOCIADOR PRINCIPAL')))
+                st.markdown("**Negociador Secundário:**")
+                st.write(limpar_valor(df_apa.get('TRANSCRIÇÃO DO NEGOCIADOR SECUNDÁRIO')))
 
-                tab_chegada, tab_encerramento = st.tabs(["🏳 Na Chegada à Ocorrência", "🏴 No Encerramento"])
-            
-                def render_card(label, valor, cor_classe):
-                    return f"<div class='info-card {cor_classe}' style='padding: 12px; margin-top: 5px; margin-bottom: 5px;'><strong style='color: #bbb;'>{label}:</strong><br><span style='font-size: 1.1rem; font-weight: bold;'>{valor}</span></div>"
-
-                with tab_chegada:
-                    col_p_c, col_s_c, col_l_c = st.columns(3)
-                    with col_p_c:
-                        st.markdown("**Negociador Principal**")
-                        st.markdown(render_card("Agressividade", p_agr_c_txt, "card-red"), unsafe_allow_html=True)
-                        st.markdown(render_card("Receptividade", p_rec_c_txt, "card-green"), unsafe_allow_html=True)
-                    with col_s_c:
-                        st.markdown("**Negociador Secundário**")
-                        st.markdown(render_card("Agressividade", s_agr_c_txt, "card-red"), unsafe_allow_html=True)
-                        st.markdown(render_card("Receptividade", s_rec_c_txt, "card-green"), unsafe_allow_html=True)
-                    with col_l_c:
-                        st.markdown("**Negociador Líder**")
-                        st.markdown(render_card("Agressividade", l_agr_c_txt, "card-red"), unsafe_allow_html=True)
-                        st.markdown(render_card("Receptividade", l_rec_c_txt, "card-green"), unsafe_allow_html=True)
-
-                with tab_encerramento:
-                    col_p_e, col_s_e, col_l_e = st.columns(3)
-                    with col_p_e:
-                        st.markdown("**Negociador Principal**")
-                        st.markdown(render_card("Agressividade", p_agr_e_txt, "card-red"), unsafe_allow_html=True)
-                        st.markdown(render_card("Receptividade", p_rec_e_txt, "card-green"), unsafe_allow_html=True)
-                    with col_s_e:
-                        st.markdown("**Negociador Secundário**")
-                        st.markdown(render_card("Agressividade", s_agr_e_txt, "card-red"), unsafe_allow_html=True)
-                        st.markdown(render_card("Receptividade", s_rec_e_txt, "card-green"), unsafe_allow_html=True)
-                    with col_l_e:
-                        st.markdown("**Negociador Líder**")
-                        st.markdown(render_card("Agressividade", l_agr_e_txt, "card-red"), unsafe_allow_html=True)
-                        st.markdown(render_card("Receptividade", l_rec_e_txt, "card-green"), unsafe_allow_html=True)
-
-                st.markdown("---")
-
-                st.markdown("### ✔ Transcrições")
-
-                    # Inicializa estado do toggle
-                if "show_transcricoes" not in st.session_state:
-                    st.session_state["show_transcricoes"] = False
-
-                # Botão toggle
-                label = "▲ Ocultar transcrições" if st.session_state["show_transcricoes"] else "▼ Ver transcrições completas da ocorrência"
-                if st.button(label, key="btn_transcricoes"):
-                    st.session_state["show_transcricoes"] = not st.session_state["show_transcricoes"]
-
-                # Conteúdo condicional
-                if st.session_state["show_transcricoes"]:
-                    st.markdown("**Causador do Incidente:**")
-                    st.write(limpar_valor(df_apa.get('TRANSCRIÇÃO DO CAUSADOR')))
-                    st.markdown("**Negociador Principal:**")
-                    st.write(limpar_valor(df_apa.get('TRANSCRIÇÃO DO NEGOCIADOR PRINCIPAL')))
-                    st.markdown("**Negociador Secundário:**")
-                    st.write(limpar_valor(df_apa.get('TRANSCRIÇÃO DO NEGOCIADOR SECUNDÁRIO')))
-
-                st.markdown("---")
+            st.markdown("---")
 
             
             #TABELA DE FREQUENCIA
