@@ -1268,6 +1268,7 @@ else:
                 
                 st.plotly_chart(fig_trend, use_container_width=True)
 
+            #VISÃO GERAL
             
             with tab_ng2:
                     st.markdown("""
@@ -1350,6 +1351,8 @@ else:
                     "✔️ Efetividade das Técnicas"                    
                 ])
             
+            
+            
             st.markdown("<h5 style='color: #FFD700;'>✔ Frequência das Técnicas Aplicadas (Nesta APA)</h5>", unsafe_allow_html=True)
 
             col_left, col_center, col_right = st.columns([1, 1, 1])
@@ -1360,12 +1363,8 @@ else:
                     button_key="btn_frequencia_tecnicas"
                 )
             
-            st.markdown("---")
-        
-            if is_frequencia_tecnicas:  
-                
-                if st.button("✔ Calcular Frequência de Técnicas", key="btn_freq_tecnicas"):
-                    if not df_tec.empty:
+            
+                if not df_tec.empty:
                         col_vinculo = next((c for c in df_tec.columns if 'VINCULO' in c.upper() or 'VÍNCULO' in c.upper()), None)
                         
                         if col_vinculo:
