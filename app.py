@@ -3204,7 +3204,7 @@ else:
                         <div class='info-card'>
                         <h5 style='color: #FFD700; margin-top: 0;'>Visão Geral da Série Histórica</h5>
                         <p style='font-size:1.2rem;color:#ddd;'>
-                        Metadados</strong>.                 
+                        Metadados</strong>                 
                         </p>
                         </div>
                         """, unsafe_allow_html=True)
@@ -3358,8 +3358,14 @@ else:
         # BLOCO: Ranking de Técnicas + Padrões e Correlações
         # ============================================================
         
-        
-        st.markdown("<h5 style='color: #FFD700;'> Ranking de Técnicas Aplicadas</h5>", unsafe_allow_html=True)
+        st.markdown("""
+                        <div class='info-card'>
+                        <h5 style='color: #FFD700; margin-top: 0;'>Ranking de Técnicas Aplicadas</h5>
+                        <p style='font-size:1.2rem;color:#ddd;'>
+                        Técnicas mais usadas pelos Negociadores</strong>                 
+                        </p>
+                        </div>
+                        """, unsafe_allow_html=True)        
 
         col_left, col_center, col_right = st.columns([1, 1, 1])  
         with col_center:
