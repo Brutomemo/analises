@@ -2789,20 +2789,20 @@ else:
                                 """)
 
                     st.markdown("---")
-                            st.markdown("""
-                            ✅ **Melhoria com Tradução:**
-                            - Melhor compreensão de português coloquial
-                            - Sentença original + tradução mostradas
-                            - Acurácia ~80-85%
-                            
-                            ⚠️ **Ainda com Limitações:**
-                            - Tradução pode perder nuances
-                            - Gírias muito locais podem confundir
-                            - Sarcasmo ainda pode não ser detectado
-                            - Use como complemento da Análise Rápida
-                            """)
+                    st.markdown("""
+                    ✅ **Melhoria com Tradução:**
+                    - Melhor compreensão de português coloquial
+                    - Sentença original + tradução mostradas
+                    - Acurácia ~80-85%
+                    
+                    ⚠️ **Ainda com Limitações:**
+                    - Tradução pode perder nuances
+                    - Gírias muito locais podem confundir
+                    - Sarcasmo ainda pode não ser detectado
+                    - Use como complemento da Análise Rápida
+                    """)
 
-                    st.markdown("---")
+            st.markdown("---")
 
 
             
