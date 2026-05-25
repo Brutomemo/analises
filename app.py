@@ -1167,7 +1167,7 @@ else:
                         st.markdown("""
                         <div class='info-card'>
                         <h5 style='color: #FFD700; margin-top: 0;'>Linha de tendência individualizada da Percepção de agressividade e reptividade do causador</h5>
-                        <p style='font-size:0.9rem;color:#ddd;'>
+                        <p style='font-size:1.2rem;color:#ddd;'>
                         Percepção dos Negociadores <strong>no início e encerramento da ocorrência</strong>.                 
                         </p>
                         </div>
@@ -1288,7 +1288,7 @@ else:
                         st.markdown("""
                         <div class='info-card'>
                         <h5 style='color: #FFD700; margin-top: 0;'>Percepção Geral dos Negociadores sobre a agressividade e reptividade do causador.</h5>
-                        <p style='font-size:0.9rem;color:#ddd;'>
+                        <p style='font-size:1.2rem;color:#ddd;'>
                         Percepção dos Negociadores <strong>no início e encerramento da ocorrência</strong>.                        
                         </p>
                         </div>
