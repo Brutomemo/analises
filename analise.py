@@ -488,8 +488,8 @@ def carregar_transformer_portugues():
         # Usar transformer multilingue (validado, funciona bem em português)
         nlp = pipeline(
             "sentiment-analysis",
-            model="nlptown/bert-base-multilingual-uncased-sentiment",
-            device=0  # GPU se disponível, CPU caso contrário
+            model="distilbert-base-uncased-finetuned-sst-2-english",  # Melhor que multilingue
+            device=0
         )
         return nlp
     except Exception as e:
