@@ -1989,536 +1989,536 @@ else:
                 # --- FIM DO BLOCO DE EXPLICAÇÃO ---
 
 
-        col_left, col_center, col_right = st.columns([1, 1, 1])
-        with col_center:
-            is_analise_negociacao = render_toggle_button(
-                label="✔️ Análise da Negociação",
-                session_key="analise_negociacao",
-                button_key="btn_analise_negociacao"
-            )
+            col_left, col_center, col_right = st.columns([1, 1, 1])
+            with col_center:
+                is_analise_negociacao = render_toggle_button(
+                    label="✔️ Análise da Negociação",
+                    session_key="analise_negociacao",
+                    button_key="btn_analise_negociacao"
+                )
+            
+            st.markdown("---")
         
-        st.markdown("---")
-    
-        if is_analise_negociacao: 
-            
-            def extrair_temas_e_metricas(resultado_lista):
-                """
-                Separa os temas das métricas APA.
-                Métricas começam com ** e contêm: Risco, Abertura, Raiz, Intensidade, Direção, Volatilidade
-                """
-                temas = []
-                metricas = []
+            if is_analise_negociacao: 
                 
-                for linha in resultado_lista:
-                    if any(keyword in linha for keyword in ['Risco Observado', 'Abertura Observada', 'Raiz Observada', 
-                                                            'Intensidade Geral', 'Direção:', 'Volatilidade', 
-                                                            'Classificação APA', 'Leitura Operacional']):
-                        metricas.append(linha)
-                    else:
-                        temas.append(linha)
-                
-                return temas, metricas
-
-            
-
-            if st.button("✔ 2. Gerar Padrões Mentais & Nuvem de Palavras", key="btn_ngramas_semantica"):
-                with st.spinner("Processando padrões mentais, temas dominantes e gerando nuvens de palavras..."):
-                    try:
-                        texto_c  = analise.limpar_valor(df_apa.get('TRANSCRIÇÃO DO CAUSADOR', ''))
-                        texto_np = analise.limpar_valor(df_apa.get('TRANSCRIÇÃO DO NEGOCIADOR PRINCIPAL', ''))
-                        texto_ns = analise.limpar_valor(df_apa.get('TRANSCRIÇÃO DO NEGOCIADOR SECUNDÁRIO', ''))
-                        texto_total = f"{texto_c} {texto_np} {texto_ns}"
-
-                        resolucao_raw = analise.limpar_valor(
-                            df_apa.get('Resolução', df_apa.get('RESOLUÇÃO', df_apa.get('resolucao', '')))
-                        ).strip()
-
-                        # ✅ CORRIGIDO: detecta os 3 tipos reais GATE/PMESP
-                        resolucao_norm = resolucao_raw.lower()
-                        if not resolucao_norm:
-                            resolucao_tipo = "desconhecida"
-                        elif "tática" in resolucao_norm or "tatica" in resolucao_norm:
-                            resolucao_tipo = "Negociação Tática"
-                        elif "real" in resolucao_norm or "negocia" in resolucao_norm:
-                            resolucao_tipo = "Negociação Real"
-                        elif "interven" in resolucao_norm:
-                            resolucao_tipo = "Intervenção"
+                def extrair_temas_e_metricas(resultado_lista):
+                    """
+                    Separa os temas das métricas APA.
+                    Métricas começam com ** e contêm: Risco, Abertura, Raiz, Intensidade, Direção, Volatilidade
+                    """
+                    temas = []
+                    metricas = []
+                    
+                    for linha in resultado_lista:
+                        if any(keyword in linha for keyword in ['Risco Observado', 'Abertura Observada', 'Raiz Observada', 
+                                                                'Intensidade Geral', 'Direção:', 'Volatilidade', 
+                                                                'Classificação APA', 'Leitura Operacional']):
+                            metricas.append(linha)
                         else:
-                            resolucao_tipo = "desconhecida"
+                            temas.append(linha)
+                    
+                    return temas, metricas
 
-                        # ✅ NOVO: extrair tempos do Airtable com segurança
-                        def extrair_tempo(valor):
-                            try:
-                                return int(float(str(analise.limpar_valor(valor)).replace(',', '.') or 0))
-                            except Exception:
-                                return 0
-
-                        tempo_neg_real = extrair_tempo(
-                            df_apa.get('TEMPO NEGOCIAÇÃO REAL',
-                            df_apa.get('Tempo Negociação Real',
-                            df_apa.get('tempo_negociacao_real', 0)))
-                        )
-                        tempo_neg_tatica = extrair_tempo(
-                            df_apa.get('TEMPO NEGOCIAÇÃO TÁTICA',
-                            df_apa.get('Tempo Negociação Tática',
-                            df_apa.get('tempo_negociacao_tatica', 0)))
-                        )
-
-                        # ✅ NOVO: Separar temas e métricas
-                        resultado_total = analise.extrair_topicos_ngrams(texto_total, resolucao_tipo=resolucao_tipo) if len(texto_total) > 10 else ["Texto insuficiente"]
-                        resultado_c = analise.extrair_topicos_ngrams(texto_c, resolucao_tipo=resolucao_tipo) if len(texto_c) > 10 else ["Texto insuficiente"]
-                        resultado_np = analise.extrair_topicos_ngrams(texto_np, resolucao_tipo=resolucao_tipo) if len(texto_np) > 10 else ["Texto insuficiente"]
-                        resultado_ns = analise.extrair_topicos_ngrams(texto_ns, resolucao_tipo=resolucao_tipo) if len(texto_ns) > 10 else ["Texto insuficiente"]
-
-                        temas_total, metricas_total = extrair_temas_e_metricas(resultado_total)
-                        temas_c, metricas_c = extrair_temas_e_metricas(resultado_c)
-                        temas_np, metricas_np = extrair_temas_e_metricas(resultado_np)
-                        temas_ns, metricas_ns = extrair_temas_e_metricas(resultado_ns)
-
-                        st.session_state['stats_calculados'] = {
-                            "temas":       temas_total,
-                            "temas_c":     temas_c,
-                            "temas_np":    temas_np,
-                            "temas_ns":    temas_ns,
-                            "wc_c":        analise.gerar_wordcloud(texto_c)  if len(texto_c)  > 5 else None,
-                            "wc_np":       analise.gerar_wordcloud(texto_np) if len(texto_np) > 5 else None,
-                            "wc_ns":       analise.gerar_wordcloud(texto_ns) if len(texto_ns) > 5 else None,
-                            "texto_c_raw":      texto_c,
-                            "texto_np_raw":     texto_np,
-                            "texto_ns_raw":     texto_ns,
-                            "resolucao_tipo":   resolucao_tipo,
-                            "resolucao_raw":    resolucao_raw,
-                            "tempo_neg_real":   tempo_neg_real,
-                            "tempo_neg_tatica": tempo_neg_tatica,
-                        }
-                        st.success("✅ Padrões mentais processados!")
-                    except Exception as e:
-                        st.error(f"Erro ao processar: {str(e)[:80]}")
-
-            if st.session_state.get('stats_calculados'):
-                stats = st.session_state['stats_calculados']
-
-                tab_ng1, tab_ng2, tab_ng3, tab_ng4, tab_ng5, tab_ng6, tab_ng7, tab_ng8 = st.tabs([
-                    "🔴 Causador",
-                    "🟢 Negociador Principal",
-                    "🔵 Negociador Secundário",
-                    "✔️ Análise Global",
-                    "✔️ Comparativo das Nuvens de Palavras",
-                    "✔️ Convergência Temática",
-                    "✔️ Estado da Crise",
-                    "✔️ Escuta e Sentimento"
-                ])
                 
-                # --- TAB 1: CAUSADOR ---
-                with tab_ng1:
-                    st.markdown("""
-                    <div class='info-card'>
-                    <h5 style='color: #ef4444; margin-top: 0;'>🔴 CAUSADOR — O que ele estava REALMENTE focando?</h5>
-                    <p style='font-size:0.9rem;color:#ddd;'>
-                    Os temas dominantes abaixo revelam a <strong>obsessão mental</strong> do causador. 
-                    Se "morte" é tema 1, o risco estava alto. Se "filha" aparece, há ambivalência.
-                    </p>
-                    </div>
-                    """, unsafe_allow_html=True)
 
-                    topicos_c = stats.get('temas_c', ["Análise individual ainda não gerada."])
-                    for t in topicos_c:
-                        st.markdown(t)
+                if st.button("✔ 2. Gerar Padrões Mentais & Nuvem de Palavras", key="btn_ngramas_semantica"):
+                    with st.spinner("Processando padrões mentais, temas dominantes e gerando nuvens de palavras..."):
+                        try:
+                            texto_c  = analise.limpar_valor(df_apa.get('TRANSCRIÇÃO DO CAUSADOR', ''))
+                            texto_np = analise.limpar_valor(df_apa.get('TRANSCRIÇÃO DO NEGOCIADOR PRINCIPAL', ''))
+                            texto_ns = analise.limpar_valor(df_apa.get('TRANSCRIÇÃO DO NEGOCIADOR SECUNDÁRIO', ''))
+                            texto_total = f"{texto_c} {texto_np} {texto_ns}"
 
-                    wc_c = stats.get('wc_c')
-                    if wc_c:
-                        st.markdown("#### Nuvem de Palavras — Foco Mental do Causador")
-                        st.pyplot(wc_c)
-                    else:
-                        st.info("Sem transcrição suficiente para gerar nuvem.")
+                            resolucao_raw = analise.limpar_valor(
+                                df_apa.get('Resolução', df_apa.get('RESOLUÇÃO', df_apa.get('resolucao', '')))
+                            ).strip()
+
+                            # ✅ CORRIGIDO: detecta os 3 tipos reais GATE/PMESP
+                            resolucao_norm = resolucao_raw.lower()
+                            if not resolucao_norm:
+                                resolucao_tipo = "desconhecida"
+                            elif "tática" in resolucao_norm or "tatica" in resolucao_norm:
+                                resolucao_tipo = "Negociação Tática"
+                            elif "real" in resolucao_norm or "negocia" in resolucao_norm:
+                                resolucao_tipo = "Negociação Real"
+                            elif "interven" in resolucao_norm:
+                                resolucao_tipo = "Intervenção"
+                            else:
+                                resolucao_tipo = "desconhecida"
+
+                            # ✅ NOVO: extrair tempos do Airtable com segurança
+                            def extrair_tempo(valor):
+                                try:
+                                    return int(float(str(analise.limpar_valor(valor)).replace(',', '.') or 0))
+                                except Exception:
+                                    return 0
+
+                            tempo_neg_real = extrair_tempo(
+                                df_apa.get('TEMPO NEGOCIAÇÃO REAL',
+                                df_apa.get('Tempo Negociação Real',
+                                df_apa.get('tempo_negociacao_real', 0)))
+                            )
+                            tempo_neg_tatica = extrair_tempo(
+                                df_apa.get('TEMPO NEGOCIAÇÃO TÁTICA',
+                                df_apa.get('Tempo Negociação Tática',
+                                df_apa.get('tempo_negociacao_tatica', 0)))
+                            )
+
+                            # ✅ NOVO: Separar temas e métricas
+                            resultado_total = analise.extrair_topicos_ngrams(texto_total, resolucao_tipo=resolucao_tipo) if len(texto_total) > 10 else ["Texto insuficiente"]
+                            resultado_c = analise.extrair_topicos_ngrams(texto_c, resolucao_tipo=resolucao_tipo) if len(texto_c) > 10 else ["Texto insuficiente"]
+                            resultado_np = analise.extrair_topicos_ngrams(texto_np, resolucao_tipo=resolucao_tipo) if len(texto_np) > 10 else ["Texto insuficiente"]
+                            resultado_ns = analise.extrair_topicos_ngrams(texto_ns, resolucao_tipo=resolucao_tipo) if len(texto_ns) > 10 else ["Texto insuficiente"]
+
+                            temas_total, metricas_total = extrair_temas_e_metricas(resultado_total)
+                            temas_c, metricas_c = extrair_temas_e_metricas(resultado_c)
+                            temas_np, metricas_np = extrair_temas_e_metricas(resultado_np)
+                            temas_ns, metricas_ns = extrair_temas_e_metricas(resultado_ns)
+
+                            st.session_state['stats_calculados'] = {
+                                "temas":       temas_total,
+                                "temas_c":     temas_c,
+                                "temas_np":    temas_np,
+                                "temas_ns":    temas_ns,
+                                "wc_c":        analise.gerar_wordcloud(texto_c)  if len(texto_c)  > 5 else None,
+                                "wc_np":       analise.gerar_wordcloud(texto_np) if len(texto_np) > 5 else None,
+                                "wc_ns":       analise.gerar_wordcloud(texto_ns) if len(texto_ns) > 5 else None,
+                                "texto_c_raw":      texto_c,
+                                "texto_np_raw":     texto_np,
+                                "texto_ns_raw":     texto_ns,
+                                "resolucao_tipo":   resolucao_tipo,
+                                "resolucao_raw":    resolucao_raw,
+                                "tempo_neg_real":   tempo_neg_real,
+                                "tempo_neg_tatica": tempo_neg_tatica,
+                            }
+                            st.success("✅ Padrões mentais processados!")
+                        except Exception as e:
+                            st.error(f"Erro ao processar: {str(e)[:80]}")
+
+                if st.session_state.get('stats_calculados'):
+                    stats = st.session_state['stats_calculados']
+
+                    tab_ng1, tab_ng2, tab_ng3, tab_ng4, tab_ng5, tab_ng6, tab_ng7, tab_ng8 = st.tabs([
+                        "🔴 Causador",
+                        "🟢 Negociador Principal",
+                        "🔵 Negociador Secundário",
+                        "✔️ Análise Global",
+                        "✔️ Comparativo das Nuvens de Palavras",
+                        "✔️ Convergência Temática",
+                        "✔️ Estado da Crise",
+                        "✔️ Escuta e Sentimento"
+                    ])
                     
-                    
+                    # --- TAB 1: CAUSADOR ---
+                    with tab_ng1:
+                        st.markdown("""
+                        <div class='info-card'>
+                        <h5 style='color: #ef4444; margin-top: 0;'>🔴 CAUSADOR — O que ele estava REALMENTE focando?</h5>
+                        <p style='font-size:0.9rem;color:#ddd;'>
+                        Os temas dominantes abaixo revelam a <strong>obsessão mental</strong> do causador. 
+                        Se "morte" é tema 1, o risco estava alto. Se "filha" aparece, há ambivalência.
+                        </p>
+                        </div>
+                        """, unsafe_allow_html=True)
 
-                # --- TAB 2: NEGOCIADOR PRINCIPAL ---
-                with tab_ng2:
-                    st.markdown("""
-                    <div class='info-card'>
-                    <h5 style='color: #10b981; margin-top: 0;'>🟢 NEGOCIADOR PRINCIPAL — Qual foi a estratégia dele?</h5>
-                    <p style='font-size:0.9rem;color:#ddd;'>
-                    Os temas do negociador mostram <strong>em que ele está focando</strong>. 
-                    Compare com o causador: convergência = boa sintonia; divergência = falha de rapport.
-                    </p>
-                    </div>
-                    """, unsafe_allow_html=True)
+                        topicos_c = stats.get('temas_c', ["Análise individual ainda não gerada."])
+                        for t in topicos_c:
+                            st.markdown(t)
 
-                    topicos_np = stats.get('temas_np', ["Análise individual ainda não gerada."])
-                    for t in topicos_np:
-                        st.markdown(t)
-
-                    wc_np = stats.get('wc_np')
-                    if wc_np:
-                        st.markdown("#### Nuvem de Palavras — Estratégia do Negociador")
-                        st.pyplot(wc_np)
-                    else:
-                        st.info("Sem transcrição suficiente para gerar nuvem.")
-                    
-                    
-
-                # --- TAB 3: NEGOCIADOR SECUNDÁRIO ---
-                with tab_ng3:
-                    st.markdown("""
-                    <div class='info-card'>
-                    <h5 style='color: #3b82f6; margin-top: 0;'>🔵 NEGOCIADOR SECUNDÁRIO — Qual era o papel dele?</h5>
-                    <p style='font-size:0.9rem;color:#ddd;'>
-                    Geralmente suporte. Seus temas indicam se estava reforçando a mensagem do principal ou dispersando esforços.
-                    </p>
-                    </div>
-                    """, unsafe_allow_html=True)
-
-                    topicos_ns = stats.get('temas_ns', ["Análise individual ainda não gerada."])
-                    for t in topicos_ns:
-                        st.markdown(t)
-
-                    wc_ns = stats.get('wc_ns')
-                    if wc_ns:
-                        st.markdown("#### Nuvem de Palavras — Atuação do Secundário")
-                        st.pyplot(wc_ns)
-                    else:
-                        st.info("Sem transcrição suficiente para gerar nuvem.")
-                    
-                    
-                # --- TAB 4: ANÁLISE GERAL ---
-                with tab_ng4:
-                    st.markdown("""
-                    <div class='info-card'>
-                    <h5 style='color: #f97316; margin-top: 0;'>✔️ VISÃO GERAL — Os temas gerais do incidente</h5>
-                    <p style='font-size:0.9rem;color:#ddd;'>
-                    Agregando causador + negociadores, quais eram os assuntos DOMINANTES na negociação?
-                    </p>
-                    </div>
-                    """, unsafe_allow_html=True)
-
-                    topicos_globais = stats.get('temas', ["Sem dados"])
-                    for t in topicos_globais:
-                        st.markdown(t)
-                    
-                    
-
-                # --- TAB 5: MAPAS COMPARATIVOS ---
-                with tab_ng5:
-                    st.markdown("""
-                    <div class='info-card'>
-                    <h5 style='color: #FFD700; margin-top: 0;'>✔️ NUVEM DE PALAVRAS LADO-A-LADO — Sincronização Mental</h5>
-                    <p style='font-size:0.9rem;color:#ddd;'>
-                    Compare as nuvens visualmente. Se causador fala de "morte" e negociador de "vida", há conversação. 
-                    Se causador de "morte" e negociador de "calma", há desconexão.
-                    </p>
-                    </div>
-                    """, unsafe_allow_html=True)
-
-                    col_wc_g1, col_wc_g2, col_wc_g3 = st.columns(3)
-
-                    with col_wc_g1:
-                        st.markdown("**Causador**")
                         wc_c = stats.get('wc_c')
                         if wc_c:
-                            st.pyplot(wc_c, clear_figure=True)
+                            st.markdown("#### Nuvem de Palavras — Foco Mental do Causador")
+                            st.pyplot(wc_c)
                         else:
-                            st.info("Sem nuvem.")
+                            st.info("Sem transcrição suficiente para gerar nuvem.")
+                        
+                        
 
-                    with col_wc_g2:
-                        st.markdown("**Negociador Principal**")
+                    # --- TAB 2: NEGOCIADOR PRINCIPAL ---
+                    with tab_ng2:
+                        st.markdown("""
+                        <div class='info-card'>
+                        <h5 style='color: #10b981; margin-top: 0;'>🟢 NEGOCIADOR PRINCIPAL — Qual foi a estratégia dele?</h5>
+                        <p style='font-size:0.9rem;color:#ddd;'>
+                        Os temas do negociador mostram <strong>em que ele está focando</strong>. 
+                        Compare com o causador: convergência = boa sintonia; divergência = falha de rapport.
+                        </p>
+                        </div>
+                        """, unsafe_allow_html=True)
+
+                        topicos_np = stats.get('temas_np', ["Análise individual ainda não gerada."])
+                        for t in topicos_np:
+                            st.markdown(t)
+
                         wc_np = stats.get('wc_np')
                         if wc_np:
-                            st.pyplot(wc_np, clear_figure=True)
+                            st.markdown("#### Nuvem de Palavras — Estratégia do Negociador")
+                            st.pyplot(wc_np)
                         else:
-                            st.info("Sem nuvem.")
+                            st.info("Sem transcrição suficiente para gerar nuvem.")
+                        
+                        
 
-                    with col_wc_g3:
-                        st.markdown("**Negociador Secundário**")
+                    # --- TAB 3: NEGOCIADOR SECUNDÁRIO ---
+                    with tab_ng3:
+                        st.markdown("""
+                        <div class='info-card'>
+                        <h5 style='color: #3b82f6; margin-top: 0;'>🔵 NEGOCIADOR SECUNDÁRIO — Qual era o papel dele?</h5>
+                        <p style='font-size:0.9rem;color:#ddd;'>
+                        Geralmente suporte. Seus temas indicam se estava reforçando a mensagem do principal ou dispersando esforços.
+                        </p>
+                        </div>
+                        """, unsafe_allow_html=True)
+
+                        topicos_ns = stats.get('temas_ns', ["Análise individual ainda não gerada."])
+                        for t in topicos_ns:
+                            st.markdown(t)
+
                         wc_ns = stats.get('wc_ns')
                         if wc_ns:
-                            st.pyplot(wc_ns, clear_figure=True)
+                            st.markdown("#### Nuvem de Palavras — Atuação do Secundário")
+                            st.pyplot(wc_ns)
                         else:
-                            st.info("Sem nuvem.")
+                            st.info("Sem transcrição suficiente para gerar nuvem.")
+                        
+                        
+                    # --- TAB 4: ANÁLISE GERAL ---
+                    with tab_ng4:
+                        st.markdown("""
+                        <div class='info-card'>
+                        <h5 style='color: #f97316; margin-top: 0;'>✔️ VISÃO GERAL — Os temas gerais do incidente</h5>
+                        <p style='font-size:0.9rem;color:#ddd;'>
+                        Agregando causador + negociadores, quais eram os assuntos DOMINANTES na negociação?
+                        </p>
+                        </div>
+                        """, unsafe_allow_html=True)
 
-                # --- TAB 6: CONVERGÊNCIA TEMÁTICA (CORRIGIDO) ---
-                with tab_ng6:
-                    st.markdown("""
-                    <div class='info-card'>
-                    <h4 style='color:#FFD700; margin-top:0;'>✔️ CONVERGÊNCIA TEMÁTICA — Quanto cada tema foi abordado?</h4>
-                    <p style='color:#ccc; font-size:0.9rem; margin-bottom:1rem;'>
-                    Compara a <strong>intensidade (score)</strong> de cada tema abordado por causador e negociador.
-                    Polígonos sobrepostos = abordagem similar. Divergência = ênfase diferente.
-                    </p>
-                    </div>
-                    """, unsafe_allow_html=True)
+                        topicos_globais = stats.get('temas', ["Sem dados"])
+                        for t in topicos_globais:
+                            st.markdown(t)
+                        
+                        
 
-                    texto_c_raw  = stats.get('texto_c_raw', '')
-                    texto_np_raw = stats.get('texto_np_raw', '')
-                    texto_ns_raw = stats.get('texto_ns_raw', '')
+                    # --- TAB 5: MAPAS COMPARATIVOS ---
+                    with tab_ng5:
+                        st.markdown("""
+                        <div class='info-card'>
+                        <h5 style='color: #FFD700; margin-top: 0;'>✔️ NUVEM DE PALAVRAS LADO-A-LADO — Sincronização Mental</h5>
+                        <p style='font-size:0.9rem;color:#ddd;'>
+                        Compare as nuvens visualmente. Se causador fala de "morte" e negociador de "vida", há conversação. 
+                        Se causador de "morte" e negociador de "calma", há desconexão.
+                        </p>
+                        </div>
+                        """, unsafe_allow_html=True)
 
-                    if not texto_c_raw or not texto_np_raw:
-                        st.warning("⚠️ Transcrições insuficientes para analisar convergência temática.")
-                    else:
-                        try:
-                            # ── Extrair temas reais ──────────────────────────
-                            temas_c = analise.extrair_temas_unicos(
-                                texto_c_raw,
-                                resolucao_tipo=stats.get('resolucao_tipo', 'desconhecida')
-                            )
-                            temas_np = analise.extrair_temas_unicos(
-                                texto_np_raw,
-                                resolucao_tipo=stats.get('resolucao_tipo', 'desconhecida')
-                            )
+                        col_wc_g1, col_wc_g2, col_wc_g3 = st.columns(3)
 
-                            # ── Calcular convergência ────────────────────────
-                            conv_tematica = analise.calcular_convergencia_tematica(temas_c, temas_np)
+                        with col_wc_g1:
+                            st.markdown("**Causador**")
+                            wc_c = stats.get('wc_c')
+                            if wc_c:
+                                st.pyplot(wc_c, clear_figure=True)
+                            else:
+                                st.info("Sem nuvem.")
 
-                            # ── SCORECARD ────────────────────────────────────
-                            st.markdown("### ✔️ Resumo da Convergência")
-                            
-                            col1, col2, col3, col4 = st.columns(4)
-                            
-                            with col1:
-                                conv_geral = conv_tematica["convergencia_geral"]
-                                st.metric(
-                                    "Convergência Geral",
-                                    f"{conv_geral:.1f}%"
-                                )
-                            
-                            with col2:
-                                compartilhados = len(conv_tematica["temas_compartilhados"])
-                                st.metric(
-                                    "Temas Compartilhados",
-                                    compartilhados
-                                )
-                            
-                            with col3:
-                                excl_c = len(conv_tematica["temas_exclusivos_causador"])
-                                st.metric(
-                                    "Só Causador",
-                                    excl_c
-                                )
-                            
-                            with col4:
-                                excl_np = len(conv_tematica["temas_exclusivos_negociador"])
-                                st.metric(
-                                    "Só Negociador",
-                                    excl_np
-                                )
+                        with col_wc_g2:
+                            st.markdown("**Negociador Principal**")
+                            wc_np = stats.get('wc_np')
+                            if wc_np:
+                                st.pyplot(wc_np, clear_figure=True)
+                            else:
+                                st.info("Sem nuvem.")
 
-                            # ── RADAR TEMÁTICO (INTENSIDADE) ────────────────
-                            st.markdown("---")
-                            st.markdown("### ✔️ Intensidade de Abordagem por Tema (Radar)")
-                            st.markdown("""
-                            <p style='font-size:0.85rem;color:#aaa;'>
-                            Polígono vermelho = intensidade do causador. 
-                            Polígono verde = intensidade do negociador.
-                            Quanto maior o polígono, mais o tema foi abordado.
-                            </p>
-                            """, unsafe_allow_html=True)
-                            
+                        with col_wc_g3:
+                            st.markdown("**Negociador Secundário**")
+                            wc_ns = stats.get('wc_ns')
+                            if wc_ns:
+                                st.pyplot(wc_ns, clear_figure=True)
+                            else:
+                                st.info("Sem nuvem.")
+
+                    # --- TAB 6: CONVERGÊNCIA TEMÁTICA (CORRIGIDO) ---
+                    with tab_ng6:
+                        st.markdown("""
+                        <div class='info-card'>
+                        <h4 style='color:#FFD700; margin-top:0;'>✔️ CONVERGÊNCIA TEMÁTICA — Quanto cada tema foi abordado?</h4>
+                        <p style='color:#ccc; font-size:0.9rem; margin-bottom:1rem;'>
+                        Compara a <strong>intensidade (score)</strong> de cada tema abordado por causador e negociador.
+                        Polígonos sobrepostos = abordagem similar. Divergência = ênfase diferente.
+                        </p>
+                        </div>
+                        """, unsafe_allow_html=True)
+
+                        texto_c_raw  = stats.get('texto_c_raw', '')
+                        texto_np_raw = stats.get('texto_np_raw', '')
+                        texto_ns_raw = stats.get('texto_ns_raw', '')
+
+                        if not texto_c_raw or not texto_np_raw:
+                            st.warning("⚠️ Transcrições insuficientes para analisar convergência temática.")
+                        else:
                             try:
-                                fig_radar_tematico = analise.gerar_radar_convergencia_tematica_corrigido(
-                                    temas_c,
-                                    temas_np,
-                                    conv_tematica["convergencia_por_tema"]
+                                # ── Extrair temas reais ──────────────────────────
+                                temas_c = analise.extrair_temas_unicos(
+                                    texto_c_raw,
+                                    resolucao_tipo=stats.get('resolucao_tipo', 'desconhecida')
                                 )
-                                st.plotly_chart(fig_radar_tematico, use_container_width=True)
-                            except Exception as e:
-                                st.error(f"Erro ao gerar radar: {str(e)[:80]}")
-
-                            # ── GRÁFICO DE BARRAS (ALTERNATIVA) ─────────────
-                            st.markdown("---")
-                            st.markdown("### ✔️ Intensidade por Tema (Gráfico de Barras)")
-                            st.markdown("""
-                            <p style='font-size:0.85rem;color:#aaa;'>
-                            Visualização alternativa: compare a altura das barras para cada tema.
-                            </p>
-                            """, unsafe_allow_html=True)
-                            
-                            try:
-                                fig_barras = analise.gerar_grafico_barras_intensidade_temas(
-                                    conv_tematica["convergencia_por_tema"]
+                                temas_np = analise.extrair_temas_unicos(
+                                    texto_np_raw,
+                                    resolucao_tipo=stats.get('resolucao_tipo', 'desconhecida')
                                 )
-                                st.plotly_chart(fig_barras, use_container_width=True)
-                            except Exception as e:
-                                st.error(f"Erro ao gerar gráfico: {str(e)[:80]}")
 
-                            # ── TABELA DETALHADA ─────────────────────────────
-                            st.markdown("---")
-                            st.markdown("### 📋 Convergência Detalhada por Tema")
-                            
-                            df_conv_tab = analise.gerar_tabela_convergencia_tematica(conv_tematica)
-                            st.dataframe(
-                                df_conv_tab,
-                                use_container_width=True,
-                                hide_index=True
-                            )
+                                # ── Calcular convergência ────────────────────────
+                                conv_tematica = analise.calcular_convergencia_tematica(temas_c, temas_np)
 
-                            # ── ANÁLISE NARRATIVA ────────────────────────────
-                            st.markdown("---")
-                            st.markdown("### 📖 Análise Detalhada")
-                            
-                            st.markdown(conv_tematica["analise_detalhada"])
-
-                            # ── INTERPRETAÇÃO GERAL ─────────────────────────
-                            st.markdown("---")
-                            st.markdown("### 💡 O que significa")
-                            
-                            conv_pct = conv_tematica["convergencia_geral"]
-                            
-                            st.markdown(f"""
-                                **Convergência Temática Observada: {conv_pct:.1f}%**
+                                # ── SCORECARD ────────────────────────────────────
+                                st.markdown("### ✔️ Resumo da Convergência")
                                 
-                                **O que é medido:**
-                                - Intensidade com que causador e negociador abordam cada tema compartilhado
-                                - Média das similitudes de score para os temas em comum
-                                - Escala: 0% (completamente divergentes) a 100% (perfeitamente alinhados)
+                                col1, col2, col3, col4 = st.columns(4)
                                 
-                                **Interpretação Descritiva (sem classificação):**
-                                
-                                | Range | O que significa |
-                                |-------|---|
-                                | **90-100%** | Ambos abordam os temas com intensidades praticamente idênticas |
-                                | **70-90%** | Maioria dos temas tem intensidades próximas, com variações pequenas |
-                                | **50-70%** | Alguns temas com intensidades similares, outros com diferenças notáveis |
-                                | **30-50%** | Intensidades frequentemente divergentes — énfases diferentes |
-                                | **0-30%** | Abordagens muito diferentes — possivelmente universos mentais distintos |
-                                
-                                **Seu caso: {conv_pct:.1f}%**
-                                
-                                - **Temas compartilhados:** {len(conv_tematica["temas_compartilhados"])}
-                                - **Temas só do causador:** {len(conv_tematica["temas_exclusivos_causador"])}
-                                - **Temas só do negociador:** {len(conv_tematica["temas_exclusivos_negociador"])}
-                                
-                                **Atenção:**
-                                Este é um índice DESCRITIVO. Não é preditivo de desfecho.
-                                Próxima etapa: comparar com histórico de 50+ APAs para validar padrões.
-                                """)
-
-                        except Exception as e:
-                            st.error(f"Erro ao analisar convergência temática: {str(e)[:80]}")
-
-                # --- TAB 7: ESTADO DO CAUSADOR ---
-                with tab_ng7:
-                    st.markdown("""
-                    <div class='info-card'>
-                    <h5 style='color:#FFD700; margin-top:0;'>✔️ ESTADO DO CAUSADOR (APA)</h5>
-                    <p style='color:#ccc; font-size:0.9rem;'>
-                    Análise estruturada do estado emocional/comportamental do causador.
-                    </p>
-                    </div>
-                    """, unsafe_allow_html=True)
-
-                    texto_c_raw = stats.get('texto_c_raw', '')
-
-                    if texto_c_raw:
-                        try:
-                            analise_crise = analise.analisar_crise_direcional(
-                                texto_c_raw,
-                                resolucao_tipo=stats.get('resolucao_tipo', 'desconhecida')
-                            )
-
-                            if analise_crise and 'sumario' in analise_crise:
-                                sumario = analise_crise['sumario']
-
-                                risco_observado    = sumario.get('risco_observado')
-                                abertura_observada = sumario.get('abertura_observada')
-                                raiz_observada     = sumario.get('raiz_observada')
-                                volatilidade_index = sumario.get('volatilidade_index')
-                                intensidade_index  = sumario.get('intensidade_index')
-                                direcao_index      = sumario.get('direcao_index')
-                                classificacao      = sumario.get('classificacao')
-                                leitura            = sumario.get('leitura')
-                                resolucao_tipo     = stats.get('resolucao_tipo', 'desconhecida')
-
-                                # ── SCORECARD ──────────────────────────────
-                                st.markdown("### ✔️ Resumo da Análise")
-                                col1, col2, col3 = st.columns(3)
-
                                 with col1:
+                                    conv_geral = conv_tematica["convergencia_geral"]
                                     st.metric(
-                                        "🔴 Risco Observado",
-                                        f"{risco_observado:.1f}%" if risco_observado is not None else "N/D"
+                                        "Convergência Geral",
+                                        f"{conv_geral:.1f}%"
                                     )
+                                
                                 with col2:
+                                    compartilhados = len(conv_tematica["temas_compartilhados"])
                                     st.metric(
-                                        "🟢 Abertura Observada",
-                                        f"{abertura_observada:.1f}%" if abertura_observada is not None else "N/D"
+                                        "Temas Compartilhados",
+                                        compartilhados
                                     )
+                                
                                 with col3:
+                                    excl_c = len(conv_tematica["temas_exclusivos_causador"])
                                     st.metric(
-                                        "🟡 Raiz Observada",
-                                        f"{raiz_observada:.1f}%" if raiz_observada is not None else "N/D"
+                                        "Só Causador",
+                                        excl_c
                                     )
-
-                                col4, col5, col6 = st.columns(3)
-
+                                
                                 with col4:
+                                    excl_np = len(conv_tematica["temas_exclusivos_negociador"])
                                     st.metric(
-                                        "⚡ Intensidade Global",
-                                        f"{intensidade_index:.2f}" if intensidade_index is not None else "N/D"
-                                    )
-                                with col5:
-                                    st.metric(
-                                        "➡️ Direção",
-                                        f"{direcao_index:+.2f}" if direcao_index is not None else "N/D"
-                                    )
-                                with col6:
-                                    st.metric(
-                                        "✔️ Volatilidade",
-                                        f"{volatilidade_index:.2f}" if volatilidade_index is not None else "N/D"
+                                        "Só Negociador",
+                                        excl_np
                                     )
 
-                                # ── CLASSIFICAÇÃO ───────────────────────────
+                                # ── RADAR TEMÁTICO (INTENSIDADE) ────────────────
                                 st.markdown("---")
-                                st.markdown(f"### 🚨 Classificação: `{classificacao}`")
-                                st.info(leitura)
-
-                                # ── RADAR ───────────────────────────────────
-                                st.markdown("---")
-                                st.markdown("### ✔️ Padrão de Crise (Radar)")
+                                st.markdown("### ✔️ Intensidade de Abordagem por Tema (Radar)")
+                                st.markdown("""
+                                <p style='font-size:0.85rem;color:#aaa;'>
+                                Polígono vermelho = intensidade do causador. 
+                                Polígono verde = intensidade do negociador.
+                                Quanto maior o polígono, mais o tema foi abordado.
+                                </p>
+                                """, unsafe_allow_html=True)
+                                
                                 try:
-                                    fig_crise = analise.gerar_radar_crise_individual(
-                                        risco_observado    if risco_observado    is not None else 0,
-                                        abertura_observada if abertura_observada is not None else 0,
-                                        raiz_observada     if raiz_observada     is not None else 0,
-                                        volatilidade_index if volatilidade_index is not None else 0
+                                    fig_radar_tematico = analise.gerar_radar_convergencia_tematica_corrigido(
+                                        temas_c,
+                                        temas_np,
+                                        conv_tematica["convergencia_por_tema"]
                                     )
-                                    st.plotly_chart(fig_crise, use_container_width=True)
+                                    st.plotly_chart(fig_radar_tematico, use_container_width=True)
                                 except Exception as e:
                                     st.error(f"Erro ao gerar radar: {str(e)[:80]}")
 
-                                # ── NARRATIVA PARA LEIGOS ───────────────────
+                                # ── GRÁFICO DE BARRAS (ALTERNATIVA) ─────────────
                                 st.markdown("---")
-                                st.markdown("### ✔️ Leitura Operacional (Linguagem Acessível)")
-
+                                st.markdown("### ✔️ Intensidade por Tema (Gráfico de Barras)")
                                 st.markdown("""
-                                <div style='background:rgba(255,215,0,0.04);padding:4px 12px;border-left:3px solid #FFD700;margin-bottom:12px;'>
-                                <p style='color:#aaa;font-size:0.82rem;margin:6px 0;'>
-                                Interpretação automática dos indicadores em linguagem acessível.
-                                Destinada a leitura rápida por gestores, auditores e instrutores.
+                                <p style='font-size:0.85rem;color:#aaa;'>
+                                Visualização alternativa: compare a altura das barras para cada tema.
                                 </p>
-                                </div>
                                 """, unsafe_allow_html=True)
+                                
+                                try:
+                                    fig_barras = analise.gerar_grafico_barras_intensidade_temas(
+                                        conv_tematica["convergencia_por_tema"]
+                                    )
+                                    st.plotly_chart(fig_barras, use_container_width=True)
+                                except Exception as e:
+                                    st.error(f"Erro ao gerar gráfico: {str(e)[:80]}")
 
-                                narrativa = analise.gerar_narrativa_crise(
-                                    risco_observado    = risco_observado    or 0,
-                                    abertura_observada = abertura_observada or 0,
-                                    raiz_observada     = raiz_observada     or 0,
-                                    intensidade_index  = intensidade_index  or 0,
-                                    direcao_index      = direcao_index      or 0,
-                                    volatilidade_index = volatilidade_index or 0,
-                                    classificacao      = classificacao      or "INDETERMINADO",
-                                    resolucao_tipo     = resolucao_tipo
+                                # ── TABELA DETALHADA ─────────────────────────────
+                                st.markdown("---")
+                                st.markdown("### 📋 Convergência Detalhada por Tema")
+                                
+                                df_conv_tab = analise.gerar_tabela_convergencia_tematica(conv_tematica)
+                                st.dataframe(
+                                    df_conv_tab,
+                                    use_container_width=True,
+                                    hide_index=True
                                 )
-                                st.markdown(narrativa)
 
-                            else:
-                                st.warning("Não foi possível gerar análise de crise")
+                                # ── ANÁLISE NARRATIVA ────────────────────────────
+                                st.markdown("---")
+                                st.markdown("### 📖 Análise Detalhada")
+                                
+                                st.markdown(conv_tematica["analise_detalhada"])
 
-                        except Exception as e:
-                            st.error(f"Erro ao analisar crise: {str(e)[:80]}")
+                                # ── INTERPRETAÇÃO GERAL ─────────────────────────
+                                st.markdown("---")
+                                st.markdown("### 💡 O que significa")
+                                
+                                conv_pct = conv_tematica["convergencia_geral"]
+                                
+                                st.markdown(f"""
+                                    **Convergência Temática Observada: {conv_pct:.1f}%**
+                                    
+                                    **O que é medido:**
+                                    - Intensidade com que causador e negociador abordam cada tema compartilhado
+                                    - Média das similitudes de score para os temas em comum
+                                    - Escala: 0% (completamente divergentes) a 100% (perfeitamente alinhados)
+                                    
+                                    **Interpretação Descritiva (sem classificação):**
+                                    
+                                    | Range | O que significa |
+                                    |-------|---|
+                                    | **90-100%** | Ambos abordam os temas com intensidades praticamente idênticas |
+                                    | **70-90%** | Maioria dos temas tem intensidades próximas, com variações pequenas |
+                                    | **50-70%** | Alguns temas com intensidades similares, outros com diferenças notáveis |
+                                    | **30-50%** | Intensidades frequentemente divergentes — énfases diferentes |
+                                    | **0-30%** | Abordagens muito diferentes — possivelmente universos mentais distintos |
+                                    
+                                    **Seu caso: {conv_pct:.1f}%**
+                                    
+                                    - **Temas compartilhados:** {len(conv_tematica["temas_compartilhados"])}
+                                    - **Temas só do causador:** {len(conv_tematica["temas_exclusivos_causador"])}
+                                    - **Temas só do negociador:** {len(conv_tematica["temas_exclusivos_negociador"])}
+                                    
+                                    **Atenção:**
+                                    Este é um índice DESCRITIVO. Não é preditivo de desfecho.
+                                    Próxima etapa: comparar com histórico de 50+ APAs para validar padrões.
+                                    """)
 
-                    else:
-                        st.warning("⚠️ Nenhuma transcrição disponível para análise")                    
+                            except Exception as e:
+                                st.error(f"Erro ao analisar convergência temática: {str(e)[:80]}")
+
+                    # --- TAB 7: ESTADO DO CAUSADOR ---
+                    with tab_ng7:
+                        st.markdown("""
+                        <div class='info-card'>
+                        <h5 style='color:#FFD700; margin-top:0;'>✔️ ESTADO DO CAUSADOR (APA)</h5>
+                        <p style='color:#ccc; font-size:0.9rem;'>
+                        Análise estruturada do estado emocional/comportamental do causador.
+                        </p>
+                        </div>
+                        """, unsafe_allow_html=True)
+
+                        texto_c_raw = stats.get('texto_c_raw', '')
+
+                        if texto_c_raw:
+                            try:
+                                analise_crise = analise.analisar_crise_direcional(
+                                    texto_c_raw,
+                                    resolucao_tipo=stats.get('resolucao_tipo', 'desconhecida')
+                                )
+
+                                if analise_crise and 'sumario' in analise_crise:
+                                    sumario = analise_crise['sumario']
+
+                                    risco_observado    = sumario.get('risco_observado')
+                                    abertura_observada = sumario.get('abertura_observada')
+                                    raiz_observada     = sumario.get('raiz_observada')
+                                    volatilidade_index = sumario.get('volatilidade_index')
+                                    intensidade_index  = sumario.get('intensidade_index')
+                                    direcao_index      = sumario.get('direcao_index')
+                                    classificacao      = sumario.get('classificacao')
+                                    leitura            = sumario.get('leitura')
+                                    resolucao_tipo     = stats.get('resolucao_tipo', 'desconhecida')
+
+                                    # ── SCORECARD ──────────────────────────────
+                                    st.markdown("### ✔️ Resumo da Análise")
+                                    col1, col2, col3 = st.columns(3)
+
+                                    with col1:
+                                        st.metric(
+                                            "🔴 Risco Observado",
+                                            f"{risco_observado:.1f}%" if risco_observado is not None else "N/D"
+                                        )
+                                    with col2:
+                                        st.metric(
+                                            "🟢 Abertura Observada",
+                                            f"{abertura_observada:.1f}%" if abertura_observada is not None else "N/D"
+                                        )
+                                    with col3:
+                                        st.metric(
+                                            "🟡 Raiz Observada",
+                                            f"{raiz_observada:.1f}%" if raiz_observada is not None else "N/D"
+                                        )
+
+                                    col4, col5, col6 = st.columns(3)
+
+                                    with col4:
+                                        st.metric(
+                                            "⚡ Intensidade Global",
+                                            f"{intensidade_index:.2f}" if intensidade_index is not None else "N/D"
+                                        )
+                                    with col5:
+                                        st.metric(
+                                            "➡️ Direção",
+                                            f"{direcao_index:+.2f}" if direcao_index is not None else "N/D"
+                                        )
+                                    with col6:
+                                        st.metric(
+                                            "✔️ Volatilidade",
+                                            f"{volatilidade_index:.2f}" if volatilidade_index is not None else "N/D"
+                                        )
+
+                                    # ── CLASSIFICAÇÃO ───────────────────────────
+                                    st.markdown("---")
+                                    st.markdown(f"### 🚨 Classificação: `{classificacao}`")
+                                    st.info(leitura)
+
+                                    # ── RADAR ───────────────────────────────────
+                                    st.markdown("---")
+                                    st.markdown("### ✔️ Padrão de Crise (Radar)")
+                                    try:
+                                        fig_crise = analise.gerar_radar_crise_individual(
+                                            risco_observado    if risco_observado    is not None else 0,
+                                            abertura_observada if abertura_observada is not None else 0,
+                                            raiz_observada     if raiz_observada     is not None else 0,
+                                            volatilidade_index if volatilidade_index is not None else 0
+                                        )
+                                        st.plotly_chart(fig_crise, use_container_width=True)
+                                    except Exception as e:
+                                        st.error(f"Erro ao gerar radar: {str(e)[:80]}")
+
+                                    # ── NARRATIVA PARA LEIGOS ───────────────────
+                                    st.markdown("---")
+                                    st.markdown("### ✔️ Leitura Operacional (Linguagem Acessível)")
+
+                                    st.markdown("""
+                                    <div style='background:rgba(255,215,0,0.04);padding:4px 12px;border-left:3px solid #FFD700;margin-bottom:12px;'>
+                                    <p style='color:#aaa;font-size:0.82rem;margin:6px 0;'>
+                                    Interpretação automática dos indicadores em linguagem acessível.
+                                    Destinada a leitura rápida por gestores, auditores e instrutores.
+                                    </p>
+                                    </div>
+                                    """, unsafe_allow_html=True)
+
+                                    narrativa = analise.gerar_narrativa_crise(
+                                        risco_observado    = risco_observado    or 0,
+                                        abertura_observada = abertura_observada or 0,
+                                        raiz_observada     = raiz_observada     or 0,
+                                        intensidade_index  = intensidade_index  or 0,
+                                        direcao_index      = direcao_index      or 0,
+                                        volatilidade_index = volatilidade_index or 0,
+                                        classificacao      = classificacao      or "INDETERMINADO",
+                                        resolucao_tipo     = resolucao_tipo
+                                    )
+                                    st.markdown(narrativa)
+
+                                else:
+                                    st.warning("Não foi possível gerar análise de crise")
+
+                            except Exception as e:
+                                st.error(f"Erro ao analisar crise: {str(e)[:80]}")
+
+                        else:
+                            st.warning("⚠️ Nenhuma transcrição disponível para análise")                    
                                                 
             # ============================================================
             # TAB 8: QUALIDADE DO DISCURSO COM TRANSFORMER (LAZY LOADING)
