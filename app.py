@@ -2443,7 +2443,158 @@ else:
                     else:
                         st.warning("⚠️ Nenhuma transcrição disponível para análise")                    
                                                 
-                                
+            # ============================================================
+            # TAB 8: QUALIDADE DO DISCURSO COM TRANSFORMER (LAZY LOADING)
+            # Cole TUDO isso DENTRO do: with tab_ng8:
+            # ============================================================
+
+            st.markdown("### ✔️ Escuta e Sentimento")
+
+            col_caus = "TRANSCRIÇÃO DO CAUSADOR"
+            col_neg = "TRANSCRIÇÃO DO NEGOCIADOR PRINCIPAL"
+
+            if col_caus not in df_apa or col_neg not in df_apa:
+                st.warning("⚠️ Colunas de transcrição não encontradas")
+            else:
+                txt_caus = str(df_apa[col_caus]).strip()
+                txt_neg = str(df_apa[col_neg]).strip()
+                
+                if not txt_caus or not txt_neg or len(txt_caus) < 20 or len(txt_neg) < 20:
+                    st.warning("⚠️ Transcrições insuficientes para análise")
+                else:
+                    
+                    # =========================================================
+                    # SEÇÃO 1: ANÁLISE RÁPIDA (com toggle)
+                    # =========================================================
+                    
+                    col_left, col_center, col_right = st.columns([1, 1, 1])
+                    with col_center:
+                        is_analise_rapida = render_toggle_button(
+                            label="✔️ Análise Rápida (Padrões Léxicos)",
+                            session_key="tab8_analise_rapida",
+                            button_key="btn_tab8_analise_rapida"
+                        )
+                    
+                    st.markdown("---")
+                    
+                    if is_analise_rapida:
+                        st.markdown("""
+                        <p style='color: #aaa; font-size: 0.9rem; margin-bottom: 1rem;'>
+                        Análise imediata baseada em frequência de palavras-chave.
+                        <strong>Não usa modelo de IA.</strong> Rápido e transparente.
+                        </p>
+                        """, unsafe_allow_html=True)
+
+                        # Rodar análise rápida
+                        analise_rapida = analise.analise_rapida_discurso(txt_neg, txt_caus)
+
+                        # SCORECARD - NEGOCIADOR
+                        st.markdown("### 🟢 NEGOCIADOR PRINCIPAL")
+
+                        col1, col2, col3 = st.columns(3)
+
+                        with col1:
+                            st.metric(
+                                "Validação",
+                                analise_rapida['total_validacao'],
+                                f"x ocorrências"
+                            )
+
+                        with col2:
+                            st.metric(
+                                "Confronto",
+                                analise_rapida['total_confronto'],
+                                f"x ocorrências"
+                            )
+
+                        with col3:
+                            total_palavras_neg = len(txt_neg.split())
+                            st.metric(
+                                "Tamanho (Palavras)",
+                                total_palavras_neg,
+                                f"palavras"
+                            )
+
+                        # SCORECARD - CAUSADOR
+                        st.markdown("---")
+                        st.markdown("### 🔴 CAUSADOR")
+
+                        col1, col2 = st.columns(2)
+
+                        with col1:
+                            st.metric(
+                                "Emoção Alta",
+                                analise_rapida['total_emocao'],
+                                f"x palavras fortes"
+                            )
+
+                        with col2:
+                            total_palavras_caus = len(txt_caus.split())
+                            st.metric(
+                                "Tamanho (Palavras)",
+                                total_palavras_caus,
+                                f"palavras"
+                            )
+                        
+                        # Detalhes
+                        st.markdown("---")
+                        st.markdown("#### ✔️ Detalhes das Palavras-Chave Encontradas")
+                        
+                        st.markdown("### 🟢 NEGOCIADOR PRINCIPAL")
+
+                        col_val, col_conf = st.columns(2)
+
+                        with col_val:
+                            st.markdown("**Validação (Negociador):**")
+                            if analise_rapida['validacao']:
+                                for palavra, freq in sorted(
+                                    analise_rapida['validacao'].items(),
+                                    key=lambda x: x[1],
+                                    reverse=True
+                                ):
+                                    st.write(f"  • {palavra}: {freq}x")
+                            else:
+                                st.write("  (nenhuma encontrada)")
+
+                        with col_conf:
+                            st.markdown("**Confronto (Negociador):**")
+                            if analise_rapida['confronto']:
+                                for palavra, freq in sorted(
+                                    analise_rapida['confronto'].items(),
+                                    key=lambda x: x[1],
+                                    reverse=True
+                                ):
+                                    st.write(f"  • {palavra}: {freq}x")
+                            else:
+                                st.write("  (nenhuma encontrada)")
+                        
+                        st.markdown("---")
+                        st.markdown("### 🔴 CAUSADOR")
+
+                        st.markdown("**Emoção Alta (Causador):**")
+                        if analise_rapida['emocao_causador']:
+                            for palavra, freq in sorted(
+                                analise_rapida['emocao_causador'].items(),
+                                key=lambda x: x[1],
+                                reverse=True
+                            ):
+                                st.write(f"  • {palavra}: {freq}x")
+                        else:
+                            st.write("  (nenhuma encontrada)")                     
+                        
+                        # Interpretação
+                        st.markdown("---")
+                        st.markdown("#### 💡 O Que Significa")
+                        st.markdown("""
+                        - **Validação**: Palavras que indicam reconhecimento, escuta, empatia
+                        - **Confronto**: Palavras que indicam discordância, negação, imposição
+                        - **Emoção Alta**: Indicadores de stress, medo, raiva no causador
+                        
+                        **Nota:** Essa análise conta frequência, não interpreta contexto.
+                        "Não" pode ser "não vou bater" (protetor) ou "não faço isso" (negação).
+                        Use como descritor, não como julgamento.
+                        """)
+                    
                     # ============================================================
                     # TAB 8: COMPLETA E CORRIGIDA
                     # Cole TUDO isso DENTRO do: with tab_ng8:
@@ -2472,10 +2623,9 @@ else:
                             with col_center:
                                 is_analise_rapida = render_toggle_button(
                                     label="✔️ Análise Rápida (Padrões Léxicos)",
-                                    session_key="ng8_analise_rapida_v2",        # ← NOVO
-                                    button_key="btn_ng8_analise_rapida_v2"      # ← NOVO
+                                    session_key="tab8_analise_rapida",
+                                    button_key="btn_tab8_analise_rapida"
                                 )
-
 
                             st.markdown("---")
 
