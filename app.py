@@ -1295,64 +1295,64 @@ else:
                         """, unsafe_allow_html=True)
                     
                     
-                    tab_chegada, tab_encerramento = st.tabs(["🏳 Na Chegada à Ocorrência", "🏴 No Encerramento"])
-                    
-                    def render_card(label, valor, cor_classe):
-                        return f"<div class='info-card {cor_classe}' style='padding: 12px; margin-top: 5px; margin-bottom: 5px;'><strong style='color: #bbb;'>{label}:</strong><br><span style='font-size: 1.1rem; font-weight: bold;'>{valor}</span></div>"
+                        tab_chegada, tab_encerramento = st.tabs(["🏳 Na Chegada à Ocorrência", "🏴 No Encerramento"])
+                        
+                        def render_card(label, valor, cor_classe):
+                            return f"<div class='info-card {cor_classe}' style='padding: 12px; margin-top: 5px; margin-bottom: 5px;'><strong style='color: #bbb;'>{label}:</strong><br><span style='font-size: 1.1rem; font-weight: bold;'>{valor}</span></div>"
 
-                    with tab_chegada:
-                        col_p_c, col_s_c, col_l_c = st.columns(3)
-                        with col_p_c:
-                            st.markdown("**Negociador Principal**")
-                            st.markdown(render_card("Agressividade", p_agr_c_txt, "card-red"), unsafe_allow_html=True)
-                            st.markdown(render_card("Receptividade", p_rec_c_txt, "card-green"), unsafe_allow_html=True)
-                        with col_s_c:
-                            st.markdown("**Negociador Secundário**")
-                            st.markdown(render_card("Agressividade", s_agr_c_txt, "card-red"), unsafe_allow_html=True)
-                            st.markdown(render_card("Receptividade", s_rec_c_txt, "card-green"), unsafe_allow_html=True)
-                        with col_l_c:
-                            st.markdown("**Negociador Líder**")
-                            st.markdown(render_card("Agressividade", l_agr_c_txt, "card-red"), unsafe_allow_html=True)
-                            st.markdown(render_card("Receptividade", l_rec_c_txt, "card-green"), unsafe_allow_html=True)
+                        with tab_chegada:
+                            col_p_c, col_s_c, col_l_c = st.columns(3)
+                            with col_p_c:
+                                st.markdown("**Negociador Principal**")
+                                st.markdown(render_card("Agressividade", p_agr_c_txt, "card-red"), unsafe_allow_html=True)
+                                st.markdown(render_card("Receptividade", p_rec_c_txt, "card-green"), unsafe_allow_html=True)
+                            with col_s_c:
+                                st.markdown("**Negociador Secundário**")
+                                st.markdown(render_card("Agressividade", s_agr_c_txt, "card-red"), unsafe_allow_html=True)
+                                st.markdown(render_card("Receptividade", s_rec_c_txt, "card-green"), unsafe_allow_html=True)
+                            with col_l_c:
+                                st.markdown("**Negociador Líder**")
+                                st.markdown(render_card("Agressividade", l_agr_c_txt, "card-red"), unsafe_allow_html=True)
+                                st.markdown(render_card("Receptividade", l_rec_c_txt, "card-green"), unsafe_allow_html=True)
 
-                    with tab_encerramento:
-                        col_p_e, col_s_e, col_l_e = st.columns(3)
-                        with col_p_e:
-                            st.markdown("**Negociador Principal**")
-                            st.markdown(render_card("Agressividade", p_agr_e_txt, "card-red"), unsafe_allow_html=True)
-                            st.markdown(render_card("Receptividade", p_rec_e_txt, "card-green"), unsafe_allow_html=True)
-                        with col_s_e:
-                            st.markdown("**Negociador Secundário**")
-                            st.markdown(render_card("Agressividade", s_agr_e_txt, "card-red"), unsafe_allow_html=True)
-                            st.markdown(render_card("Receptividade", s_rec_e_txt, "card-green"), unsafe_allow_html=True)
-                        with col_l_e:
-                            st.markdown("**Negociador Líder**")
-                            st.markdown(render_card("Agressividade", l_agr_e_txt, "card-red"), unsafe_allow_html=True)
-                            st.markdown(render_card("Receptividade", l_rec_e_txt, "card-green"), unsafe_allow_html=True)
+                        with tab_encerramento:
+                            col_p_e, col_s_e, col_l_e = st.columns(3)
+                            with col_p_e:
+                                st.markdown("**Negociador Principal**")
+                                st.markdown(render_card("Agressividade", p_agr_e_txt, "card-red"), unsafe_allow_html=True)
+                                st.markdown(render_card("Receptividade", p_rec_e_txt, "card-green"), unsafe_allow_html=True)
+                            with col_s_e:
+                                st.markdown("**Negociador Secundário**")
+                                st.markdown(render_card("Agressividade", s_agr_e_txt, "card-red"), unsafe_allow_html=True)
+                                st.markdown(render_card("Receptividade", s_rec_e_txt, "card-green"), unsafe_allow_html=True)
+                            with col_l_e:
+                                st.markdown("**Negociador Líder**")
+                                st.markdown(render_card("Agressividade", l_agr_e_txt, "card-red"), unsafe_allow_html=True)
+                                st.markdown(render_card("Receptividade", l_rec_e_txt, "card-green"), unsafe_allow_html=True)
 
-                    st.markdown("---")
+                        st.markdown("---")
 
-                    st.markdown("### ✔ Transcrições")
+                st.markdown("### ✔ Transcrições")
 
-                    # Inicializa estado do toggle
-                    if "show_transcricoes" not in st.session_state:
-                        st.session_state["show_transcricoes"] = False
+                # Inicializa estado do toggle
+                if "show_transcricoes" not in st.session_state:
+                    st.session_state["show_transcricoes"] = False
 
-                    # Botão toggle
-                    label = "▲ Ocultar transcrições" if st.session_state["show_transcricoes"] else "▼ Ver transcrições completas da ocorrência"
-                    if st.button(label, key="btn_transcricoes"):
-                        st.session_state["show_transcricoes"] = not st.session_state["show_transcricoes"]
+                # Botão toggle
+                label = "▲ Ocultar transcrições" if st.session_state["show_transcricoes"] else "▼ Ver transcrições completas da ocorrência"
+                if st.button(label, key="btn_transcricoes"):
+                    st.session_state["show_transcricoes"] = not st.session_state["show_transcricoes"]
 
-                    # Conteúdo condicional
-                    if st.session_state["show_transcricoes"]:
-                        st.markdown("**Causador do Incidente:**")
-                        st.write(limpar_valor(df_apa.get('TRANSCRIÇÃO DO CAUSADOR')))
-                        st.markdown("**Negociador Principal:**")
-                        st.write(limpar_valor(df_apa.get('TRANSCRIÇÃO DO NEGOCIADOR PRINCIPAL')))
-                        st.markdown("**Negociador Secundário:**")
-                        st.write(limpar_valor(df_apa.get('TRANSCRIÇÃO DO NEGOCIADOR SECUNDÁRIO')))
+                # Conteúdo condicional
+                if st.session_state["show_transcricoes"]:
+                    st.markdown("**Causador do Incidente:**")
+                    st.write(limpar_valor(df_apa.get('TRANSCRIÇÃO DO CAUSADOR')))
+                    st.markdown("**Negociador Principal:**")
+                    st.write(limpar_valor(df_apa.get('TRANSCRIÇÃO DO NEGOCIADOR PRINCIPAL')))
+                    st.markdown("**Negociador Secundário:**")
+                    st.write(limpar_valor(df_apa.get('TRANSCRIÇÃO DO NEGOCIADOR SECUNDÁRIO')))
 
-                    st.markdown("---")
+                st.markdown("---")
                
             
     # ====
