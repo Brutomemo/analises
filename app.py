@@ -4267,7 +4267,15 @@ else:
         st.markdown("---")
 
         
-        st.markdown("<h5 style='color: #FFD700;'>Síntese Interpretativa Assistida por Inteligência Artificial</h5>", unsafe_allow_html=True)
+        st.markdown("""
+                        <div class='info-card'>
+                        <h5 style='color: #FFD700; margin-top: 0;'>Síntese Interpretativa Assistida por Inteligência Artificial</h5>
+                        <p style='font-size:1.2rem;color:#ddd;'>
+                        A interpretação da IA é colaborativa e NÃO substitui a analise e compreenção do Avaliador/Negociador. Exige constante aprimoramento de instruções</strong>                 
+                        </p>
+                        </div>
+                        """, unsafe_allow_html=True)
+               
         
 
         if st.button("✔ GERAR RELATÓRIO INTERPRETADO POR IA"):
