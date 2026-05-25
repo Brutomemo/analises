@@ -356,6 +356,96 @@ def gerar_wordcloud(texto):
     return fig
 
 # ============================================================
+# FUNÇÕES AUXILIARES (Regex, rápido)
+# ============================================================
+
+def contar_palavra_chave(texto, palavras_lista):
+    """Conta ocorrências de palavras-chave (rápido)"""
+    texto_lower = texto.lower()
+    contador = {}
+    for palavra in palavras_lista:
+        count = len(re.findall(rf'\b{palavra}\b', texto_lower))
+        if count > 0:
+            contador[palavra] = count
+    return contador
+
+def dividir_em_sentencas(texto):
+    """Divide texto em sentenças"""
+    sentencas = re.split(r'[.!?]+', texto)
+    return [s.strip() for s in sentencas if s.strip() and len(s.split()) > 2]
+
+# ============================================================
+# ANÁLISE RÁPIDA (SEM Transformer)
+# ============================================================
+
+def analise_rapida_discurso(texto_neg, texto_caus):
+    """
+    Análise RÁPIDA usando Regex.
+    Roda instantaneamente, sem Transformer.
+    """
+    
+    VALIDACAO_PALAVRAS = [
+        'entendi', 'entendo', 'compreendo', 'entendimento',
+        'respeito', 'respeitado', 'hombridade', 'papo',
+        'tranquilo', 'calma', 'beleza', 'certo', 'ok'
+    ]
+    
+    CONFRONTO_PALAVRAS = [
+        'não', 'errado', 'mentira', 'fake', 'louco',
+        'precisa', 'tem que', 'deve', 'merda'
+    ]
+    
+    EMOCAO_ALTA = [
+        'arrebentar', 'bater', 'matar', 'caralho', 'foda-se',
+        'preso', 'cadeia', 'merda', 'pelo amor', 'infelizmente',
+        'desesperado', 'morte', 'morrer'
+    ]
+    
+    # Contar no NEGOCIADOR
+    validacao_count = contar_palavra_chave(texto_neg, VALIDACAO_PALAVRAS)
+    confronto_count = contar_palavra_chave(texto_neg, CONFRONTO_PALAVRAS)
+    
+    # Contar no CAUSADOR
+    emocao_caus = contar_palavra_chave(texto_caus, EMOCAO_ALTA)
+    
+    return {
+        'validacao': validacao_count,
+        'confronto': confronto_count,
+        'emocao_causador': emocao_caus,
+        'total_validacao': sum(validacao_count.values()),
+        'total_confronto': sum(confronto_count.values()),
+        'total_emocao': sum(emocao_caus.values()),
+    }
+
+# ============================================================
+# ANÁLISE COM TRANSFORMER (LENTA, SOB DEMANDA)
+# ============================================================
+
+def analise_sentimento_transformer(texto, nlp_model):
+    """
+    Análise com Transformer português.
+    Demora ~1-5s dependendo do texto.
+    """
+    sentencas = dividir_em_sentencas(texto)
+    
+    if not sentencas:
+        return None
+    
+    resultados = []
+    for sentenca in sentencas[:20]:  # Limitar a 20 sentenças para não ficar muito lento
+        try:
+            resultado = nlp_model(sentenca[:512])  # BERT tem limite de 512 tokens
+            resultados.append({
+                'sentenca': sentenca[:100],
+                'label': resultado[0]['label'],
+                'score': resultado[0]['score']
+            })
+        except Exception as e:
+            continue
+    
+    return resultados
+
+# ============================================================
 # 4. MOTOR DIRECIONAL MELHORADO (Interpretação APA)
 # ============================================================
 def deve_mostrar_metricas_apa(nome_aba):
