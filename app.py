@@ -1362,9 +1362,9 @@ else:
                         button_key="btn_analise_tecnicas"
                     )
 
-                    st.markdown("---")
+                st.markdown("---")
 
-                    if is_analise_tecnicas:              
+                if is_analise_tecnicas:              
 
                         if st.button("✔ Calcular Frequência de Técnicas", key="btn_freq_tecnicas"):
                             if not df_tec.empty:
