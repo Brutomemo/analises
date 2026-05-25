@@ -3204,7 +3204,7 @@ else:
                         <div class='info-card'>
                         <h5 style='color: #FFD700; margin-top: 0;'>Visão Geral da Série Histórica</h5>
                         <p style='font-size:1.2rem;color:#ddd;'>
-                        Percepção dos Negociadores <strong>no início e encerramento da ocorrência</strong>.                 
+                        Metadados</strong>.                 
                         </p>
                         </div>
                         """, unsafe_allow_html=True)
