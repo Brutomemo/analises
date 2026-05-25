@@ -3894,7 +3894,15 @@ else:
         # ANÁLISE: CORRELAÇÕES E ASSOCIAÇÕES
         # ──────────────────────────────────────────────────────────
 
-        st.markdown("<h5 style='color: #FFD700;'>O que os Dados dizem sobre a Resolução das Ocorrências?</h5>", unsafe_allow_html=True)
+        st.markdown("""
+                        <div class='info-card'>
+                        <h5 style='color: #FFD700; margin-top: 0;'>O que os Dados dizem sobre a Resolução das Ocorrências?</h5>
+                        <p style='font-size:1.2rem;color:#ddd;'>
+                        Correlação do tempo da ocorrência com variação da agressividade do causador e Qui-quadrado de técnicas usadas vs Negociador, Modalidade e Tipologia</strong>                 
+                        </p>
+                        </div>
+                        """, unsafe_allow_html=True)  
+                
 
         # ──────────────────────────────────────────────────────────
         # Helpers estatísticos locais
