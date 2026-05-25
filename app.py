@@ -1,4 +1,4 @@
-# ====
+## ====
 # 0. VALIDAÇÃO DE LICENÇA (ANTES DE TUDO)
 # ====
 from license_manager import LicenseManager
@@ -32,6 +32,10 @@ import streamlit.components.v1 as components
 import tempfile
 from fpdf import FPDF
 import unicodedata
+import re
+from collections import Counter
+import matplotlib.pyplot as plt
+import seaborn as sns
 
 # ====
 # 2.1. IMPORTAÇÃO DOS MÓDULOS DE IA E DADOS
@@ -40,7 +44,6 @@ import airtable_link
 import analise
 import ia_link        # Cérebro da Aba 1 (Transcrições)
 import ia_estatistica # Cérebro da Aba 2 (Série Histórica)
-
 # ====
 # 3. FUNÇÕES AUXILIARES E DADOS (A "CAIXA DE FERRAMENTAS")
 # ====
@@ -2276,7 +2279,7 @@ else:
             if st.session_state.get('stats_calculados'):
                 stats = st.session_state['stats_calculados']
 
-                tab_ng1, tab_ng2, tab_ng3, tab_ng4, tab_ng5, tab_ng6, tab_ng7 = st.tabs([
+                tab_ng1, tab_ng2, tab_ng3, tab_ng4, tab_ng5, tab_ng6, tab_ng7, tab_ng8 = st.tabs([
                     "🔴 Causador",
                     "🟢 Negociador Principal",
                     "🔵 Negociador Secundário",
@@ -2284,6 +2287,7 @@ else:
                     "✔️ Comparativo das Nuvens de Palavras",
                     "✔️ Convergência Temática",
                     "✔️ Estado da Crise"
+                    "✔️ Escuta e Sentimento"
                 ])
               
                 # --- TAB 1: CAUSADOR ---
@@ -2697,6 +2701,411 @@ else:
 
                     else:
                         st.warning("⚠️ Nenhuma transcrição disponível para análise")
+
+                        # ============================================================
+                        # TAB 8: QUALIDADE DO DISCURSO COM TRANSFORMER (LAZY LOADING)
+                        # ============================================================
+                                                
+                        # ============================================================
+                        # CONFIGURAÇÃO: Lazy Loading para Transformer
+                        # ============================================================
+
+                        @st.cache_resource
+                        def carregar_transformer_portugues():
+                            """
+                            Carrega transformer uma única vez e cacheia.
+                            Demora ~5-10s na primeira execução.
+                            """
+                            try:
+                                from transformers import pipeline
+                                
+                                # Usar transformer português (validado, contextual)
+                                nlp = pipeline(
+                                    "sentiment-analysis",
+                                    model="bert-base-portuguese-cased",
+                                    device=0  # GPU se disponível, CPU caso contrário
+                                )
+                                return nlp
+                            except Exception as e:
+                                st.error(f"Erro ao carregar modelo: {str(e)[:100]}")
+                                return None
+
+                        # ============================================================
+                        # FUNÇÕES AUXILIARES (Regex, rápido)
+                        # ============================================================
+
+                        def contar_palavra_chave(texto, palavras_lista):
+                            """Conta ocorrências de palavras-chave (rápido)"""
+                            texto_lower = texto.lower()
+                            contador = {}
+                            for palavra in palavras_lista:
+                                count = len(re.findall(rf'\b{palavra}\b', texto_lower))
+                                if count > 0:
+                                    contador[palavra] = count
+                            return contador
+
+                        def dividir_em_sentencas(texto):
+                            """Divide texto em sentenças"""
+                            sentencas = re.split(r'[.!?]+', texto)
+                            return [s.strip() for s in sentencas if s.strip() and len(s.split()) > 2]
+
+                        # ============================================================
+                        # ANÁLISE RÁPIDA (SEM Transformer)
+                        # ============================================================
+
+                        def analise_rapida_discurso(texto_neg, texto_caus):
+                            """
+                            Análise RÁPIDA usando Regex.
+                            Roda instantaneamente, sem Transformer.
+                            """
+                            
+                            VALIDACAO_PALAVRAS = [
+                                'entendi', 'entendo', 'compreendo', 'entendimento',
+                                'respeito', 'respeitado', 'hombridade', 'papo',
+                                'tranquilo', 'calma', 'beleza', 'certo', 'ok'
+                            ]
+                            
+                            CONFRONTO_PALAVRAS = [
+                                'não', 'errado', 'mentira', 'fake', 'louco',
+                                'precisa', 'tem que', 'deve', 'merda'
+                            ]
+                            
+                            EMOCAO_ALTA = [
+                                'arrebentar', 'bater', 'matar', 'caralho', 'foda-se',
+                                'preso', 'cadeia', 'merda', 'pelo amor', 'infelizmente',
+                                'desesperado', 'morte', 'morrer'
+                            ]
+                            
+                            # Contar no NEGOCIADOR
+                            validacao_count = contar_palavra_chave(texto_neg, VALIDACAO_PALAVRAS)
+                            confronto_count = contar_palavra_chave(texto_neg, CONFRONTO_PALAVRAS)
+                            
+                            # Contar no CAUSADOR
+                            emocao_caus = contar_palavra_chave(texto_caus, EMOCAO_ALTA)
+                            
+                            return {
+                                'validacao': validacao_count,
+                                'confronto': confronto_count,
+                                'emocao_causador': emocao_caus,
+                                'total_validacao': sum(validacao_count.values()),
+                                'total_confronto': sum(confronto_count.values()),
+                                'total_emocao': sum(emocao_caus.values()),
+                            }
+
+                        # ============================================================
+                        # ANÁLISE COM TRANSFORMER (LENTA, SOB DEMANDA)
+                        # ============================================================
+
+                        def analise_sentimento_transformer(texto, nlp_model):
+                            """
+                            Análise com Transformer português.
+                            Demora ~1-5s dependendo do texto.
+                            """
+                            sentencas = dividir_em_sentencas(texto)
+                            
+                            if not sentencas:
+                                return None
+                            
+                            resultados = []
+                            for sentenca in sentencas[:20]:  # Limitar a 20 sentenças para não ficar muito lento
+                                try:
+                                    resultado = nlp_model(sentenca[:512])  # BERT tem limite de 512 tokens
+                                    resultados.append({
+                                        'sentenca': sentenca[:100],
+                                        'label': resultado[0]['label'],
+                                        'score': resultado[0]['score']
+                                    })
+                                except Exception as e:
+                                    continue
+                            
+                            return resultados
+
+                        # ============================================================
+                        # INTERFACE STREAMLIT - TAB 8
+                        # ============================================================
+
+                        st.markdown("---")
+                        st.markdown("""
+                        <h3 style='color: #378ADD;'>📢 Qualidade do Discurso</h3>
+                        <p style='color: #aaa; font-size: 0.95rem;'>
+                        Análise estrutural de como negociador e causador se comunicam.
+                        </p>
+                        """, unsafe_allow_html=True)
+
+                        col_caus = "TRANSCRIÇÃO DO CAUSADOR"
+                        col_neg = "TRANSCRIÇÃO DO NEGOCIADOR PRINCIPAL"
+
+                        if col_caus not in df_apa or col_neg not in df_apa:
+                            st.warning("⚠️ Colunas de transcrição não encontradas")
+                        else:
+                            txt_caus = str(df_apa[col_caus]).strip()
+                            txt_neg = str(df_apa[col_neg]).strip()
+                            
+                            if not txt_caus or not txt_neg or len(txt_caus) < 20 or len(txt_neg) < 20:
+                                st.warning("⚠️ Transcrições insuficientes para análise")
+                            else:
+                                # =========================================================
+                                # SEÇÃO 1: ANÁLISE RÁPIDA (sempre visível)
+                                # =========================================================
+                                
+                                with st.expander("✔️ Análise Rápida (Padrões Léxicos)", expanded=True):
+                                    st.markdown("""
+                                    <p style='color: #aaa; font-size: 0.9rem; margin-bottom: 1rem;'>
+                                    Análise imediata baseada em frequência de palavras-chave.
+                                    <strong>Não usa modelo de IA.</strong> Rápido e transparente.
+                                    </p>
+                                    """, unsafe_allow_html=True)
+                                    
+                                    # Rodar análise rápida
+                                    analise_rapida = analise_rapida_discurso(txt_neg, txt_caus)
+                                    
+                                    # Scorecard
+                                    col1, col2, col3, col4 = st.columns(4)
+                                    
+                                    with col1:
+                                        st.metric(
+                                            "Validação (Negociador)",
+                                            analise_rapida['total_validacao'],
+                                            f"x ocorrências"
+                                        )
+                                    
+                                    with col2:
+                                        st.metric(
+                                            "Confronto (Negociador)",
+                                            analise_rapida['total_confronto'],
+                                            f"x ocorrências"
+                                        )
+                                    
+                                    with col3:
+                                        st.metric(
+                                            "Emoção Alta (Causador)",
+                                            analise_rapida['total_emocao'],
+                                            f"x palavras fortes"
+                                        )
+                                    
+                                    with col4:
+                                        total_palavras_neg = len(txt_neg.split())
+                                        st.metric(
+                                            "Tamanho (Negociador)",
+                                            total_palavras_neg,
+                                            f"palavras"
+                                        )
+                                    
+                                    # Detalhes
+                                    st.markdown("---")
+                                    st.markdown("#### 📋 Detalhes das Palavras-Chave Encontradas")
+                                    
+                                    col_val, col_conf = st.columns(2)
+                                    
+                                    with col_val:
+                                        st.markdown("**Validação:**")
+                                        if analise_rapida['validacao']:
+                                            for palavra, freq in sorted(
+                                                analise_rapida['validacao'].items(),
+                                                key=lambda x: x[1],
+                                                reverse=True
+                                            ):
+                                                st.write(f"  • {palavra}: {freq}x")
+                                        else:
+                                            st.write("  (nenhuma encontrada)")
+                                    
+                                    with col_conf:
+                                        st.markdown("**Confronto:**")
+                                        if analise_rapida['confronto']:
+                                            for palavra, freq in sorted(
+                                                analise_rapida['confronto'].items(),
+                                                key=lambda x: x[1],
+                                                reverse=True
+                                            ):
+                                                st.write(f"  • {palavra}: {freq}x")
+                                        else:
+                                            st.write("  (nenhuma encontrada)")
+                                    
+                                    # Interpretação
+                                    st.markdown("---")
+                                    st.markdown("#### 💡 O Que Significa")
+                                    st.markdown("""
+                                    - **Validação**: Palavras que indicam reconhecimento, escuta, empatia
+                                    - **Confronto**: Palavras que indicam discordância, negação, imposição
+                                    - **Emoção Alta**: Indicadores de stress, medo, raiva no causador
+                                    
+                                    **Nota:** Essa análise conta frequência, não interpreta contexto.
+                                    "Não" pode ser "não vou bater" (protetor) ou "não faço isso" (negação).
+                                    Use como descritor, não como julgamento.
+                                    """)
+                                
+                                # =========================================================
+                                # SEÇÃO 2: ANÁLISE COM TRANSFORMER (Lazy Loading)
+                                # =========================================================
+                                
+                                st.markdown("---")
+                                st.markdown("""
+                                <div style='background: rgba(255, 193, 7, 0.1); border-left: 4px solid #FFC107; padding: 15px; border-radius: 8px; margin-bottom: 20px;'>
+                                <h5 style='color: #FFC107; margin-top: 0;'>⚠️ Análise Avançada com Transformer</h5>
+                                <p style='color: #aaa; font-size: 0.9rem; margin-bottom: 10px;'>
+                                Esta análise usa um modelo de inteligência artificial treinado em português.
+                                </p>
+                                <ul style='color: #bbb; font-size: 0.9rem; line-height: 1.6; margin: 10px 0;'>
+                                <li><strong>Tempo:</strong> Primeira execução ~10-15 segundos (carrega modelo)</li>
+                                <li><strong>Requisitos:</strong> Requer recursos computacionais (GPU recomendada)</li>
+                                <li><strong>Funcionamento:</strong> Analisa cada sentença para detectar sentimento</li>
+                                <li><strong>Acurácia:</strong> ~75-80% em português coloquial</li>
+                                <li><strong>Limitação:</strong> Pode não entender contexto cultural específico</li>
+                                </ul>
+                                <p style='color: #FFC107; font-size: 0.85rem; font-weight: bold; margin-bottom: 0;'>
+                                Clique no botão abaixo para carregar a análise. 
+                                Você pode fechar quando terminar de visualizar.
+                                </p>
+                                </div>
+                                """, unsafe_allow_html=True)
+                                
+                                # Estado para controlar expansão
+                                if 'transformer_expandido' not in st.session_state:
+                                    st.session_state.transformer_expandido = False
+                                
+                                # Botão para abrir/fechar
+                                if st.button(
+                                    "🤖 Carregar Análise com Transformer (10-15s)",
+                                    key="btn_transformer_analise",
+                                    help="Clique para carregar. Pode fechar depois."
+                                ):
+                                    st.session_state.transformer_expandido = True
+                                
+                                # Mostrar análise SÓ se expandido
+                                if st.session_state.transformer_expandido:
+                                    with st.expander(
+                                        "🤖 Análise de Sentimento (Transformer Português)",
+                                        expanded=True,
+                                        key="expand_transformer"
+                                    ):
+                                        # Botão de fechar dentro do expander
+                                        col_close, col_spacer = st.columns([1, 5])
+                                        with col_close:
+                                            if st.button("❌ Fechar Análise", key="btn_close_transformer"):
+                                                st.session_state.transformer_expandido = False
+                                                st.rerun()
+                                        
+                                        st.markdown("""
+                                        <p style='color: #aaa; font-size: 0.9rem;'>
+                                        Carregando modelo de IA treinado em português...
+                                        </p>
+                                        """, unsafe_allow_html=True)
+                                        
+                                        with st.spinner("⏳ Carregando modelo Transformer (primeira execução é mais lenta)..."):
+                                            nlp_model = carregar_transformer_portugues()
+                                        
+                                        if nlp_model is None:
+                                            st.error("❌ Erro ao carregar modelo. Verifique instalação de `transformers`")
+                                        else:
+                                            st.success("✅ Modelo carregado com sucesso!")
+                                            
+                                            # Analisar negociador
+                                            st.markdown("---")
+                                            st.markdown("#### 🟢 Sentimento do Negociador")
+                                            
+                                            with st.spinner("Analisando fala do negociador..."):
+                                                resultado_neg = analise_sentimento_transformer(txt_neg, nlp_model)
+                                            
+                                            if resultado_neg:
+                                                # Contar positivos/negativos
+                                                positivos = sum(1 for r in resultado_neg if r['label'] == 'POSITIVE')
+                                                negativos = sum(1 for r in resultado_neg if r['label'] == 'NEGATIVE')
+                                                total_sent = len(resultado_neg)
+                                                
+                                                col1, col2, col3 = st.columns(3)
+                                                with col1:
+                                                    st.metric("Positivos", f"{positivos}/{total_sent}")
+                                                with col2:
+                                                    st.metric("Negativos", f"{negativos}/{total_sent}")
+                                                with col3:
+                                                    pct_positivo = (positivos / total_sent * 100) if total_sent > 0 else 0
+                                                    st.metric("% Positivo", f"{pct_positivo:.0f}%")
+                                                
+                                                # Mostrar exemplos
+                                                st.markdown("**Exemplos de Sentenças:**")
+                                                
+                                                col_pos, col_neg_ex = st.columns(2)
+                                                
+                                                with col_pos:
+                                                    st.markdown("✅ **Positivas/Neutras:**")
+                                                    for r in [x for x in resultado_neg if x['label'] in ['POSITIVE', 'NEUTRAL']][:5]:
+                                                        st.write(f"  • {r['sentenca']}...")
+                                                
+                                                with col_neg_ex:
+                                                    st.markdown("❌ **Negativas:**")
+                                                    for r in [x for x in resultado_neg if x['label'] == 'NEGATIVE'][:5]:
+                                                        st.write(f"  • {r['sentenca']}...")
+                                            
+                                            # Analisar causador
+                                            st.markdown("---")
+                                            st.markdown("#### 🔴 Sentimento do Causador")
+                                            
+                                            with st.spinner("Analisando fala do causador..."):
+                                                resultado_caus = analise_sentimento_transformer(txt_caus, nlp_model)
+                                            
+                                            if resultado_caus:
+                                                # Contar positivos/negativos
+                                                positivos = sum(1 for r in resultado_caus if r['label'] == 'POSITIVE')
+                                                negativos = sum(1 for r in resultado_caus if r['label'] == 'NEGATIVE')
+                                                total_sent = len(resultado_caus)
+                                                
+                                                col1, col2, col3 = st.columns(3)
+                                                with col1:
+                                                    st.metric("Positivos", f"{positivos}/{total_sent}")
+                                                with col2:
+                                                    st.metric("Negativos", f"{negativos}/{total_sent}")
+                                                with col3:
+                                                    pct_negativo = (negativos / total_sent * 100) if total_sent > 0 else 0
+                                                    st.metric("% Negativo", f"{pct_negativo:.0f}%")
+                                                
+                                                # Mostrar exemplos
+                                                st.markdown("**Exemplos de Sentenças:**")
+                                                
+                                                col_pos, col_neg_ex = st.columns(2)
+                                                
+                                                with col_pos:
+                                                    st.markdown("✅ **Positivas/Neutras:**")
+                                                    for r in [x for x in resultado_caus if x['label'] in ['POSITIVE', 'NEUTRAL']][:5]:
+                                                        st.write(f"  • {r['sentenca']}...")
+                                                
+                                                with col_neg_ex:
+                                                    st.markdown("❌ **Negativas:**")
+                                                    for r in [x for x in resultado_caus if x['label'] == 'NEGATIVE'][:5]:
+                                                        st.write(f"  • {r['sentenca']}...")
+                                            
+                                            # Análise Comparativa
+                                            st.markdown("---")
+                                            st.markdown("#### 🔄 Comparativo")
+                                            
+                                            if resultado_neg and resultado_caus:
+                                                col1, col2 = st.columns(2)
+                                                
+                                                with col1:
+                                                    pct_pos_neg = (sum(1 for r in resultado_neg if r['label'] == 'POSITIVE') / len(resultado_neg) * 100)
+                                                    st.metric("Negociador % Positivo", f"{pct_pos_neg:.0f}%")
+                                                
+                                                with col2:
+                                                    pct_pos_caus = (sum(1 for r in resultado_caus if r['label'] == 'POSITIVE') / len(resultado_caus) * 100)
+                                                    st.metric("Causador % Positivo", f"{pct_pos_caus:.0f}%")
+                                                
+                                                st.markdown(f"""
+                                                **Interpretação:**
+                                                - Negociador {pct_pos_neg:.0f}% positivo → {"Mantendo tom construtivo" if pct_pos_neg > 60 else "Tom mais técnico/neutro"}
+                                                - Causador {pct_pos_caus:.0f}% positivo → {"Receptivo" if pct_pos_caus > 40 else "Resistente, preocupado"}
+                                                - Diferença: {abs(pct_pos_neg - pct_pos_caus):.0f}% → {"Alinhamento bom" if abs(pct_pos_neg - pct_pos_caus) < 30 else "Desencontro de tons"}
+                                                """)
+                                            
+                                            # Limitações
+                                            st.markdown("---")
+                                            st.markdown("""
+                                            ⚠️ **Limitações do Modelo:**
+                                            - Português coloquial/gírias podem ser interpretadas errado
+                                            - Sarcasmo não é detectado
+                                            - Contexto cultural específico pode ser perdido
+                                            - "Bom" e "ruim" são avaliações, não sentimento real
+                                            """)
+
+                        st.markdown("---")
 
 
             

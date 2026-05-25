@@ -18,3 +18,5 @@ langchain-openai
 langchain-experimental
 tabulate
 streamlit-echarts
+transformers
+torch
