@@ -1137,8 +1137,29 @@ else:
 
             st.markdown("---")
 
+            
+            
             # PERCEPÇÃO DE AGRESSIVIDADE/RECEPTIVIDADE LINHA DE TENDENCIA
             # Otimização: Normaliza e mapeia as colunas do Airtable apenas uma vez por APA
+            
+            if st.session_state.get('stats_calculados'):
+                stats = st.session_state['stats_calculados']
+
+                tab_ng1, tab_ng2 = st.tabs([
+                    "✔️ Linha de tendência da Percepção de agressividade e reptividade do causador",
+                    "✔️ Visão geral da Percepção de agressividade e reptividade do causador"                    
+                ])
+            
+            with tab_ng1:
+                    st.markdown("""
+                    <div class='info-card'>
+                    <h5 style='color: #3b82f6; margin-top: 0;'>✔️ Linha de tendência da Percepção de agressividade e reptividade do causador</h5>
+                    <p style='font-size:0.9rem;color:#ddd;'>
+                    Geralmente suporte. Seus temas indicam se estava reforçando a mensagem do principal ou dispersando esforços.
+                    </p>
+                    </div>
+                    """, unsafe_allow_html=True)
+            
             colunas_norm = {col: unicodedata.normalize('NFKD', str(col)).encode('ASCII', 'ignore').decode('ASCII').lower() for col in df_apa.index}
             
             def buscar_percepcao(papel, metrica, momento):
@@ -1246,6 +1267,17 @@ else:
             fig_trend.update_traces(connectgaps=False)
             
             st.plotly_chart(fig_trend, use_container_width=True)
+
+            
+            with tab_ng2:
+                    st.markdown("""
+                    <div class='info-card'>
+                    <h5 style='color: #3b82f6; margin-top: 0;'>✔️ Visão geral da Percepção de agressividade e reptividade do causador</h5>
+                    <p style='font-size:0.9rem;color:#ddd;'>
+                    Geralmente suporte. Seus temas indicam se estava reforçando a mensagem do principal ou dispersando esforços.
+                    </p>
+                    </div>
+                    """, unsafe_allow_html=True)
 
             st.markdown("### ✔ Percepção dos negociadores sobre a receptividade e agressividade do causador no início e encerramento da ocorrência (Textual)")
             tab_chegada, tab_encerramento = st.tabs(["🏳 Na Chegada à Ocorrência", "🏴 No Encerramento"])
@@ -2622,7 +2654,7 @@ else:
                     col_left, col_center, col_right = st.columns([1, 1, 1])
                     with col_center:
                         is_transformer = render_toggle_button(
-                            label="🤖 Transformer Otimizado (10-15s)",
+                            label="✔️ Transformer Otimizado (10-15s)",
                             session_key="tab8_transformer_otimizado",
                             button_key="btn_tab8_transformer_otimizado"
                         )
@@ -2631,7 +2663,7 @@ else:
 
                     if is_transformer:
                         # Mostrar exemplo de limpeza
-                        with st.expander("📚 Como funciona a limpeza (exemplo)"):
+                        with st.expander("✔️ Como funciona a limpeza (exemplo)"):
                             st.markdown("**Exemplo: Primeiras 3 sentenças**")
                             
                             exemplo_linhas = analise.dividir_em_sentencas(txt_neg)[:3]
@@ -2655,7 +2687,7 @@ else:
                         if nlp_model is None:
                             st.error("❌ Erro ao carregar modelo. Verifique instalação de `transformers`")
                         else:
-                            st.success("✅ Modelo carregado com sucesso!")
+                            st.success("✔️ Modelo carregado com sucesso!")
                             
                             # Analisar negociador
                             st.markdown("---")
@@ -2769,7 +2801,7 @@ else:
                             
                             # Análise Comparativa
                             st.markdown("---")
-                            st.markdown("#### 🔄 Comparativo")
+                            st.markdown("#### ✔️ Comparativo")
                             
                             if resultado_neg and resultado_caus:
                                 col1, col2 = st.columns(2)
@@ -2791,8 +2823,11 @@ else:
                     st.markdown("---")
                     st.markdown("""
                                         
-                    ⚠️ **Ainda com Limitações:**
-                    - Tradução pode perder nuances
+                    ⚠️ **Limitações:**
+                    
+                    - Modelo treinado em resenhas de produtos em inglês
+                    - Português coloquial pode ser mal interpretado
+                    - "Entendi", "tranquilo" podem ser classificados errado            
                     - Gírias muito locais podem confundir
                     - Sarcasmo ainda pode não ser detectado
                     - Use como complemento da Análise Rápida
