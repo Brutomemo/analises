@@ -4273,8 +4273,8 @@ Este sistema é protegido por direitos autorais e legislação aplicável. Repro
 
         st.markdown("""
         <div class='info-card'>
-        <h5 style='color: #FFD700;'>✔️ Perfil de Negociadores: Escuta Ativa vs Persuasão</h5>
-        <p style='font-size:1rem;color:#ddd;'>
+        <h5 style='color: #FFD700;'>Perfil de Negociadores: Escuta Ativa vs Persuasão</h5>
+        <p style='font-size:1.1rem;color:#ddd;'>
         Análise estatística comparativa dos padrões de negociação por negociador.
         Identifica tendências, agrupa similares e testa significância estatística.
         </p>
