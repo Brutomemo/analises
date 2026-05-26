@@ -2821,7 +2821,7 @@ def calcular_score_tendencia(df_tecnicas):
 # 3. TESTES ESTATÍSTICOS
 # ============================================================
 
-def interpretar_anova_detalhado(df_tecnicas):
+def testar_anova(df_tecnicas):
     """ANOVA com interpretação detalhada de COMO diferem os negociadores"""
     from scipy.stats import f_oneway
     
