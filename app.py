@@ -4377,36 +4377,56 @@ Este sistema é protegido por direitos autorais e legislação aplicável. Repro
                         st.plotly_chart(fig_barras, use_container_width=True)
                     
                     # ── TAB 2: GRAFO ────────────────────────────────────────
+                    # SUBSTITUA o código da tab_grafo no seu app.py por isto:
+
                     with tab_grafo:
                         st.markdown("""
                         <div class='info-card'>
-                        <h5 style='color: #FFD700; margin-top: 0;'>Rede de Palavras</h5>
+                        <h5 style='color: #FFD700; margin-top: 0;'>🕸️ Rede de Palavras</h5>
                         <p style='font-size:0.9rem;color:#aaa;'>
                         Palavras do "Trecho da Transcrição" onde técnicas foram aplicadas.
+                        Cores = Negociador | Tamanho = Frequência | Conexões = Co-ocorrência
                         </p>
                         </div>
                         """, unsafe_allow_html=True)
                         
-                        with st.spinner("⏳ Gerando grafo (Pyvis)..."):
-                            try:
-                                net = gerar_grafo_palavras(df_tec_classificado, negociadores_cores)
-                                
-                                if net is None:
-                                    st.warning("⚠️ Dados insuficientes para gerar o grafo (precisa de mais trechos de transcrição).")
-                                else:
-                                    # Salvar grafo
-                                    net.show('temp_grafo.html')
+                        try:
+                            net = gerar_grafo_palavras(df_tec_classificado, negociadores_cores)
+                            
+                            if net is None:
+                                st.warning("⚠️ Dados insuficientes para gerar o grafo.")
+                                st.info("Precisa de pelo menos 5 palavras diferentes nos trechos de transcrição.")
+                            else:
+                                try:
+                                    import tempfile
+                                    import os
                                     
-                                    # Exibir
-                                    with open('temp_grafo.html', 'r', encoding='utf-8') as f:
-                                        html_grafo = f.read()
+                                    # Usar arquivo temporário
+                                    with tempfile.NamedTemporaryFile(mode='w', suffix='.html', delete=False) as f:
+                                        temp_file = f.name
                                     
-                                    st.components.v1.html(html_grafo, height=800)
+                                    # Renderizar e salvar
+                                    net.show(temp_file)
+                                    
+                                    # Ler e exibir
+                                    with open(temp_file, 'r', encoding='utf-8') as f:
+                                        html_content = f.read()
+                                    
+                                    st.components.v1.html(html_content, height=800)
+                                    
+                                    # Limpar arquivo temporário
+                                    try:
+                                        os.remove(temp_file)
+                                    except:
+                                        pass
                                     
                                     st.success("✅ Grafo gerado com sucesso!")
-                            
-                            except Exception as e:
-                                st.error(f"❌ Erro ao gerar grafo: {str(e)[:100]}")
+                                    
+                                except Exception as e:
+                                    st.error(f"❌ Erro ao renderizar grafo: {str(e)[:80]}")
+                        
+                        except Exception as e:
+                            st.error(f"❌ Erro geral: {str(e)[:100]}")
                     
                     # ── TAB 3: TESTES ESTATÍSTICOS ──────────────────────────
                     with tab_stats:
