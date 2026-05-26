@@ -2643,10 +2643,8 @@ def calcular_qui_quadrado(df_historico, col_cat1, col_cat2):
             "msg": f"Erro: {str(e)}"
         }
     
-
-    
 # ============================================================
-# ANÁLISE DE PERFIL DE NEGOCIADORES (Adicionar ao final de analise.py)
+# ANÁLISE DE PERFIL DE NEGOCIADORES (Adicionar após linha 2648)
 # Comparação: Escuta Ativa vs Persuasão/Influência
 # ============================================================
 
@@ -2699,32 +2697,84 @@ def calcular_score_tendencia(df_tecnicas):
     Calcula score de tendência para cada negociador.
     Score = (Soma atitudes Escuta - Soma atitudes Persuasão) / Total × 100
     Resultado: -100 (Persuasão) a +100 (Escuta Ativa)
+    
+    CORRIGIDO: Trata listas em colunas e valores numéricos variados
     """
+    
+    # ── CORRIGIR: Se NEGOCIADOR PRINCIPAL for lista, pega primeiro elemento ──
+    if 'NEGOCIADOR PRINCIPAL' in df_tecnicas.columns:
+        df_tecnicas['NEGOCIADOR PRINCIPAL'] = df_tecnicas['NEGOCIADOR PRINCIPAL'].apply(
+            lambda x: x[0] if isinstance(x, list) and len(x) > 0 else str(x).strip()
+        )
+    
+    # ── CORRIGIR: Se TÉCNICAS for lista, pega primeiro elemento ──
+    if 'TÉCNICAS' in df_tecnicas.columns:
+        df_tecnicas['TÉCNICAS'] = df_tecnicas['TÉCNICAS'].apply(
+            lambda x: x[0] if isinstance(x, list) and len(x) > 0 else str(x).strip()
+        )
     
     # Classificar técnicas
     df_tecnicas['grupo'] = df_tecnicas['TÉCNICAS'].apply(classificar_tecnica)
     
-    # Converter ATITUDE DO CAUSADOR para numérico
-    df_tecnicas['atitude_num'] = df_tecnicas['ATITUDE DO CAUSADOR'].apply(
-        lambda x: {
+    # ── CORRIGIR: Converter ATITUDE DO CAUSADOR para numérico ──
+    # Aceita múltiplos formatos: emoji, texto, números
+    def converter_atitude(x):
+        if pd.isna(x):
+            return np.nan
+        
+        # Se for lista, pega primeiro elemento
+        if isinstance(x, list):
+            x = x[0] if len(x) > 0 else np.nan
+        
+        # Converter para string e limpar
+        x_str = str(x).strip()
+        
+        # Mapa de conversão
+        mapa_atitude = {
             '🟢 Reação Positiva': 1,
             'Reação Positiva': 1,
             '1': 1,
-            1: 1,
+            '1.0': 1,
+            'reação positiva': 1,
             '⚪ Reação Neutra': 0,
             'Reação Neutra': 0,
             '0': 0,
-            0: 0,
+            '0.0': 0,
+            'reação neutra': 0,
             '🔴 Reação Negativa': -1,
             'Reação Negativa': -1,
             '-1': -1,
-            -1: -1,
-        }.get(x, np.nan)
-    )
+            '-1.0': -1,
+            'reação negativa': -1,
+            'inaudível / não observado': np.nan,
+            'inaudível': np.nan,
+            'não observado': np.nan,
+        }
+        
+        # Procurar correspondência exata
+        if x_str in mapa_atitude:
+            return mapa_atitude[x_str]
+        
+        # Procurar correspondência case-insensitive
+        x_lower = x_str.lower()
+        for chave, valor in mapa_atitude.items():
+            if chave.lower() == x_lower:
+                return valor
+        
+        # Tentar converter para float diretamente
+        try:
+            return float(x_str)
+        except:
+            return np.nan
+    
+    df_tecnicas['atitude_num'] = df_tecnicas['ATITUDE DO CAUSADOR'].apply(converter_atitude)
     
     resultados = []
     
     for negociador in df_tecnicas['NEGOCIADOR PRINCIPAL'].unique():
+        if pd.isna(negociador):
+            continue
+            
         df_neg = df_tecnicas[df_tecnicas['NEGOCIADOR PRINCIPAL'] == negociador]
         
         # Escuta Ativa
@@ -2759,6 +2809,9 @@ def calcular_score_tendencia(df_tecnicas):
             'Soma Atitude Escuta': soma_escuta,
             'Soma Atitude Persuasão': soma_persuasao,
         })
+    
+    if not resultados:
+        return pd.DataFrame(), df_tecnicas
     
     df_resultado = pd.DataFrame(resultados)
     return df_resultado, df_tecnicas
@@ -2816,39 +2869,37 @@ def testar_chi_quadrado(df_tecnicas):
 
 def aplicar_kmeans(df_resultado, k=2):
     """K-means: Agrupar negociadores em k clusters baseado no score
-
+    
     CORRIGIDO: Remove NaN antes do K-means
     """
     from sklearn.cluster import KMeans
     from sklearn.preprocessing import StandardScaler
-
+    
     # ── CORRIGIR: Remover NaN ──
     df_resultado = df_resultado.fillna(0)
-
+    
     # Colunas para clustering
     colunas_cluster = ['Score Tendência', 'Efetividade Escuta', 'Efetividade Persuasão']
-
+    
     # Verificar se todas as colunas existem
     colunas_existentes = [col for col in colunas_cluster if col in df_resultado.columns]
-
+    
     if not colunas_existentes:
-        st.error("❌ Colunas necessárias para clustering não encontradas.")
         return df_resultado, None, None, None
-
+    
     X = df_resultado[colunas_existentes].values
-
+    
     # Verificar se há dados válidos
     if len(X) < 2:
-        st.warning("⚠️ Dados insuficientes para K-means (precisa de pelo menos 2 negociadores).")
         return df_resultado, None, None, None
-
+    
     # Normalizar
     scaler = StandardScaler()
     X_scaled = scaler.fit_transform(X)
-
+    
     # Garantir que não há NaN após normalização
     X_scaled = np.nan_to_num(X_scaled, nan=0.0)
-
+    
     try:
         # K-means
         kmeans = KMeans(n_clusters=k, random_state=42, n_init=10)
@@ -2868,11 +2919,9 @@ def aplicar_kmeans(df_resultado, k=2):
                         df_resultado.loc[df_resultado['Cluster'] == i, 'Perfil_Cluster'] = 'Persuasão'
         
         return df_resultado, kmeans, scaler, X_scaled
-
+    
     except Exception as e:
-        st.error(f"❌ Erro no K-means: {str(e)[:100]}")
         return df_resultado, None, None, None
-
 
 # ============================================================
 # 4. GRAFO DE PALAVRAS (PYVIS)
@@ -3044,6 +3093,10 @@ def gerar_barras_grupos(df_resultado):
 def analisar_perfil_negociadores(df_tecnicas):
     """Função principal que executa toda a análise"""
     df_resultado, df_tec_classificadas = calcular_score_tendencia(df_tecnicas)
+    
+    if df_resultado.empty:
+        return None
+    
     anova_result = testar_anova(df_tec_classificadas)
     chi2_result = testar_chi_quadrado(df_tec_classificadas)
     df_resultado, kmeans, scaler, X_scaled = aplicar_kmeans(df_resultado, k=2)
