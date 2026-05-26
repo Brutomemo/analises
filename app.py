@@ -134,11 +134,25 @@ def converter_escala(val):
 # ====
 # 4. SISTEMA DE SEGURANÇA
 # ====
+import os
+
 def check_password():
     """Retorna True se o usuário inseriu a senha correta."""
+    
+    # Ler senha de variável de ambiente (Railway) ou secrets.toml (local)
+    try:
+        correct_password = st.secrets.get("access_password") or os.getenv("ACCESS_PASSWORD")
+    except:
+        correct_password = os.getenv("ACCESS_PASSWORD")
+    
+    # Validação
+    if not correct_password:
+        st.error("❌ Senha não configurada! Contate o administrador.")
+        return False
+    
     def password_entered():
         """Verifica se a senha coincide com o segredo guardado."""
-        if st.session_state["password"] == st.secrets["access_password"]:
+        if st.session_state["password"] == correct_password:
             st.session_state["password_correct"] = True
             del st.session_state["password"]  
         else:
@@ -2664,8 +2678,7 @@ with aba_individual:
                     """)
                 
                 # ============================================================
-                # TAB 8: TRANSFORMER OTIMIZADO (SEM TRADUÇÃO - RÁPIDO)
-                # SUBSTITUA a seção do Transformer em seu_app.py
+                # TAB 8: analise de texto - retirei transformer por ineficiencia devido diferença na linguagem                
                 # ============================================================
 
                 st.markdown("---")
@@ -4385,19 +4398,19 @@ Este sistema é protegido por direitos autorais e legislação aplicável. Repro
                         """, unsafe_allow_html=True)
                         
                         # Tabela
-                        st.markdown("### 📋 Tabela de Resultados")
+                        st.markdown("### Tabela de Resultados")
                         df_display = gerar_tabela_score(df_resultado)
                         st.dataframe(df_display, use_container_width=True, hide_index=True)
                         
                         # Gráfico Scatter
                         st.markdown("---")
-                        st.markdown("### 📊 Score vs Efetividade Média")
+                        st.markdown("### Score vs Efetividade Média")
                         fig_scatter = gerar_scatter_score_efetividade(df_resultado)
                         st.plotly_chart(fig_scatter, use_container_width=True)
                         
                         # Gráfico Barras
                         st.markdown("---")
-                        st.markdown("### 📊 Distribuição de Técnicas")
+                        st.markdown("### Distribuição de Técnicas")
                         fig_barras = gerar_barras_grupos(df_resultado)
                         st.plotly_chart(fig_barras, use_container_width=True)
                     
