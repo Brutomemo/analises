@@ -4263,6 +4263,11 @@ Este sistema é protegido por direitos autorais e legislação aplicável. Repro
             """)
         st.markdown("---")
 
+
+        # DEBUG: Ver exatamente qual é o nome da coluna
+        st.write("Colunas do df_tec:", df_tec.columns.tolist())
+        st.write("Primeiras linhas:", df_tec.head())
+
                        
 
         # ============================================================
@@ -4340,10 +4345,10 @@ Este sistema é protegido por direitos autorais e legislação aplicável. Repro
                     
                     # ── CRIAR TABS ──────────────────────────────────────────
                     tab_score, tab_grafo, tab_stats, tab_kmeans = st.tabs([
-                        "📊 Scores e Efetividades",
+                        "✔️ Scores e Efetividades",
                         "🕸️ Grafo de Palavras",
-                        "📈 Testes Estatísticos",
-                        "🎯 Clusters (K-means)"
+                        "✔️ Testes Estatísticos",
+                        "✔️ Clusters (K-means)"
                     ])
                     
                     # ── TAB 1: SCORES ───────────────────────────────────────
@@ -4471,7 +4476,7 @@ Este sistema é protegido por direitos autorais e legislação aplicável. Repro
                         
                         # Visualizar clusters
                         st.markdown("---")
-                        st.markdown("### 📊 Visualização dos Clusters")
+                        st.markdown("### ✔️ Visualização dos Clusters")
                         
                         fig_clusters = go.Figure()
                         
