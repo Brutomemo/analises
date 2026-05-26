@@ -3164,11 +3164,12 @@ Este sistema é protegido por direitos autorais e legislação aplicável. Repro
 """, unsafe_allow_html=True)
 
     # ====
-    # ABA 2: PAINEL (HISTÓRICO)
-    # ====
+    # ════════════════════════════════════════════════════════════════════════
+    # ABA 2: SÉRIE HISTÓRICA (VERSÃO DEPURADA)
+    # ════════════════════════════════════════════════════════════════════════
     with aba_geral:
         st.markdown("### Série Histórica - Negociações GATE")
-        st.markdown("<h5 style='color: #f97;'>Filtros por: Negociador, Tipologia e Modalidade do Incidente</h5>", unsafe_allow_html=True)
+        st.markdown("<h5 style='color: #FFD700;'>Filtros por: Negociador, Tipologia e Modalidade do Incidente</h5>", unsafe_allow_html=True)
         
         col_f1, col_f2, col_f3 = st.columns(3)
         with col_f1:
@@ -3182,32 +3183,34 @@ Este sistema é protegido por direitos autorais e legislação aplicável. Repro
             filtro_mod_g = st.selectbox("Filtrar por Modalidade:", lista_mod_g, key="f_mod_historico")
 
         df_quali_filt = df_quali.copy()
-        if filtro_neg_g != "Todos": df_quali_filt = df_quali_filt[df_quali_filt['Neg_Limpo'] == filtro_neg_g]
-        if filtro_tip_g != "Todas": df_quali_filt = df_quali_filt[df_quali_filt['Tip_Limpa'] == filtro_tip_g]
-        if filtro_mod_g != "Todas": df_quali_filt = df_quali_filt[df_quali_filt['Mod_Limpa'] == filtro_mod_g]
+        if filtro_neg_g != "Todos": 
+            df_quali_filt = df_quali_filt[df_quali_filt['Neg_Limpo'] == filtro_neg_g]
+        if filtro_tip_g != "Todas": 
+            df_quali_filt = df_quali_filt[df_quali_filt['Tip_Limpa'] == filtro_tip_g]
+        if filtro_mod_g != "Todas": 
+            df_quali_filt = df_quali_filt[df_quali_filt['Mod_Limpa'] == filtro_mod_g]
 
         st.markdown("---")
         col_m1, col_m2, col_m3 = st.columns(3)
-        with col_m1: st.metric("Ocorrências Analisadas", len(df_quali_filt))
-        with col_m2: st.metric("Tempo Total de Negociação Real", somar_tempos_segundos(df_quali_filt.get('Tempo de Negociação Real', [])))
-        with col_m3: st.metric("Tempo Total de Negociação Tática", somar_tempos_segundos(df_quali_filt.get('Tempo de Negociação Tática', [])))
+        with col_m1: 
+            st.metric("Ocorrências Analisadas", len(df_quali_filt))
+        with col_m2: 
+            st.metric("Tempo Total de Negociação Real", somar_tempos_segundos(df_quali_filt.get('Tempo de Negociação Real', [])))
+        with col_m3: 
+            st.metric("Tempo Total de Negociação Tática", somar_tempos_segundos(df_quali_filt.get('Tempo de Negociação Tática', [])))
 
         st.markdown("---")
         
-        # ====
-        # NOVOS GRÁFICOS: VISÃO GERAL DA AMOSTRA
-        # ====
+        # ════════════════════════════════════════════════════════════════════════
+        # VISÃO GERAL DA SÉRIE HISTÓRICA
+        # ════════════════════════════════════════════════════════════════════════
         st.markdown("""
-                        <div class='info-card'>
-                        <h5 style='color: #FFD700; margin-top: 0;'>Visão Geral da Série Histórica</h5>
-                        <p style='font-size:1.2rem;color:#ddd;'>
-                        Metadados</strong>                 
-                        </p>
-                        </div>
-                        """, unsafe_allow_html=True)
-                
+        <div class='info-card'>
+        <h5 style='color: #FFD700; margin-top: 0;'>Visão Geral da Série Histórica</h5>
+        <p style='font-size:1.2rem;color:#ddd;'>Metadados e distribuição das ocorrências</p>
+        </div>
+        """, unsafe_allow_html=True)
 
-        # ── BOTÃO TOGGLE ───────────────────────────────────────────
         col_left, col_center, col_right = st.columns([1, 1, 1])
         with col_center:
             is_visao_geral = render_toggle_button(
@@ -3219,56 +3222,46 @@ Este sistema é protegido por direitos autorais e legislação aplicável. Repro
         st.markdown("---")
         
         if is_visao_geral:     
-                
-        
+            
             def gerar_grafico_resumo(df, coluna, titulo):
-                """Gera gráfico de rosca (donut) padronizado com o Design System."""
-                if coluna not in df.columns: return None
+                """Gera gráfico de rosca (donut) padronizado."""
+                if coluna not in df.columns: 
+                    return None
                 
-                # Limpa listas vazias e formata strings
                 serie = df[coluna].apply(lambda x: x[0] if isinstance(x, list) and len(x)>0 else str(x))
                 serie = serie[~serie.isin(["N/D", "nan", "", "None"])]
                 
-                if serie.empty: return None
+                if serie.empty: 
+                    return None
                 
                 contagem = serie.value_counts().reset_index()
                 contagem.columns = [coluna, 'Frequência']
-                # para garantir que a maior fatia pegue a cor mais forte
                 contagem = contagem.sort_values('Frequência', ascending=False)
 
-                cores_contraste = ['#FF8C00', '#8B4513', "#A53A00", '#DEB887', "#EBE9E7" ]
+                cores_contraste = ['#FF8C00', '#8B4513', "#A53A00", '#DEB887', "#EBE9E7"]
 
-                # Criação do Gráfico de Rosca
                 fig = px.pie(
                     contagem, 
                     values='Frequência', 
                     names=coluna, 
                     title=titulo,
-                    hole=0.5, # Define o buraco central para transformar em rosca
+                    hole=0.5,
                     color_discrete_sequence=cores_contraste
                 )
                 
-                # Configuração das legendas e rótulos
                 fig.update_traces(
-                    textinfo='value+percent', # Mostra o número absoluto e a porcentagem
-                    textposition='outside',   # Coloca os números para fora para não poluir
+                    textinfo='value+percent',
+                    textposition='outside',
                     marker=dict(line=dict(color='#FFFFFF', width=1))
                 )
                 
-                # Layout padronizado
                 fig.update_layout(
                     paper_bgcolor="rgba(0,0,0,0)", 
                     plot_bgcolor="rgba(0,0,0,0)", 
                     font_color="#FFF", 
                     margin=dict(t=50, b=10, l=10, r=10),
                     showlegend=True,
-                    legend=dict(
-                        orientation="h",       # Legenda horizontal
-                        yanchor="bottom", 
-                        y=-0.3, 
-                        xanchor="center", 
-                        x=0.5
-                    )
+                    legend=dict(orientation="h", yanchor="bottom", y=-0.3, xanchor="center", x=0.5)
                 )
                 return fig
 
@@ -3277,92 +3270,85 @@ Este sistema é protegido por direitos autorais e legislação aplicável. Repro
             with c_g1:
                 fig_res = gerar_grafico_resumo(df_quali_filt, 'Resolução', 'Resolução do Incidente')
                 if fig_res: st.plotly_chart(fig_res, use_container_width=True)
-                else: st.info("Sem dados de Resolução para os filtros atuais.")
+                else: st.info("Sem dados de Resolução.")
                 
                 fig_uni = gerar_grafico_resumo(df_quali_filt, 'Uniforme Usado', 'Uniforme Utilizado')
                 if fig_uni: st.plotly_chart(fig_uni, use_container_width=True)
-                else: st.info("Sem dados de Uniforme para os filtros atuais.")
+                else: st.info("Sem dados de Uniforme.")
 
             with c_g2:
                 fig_trans = gerar_grafico_resumo(df_quali_filt, 'Forma de Transição', 'Forma de Transição')
                 if fig_trans: st.plotly_chart(fig_trans, use_container_width=True)
-                else: st.info("Sem dados de Transição para os filtros atuais.")
+                else: st.info("Sem dados de Transição.")
                 
                 fig_sexo = gerar_grafico_resumo(df_quali_filt, 'Sexo do Causador', 'Sexo do Causador')
                 if fig_sexo: st.plotly_chart(fig_sexo, use_container_width=True)
-                else: st.info("Sem dados de Sexo para os filtros atuais.")
-
+                else: st.info("Sem dados de Sexo.")
 
             with c_g3:
                 fig_mod = gerar_grafico_resumo(df_quali_filt, 'Modalidade do incidente', 'Modalidade do incidente')
                 if fig_mod: st.plotly_chart(fig_mod, use_container_width=True)
-                else: st.info("Sem dados de Modalidade do incidente para os filtros atuais.")
+                else: st.info("Sem dados de Modalidade.")
                 
                 fig_tip = gerar_grafico_resumo(df_quali_filt, 'Tipologia', 'Tipologia')
                 if fig_tip: st.plotly_chart(fig_tip, use_container_width=True)
-                else: st.info("Sem dados de Tipologia para os filtros atuais.")
+                else: st.info("Sem dados de Tipologia.")
 
             st.markdown("---")
 
-
-
-            # ══════════════════════════════════════════════════════════════════════════════
-            # SEÇÃO: INFORMAÇÃO LONGITUDINAL
-            # ══════════════════════════════════════════════════════════════════════════════
+            # ════════════════════════════════════════════════════════════════════════
+            # INFORMAÇÃO LONGITUDINAL
+            # ════════════════════════════════════════════════════════════════════════
 
             st.markdown("<h5 style='color: #FFD700;'>✔️ Informação Longitudinal</h5>", unsafe_allow_html=True)
             st.markdown("<p style='color: #aaa; font-size: 0.95rem;'>Como tem evoluído o volume de negociações ao longo do tempo?</p>", unsafe_allow_html=True)
 
             col_data = next((col for col in ['Data da ocorrência', 'Data', 'DATA'] if col in df_quali_filt.columns), None)
             if col_data:
-                df_quali_filt['Data_DT'] = pd.to_datetime(df_quali_filt[col_data], errors='coerce')
-                df_time = df_quali_filt.dropna(subset=['Data_DT']).sort_values('Data_DT')
-                if not df_time.empty:
-                    df_time['Mes_Ano'] = df_time['Data_DT'].dt.to_period('M').astype(str)
-                    df_trend = df_time['Mes_Ano'].value_counts().sort_index().reset_index()
-                    df_trend.columns = ['Mês', 'Qtd Ocorrências']
-                    
-                    st.markdown(
-                        f"""
-                        **Resumo:** Total de {len(df_time)} ocorrências registradas de {df_trend['Mês'].min()} a {df_trend['Mês'].max()}
-                        """
-                    )
-                    
-                    fig_time = px.line(
-                        df_trend, 
-                        x='Mês', 
-                        y='Qtd Ocorrências', 
-                        markers=True, 
-                        color_discrete_sequence=['#FFD700'],
-                        title="Evolução Temporal de Negociações"
-                    )
-                    fig_time.update_layout(
-                        paper_bgcolor="rgba(0,0,0,0)", 
-                        plot_bgcolor="rgba(0,0,0,0)", 
-                        font_color="#FFF",
-                        hovermode='x unified'
-                    )
-                    st.plotly_chart(fig_time, use_container_width=True)
-                else: 
-                    st.info("⚠️ Sem datas válidas nos registros.")
+                try:
+                    df_quali_filt['Data_DT'] = pd.to_datetime(df_quali_filt[col_data], errors='coerce')
+                    df_time = df_quali_filt.dropna(subset=['Data_DT']).sort_values('Data_DT')
+                    if not df_time.empty:
+                        df_time['Mes_Ano'] = df_time['Data_DT'].dt.to_period('M').astype(str)
+                        df_trend = df_time['Mes_Ano'].value_counts().sort_index().reset_index()
+                        df_trend.columns = ['Mês', 'Qtd Ocorrências']
+                        
+                        st.markdown(f"**Resumo:** Total de {len(df_time)} ocorrências de {df_trend['Mês'].min()} a {df_trend['Mês'].max()}")
+                        
+                        fig_time = px.line(
+                            df_trend, 
+                            x='Mês', 
+                            y='Qtd Ocorrências', 
+                            markers=True, 
+                            color_discrete_sequence=['#FFD700'],
+                            title="Evolução Temporal de Negociações"
+                        )
+                        fig_time.update_layout(
+                            paper_bgcolor="rgba(0,0,0,0)", 
+                            plot_bgcolor="rgba(0,0,0,0)", 
+                            font_color="#FFF",
+                            hovermode='x unified'
+                        )
+                        st.plotly_chart(fig_time, use_container_width=True)
+                    else: 
+                        st.info("⚠️ Sem datas válidas nos registros.")
+                except Exception as e:
+                    st.error(f"⚠️ Erro ao processar datas: {str(e)[:80]}")
             else: 
-                st.info("⚠️ Coluna de Data não encontrada. Adicione uma coluna 'Data' ao seu formulário.")
+                st.info("⚠️ Coluna de Data não encontrada.")
 
             st.markdown("---")
 
-
-        # ============================================================
-        # BLOCO: Ranking de Técnicas + Padrões e Correlações
-        # ============================================================
+        # ════════════════════════════════════════════════════════════════════════
+        # RANKING DE TÉCNICAS
+        # ════════════════════════════════════════════════════════════════════════
         
         st.markdown("""
-                        <div class='info-card'>
-                        <h5 style='color: #FFD700; margin-top: 0;'>Ranking e Efetividade das Técnicas Aplicadas</h5>
-                        <p style='font-size:1.2rem;color:#ddd;'>
-                        Técnicas mais usadas pelos Negociadores e sua Efetividade</strong>                 
-                        </p>
-                        </div>
-                        """, unsafe_allow_html=True)        
+        <div class='info-card'>
+        <h5 style='color: #FFD700; margin-top: 0;'>Ranking e Frequência das Técnicas</h5>
+        <p style='font-size:1.2rem;color:#ddd;'>Técnicas mais usadas pelos Negociadores</p>
+        </div>
+        """, unsafe_allow_html=True)        
 
         col_left, col_center, col_right = st.columns([1, 1, 1])  
         with col_center:
@@ -3401,48 +3387,43 @@ Este sistema é protegido por direitos autorais e legislação aplicável. Repro
                 if filtro_mod_g != "Todas":
                     df_tec_filt = df_tec_filt[df_tec_filt["Mod_Limpa"] == filtro_mod_g]
 
-            # ----------------------------------------------------------
-            # Ranking visual
-            # ----------------------------------------------------------
-            if not df_tec_filt.empty:
-                col_t = next(
-                    (
-                        col
-                        for col in ["TÉCNICAS", "TECNICAS", "TÉCNICA", "TECNICA"]
-                        if col in df_tec_filt.columns
-                    ),
-                    None,
-                )
-                if col_t:
-                    freq_global = df_tec_filt[col_t].value_counts().reset_index()
-                    freq_global.columns = ["Técnica", "Vezes Utilizada"]
+                # Ranking visual
+                if not df_tec_filt.empty:
+                    col_t = next(
+                        (col for col in ["TÉCNICAS", "TECNICAS", "TÉCNICA", "TECNICA"]
+                         if col in df_tec_filt.columns),
+                        None,
+                    )
+                    if col_t:
+                        freq_global = df_tec_filt[col_t].value_counts().reset_index()
+                        freq_global.columns = ["Técnica", "Vezes Utilizada"]
 
-                    c_tab, c_tree = st.columns([1, 2])
-                    with c_tab:
-                        st.dataframe(freq_global, use_container_width=True, hide_index=True)
-                    with c_tree:
-                        fig_g = px.treemap(
-                            freq_global,
-                            path=["Técnica"],
-                            values="Vezes Utilizada",
-                            color="Vezes Utilizada",
-                            color_continuous_scale="Oranges",
-                        )
-                        fig_g.update_layout(
-                            paper_bgcolor="rgba(0,0,0,0)",
-                            plot_bgcolor="rgba(0,0,0,0)",
-                            font_color="#FFF",
-                            margin=dict(t=0, l=0, r=0, b=0),
-                        )
-                        st.plotly_chart(fig_g, use_container_width=True)
+                        c_tab, c_tree = st.columns([1, 2])
+                        with c_tab:
+                            st.dataframe(freq_global, use_container_width=True, hide_index=True)
+                        with c_tree:
+                            fig_g = px.treemap(
+                                freq_global,
+                                path=["Técnica"],
+                                values="Vezes Utilizada",
+                                color="Vezes Utilizada",
+                                color_continuous_scale="Oranges",
+                            )
+                            fig_g.update_layout(
+                                paper_bgcolor="rgba(0,0,0,0)",
+                                plot_bgcolor="rgba(0,0,0,0)",
+                                font_color="#FFF",
+                                margin=dict(t=0, l=0, r=0, b=0),
+                            )
+                            st.plotly_chart(fig_g, use_container_width=True)
+                    else:
+                        st.warning("Coluna 'TÉCNICAS' não encontrada.")
                 else:
-                    st.warning("Coluna 'TÉCNICAS' não encontrada.")
-            else:
-                st.info("Nenhuma técnica encontrada para os filtros selecionados.")
+                    st.info("Nenhuma técnica encontrada para os filtros selecionados.")
 
             st.markdown("---")
 
-
+        
             #NOVAS ANALISES 21MAI
 
                         
