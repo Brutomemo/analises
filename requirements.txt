@@ -21,3 +21,5 @@ streamlit-echarts
 transformers
 torch
 seaborn
+nltk
+pyvis
