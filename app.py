@@ -139,19 +139,16 @@ import os
 def check_password():
     """Retorna True se o usuário inseriu a senha correta."""
     
-    # Ler senha de variável de ambiente (Railway) ou secrets.toml (local)
-    try:
-        correct_password = st.secrets.get("access_password") or os.getenv("ACCESS_PASSWORD")
-    except:
-        correct_password = os.getenv("ACCESS_PASSWORD")
+    # LER APENAS DE VARIÁVEIS DE AMBIENTE (Railway)
+    correct_password = os.getenv("ACCESS_PASSWORD")
     
     # Validação
     if not correct_password:
-        st.error("❌ Senha não configurada! Contate o administrador.")
+        st.error("❌ ACCESS_PASSWORD não configurada no Railway!")
         return False
     
     def password_entered():
-        """Verifica se a senha coincide com o segredo guardado."""
+        """Verifica se a senha coincide."""
         if st.session_state["password"] == correct_password:
             st.session_state["password_correct"] = True
             del st.session_state["password"]  
@@ -169,7 +166,6 @@ def check_password():
         return False
     else:
         return True
-
 # ====
 # 5. CAMADA DE PROTEÇÃO (O "ENVELOPE")
 # ====
