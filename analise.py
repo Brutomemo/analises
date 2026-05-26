@@ -2644,7 +2644,7 @@ def calcular_qui_quadrado(df_historico, col_cat1, col_cat2):
         }
     
 
-    # ============================================================
+    
     # ============================================================
     # ANÁLISE DE PERFIL DE NEGOCIADORES (Adicionar ao final de analise.py)
     # Comparação: Escuta Ativa vs Persuasão/Influência
@@ -2724,8 +2724,8 @@ def calcular_qui_quadrado(df_historico, col_cat1, col_cat2):
         
         resultados = []
         
-        for negociador in df_tecnicas['Negociador Principal do incidente crítico'].unique():
-            df_neg = df_tecnicas[df_tecnicas['Negociador Principal do incidente crítico'] == negociador]
+        for negociador in df_tecnicas['NEGOCIADOR PRINCIPAL'].unique():
+            df_neg = df_tecnicas[df_tecnicas['NEGOCIADOR PRINCIPAL'] == negociador]
             
             # Escuta Ativa
             escuta = df_neg[df_neg['grupo'] == 'Escuta Ativa']
@@ -2774,8 +2774,8 @@ def calcular_qui_quadrado(df_historico, col_cat1, col_cat2):
         grupos = []
         negociadores = []
         
-        for neg in df_tecnicas['Negociador Principal do incidente crítico'].unique():
-            df_neg = df_tecnicas[df_tecnicas['Negociador Principal do incidente crítico'] == neg]
+        for neg in df_tecnicas['NEGOCIADOR PRINCIPAL'].unique():
+            df_neg = df_tecnicas[df_tecnicas['NEGOCIADOR PRINCIPAL'] == neg]
             atitudes = df_neg['atitude_num'].dropna().values
             
             if len(atitudes) > 0:
@@ -2799,7 +2799,7 @@ def calcular_qui_quadrado(df_historico, col_cat1, col_cat2):
         
         # Tabela de contingência
         tabela = pd.crosstab(
-            df_tecnicas['Negociador Principal do incidente crítico'],
+            df_tecnicas['NEGOCIADOR PRINCIPAL'],
             df_tecnicas['grupo']
         )
         
@@ -2870,7 +2870,7 @@ def calcular_qui_quadrado(df_historico, col_cat1, col_cat2):
         palavras_freq = Counter()
         
         for _, row in df_tecnicas.iterrows():
-            neg = row['Negociador Principal do incidente crítico']
+            neg = row['NEGOCIADOR PRINCIPAL']
             trecho = str(row.get('TRECHO DA TRANSCRIÇÃO', '')).lower()
             
             if not trecho or trecho == 'nan':
