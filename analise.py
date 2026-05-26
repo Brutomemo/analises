@@ -2962,7 +2962,6 @@ def aplicar_kmeans(df_resultado, k=2):
 # ============================================================
 
 
-
 def gerar_grafo_palavras_com_estilo(df_tecnicas, negociadores_cores):
     """
     Gera grafo Pyvis com fundo glassmorphism dinâmico
