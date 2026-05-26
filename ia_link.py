@@ -1,40 +1,54 @@
 import json
 import requests
 import streamlit as st
-
-
+import os
+ 
+ 
 OPENAI_ENDPOINT = "https://api.openai.com/v1/chat/completions"
-
-
+ 
+ 
 def _obter_api_key():
-    if "OPENAI_API_KEY" in st.secrets:
-        return st.secrets["OPENAI_API_KEY"]
-    raise RuntimeError("Chave da OpenAI não configurada nos Secrets do Streamlit.")
-
-
+    """Lê API key de variáveis de ambiente (Railway) ou secrets.toml (local)"""
+    
+    # Tentar ler de variáveis de ambiente (Railway)
+    api_key = os.getenv("OPENAI_API_KEY")
+    
+    # Se não encontrar, tentar de secrets.toml (local)
+    if not api_key:
+        try:
+            api_key = st.secrets.get("OPENAI_API_KEY")
+        except:
+            pass
+    
+    # Validação
+    if not api_key:
+        raise RuntimeError("❌ OPENAI_API_KEY não configurada! Configure em Railway → Variables")
+    
+    return api_key
+ 
+ 
 def _safe_json_dumps(data):
     return json.dumps(data, ensure_ascii=False, default=str)
-
-
+ 
+ 
 def _extrair_nome_negociador(dados_extraidos):
     try:
         metadados = dados_extraidos.get("metadados")
-
+ 
         if hasattr(metadados, "iloc"):
             if "Negociador Principal" in metadados.columns and len(metadados) > 0:
                 return str(metadados["Negociador Principal"].iloc[0]).strip()
-
+ 
         if isinstance(metadados, dict):
             return str(metadados.get("Negociador Principal", "da equipe")).strip()
-
+ 
         if isinstance(metadados, list) and len(metadados) > 0 and isinstance(metadados[0], dict):
             return str(metadados[0].get("Negociador Principal", "da equipe")).strip()
-
+ 
     except Exception:
         pass
-
+ 
     return "da equipe"
-
 
 def _serializar_dados_ocorrencia(dados_extraidos):
     try:
