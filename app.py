@@ -3891,943 +3891,943 @@ Este sistema é protegido por direitos autorais e legislação aplicável. Repro
                 else:
                     st.warning('⚠️ Colunas de transcrição não encontradas.')
         # ──────────────────────────────────────────────────────────
-# ANÁLISE: REGRESSÃO LINEAR MULTIVARIADA
-# O que prediz queda de agressividade? Análise robusta e validada
-# ──────────────────────────────────────────────────────────
+        # ANÁLISE: REGRESSÃO LINEAR MULTIVARIADA
+        # O que prediz queda de agressividade? Análise robusta e validada
+        # ──────────────────────────────────────────────────────────
 
-st.markdown("""
-<div class='info-card'>
-<h5 style='color: #FFD700; margin-top: 0;'>📊 O que Prediz Queda de Agressividade?</h5>
-<p style='font-size:1rem;color:#ddd;'>
-Análise multivariada rigorosa com validação estatística.
-Identifica quais fatores realmente influenciam a redução de agressividade,
-controlando confundidores (viés de negociador, tipo de ocorrência, etc).
-</p>
-</div>
-""", unsafe_allow_html=True)
+        st.markdown("""
+        <div class='info-card'>
+        <h5 style='color: #FFD700; margin-top: 0;'>📊 O que Prediz Queda de Agressividade?</h5>
+        <p style='font-size:1rem;color:#ddd;'>
+        Análise multivariada rigorosa com validação estatística.
+        Identifica quais fatores realmente influenciam a redução de agressividade,
+        controlando confundidores (viés de negociador, tipo de ocorrência, etc).
+        </p>
+        </div>
+        """, unsafe_allow_html=True)
 
-# ──────────────────────────────────────────────────────────
-# BOTÃO TOGGLE
-# ──────────────────────────────────────────────────────────
-col_left, col_center, col_right = st.columns([1, 1, 1])
-with col_center:
-    is_regressao = render_toggle_button(
-        label="✔️ Abrir Análise Multivariada",
-        session_key="analise_regressao",
-        button_key="btn_analise_regressao"
-    )
-
-st.markdown("---")
-
-# ──────────────────────────────────────────────────────────
-# CONTEÚDO (Dentro do if)
-# ──────────────────────────────────────────────────────────
-if is_regressao:
-    
-    # ═══════════════════════════════════════════════════════════
-    # PASSO 1: PREPARAR DADOS
-    # ═══════════════════════════════════════════════════════════
-    
-    with st.spinner("⏳ Preparando dados..."):
-        # Encontrar colunas
-        col_agr_princ_ch = achar_coluna(df_quali_filt, "Principal", "Agressividade", "Chegada")
-        col_agr_princ_en = achar_coluna(df_quali_filt, "Principal", "Agressividade", "Encerramento")
-        col_agr_sec_ch = achar_coluna(df_quali_filt, "Secundário", "Agressividade", "Chegada")
-        col_agr_sec_en = achar_coluna(df_quali_filt, "Secundário", "Agressividade", "Encerramento")
-        col_agr_lider_ch = achar_coluna(df_quali_filt, "Líder", "Agressividade", "Chegada")
-        col_agr_lider_en = achar_coluna(df_quali_filt, "Líder", "Agressividade", "Encerramento")
-        
-        col_recep_princ_ch = achar_coluna(df_quali_filt, "Principal", "Receptividade", "Chegada")
-        
-        # Validar colunas
-        colunas_necessarias = [col_agr_princ_ch, col_agr_princ_en, col_agr_sec_ch, 
-                              col_agr_sec_en, col_agr_lider_ch, col_agr_lider_en]
-        
-        if not all(colunas_necessarias):
-            st.error("❌ Colunas de agressividade não encontradas. Verifique o formulário.")
-        else:
-            # Calcular deltas
-            df_reg_prep = analise.calcular_delta_agressividade_consenso(
-                df_quali_filt,
-                col_agr_princ_ch, col_agr_princ_en,
-                col_agr_sec_ch, col_agr_sec_en,
-                col_agr_lider_ch, col_agr_lider_en
+        # ──────────────────────────────────────────────────────────
+        # BOTÃO TOGGLE
+        # ──────────────────────────────────────────────────────────
+        col_left, col_center, col_right = st.columns([1, 1, 1])
+        with col_center:
+            is_regressao = render_toggle_button(
+                label="✔️ Abrir Análise Multivariada",
+                session_key="analise_regressao",
+                button_key="btn_analise_regressao"
             )
+
+        st.markdown("---")
+
+        # ──────────────────────────────────────────────────────────
+        # CONTEÚDO (Dentro do if)
+        # ──────────────────────────────────────────────────────────
+        if is_regressao:
             
-            # Preparar para regressão
-            df_modelo, erro = analise.preparar_dados_regressao(
-                df_reg_prep,
-                col_tempo="Tempo de Negociação Real",
-                col_negociador="Negociador Principal do incidente crítico",
-                col_tipologia="Tipologia",
-                col_modalidade="Modalidade",
-                col_resolucao="Resolução",
-                col_recep_chegada=col_recep_princ_ch
-            )
+            # ═══════════════════════════════════════════════════════════
+            # PASSO 1: PREPARAR DADOS
+            # ═══════════════════════════════════════════════════════════
             
-            if erro:
-                st.warning(f"⚠️ {erro}")
-            else:
-                # ═══════════════════════════════════════════════════════════
-                # PASSO 2: AJUSTAR MODELO
-                # ═══════════════════════════════════════════════════════════
+            with st.spinner("⏳ Preparando dados..."):
+                # Encontrar colunas
+                col_agr_princ_ch = achar_coluna(df_quali_filt, "Principal", "Agressividade", "Chegada")
+                col_agr_princ_en = achar_coluna(df_quali_filt, "Principal", "Agressividade", "Encerramento")
+                col_agr_sec_ch = achar_coluna(df_quali_filt, "Secundário", "Agressividade", "Chegada")
+                col_agr_sec_en = achar_coluna(df_quali_filt, "Secundário", "Agressividade", "Encerramento")
+                col_agr_lider_ch = achar_coluna(df_quali_filt, "Líder", "Agressividade", "Chegada")
+                col_agr_lider_en = achar_coluna(df_quali_filt, "Líder", "Agressividade", "Encerramento")
                 
-                resultado_modelo, erro_modelo = analise.ajustar_regressao_linear(df_modelo)
+                col_recep_princ_ch = achar_coluna(df_quali_filt, "Principal", "Receptividade", "Chegada")
                 
-                if erro_modelo:
-                    st.error(f"❌ {erro_modelo}")
+                # Validar colunas
+                colunas_necessarias = [col_agr_princ_ch, col_agr_princ_en, col_agr_sec_ch, 
+                                    col_agr_sec_en, col_agr_lider_ch, col_agr_lider_en]
+                
+                if not all(colunas_necessarias):
+                    st.error("❌ Colunas de agressividade não encontradas. Verifique o formulário.")
                 else:
-                    
-                    # ═══════════════════════════════════════════════════════════
-                    # SEÇÃO 1: RESUMO DO MODELO
-                    # ═══════════════════════════════════════════════════════════
-                    
-                    st.markdown("""
-                    <div class='info-card'>
-                    <h5 style='color: #FFD700;'>📈 Qualidade do Modelo</h5>
-                    """, unsafe_allow_html=True)
-                    
-                    col1, col2, col3, col4 = st.columns(4)
-                    
-                    with col1:
-                        st.metric("N (Ocorrências)", resultado_modelo['n'])
-                    with col2:
-                        st.metric("R² (Variância Explicada)", f"{resultado_modelo['r2']:.1%}")
-                    with col3:
-                        st.metric("R² Ajustado", f"{resultado_modelo['r2_adj']:.1%}")
-                    with col4:
-                        p_f = resultado_modelo['p_f']
-                        sig = "✅ Significativo" if p_f < 0.05 else "❌ Não significativo"
-                        st.metric("Modelo Global", sig)
-                    
-                    st.markdown("""
-                    <div style='background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px; margin-top: 10px;'>
-                    <strong>Interpretação:</strong> O modelo explica <strong>{:.1%}</strong> da variação em queda de agressividade.
-                    O p-value global é <strong>{:.4f}</strong> ({}).
-                    </div>
-                    """.format(
-                        resultado_modelo['r2'],
-                        resultado_modelo['p_f'],
-                        "✅ Modelo válido (p < 0.05)" if resultado_modelo['p_f'] < 0.05 else "❌ Modelo fraco (p ≥ 0.05)"
-                    ), unsafe_allow_html=True)
-                    
-                    st.markdown("</div>", unsafe_allow_html=True)
-                    
-                    # ═══════════════════════════════════════════════════════════
-                    # SEÇÃO 2: COEFICIENTES
-                    # ═══════════════════════════════════════════════════════════
-                    
-                    st.markdown("""
-                    <div class='info-card'>
-                    <h5 style='color: #FFD700;'>🎯 Coeficientes do Modelo</h5>
-                    """, unsafe_allow_html=True)
-                    
-                    df_coef = analise.extrair_coeficientes_significativos(resultado_modelo)
-                    
-                    # Tabela formatada
-                    st.dataframe(
-                        df_coef.style.format({
-                            'Coeficiente': '{:.3f}',
-                            'SE': '{:.3f}',
-                            't-stat': '{:.2f}',
-                            'p-value': '{:.4f}',
-                            'IC_Lower': '{:.3f}',
-                            'IC_Upper': '{:.3f}'
-                        }).highlight_max(subset=['Coeficiente'], color='#10b981', axis=0)
-                        .highlight_min(subset=['Coeficiente'], color='#f59e0b', axis=0),
-                        use_container_width=True,
-                        hide_index=True
+                    # Calcular deltas
+                    df_reg_prep = analise.calcular_delta_agressividade_consenso(
+                        df_quali_filt,
+                        col_agr_princ_ch, col_agr_princ_en,
+                        col_agr_sec_ch, col_agr_sec_en,
+                        col_agr_lider_ch, col_agr_lider_en
                     )
                     
-                    # Gráfico de coeficientes com IC
-                    df_plot = df_coef[df_coef['Variável'] != '(Intercept)'].copy()
-                    
-                    fig = go.Figure()
-                    fig.add_trace(go.Scatter(
-                        x=df_plot['IC_Lower'],
-                        y=df_plot['Variável'],
-                        mode='markers',
-                        marker=dict(size=1, color='rgba(0,0,0,0)'),
-                        showlegend=False
-                    ))
-                    
-                    fig.add_trace(go.Scatter(
-                        x=df_plot['Coeficiente'],
-                        y=df_plot['Variável'],
-                        mode='markers',
-                        marker=dict(
-                            size=8,
-                            color=['#10b981' if x > 0 else '#f59e0b' for x in df_plot['Coeficiente']]
-                        ),
-                        name='Coeficiente',
-                        text=df_plot.apply(
-                            lambda r: f"{r['Variável']}<br>β = {r['Coeficiente']:.3f}<br>p = {r['p-value']:.4f}",
-                            axis=1
-                        ),
-                        hovertemplate='%{text}<extra></extra>'
-                    ))
-                    
-                    for idx, row in df_plot.iterrows():
-                        fig.add_trace(go.Scatter(
-                            x=[row['IC_Lower'], row['IC_Upper']],
-                            y=[row['Variável'], row['Variável']],
-                            mode='lines',
-                            line=dict(color='#888', width=2),
-                            showlegend=False,
-                            hoverinfo='skip'
-                        ))
-                    
-                    fig.add_vline(x=0, line_dash="dash", line_color="gray", opacity=0.5)
-                    fig.update_layout(
-                        title="Coeficientes com IC 95%",
-                        xaxis_title="Coeficiente",
-                        yaxis_title="Variável",
-                        height=400,
-                        paper_bgcolor="rgba(0,0,0,0)",
-                        plot_bgcolor="rgba(0,0,0,0)",
-                        font_color="#FFF",
-                        hovermode='closest'
+                    # Preparar para regressão
+                    df_modelo, erro = analise.preparar_dados_regressao(
+                        df_reg_prep,
+                        col_tempo="Tempo de Negociação Real",
+                        col_negociador="Negociador Principal do incidente crítico",
+                        col_tipologia="Tipologia",
+                        col_modalidade="Modalidade",
+                        col_resolucao="Resolução",
+                        col_recep_chegada=col_recep_princ_ch
                     )
-                    st.plotly_chart(fig, use_container_width=True)
                     
-                    st.markdown("</div>", unsafe_allow_html=True)
-                    
-                    # ═══════════════════════════════════════════════════════════
-                    # SEÇÃO 3: COMPARAÇÃO DE PERCEPÇÕES
-                    # ═══════════════════════════════════════════════════════════
-                    
-                    st.markdown("""
-                    <div class='info-card'>
-                    <h5 style='color: #FFD700;'>🔍 Triangulação: Consenso dos 3 Negociadores</h5>
-                    """, unsafe_allow_html=True)
-                    
-                    col_tri1, col_tri2, col_tri3, col_tri4 = st.columns(4)
-                    
-                    delta_princ_mean = df_reg_prep['delta_princ'].dropna().mean()
-                    delta_sec_mean = df_reg_prep['delta_sec'].dropna().mean()
-                    delta_lider_mean = df_reg_prep['delta_lider'].dropna().mean()
-                    delta_cons_mean = df_reg_prep['delta_consenso'].dropna().mean()
-                    
-                    with col_tri1:
-                        st.metric("Principal (Média)", f"{delta_princ_mean:.2f}")
-                    with col_tri2:
-                        st.metric("Secundário (Média)", f"{delta_sec_mean:.2f}")
-                    with col_tri3:
-                        st.metric("Líder (Média)", f"{delta_lider_mean:.2f}")
-                    with col_tri4:
-                        st.metric("Consenso (Média)", f"{delta_cons_mean:.2f}")
-                    
-                    # Gráfico de distribuição
-                    fig_dist = go.Figure()
-                    
-                    for label, dados, cor in [
-                        ("Principal", df_reg_prep['delta_princ'].dropna(), '#F97316'),
-                        ("Secundário", df_reg_prep['delta_sec'].dropna(), '#FB923C'),
-                        ("Líder", df_reg_prep['delta_lider'].dropna(), '#FBBF24'),
-                        ("Consenso", df_reg_prep['delta_consenso'].dropna(), '#10b981')
-                    ]:
-                        fig_dist.add_trace(go.Box(y=dados, name=label, marker_color=cor))
-                    
-                    fig_dist.update_layout(
-                        title="Distribuição de Deltas por Negociador",
-                        yaxis_title="Delta de Agressividade",
-                        height=350,
-                        paper_bgcolor="rgba(0,0,0,0)",
-                        plot_bgcolor="rgba(0,0,0,0)",
-                        font_color="#FFF",
-                        boxmode='group'
-                    )
-                    st.plotly_chart(fig_dist, use_container_width=True)
-                    
-                    st.markdown("</div>", unsafe_allow_html=True)
-                    
-                    # ═══════════════════════════════════════════════════════════
-                    # SEÇÃO 4: DIAGNÓSTICOS
-                    # ═══════════════════════════════════════════════════════════
-                    
-                    st.markdown("""
-                    <div class='info-card'>
-                    <h5 style='color: #FFD700;'>🔧 Diagnósticos do Modelo</h5>
-                    <p style='font-size: 0.85rem; color: #aaa;'>
-                    Validação de assumções estatísticas.
-                    </p>
-                    """, unsafe_allow_html=True)
-                    
-                    diags = analise.diagnosticos_qualidade(resultado_modelo)
-                    
-                    col_d1, col_d2, col_d3 = st.columns(3)
-                    
-                    with col_d1:
-                        status = "✅" if diags['normalidade']['p_value'] > 0.05 else "⚠️"
-                        st.markdown(f"""
-                        **{status} Normalidade dos Resíduos**
-                        
-                        p-value: {diags['normalidade']['p_value']:.4f}
-                        
-                        {diags['normalidade']['interpretacao']}
-                        
-                        _{diags['normalidade']['implicacao']}_
-                        """)
-                    
-                    with col_d2:
-                        status = "✅" if diags['homocedasticidade']['p_value'] > 0.05 else "⚠️"
-                        st.markdown(f"""
-                        **{status} Homocedasticidade**
-                        
-                        p-value: {diags['homocedasticidade']['p_value']:.4f}
-                        
-                        {diags['homocedasticidade']['interpretacao']}
-                        
-                        _{diags['homocedasticidade']['implicacao']}_
-                        """)
-                    
-                    with col_d3:
-                        vif_max = diags['colinearidade']['vif_max']
-                        status = "✅" if vif_max < 5 else "⚠️"
-                        st.markdown(f"""
-                        **{status} Colinearidade (VIF)**
-                        
-                        VIF máximo: {vif_max:.2f}
-                        
-                        {diags['colinearidade']['interpretacao']}
-                        
-                        _{diags['colinearidade']['implicacao']}_
-                        """)
-                    
-                    st.markdown("</div>", unsafe_allow_html=True)
-                    
-                    # ═══════════════════════════════════════════════════════════
-                    # SEÇÃO 5: RESÍDUOS
-                    # ═══════════════════════════════════════════════════════════
-                    
-                    st.markdown("""
-                    <div class='info-card'>
-                    <h5 style='color: #FFD700;'>📊 Diagnóstico de Resíduos</h5>
-                    """, unsafe_allow_html=True)
-                    
-                    col_res1, col_res2 = st.columns(2)
-                    
-                    with col_res1:
-                        fig_res = go.Figure()
-                        fig_res.add_trace(go.Scatter(
-                            x=resultado_modelo['y_pred'],
-                            y=resultado_modelo['residuos'],
-                            mode='markers',
-                            marker=dict(color='#F97316', size=6),
-                            text=resultado_modelo['residuos'],
-                            hovertemplate='Predito: %{x:.2f}<br>Resíduo: %{y:.2f}<extra></extra>'
-                        ))
-                        fig_res.add_hline(y=0, line_dash="dash", line_color="gray")
-                        fig_res.update_layout(
-                            title="Resíduos vs Preditos",
-                            xaxis_title="Valores Preditos",
-                            yaxis_title="Resíduos",
-                            height=300,
-                            paper_bgcolor="rgba(0,0,0,0)",
-                            plot_bgcolor="rgba(0,0,0,0)",
-                            font_color="#FFF"
-                        )
-                        st.plotly_chart(fig_res, use_container_width=True)
-                    
-                    with col_res2:
-                        fig_qq = go.Figure()
-                        res_sorted = np.sort(resultado_modelo['residuos'])
-                        q_teorico = np.sort(np.random.normal(0, resultado_modelo['se_residuos'], 1000))
-                        
-                        fig_qq.add_trace(go.Scatter(
-                            x=q_teorico,
-                            y=res_sorted,
-                            mode='markers',
-                            marker=dict(color='#10b981', size=5),
-                            name='Q-Q Plot'
-                        ))
-                        
-                        # Linha diagonal
-                        min_val = min(q_teorico.min(), res_sorted.min())
-                        max_val = max(q_teorico.max(), res_sorted.max())
-                        fig_qq.add_trace(go.Scatter(
-                            x=[min_val, max_val],
-                            y=[min_val, max_val],
-                            mode='lines',
-                            line=dict(color='gray', dash='dash'),
-                            name='Normal',
-                            showlegend=True
-                        ))
-                        
-                        fig_qq.update_layout(
-                            title="Q-Q Plot (Normalidade)",
-                            xaxis_title="Quantis Teóricos",
-                            yaxis_title="Quantis Observados",
-                            height=300,
-                            paper_bgcolor="rgba(0,0,0,0)",
-                            plot_bgcolor="rgba(0,0,0,0)",
-                            font_color="#FFF"
-                        )
-                        st.plotly_chart(fig_qq, use_container_width=True)
-                    
-                    st.markdown("</div>", unsafe_allow_html=True)
-
-st.markdown("---")
-
-                                     
-
-# ============================================================
-# ANÁLISE DE PERFIL DE NEGOCIADORES
-# (Adicionar na Série Histórica, ANTES da "Síntese Interpretativa por IA")
-# ============================================================
-
-st.markdown("""
-<div class='info-card'>
-<h5 style='color: #FFD700;'>Perfil de Negociadores: Escuta Ativa vs Persuasão</h5>
-<p style='font-size:1.1rem;color:#ddd;'>
-Análise estatística comparativa dos padrões de negociação por negociador.
-Identifica tendências, agrupa similares e testa significância estatística.
-</p>
-</div>
-""", unsafe_allow_html=True)
-
-col_left, col_center, col_right = st.columns([1, 1, 1])
-
-with col_center:
-    is_perfil_negociadores = render_toggle_button(
-        label="✔️ Abrir Análise de Perfil",
-        session_key="perfil_negociadores",
-        button_key="btn_perfil_negociadores"
-    )
-
-st.markdown("---")
-
-if is_perfil_negociadores:
-    
-    # ── CARREGAR DADOS ──────────────────────────────────────────
-    try:
-        # Importar função de análise
-        from analise import (
-            analisar_perfil_negociadores,
-            gerar_grafo_palavras_com_estilo,
-            gerar_legenda_negociadores_dinamica,
-            gerar_tabela_score,
-            gerar_scatter_score_efetividade,
-            gerar_barras_grupos,
-            classificar_tecnica
-        )
-        
-        # Assumindo que df_tec está carregado (como nas análises anteriores)
-        df_tec = st.session_state.get("df_tec", pd.DataFrame())
-        
-        if df_tec.empty:
-            st.warning("⚠️ Tabela de técnicas não carregada.")
-        else:
-            
-            # ── EXECUTAR ANÁLISE ────────────────────────────────────
-            with st.spinner("⏳ Analisando perfis de negociadores..."):
-                resultado_analise = analisar_perfil_negociadores(df_tec)
-                
-                df_resultado = resultado_analise['df_resultado']
-                df_tec_classificado = resultado_analise['df_tecnicas_classificadas']
-                anova = resultado_analise['anova']
-                chi2 = resultado_analise['chi2']
-                kmeans = resultado_analise['kmeans']
-            
-            # Gerar paleta de cores para negociadores (dinâmica)
-            negociadores_unicos = df_resultado['Negociador'].unique()
-            paleta_cores = {
-                'laranja_forte': '#F97316',        # Laranja vibrante (principal)
-                'laranja_medio': '#FB923C',        # Laranja médio
-                'laranja_claro': '#FDBA74',        # Laranja claro
-                'laranja_muito_claro': '#FED7AA',  # Laranja pastel
-                'amarelo': '#FBBF24',              # Amarelo ouro
-                'amarelo_claro': '#FCD34D',        # Amarelo claro
-                'amber': '#F59E0B',                # Âmbar quente
-                'amber_claro': '#FDBF28',          # Âmbar claro
-                'preto': '#000000',                # Preto puro
-                'cinza_escuro': '#1F2937',         # Cinza escuro (neutro)
-                'cinza_medio': '#374151',          # Cinza médio
-                'laranja_escuro': '#EA580C',       # Laranja escuro
-                'vermelho_laranja': '#DC2626',     # Vermelho-laranja
-            }
-            
-            # Converter para lista para melhor controle de alocação
-            cores_lista = list(paleta_cores.values())
-            
-            # Alocar cores dinamicamente aos negociadores
-            negociadores_cores = {
-                neg: cores_lista[i % len(cores_lista)]
-                for i, neg in enumerate(negociadores_unicos)
-            }
-
-            
-            cores_lista = list(paleta_cores.values())
-            negociadores_cores = {
-                neg: cores_lista[i % len(cores_lista)]
-                for i, neg in enumerate(negociadores_unicos)
-            }
-            
-            # ── CRIAR TABS ──────────────────────────────────────────
-            tab_score, tab_grafo, tab_stats, tab_kmeans = st.tabs([
-                "✔️ Scores e Efetividades",
-                "🕸️ Grafo de Palavras",
-                "✔️ Testes Estatísticos",
-                "✔️ Clusters (K-means)"
-            ])
-            
-            # ── TAB 1: SCORES ───────────────────────────────────────
-            with tab_score:
-                st.markdown("""
-                <div class='info-card'>
-                <h5 style='color: #FFD700; margin-top: 0;'>Score de Tendência</h5>
-                <p style='font-size:0.9rem;color:#aaa;'>
-                Score = -100 (100% Persuasão) a +100 (100% Escuta Ativa)
-                <br>Ponderado pela atitude do causador em cada técnica aplicada.
-                </p>
-                </div>
-                """, unsafe_allow_html=True)
-                
-                # Tabela
-                st.markdown("### 📋 Tabela de Resultados")
-                df_display = gerar_tabela_score(df_resultado)
-                st.dataframe(df_display, use_container_width=True, hide_index=True)
-                
-                # Gráfico Scatter
-                st.markdown("---")
-                st.markdown("### 📊 Score vs Efetividade Média")
-                fig_scatter = gerar_scatter_score_efetividade(df_resultado)
-                st.plotly_chart(fig_scatter, use_container_width=True)
-                
-                # Gráfico Barras
-                st.markdown("---")
-                st.markdown("### 📊 Distribuição de Técnicas")
-                fig_barras = gerar_barras_grupos(df_resultado)
-                st.plotly_chart(fig_barras, use_container_width=True)
-            
-            # ── TAB 2: GRAFO ────────────────────────────────────────
-            
-            #
-
-            with tab_grafo:
-                st.markdown("""
-                <div class='info-card'>
-                <h5 style='color: #FFD700; margin-top: 0;'>🕸️ Rede de Palavras</h5>
-                <p style='font-size:0.9rem;color:#aaa;'>
-                Palavras dos trechos de transcrição, coloridas por negociador.
-                Tamanho = Frequência | Conexões = Co-ocorrência
-                </p>
-                </div>
-                """, unsafe_allow_html=True)
-                
-                # ── LEGENDA DINÂMICA ──
-                
-                if negociadores_cores:
-                    st.markdown("""
-                    <div style='
-                        background: rgba(30, 30, 30, 0.85);
-                        backdrop-filter: blur(16px) saturate(180%);
-                        -webkit-backdrop-filter: blur(16px) saturate(180%);
-                        border: 1px solid rgba(255, 255, 255, 0.1);
-                        border-radius: 12px;
-                        padding: 15px;
-                        margin-bottom: 20px;
-                    '>
-                    <h5 style='color: #FFD700; margin-top: 0; margin-bottom: 15px;'>🎨 Legenda de Negociadores</h5>
-                    <div style='display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px;'>
-                    """, unsafe_allow_html=True)
-                    
-                    cols = st.columns(min(3, len(negociadores_cores)))
-                    for i, (neg, cor) in enumerate(sorted(negociadores_cores.items())):
-                        with cols[i % len(cols)]:
-                            st.markdown(f"""
-                            <div style='
-                                display: flex;
-                                align-items: center;
-                                background: rgba(255, 255, 255, 0.05);
-                                padding: 10px;
-                                border-radius: 8px;
-                                border-left: 4px solid {cor};
-                            '>
-                                <div style='
-                                    width: 24px;
-                                    height: 24px;
-                                    background-color: {cor};
-                                    border-radius: 50%;
-                                    margin-right: 10px;
-                                '></div>
-                                <span style='color: #FFF; font-weight: 500;'>{neg}</span>
-                            </div>
-                            """, unsafe_allow_html=True)
-                    
-                    st.markdown("</div></div>", unsafe_allow_html=True)
-                
-                with st.spinner("✔️ Gerando grafo com glassmorphism..."):
-                    try:
-                        net = gerar_grafo_palavras_com_estilo(df_tec_classificado, negociadores_cores)
-                        
-                        if net is None:
-                            st.warning("⚠️ Dados insuficientes para gerar o grafo (precisa de mais trechos de transcrição).")
-                        else:
-                            try:
-                                import tempfile
-                                import os
-                                
-                                # Usar arquivo temporário
-                                with tempfile.NamedTemporaryFile(mode='w', suffix='.html', delete=False) as f:
-                                    temp_file = f.name
-                                
-                                # Renderizar e salvar
-                                net.write_html(temp_file, notebook=False)
-            
-                                # Ler arquivo
-                                with open(temp_file, 'r', encoding='utf-8') as f:
-                                    html_content = f.read()
-                                
-                                # INJETAR CSS PARA FUNDO PRETO/GLASSMORPHISM
-                                html_content = html_content.replace(
-                                    '<style type="text/css">',
-                                    '''<style type="text/css">
-                                    html, body {
-                                        margin: 0;
-                                        padding: 0;
-                                        background: rgba(0, 0, 0, 0.95) !important;
-                                        backdrop-filter: blur(16px) saturate(180%);
-                                        -webkit-backdrop-filter: blur(16px) saturate(180%);
-                                    }
-                                    #mynetwork {
-                                        background: rgba(30, 30, 30, 0.9) !important;
-                                        backdrop-filter: blur(16px) saturate(180%);
-                                        -webkit-backdrop-filter: blur(16px) saturate(180%);
-                                    }
-                                    '''
-                                )
-                                
-                                # Exibir grafo
-                                st.components.v1.html(html_content, height=800, scrolling=True)
-                                
-                                # Limpar arquivo temporário
-                                try:
-                                    os.remove(temp_file)
-                                except:
-                                    pass
-                                
-                                st.success("✅ Grafo gerado com sucesso!")
-                                
-                                # Informações sobre o grafo
-                                st.markdown("""
-                                ### 💡 Como interpretar:
-                                - **Bolinha GRANDE**: Palavra muito frequente
-                                - **Bolinha PEQUENA**: Palavra pouco frequente
-                                - **COR**: Qual negociador mais usou a palavra
-                                - **LINHAS**: Palavras que aparecem juntas nos trechos
-                                """)
-                                
-                            except Exception as e:
-                                st.error(f"❌ Erro ao renderizar grafo: {str(e)[:80]}")
-                    
-                    except Exception as e:
-                        st.error(f"❌ Erro geral: {str(e)[:100]}")
-            
-            # ── TAB 3: TESTES ESTATÍSTICOS ──────────────────────────
-            with tab_stats:
-                st.markdown("""
-                <div class='info-card'>
-                <h5 style='color: #FFD700; margin-top: 0;'>Testes Estatísticos</h5>
-                <p style='font-size:0.9rem;color:#aaa;'>
-                Validação estatística das diferenças entre negociadores.
-                </p>
-                </div>
-                """, unsafe_allow_html=True)
-                
-                # ANOVA
-                if anova:
-                    st.markdown("### 🧪 ANOVA - Efetividade entre Negociadores")
-                    
-                    col1, col2, col3 = st.columns(3)
-                    with col1:
-                        st.metric("F-statistic", anova['f_statistic'])
-                    with col2:
-                        st.metric("P-value", anova['p_value'])
-                    with col3:
-                        status = "✅ Significativo" if anova['significativo'] else "❌ Não significativo"
-                        st.metric("Resultado", status)
-                    
-                    st.markdown(f"**Interpretação:** {anova['interpretacao']}")
-                    st.markdown("---")
-                
-                # Chi-quadrado
-                if chi2:
-                    st.markdown("### 🧪 Chi-Quadrado - Distribuição de Técnicas")
-                    
-                    col1, col2, col3, col4 = st.columns(4)
-                    with col1:
-                        st.metric("χ²-statistic", chi2['chi2_statistic'])
-                    with col2:
-                        st.metric("P-value", chi2['p_value'])
-                    with col3:
-                        st.metric("Graus de Liberdade", chi2['df'])
-                    with col4:
-                        status = "✅ Significativo" if chi2['significativo'] else "❌ Não significativo"
-                        st.metric("Resultado", status)
-                    
-                    st.markdown(f"**Interpretação:** {chi2['interpretacao']}")
-            
-            # ── TAB 4: K-MEANS ──────────────────────────────────────
-            with tab_kmeans:
-                st.markdown("""
-                <div class='info-card'>
-                <h5 style='color: #FFD700; margin-top: 0;'>Clustering K-means (k=2)</h5>
-                <p style='font-size:0.9rem;color:#aaa;'>
-                Agrupa negociadores em 2 clusters: Escuta Ativa vs Persuasão/Influência.
-                </p>
-                </div>
-                """, unsafe_allow_html=True)
-                
-                # Tabela com clusters
-                st.markdown("### ✔️ Atribuição de Clusters")
-                df_clusters = df_resultado[['Negociador', 'Score Tendência', 'Cluster']].copy()
-                
-                if 'Perfil_Cluster' in df_resultado.columns:
-                    df_clusters['Perfil'] = df_resultado['Perfil_Cluster']
-                
-                st.dataframe(df_clusters, use_container_width=True, hide_index=True)
-                
-                # Visualizar clusters
-                st.markdown("---")
-                st.markdown("### ✔️ Visualização dos Clusters")
-                
-                fig_clusters = go.Figure()
-                
-                for cluster in sorted(df_resultado['Cluster'].unique()):
-                    df_cluster = df_resultado[df_resultado['Cluster'] == cluster]
-                    
-                    perfil = df_cluster['Perfil_Cluster'].iloc[0] if 'Perfil_Cluster' in df_resultado.columns else f"Cluster {cluster}"
-                    cor = '#10b981' if perfil == 'Escuta Ativa' else '#f59e0b'
-                    
-                    fig_clusters.add_trace(go.Scatter(
-                        x=df_cluster['Score Tendência'],
-                        y=df_cluster['Efetividade Escuta'],
-                        mode='markers+text',
-                        name=perfil,
-                        text=df_cluster['Negociador'],
-                        textposition='top center',
-                        marker=dict(size=15, color=cor),
-                    ))
-                
-                fig_clusters.update_layout(
-                    title='Clustering de Negociadores',
-                    xaxis_title='Score Tendência',
-                    yaxis_title='Efetividade Escuta Ativa',
-                    paper_bgcolor="rgba(0,0,0,0)",
-                    plot_bgcolor="rgba(0,0,0,0)",
-                    font_color="#FFF",
-                    height=500
-                )
-                
-                st.plotly_chart(fig_clusters, use_container_width=True)
-                
-                # Interpretação
-                st.markdown("---")
-                st.markdown("### 💡 Interpretação")
-                
-                for cluster in sorted(df_resultado['Cluster'].unique()):
-                    df_clust = df_resultado[df_resultado['Cluster'] == cluster]
-                    
-                    perfil = df_clust['Perfil_Cluster'].iloc[0] if 'Perfil_Cluster' in df_resultado.columns else f"Cluster {cluster}"
-                    negociadores = ', '.join(df_clust['Negociador'].tolist())
-                    score_medio = df_clust['Score Tendência'].mean()
-                    
-                    if perfil == 'Escuta Ativa':
-                        emoji = "🟢"
-                        desc = "Tendem a usar mais **Escuta Ativa** (Paráfrase, Empatia, Resumo)"
+                    if erro:
+                        st.warning(f"⚠️ {erro}")
                     else:
-                        emoji = "🟠"
-                        desc = "Tendem a usar mais **Persuasão/Influência** (Desconstrução, Reciprocidade, Medo)"
-                    
-                    st.markdown(f"""
-                    {emoji} **{perfil}** (Score médio: {score_medio:.1f}%)
-                    - Negociadores: {negociadores}
-                    - Padrão: {desc}
-                    """)
-    
-    except ImportError as e:
-        st.error(f"❌ Erro ao importar módulo: {str(e)}")
-    except Exception as e:
-        st.error(f"❌ Erro na análise: {str(e)[:200]}")
-
-st.markdown("---")
-
-# SÍNTESE INTERPRETATIVA POR IA
-st.markdown("""
-<div class='info-card'>
-<h5 style='color: #FFD700; margin-top: 0;'>Síntese Interpretativa Assistida por Inteligência Artificial</h5>
-<p style='font-size:1rem;color:#ddd;'>
-A interpretação da IA é colaborativa e NÃO substitui a análise e compreensão do Avaliador/Negociador.
-Exige constante aprimoramento de instruções.
-</p>
-</div>
-""", unsafe_allow_html=True)
-        
-
-
-if st.button("✔ GERAR RELATÓRIO INTERPRETADO POR IA"):
-        with st.spinner("✔️ Processando análises e gerando interpretações..."):
-            try:
-                import ia_estatistica 
-                
-                # Coleta dados de todas as análises anteriores
-                qui_data = None
-                if 'res_chi' in locals() and isinstance(res_chi, dict) and res_chi.get('valido'):
-                    qui_data = {'p_valor_global': res_chi['p_value']}
-                elif 'p' in locals() and isinstance(p, (int, float)):
-                    qui_data = {'p_valor_global': float(p)}
-                
-                ord_data = None
-                if 'df_or' in locals() and not df_or.empty:
-                    ord_data = df_or.to_dict('records')
-                
-                gee_data = None
-                if 'df_gee' in locals() and not df_gee.empty:
-                    gee_data = df_gee.to_dict('records')
-
-                # Estrutura os dados para enviar para a IA
-                payload_ia = ia_estatistica.estruturar_resultado_para_ia(
-                    amostra_total=len(df_quali_filt),
-                    resultados_chi=qui_data,
-                    resultados_ordinal=ord_data,
-                    resultados_gee=gee_data
-                )
-
-                relatorio_json = ia_estatistica.gerar_relatorio_com_ia(payload_ia)
-
-                if "erro" in relatorio_json:
-                    st.error(f"Erro na geração do relatório: {relatorio_json['erro']}")
-                    with st.expander("🔍 Ver dados enviados"):
-                        st.json(payload_ia)
-                else:
-                    # Renderiza cards com as interpretações
-                    st.success("✔ Relatório gerado com sucesso!")
-                    
-                    st.markdown("### ✔️ Principais Achados")
-                    st.markdown(relatorio_json.get("resultados_principais", "N/D"))
-                    
-                    st.markdown("### ✔️ O que isso Significa para a Prática")
-                    st.markdown(relatorio_json.get("interpretacao", "N/D"))
-                    
-                    st.markdown("### ✔️ Recomendações Estratégicas")
-                    st.markdown(relatorio_json.get("conclusao", "N/D"))
-                    
-                    with st.expander("✔️ Ver Análise Completa (Expandir)"):
-                        col_ia1, col_ia2 = st.columns(2)
+                        # ═══════════════════════════════════════════════════════════
+                        # PASSO 2: AJUSTAR MODELO
+                        # ═══════════════════════════════════════════════════════════
                         
-                        with col_ia1:
-                            st.markdown("**Objetivo Analítico**")
-                            st.markdown(relatorio_json.get("objetivo", "N/D"))
-                            
-                            st.markdown("**Premissas da Análise**")
-                            st.markdown(relatorio_json.get("premissas", "N/D"))
+                        resultado_modelo, erro_modelo = analise.ajustar_regressao_linear(df_modelo)
                         
-                        with col_ia2:
-                            st.markdown("**Tamanho do Efeito**")
-                            st.markdown(relatorio_json.get("tamanho_efeito", "N/D"))
-                            
-                            st.markdown("**Limitações Técnicas**")
-                            st.markdown(relatorio_json.get("limitacoes", "N/D"))
-
-                    st.markdown("---")
-                    st.markdown("### 📥 Exportar Relatório em PDF")
-                    
-                    try:
-                        from fpdf import FPDF
-                        import unicodedata
-                        
-                        pdf_hist = FPDF()
-                        pdf_hist.add_page()
-                        
-                        # Cabeçalho
-                        pdf_hist.set_fill_color(249, 115, 22)
-                        pdf_hist.rect(0, 0, 210, 35, 'F')
-                        pdf_hist.set_font("Arial", "B", 14)
-                        pdf_hist.set_text_color(255, 255, 255)
-                        pdf_hist.cell(0, 12, "ANALISE ESTATISTICA - SERIE HISTORICA", ln=True, align="C")
-                        pdf_hist.set_font("Arial", "I", 10)
-                        pdf_hist.cell(0, 8, "GATE - Inteligencia de Apoio Decisorio (PMESP)", ln=True, align="C")
-                        
-                        # Conteúdo
-                        pdf_hist.ln(10)
-                        pdf_hist.set_text_color(0, 0, 0)
-                        pdf_hist.set_font("Arial", "B", 12)
-                        pdf_hist.cell(0, 8, "Resultados Principais", ln=True)
-                        
-                        pdf_hist.set_font("Arial", "", 10)
-                        texto_limpo = unicodedata.normalize('NFKD', relatorio_json.get("resultados_principais", "")).encode('ASCII', 'ignore').decode('ASCII')
-                        pdf_hist.multi_cell(0, 5, txt=texto_limpo)
-                        
-                        pdf_hist.ln(5)
-                        pdf_hist.set_font("Arial", "B", 12)
-                        pdf_hist.cell(0, 8, "Interpretacao", ln=True)
-                        
-                        pdf_hist.set_font("Arial", "", 10)
-                        texto_limpo2 = unicodedata.normalize('NFKD', relatorio_json.get("interpretacao", "")).encode('ASCII', 'ignore').decode('ASCII')
-                        pdf_hist.multi_cell(0, 5, txt=texto_limpo2)
-                        
-                        pdf_saida = pdf_hist.output(dest="S")
-                        if isinstance(pdf_saida, str):
-                            pdf_bytes = pdf_saida.encode('latin-1', errors='replace')
+                        if erro_modelo:
+                            st.error(f"❌ {erro_modelo}")
                         else:
-                            pdf_bytes = bytes(pdf_saida)
+                            
+                            # ═══════════════════════════════════════════════════════════
+                            # SEÇÃO 1: RESUMO DO MODELO
+                            # ═══════════════════════════════════════════════════════════
+                            
+                            st.markdown("""
+                            <div class='info-card'>
+                            <h5 style='color: #FFD700;'>📈 Qualidade do Modelo</h5>
+                            """, unsafe_allow_html=True)
+                            
+                            col1, col2, col3, col4 = st.columns(4)
+                            
+                            with col1:
+                                st.metric("N (Ocorrências)", resultado_modelo['n'])
+                            with col2:
+                                st.metric("R² (Variância Explicada)", f"{resultado_modelo['r2']:.1%}")
+                            with col3:
+                                st.metric("R² Ajustado", f"{resultado_modelo['r2_adj']:.1%}")
+                            with col4:
+                                p_f = resultado_modelo['p_f']
+                                sig = "✅ Significativo" if p_f < 0.05 else "❌ Não significativo"
+                                st.metric("Modelo Global", sig)
+                            
+                            st.markdown("""
+                            <div style='background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px; margin-top: 10px;'>
+                            <strong>Interpretação:</strong> O modelo explica <strong>{:.1%}</strong> da variação em queda de agressividade.
+                            O p-value global é <strong>{:.4f}</strong> ({}).
+                            </div>
+                            """.format(
+                                resultado_modelo['r2'],
+                                resultado_modelo['p_f'],
+                                "✅ Modelo válido (p < 0.05)" if resultado_modelo['p_f'] < 0.05 else "❌ Modelo fraco (p ≥ 0.05)"
+                            ), unsafe_allow_html=True)
+                            
+                            st.markdown("</div>", unsafe_allow_html=True)
+                            
+                            # ═══════════════════════════════════════════════════════════
+                            # SEÇÃO 2: COEFICIENTES
+                            # ═══════════════════════════════════════════════════════════
+                            
+                            st.markdown("""
+                            <div class='info-card'>
+                            <h5 style='color: #FFD700;'>🎯 Coeficientes do Modelo</h5>
+                            """, unsafe_allow_html=True)
+                            
+                            df_coef = analise.extrair_coeficientes_significativos(resultado_modelo)
+                            
+                            # Tabela formatada
+                            st.dataframe(
+                                df_coef.style.format({
+                                    'Coeficiente': '{:.3f}',
+                                    'SE': '{:.3f}',
+                                    't-stat': '{:.2f}',
+                                    'p-value': '{:.4f}',
+                                    'IC_Lower': '{:.3f}',
+                                    'IC_Upper': '{:.3f}'
+                                }).highlight_max(subset=['Coeficiente'], color='#10b981', axis=0)
+                                .highlight_min(subset=['Coeficiente'], color='#f59e0b', axis=0),
+                                use_container_width=True,
+                                hide_index=True
+                            )
+                            
+                            # Gráfico de coeficientes com IC
+                            df_plot = df_coef[df_coef['Variável'] != '(Intercept)'].copy()
+                            
+                            fig = go.Figure()
+                            fig.add_trace(go.Scatter(
+                                x=df_plot['IC_Lower'],
+                                y=df_plot['Variável'],
+                                mode='markers',
+                                marker=dict(size=1, color='rgba(0,0,0,0)'),
+                                showlegend=False
+                            ))
+                            
+                            fig.add_trace(go.Scatter(
+                                x=df_plot['Coeficiente'],
+                                y=df_plot['Variável'],
+                                mode='markers',
+                                marker=dict(
+                                    size=8,
+                                    color=['#10b981' if x > 0 else '#f59e0b' for x in df_plot['Coeficiente']]
+                                ),
+                                name='Coeficiente',
+                                text=df_plot.apply(
+                                    lambda r: f"{r['Variável']}<br>β = {r['Coeficiente']:.3f}<br>p = {r['p-value']:.4f}",
+                                    axis=1
+                                ),
+                                hovertemplate='%{text}<extra></extra>'
+                            ))
+                            
+                            for idx, row in df_plot.iterrows():
+                                fig.add_trace(go.Scatter(
+                                    x=[row['IC_Lower'], row['IC_Upper']],
+                                    y=[row['Variável'], row['Variável']],
+                                    mode='lines',
+                                    line=dict(color='#888', width=2),
+                                    showlegend=False,
+                                    hoverinfo='skip'
+                                ))
+                            
+                            fig.add_vline(x=0, line_dash="dash", line_color="gray", opacity=0.5)
+                            fig.update_layout(
+                                title="Coeficientes com IC 95%",
+                                xaxis_title="Coeficiente",
+                                yaxis_title="Variável",
+                                height=400,
+                                paper_bgcolor="rgba(0,0,0,0)",
+                                plot_bgcolor="rgba(0,0,0,0)",
+                                font_color="#FFF",
+                                hovermode='closest'
+                            )
+                            st.plotly_chart(fig, use_container_width=True)
+                            
+                            st.markdown("</div>", unsafe_allow_html=True)
+                            
+                            # ═══════════════════════════════════════════════════════════
+                            # SEÇÃO 3: COMPARAÇÃO DE PERCEPÇÕES
+                            # ═══════════════════════════════════════════════════════════
+                            
+                            st.markdown("""
+                            <div class='info-card'>
+                            <h5 style='color: #FFD700;'>🔍 Triangulação: Consenso dos 3 Negociadores</h5>
+                            """, unsafe_allow_html=True)
+                            
+                            col_tri1, col_tri2, col_tri3, col_tri4 = st.columns(4)
+                            
+                            delta_princ_mean = df_reg_prep['delta_princ'].dropna().mean()
+                            delta_sec_mean = df_reg_prep['delta_sec'].dropna().mean()
+                            delta_lider_mean = df_reg_prep['delta_lider'].dropna().mean()
+                            delta_cons_mean = df_reg_prep['delta_consenso'].dropna().mean()
+                            
+                            with col_tri1:
+                                st.metric("Principal (Média)", f"{delta_princ_mean:.2f}")
+                            with col_tri2:
+                                st.metric("Secundário (Média)", f"{delta_sec_mean:.2f}")
+                            with col_tri3:
+                                st.metric("Líder (Média)", f"{delta_lider_mean:.2f}")
+                            with col_tri4:
+                                st.metric("Consenso (Média)", f"{delta_cons_mean:.2f}")
+                            
+                            # Gráfico de distribuição
+                            fig_dist = go.Figure()
+                            
+                            for label, dados, cor in [
+                                ("Principal", df_reg_prep['delta_princ'].dropna(), '#F97316'),
+                                ("Secundário", df_reg_prep['delta_sec'].dropna(), '#FB923C'),
+                                ("Líder", df_reg_prep['delta_lider'].dropna(), '#FBBF24'),
+                                ("Consenso", df_reg_prep['delta_consenso'].dropna(), '#10b981')
+                            ]:
+                                fig_dist.add_trace(go.Box(y=dados, name=label, marker_color=cor))
+                            
+                            fig_dist.update_layout(
+                                title="Distribuição de Deltas por Negociador",
+                                yaxis_title="Delta de Agressividade",
+                                height=350,
+                                paper_bgcolor="rgba(0,0,0,0)",
+                                plot_bgcolor="rgba(0,0,0,0)",
+                                font_color="#FFF",
+                                boxmode='group'
+                            )
+                            st.plotly_chart(fig_dist, use_container_width=True)
+                            
+                            st.markdown("</div>", unsafe_allow_html=True)
+                            
+                            # ═══════════════════════════════════════════════════════════
+                            # SEÇÃO 4: DIAGNÓSTICOS
+                            # ═══════════════════════════════════════════════════════════
+                            
+                            st.markdown("""
+                            <div class='info-card'>
+                            <h5 style='color: #FFD700;'>🔧 Diagnósticos do Modelo</h5>
+                            <p style='font-size: 0.85rem; color: #aaa;'>
+                            Validação de assumções estatísticas.
+                            </p>
+                            """, unsafe_allow_html=True)
+                            
+                            diags = analise.diagnosticos_qualidade(resultado_modelo)
+                            
+                            col_d1, col_d2, col_d3 = st.columns(3)
+                            
+                            with col_d1:
+                                status = "✅" if diags['normalidade']['p_value'] > 0.05 else "⚠️"
+                                st.markdown(f"""
+                                **{status} Normalidade dos Resíduos**
+                                
+                                p-value: {diags['normalidade']['p_value']:.4f}
+                                
+                                {diags['normalidade']['interpretacao']}
+                                
+                                _{diags['normalidade']['implicacao']}_
+                                """)
+                            
+                            with col_d2:
+                                status = "✅" if diags['homocedasticidade']['p_value'] > 0.05 else "⚠️"
+                                st.markdown(f"""
+                                **{status} Homocedasticidade**
+                                
+                                p-value: {diags['homocedasticidade']['p_value']:.4f}
+                                
+                                {diags['homocedasticidade']['interpretacao']}
+                                
+                                _{diags['homocedasticidade']['implicacao']}_
+                                """)
+                            
+                            with col_d3:
+                                vif_max = diags['colinearidade']['vif_max']
+                                status = "✅" if vif_max < 5 else "⚠️"
+                                st.markdown(f"""
+                                **{status} Colinearidade (VIF)**
+                                
+                                VIF máximo: {vif_max:.2f}
+                                
+                                {diags['colinearidade']['interpretacao']}
+                                
+                                _{diags['colinearidade']['implicacao']}_
+                                """)
+                            
+                            st.markdown("</div>", unsafe_allow_html=True)
+                            
+                            # ═══════════════════════════════════════════════════════════
+                            # SEÇÃO 5: RESÍDUOS
+                            # ═══════════════════════════════════════════════════════════
+                            
+                            st.markdown("""
+                            <div class='info-card'>
+                            <h5 style='color: #FFD700;'>📊 Diagnóstico de Resíduos</h5>
+                            """, unsafe_allow_html=True)
+                            
+                            col_res1, col_res2 = st.columns(2)
+                            
+                            with col_res1:
+                                fig_res = go.Figure()
+                                fig_res.add_trace(go.Scatter(
+                                    x=resultado_modelo['y_pred'],
+                                    y=resultado_modelo['residuos'],
+                                    mode='markers',
+                                    marker=dict(color='#F97316', size=6),
+                                    text=resultado_modelo['residuos'],
+                                    hovertemplate='Predito: %{x:.2f}<br>Resíduo: %{y:.2f}<extra></extra>'
+                                ))
+                                fig_res.add_hline(y=0, line_dash="dash", line_color="gray")
+                                fig_res.update_layout(
+                                    title="Resíduos vs Preditos",
+                                    xaxis_title="Valores Preditos",
+                                    yaxis_title="Resíduos",
+                                    height=300,
+                                    paper_bgcolor="rgba(0,0,0,0)",
+                                    plot_bgcolor="rgba(0,0,0,0)",
+                                    font_color="#FFF"
+                                )
+                                st.plotly_chart(fig_res, use_container_width=True)
+                            
+                            with col_res2:
+                                fig_qq = go.Figure()
+                                res_sorted = np.sort(resultado_modelo['residuos'])
+                                q_teorico = np.sort(np.random.normal(0, resultado_modelo['se_residuos'], 1000))
+                                
+                                fig_qq.add_trace(go.Scatter(
+                                    x=q_teorico,
+                                    y=res_sorted,
+                                    mode='markers',
+                                    marker=dict(color='#10b981', size=5),
+                                    name='Q-Q Plot'
+                                ))
+                                
+                                # Linha diagonal
+                                min_val = min(q_teorico.min(), res_sorted.min())
+                                max_val = max(q_teorico.max(), res_sorted.max())
+                                fig_qq.add_trace(go.Scatter(
+                                    x=[min_val, max_val],
+                                    y=[min_val, max_val],
+                                    mode='lines',
+                                    line=dict(color='gray', dash='dash'),
+                                    name='Normal',
+                                    showlegend=True
+                                ))
+                                
+                                fig_qq.update_layout(
+                                    title="Q-Q Plot (Normalidade)",
+                                    xaxis_title="Quantis Teóricos",
+                                    yaxis_title="Quantis Observados",
+                                    height=300,
+                                    paper_bgcolor="rgba(0,0,0,0)",
+                                    plot_bgcolor="rgba(0,0,0,0)",
+                                    font_color="#FFF"
+                                )
+                                st.plotly_chart(fig_qq, use_container_width=True)
+                            
+                            st.markdown("</div>", unsafe_allow_html=True)
+
+        st.markdown("---")
+
+                                            
+
+        # ============================================================
+        # ANÁLISE DE PERFIL DE NEGOCIADORES
+        # (Adicionar na Série Histórica, ANTES da "Síntese Interpretativa por IA")
+        # ============================================================
+
+        st.markdown("""
+        <div class='info-card'>
+        <h5 style='color: #FFD700;'>Perfil de Negociadores: Escuta Ativa vs Persuasão</h5>
+        <p style='font-size:1.1rem;color:#ddd;'>
+        Análise estatística comparativa dos padrões de negociação por negociador.
+        Identifica tendências, agrupa similares e testa significância estatística.
+        </p>
+        </div>
+        """, unsafe_allow_html=True)
+
+        col_left, col_center, col_right = st.columns([1, 1, 1])
+
+        with col_center:
+            is_perfil_negociadores = render_toggle_button(
+                label="✔️ Abrir Análise de Perfil",
+                session_key="perfil_negociadores",
+                button_key="btn_perfil_negociadores"
+            )
+
+        st.markdown("---")
+
+        if is_perfil_negociadores:
+            
+            # ── CARREGAR DADOS ──────────────────────────────────────────
+            try:
+                # Importar função de análise
+                from analise import (
+                    analisar_perfil_negociadores,
+                    gerar_grafo_palavras_com_estilo,
+                    gerar_legenda_negociadores_dinamica,
+                    gerar_tabela_score,
+                    gerar_scatter_score_efetividade,
+                    gerar_barras_grupos,
+                    classificar_tecnica
+                )
+                
+                # Assumindo que df_tec está carregado (como nas análises anteriores)
+                df_tec = st.session_state.get("df_tec", pd.DataFrame())
+                
+                if df_tec.empty:
+                    st.warning("⚠️ Tabela de técnicas não carregada.")
+                else:
+                    
+                    # ── EXECUTAR ANÁLISE ────────────────────────────────────
+                    with st.spinner("⏳ Analisando perfis de negociadores..."):
+                        resultado_analise = analisar_perfil_negociadores(df_tec)
                         
-                        st.download_button(
-                            label="📥 Baixar Relatório (PDF)", 
-                            data=pdf_bytes, 
-                            file_name="Relatorio_Analise_GATE.pdf", 
-                            mime="application/pdf"
+                        df_resultado = resultado_analise['df_resultado']
+                        df_tec_classificado = resultado_analise['df_tecnicas_classificadas']
+                        anova = resultado_analise['anova']
+                        chi2 = resultado_analise['chi2']
+                        kmeans = resultado_analise['kmeans']
+                    
+                    # Gerar paleta de cores para negociadores (dinâmica)
+                    negociadores_unicos = df_resultado['Negociador'].unique()
+                    paleta_cores = {
+                        'laranja_forte': '#F97316',        # Laranja vibrante (principal)
+                        'laranja_medio': '#FB923C',        # Laranja médio
+                        'laranja_claro': '#FDBA74',        # Laranja claro
+                        'laranja_muito_claro': '#FED7AA',  # Laranja pastel
+                        'amarelo': '#FBBF24',              # Amarelo ouro
+                        'amarelo_claro': '#FCD34D',        # Amarelo claro
+                        'amber': '#F59E0B',                # Âmbar quente
+                        'amber_claro': '#FDBF28',          # Âmbar claro
+                        'preto': '#000000',                # Preto puro
+                        'cinza_escuro': '#1F2937',         # Cinza escuro (neutro)
+                        'cinza_medio': '#374151',          # Cinza médio
+                        'laranja_escuro': '#EA580C',       # Laranja escuro
+                        'vermelho_laranja': '#DC2626',     # Vermelho-laranja
+                    }
+                    
+                    # Converter para lista para melhor controle de alocação
+                    cores_lista = list(paleta_cores.values())
+                    
+                    # Alocar cores dinamicamente aos negociadores
+                    negociadores_cores = {
+                        neg: cores_lista[i % len(cores_lista)]
+                        for i, neg in enumerate(negociadores_unicos)
+                    }
+
+                    
+                    cores_lista = list(paleta_cores.values())
+                    negociadores_cores = {
+                        neg: cores_lista[i % len(cores_lista)]
+                        for i, neg in enumerate(negociadores_unicos)
+                    }
+                    
+                    # ── CRIAR TABS ──────────────────────────────────────────
+                    tab_score, tab_grafo, tab_stats, tab_kmeans = st.tabs([
+                        "✔️ Scores e Efetividades",
+                        "🕸️ Grafo de Palavras",
+                        "✔️ Testes Estatísticos",
+                        "✔️ Clusters (K-means)"
+                    ])
+                    
+                    # ── TAB 1: SCORES ───────────────────────────────────────
+                    with tab_score:
+                        st.markdown("""
+                        <div class='info-card'>
+                        <h5 style='color: #FFD700; margin-top: 0;'>Score de Tendência</h5>
+                        <p style='font-size:0.9rem;color:#aaa;'>
+                        Score = -100 (100% Persuasão) a +100 (100% Escuta Ativa)
+                        <br>Ponderado pela atitude do causador em cada técnica aplicada.
+                        </p>
+                        </div>
+                        """, unsafe_allow_html=True)
+                        
+                        # Tabela
+                        st.markdown("### 📋 Tabela de Resultados")
+                        df_display = gerar_tabela_score(df_resultado)
+                        st.dataframe(df_display, use_container_width=True, hide_index=True)
+                        
+                        # Gráfico Scatter
+                        st.markdown("---")
+                        st.markdown("### 📊 Score vs Efetividade Média")
+                        fig_scatter = gerar_scatter_score_efetividade(df_resultado)
+                        st.plotly_chart(fig_scatter, use_container_width=True)
+                        
+                        # Gráfico Barras
+                        st.markdown("---")
+                        st.markdown("### 📊 Distribuição de Técnicas")
+                        fig_barras = gerar_barras_grupos(df_resultado)
+                        st.plotly_chart(fig_barras, use_container_width=True)
+                    
+                    # ── TAB 2: GRAFO ────────────────────────────────────────
+                    
+                    #
+
+                    with tab_grafo:
+                        st.markdown("""
+                        <div class='info-card'>
+                        <h5 style='color: #FFD700; margin-top: 0;'>🕸️ Rede de Palavras</h5>
+                        <p style='font-size:0.9rem;color:#aaa;'>
+                        Palavras dos trechos de transcrição, coloridas por negociador.
+                        Tamanho = Frequência | Conexões = Co-ocorrência
+                        </p>
+                        </div>
+                        """, unsafe_allow_html=True)
+                        
+                        # ── LEGENDA DINÂMICA ──
+                        
+                        if negociadores_cores:
+                            st.markdown("""
+                            <div style='
+                                background: rgba(30, 30, 30, 0.85);
+                                backdrop-filter: blur(16px) saturate(180%);
+                                -webkit-backdrop-filter: blur(16px) saturate(180%);
+                                border: 1px solid rgba(255, 255, 255, 0.1);
+                                border-radius: 12px;
+                                padding: 15px;
+                                margin-bottom: 20px;
+                            '>
+                            <h5 style='color: #FFD700; margin-top: 0; margin-bottom: 15px;'>🎨 Legenda de Negociadores</h5>
+                            <div style='display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px;'>
+                            """, unsafe_allow_html=True)
+                            
+                            cols = st.columns(min(3, len(negociadores_cores)))
+                            for i, (neg, cor) in enumerate(sorted(negociadores_cores.items())):
+                                with cols[i % len(cols)]:
+                                    st.markdown(f"""
+                                    <div style='
+                                        display: flex;
+                                        align-items: center;
+                                        background: rgba(255, 255, 255, 0.05);
+                                        padding: 10px;
+                                        border-radius: 8px;
+                                        border-left: 4px solid {cor};
+                                    '>
+                                        <div style='
+                                            width: 24px;
+                                            height: 24px;
+                                            background-color: {cor};
+                                            border-radius: 50%;
+                                            margin-right: 10px;
+                                        '></div>
+                                        <span style='color: #FFF; font-weight: 500;'>{neg}</span>
+                                    </div>
+                                    """, unsafe_allow_html=True)
+                            
+                            st.markdown("</div></div>", unsafe_allow_html=True)
+                        
+                        with st.spinner("✔️ Gerando grafo com glassmorphism..."):
+                            try:
+                                net = gerar_grafo_palavras_com_estilo(df_tec_classificado, negociadores_cores)
+                                
+                                if net is None:
+                                    st.warning("⚠️ Dados insuficientes para gerar o grafo (precisa de mais trechos de transcrição).")
+                                else:
+                                    try:
+                                        import tempfile
+                                        import os
+                                        
+                                        # Usar arquivo temporário
+                                        with tempfile.NamedTemporaryFile(mode='w', suffix='.html', delete=False) as f:
+                                            temp_file = f.name
+                                        
+                                        # Renderizar e salvar
+                                        net.write_html(temp_file, notebook=False)
+                    
+                                        # Ler arquivo
+                                        with open(temp_file, 'r', encoding='utf-8') as f:
+                                            html_content = f.read()
+                                        
+                                        # INJETAR CSS PARA FUNDO PRETO/GLASSMORPHISM
+                                        html_content = html_content.replace(
+                                            '<style type="text/css">',
+                                            '''<style type="text/css">
+                                            html, body {
+                                                margin: 0;
+                                                padding: 0;
+                                                background: rgba(0, 0, 0, 0.95) !important;
+                                                backdrop-filter: blur(16px) saturate(180%);
+                                                -webkit-backdrop-filter: blur(16px) saturate(180%);
+                                            }
+                                            #mynetwork {
+                                                background: rgba(30, 30, 30, 0.9) !important;
+                                                backdrop-filter: blur(16px) saturate(180%);
+                                                -webkit-backdrop-filter: blur(16px) saturate(180%);
+                                            }
+                                            '''
+                                        )
+                                        
+                                        # Exibir grafo
+                                        st.components.v1.html(html_content, height=800, scrolling=True)
+                                        
+                                        # Limpar arquivo temporário
+                                        try:
+                                            os.remove(temp_file)
+                                        except:
+                                            pass
+                                        
+                                        st.success("✅ Grafo gerado com sucesso!")
+                                        
+                                        # Informações sobre o grafo
+                                        st.markdown("""
+                                        ### 💡 Como interpretar:
+                                        - **Bolinha GRANDE**: Palavra muito frequente
+                                        - **Bolinha PEQUENA**: Palavra pouco frequente
+                                        - **COR**: Qual negociador mais usou a palavra
+                                        - **LINHAS**: Palavras que aparecem juntas nos trechos
+                                        """)
+                                        
+                                    except Exception as e:
+                                        st.error(f"❌ Erro ao renderizar grafo: {str(e)[:80]}")
+                            
+                            except Exception as e:
+                                st.error(f"❌ Erro geral: {str(e)[:100]}")
+                    
+                    # ── TAB 3: TESTES ESTATÍSTICOS ──────────────────────────
+                    with tab_stats:
+                        st.markdown("""
+                        <div class='info-card'>
+                        <h5 style='color: #FFD700; margin-top: 0;'>Testes Estatísticos</h5>
+                        <p style='font-size:0.9rem;color:#aaa;'>
+                        Validação estatística das diferenças entre negociadores.
+                        </p>
+                        </div>
+                        """, unsafe_allow_html=True)
+                        
+                        # ANOVA
+                        if anova:
+                            st.markdown("### 🧪 ANOVA - Efetividade entre Negociadores")
+                            
+                            col1, col2, col3 = st.columns(3)
+                            with col1:
+                                st.metric("F-statistic", anova['f_statistic'])
+                            with col2:
+                                st.metric("P-value", anova['p_value'])
+                            with col3:
+                                status = "✅ Significativo" if anova['significativo'] else "❌ Não significativo"
+                                st.metric("Resultado", status)
+                            
+                            st.markdown(f"**Interpretação:** {anova['interpretacao']}")
+                            st.markdown("---")
+                        
+                        # Chi-quadrado
+                        if chi2:
+                            st.markdown("### 🧪 Chi-Quadrado - Distribuição de Técnicas")
+                            
+                            col1, col2, col3, col4 = st.columns(4)
+                            with col1:
+                                st.metric("χ²-statistic", chi2['chi2_statistic'])
+                            with col2:
+                                st.metric("P-value", chi2['p_value'])
+                            with col3:
+                                st.metric("Graus de Liberdade", chi2['df'])
+                            with col4:
+                                status = "✅ Significativo" if chi2['significativo'] else "❌ Não significativo"
+                                st.metric("Resultado", status)
+                            
+                            st.markdown(f"**Interpretação:** {chi2['interpretacao']}")
+                    
+                    # ── TAB 4: K-MEANS ──────────────────────────────────────
+                    with tab_kmeans:
+                        st.markdown("""
+                        <div class='info-card'>
+                        <h5 style='color: #FFD700; margin-top: 0;'>Clustering K-means (k=2)</h5>
+                        <p style='font-size:0.9rem;color:#aaa;'>
+                        Agrupa negociadores em 2 clusters: Escuta Ativa vs Persuasão/Influência.
+                        </p>
+                        </div>
+                        """, unsafe_allow_html=True)
+                        
+                        # Tabela com clusters
+                        st.markdown("### ✔️ Atribuição de Clusters")
+                        df_clusters = df_resultado[['Negociador', 'Score Tendência', 'Cluster']].copy()
+                        
+                        if 'Perfil_Cluster' in df_resultado.columns:
+                            df_clusters['Perfil'] = df_resultado['Perfil_Cluster']
+                        
+                        st.dataframe(df_clusters, use_container_width=True, hide_index=True)
+                        
+                        # Visualizar clusters
+                        st.markdown("---")
+                        st.markdown("### ✔️ Visualização dos Clusters")
+                        
+                        fig_clusters = go.Figure()
+                        
+                        for cluster in sorted(df_resultado['Cluster'].unique()):
+                            df_cluster = df_resultado[df_resultado['Cluster'] == cluster]
+                            
+                            perfil = df_cluster['Perfil_Cluster'].iloc[0] if 'Perfil_Cluster' in df_resultado.columns else f"Cluster {cluster}"
+                            cor = '#10b981' if perfil == 'Escuta Ativa' else '#f59e0b'
+                            
+                            fig_clusters.add_trace(go.Scatter(
+                                x=df_cluster['Score Tendência'],
+                                y=df_cluster['Efetividade Escuta'],
+                                mode='markers+text',
+                                name=perfil,
+                                text=df_cluster['Negociador'],
+                                textposition='top center',
+                                marker=dict(size=15, color=cor),
+                            ))
+                        
+                        fig_clusters.update_layout(
+                            title='Clustering de Negociadores',
+                            xaxis_title='Score Tendência',
+                            yaxis_title='Efetividade Escuta Ativa',
+                            paper_bgcolor="rgba(0,0,0,0)",
+                            plot_bgcolor="rgba(0,0,0,0)",
+                            font_color="#FFF",
+                            height=500
                         )
-                    except Exception as e:
-                        st.warning(f"⚠️ Erro ao gerar PDF: {str(e)[:100]}")
-
+                        
+                        st.plotly_chart(fig_clusters, use_container_width=True)
+                        
+                        # Interpretação
+                        st.markdown("---")
+                        st.markdown("### 💡 Interpretação")
+                        
+                        for cluster in sorted(df_resultado['Cluster'].unique()):
+                            df_clust = df_resultado[df_resultado['Cluster'] == cluster]
+                            
+                            perfil = df_clust['Perfil_Cluster'].iloc[0] if 'Perfil_Cluster' in df_resultado.columns else f"Cluster {cluster}"
+                            negociadores = ', '.join(df_clust['Negociador'].tolist())
+                            score_medio = df_clust['Score Tendência'].mean()
+                            
+                            if perfil == 'Escuta Ativa':
+                                emoji = "🟢"
+                                desc = "Tendem a usar mais **Escuta Ativa** (Paráfrase, Empatia, Resumo)"
+                            else:
+                                emoji = "🟠"
+                                desc = "Tendem a usar mais **Persuasão/Influência** (Desconstrução, Reciprocidade, Medo)"
+                            
+                            st.markdown(f"""
+                            {emoji} **{perfil}** (Score médio: {score_medio:.1f}%)
+                            - Negociadores: {negociadores}
+                            - Padrão: {desc}
+                            """)
+            
             except ImportError as e:
-                st.error(f"⚠️ Módulo 'ia_estatistica' não encontrado. Verifique a instalação.")
+                st.error(f"❌ Erro ao importar módulo: {str(e)}")
             except Exception as e:
-                st.error(f"🚨 Erro na geração do relatório: {str(e)[:150]}")
+                st.error(f"❌ Erro na análise: {str(e)[:200]}")
 
-st.markdown("<div style='margin-bottom: 20px;'></div>", unsafe_allow_html=True)
-st.markdown("""
-<div style='margin-top:20px; margin-bottom:100px; padding:15px; background-color:#111; border-radius:8px;'>
-<p style="color:#bbb; font-size:13px; line-height:1.7; text-align:left;">
+        st.markdown("---")
 
-<span style="color:#ffae42; font-weight:700; font-size:14px; letter-spacing:1px;">
-DELTA-NEGOCIAÇÃO — GATE/PMESP
-</span>
-
-
-"O maior inimigo do conhecimento não é a ignorância, mas a ilusão do conhecimento."
-— Stephen Hawking.
-
-
-“Sem dados, você é apenas mais uma pessoa com opinião.”
-— W. Edwards Deming.
+        # SÍNTESE INTERPRETATIVA POR IA
+        st.markdown("""
+        <div class='info-card'>
+        <h5 style='color: #FFD700; margin-top: 0;'>Síntese Interpretativa Assistida por Inteligência Artificial</h5>
+        <p style='font-size:1rem;color:#ddd;'>
+        A interpretação da IA é colaborativa e NÃO substitui a análise e compreensão do Avaliador/Negociador.
+        Exige constante aprimoramento de instruções.
+        </p>
+        </div>
+        """, unsafe_allow_html=True)
+                
 
 
-Empenhados no desenvolvimento de treinamentos e na avaliação dos Negociadores, alicerçados no pensamento técnico-científico e no valor humano, guiados por dados.
+        if st.button("✔ GERAR RELATÓRIO INTERPRETADO POR IA"):
+                with st.spinner("✔️ Processando análises e gerando interpretações..."):
+                    try:
+                        import ia_estatistica 
+                        
+                        # Coleta dados de todas as análises anteriores
+                        qui_data = None
+                        if 'res_chi' in locals() and isinstance(res_chi, dict) and res_chi.get('valido'):
+                            qui_data = {'p_valor_global': res_chi['p_value']}
+                        elif 'p' in locals() and isinstance(p, (int, float)):
+                            qui_data = {'p_valor_global': float(p)}
+                        
+                        ord_data = None
+                        if 'df_or' in locals() and not df_or.empty:
+                            ord_data = df_or.to_dict('records')
+                        
+                        gee_data = None
+                        if 'df_gee' in locals() and not df_gee.empty:
+                            gee_data = df_gee.to_dict('records')
 
-<br>
+                        # Estrutura os dados para enviar para a IA
+                        payload_ia = ia_estatistica.estruturar_resultado_para_ia(
+                            amostra_total=len(df_quali_filt),
+                            resultados_chi=qui_data,
+                            resultados_ordinal=ord_data,
+                            resultados_gee=gee_data
+                        )
 
-<span style="color:#ffae42; font-weight:600;">
-NEGOCIAÇÃO!
-</span>
+                        relatorio_json = ia_estatistica.gerar_relatorio_com_ia(payload_ia)
 
-<br>
+                        if "erro" in relatorio_json:
+                            st.error(f"Erro na geração do relatório: {relatorio_json['erro']}")
+                            with st.expander("🔍 Ver dados enviados"):
+                                st.json(payload_ia)
+                        else:
+                            # Renderiza cards com as interpretações
+                            st.success("✔ Relatório gerado com sucesso!")
+                            
+                            st.markdown("### ✔️ Principais Achados")
+                            st.markdown(relatorio_json.get("resultados_principais", "N/D"))
+                            
+                            st.markdown("### ✔️ O que isso Significa para a Prática")
+                            st.markdown(relatorio_json.get("interpretacao", "N/D"))
+                            
+                            st.markdown("### ✔️ Recomendações Estratégicas")
+                            st.markdown(relatorio_json.get("conclusao", "N/D"))
+                            
+                            with st.expander("✔️ Ver Análise Completa (Expandir)"):
+                                col_ia1, col_ia2 = st.columns(2)
+                                
+                                with col_ia1:
+                                    st.markdown("**Objetivo Analítico**")
+                                    st.markdown(relatorio_json.get("objetivo", "N/D"))
+                                    
+                                    st.markdown("**Premissas da Análise**")
+                                    st.markdown(relatorio_json.get("premissas", "N/D"))
+                                
+                                with col_ia2:
+                                    st.markdown("**Tamanho do Efeito**")
+                                    st.markdown(relatorio_json.get("tamanho_efeito", "N/D"))
+                                    
+                                    st.markdown("**Limitações Técnicas**")
+                                    st.markdown(relatorio_json.get("limitacoes", "N/D"))
 
-<span style="color:#777; font-size:11px;">
-Dados confidenciais, de uso exclusivo da equipe de Negociação do Grupo de Ações Táticas Especiais.
-</span>
+                            st.markdown("---")
+                            st.markdown("### 📥 Exportar Relatório em PDF")
+                            
+                            try:
+                                from fpdf import FPDF
+                                import unicodedata
+                                
+                                pdf_hist = FPDF()
+                                pdf_hist.add_page()
+                                
+                                # Cabeçalho
+                                pdf_hist.set_fill_color(249, 115, 22)
+                                pdf_hist.rect(0, 0, 210, 35, 'F')
+                                pdf_hist.set_font("Arial", "B", 14)
+                                pdf_hist.set_text_color(255, 255, 255)
+                                pdf_hist.cell(0, 12, "ANALISE ESTATISTICA - SERIE HISTORICA", ln=True, align="C")
+                                pdf_hist.set_font("Arial", "I", 10)
+                                pdf_hist.cell(0, 8, "GATE - Inteligencia de Apoio Decisorio (PMESP)", ln=True, align="C")
+                                
+                                # Conteúdo
+                                pdf_hist.ln(10)
+                                pdf_hist.set_text_color(0, 0, 0)
+                                pdf_hist.set_font("Arial", "B", 12)
+                                pdf_hist.cell(0, 8, "Resultados Principais", ln=True)
+                                
+                                pdf_hist.set_font("Arial", "", 10)
+                                texto_limpo = unicodedata.normalize('NFKD', relatorio_json.get("resultados_principais", "")).encode('ASCII', 'ignore').decode('ASCII')
+                                pdf_hist.multi_cell(0, 5, txt=texto_limpo)
+                                
+                                pdf_hist.ln(5)
+                                pdf_hist.set_font("Arial", "B", 12)
+                                pdf_hist.cell(0, 8, "Interpretacao", ln=True)
+                                
+                                pdf_hist.set_font("Arial", "", 10)
+                                texto_limpo2 = unicodedata.normalize('NFKD', relatorio_json.get("interpretacao", "")).encode('ASCII', 'ignore').decode('ASCII')
+                                pdf_hist.multi_cell(0, 5, txt=texto_limpo2)
+                                
+                                pdf_saida = pdf_hist.output(dest="S")
+                                if isinstance(pdf_saida, str):
+                                    pdf_bytes = pdf_saida.encode('latin-1', errors='replace')
+                                else:
+                                    pdf_bytes = bytes(pdf_saida)
+                                
+                                st.download_button(
+                                    label="📥 Baixar Relatório (PDF)", 
+                                    data=pdf_bytes, 
+                                    file_name="Relatorio_Analise_GATE.pdf", 
+                                    mime="application/pdf"
+                                )
+                            except Exception as e:
+                                st.warning(f"⚠️ Erro ao gerar PDF: {str(e)[:100]}")
 
-</p>
+                    except ImportError as e:
+                        st.error(f"⚠️ Módulo 'ia_estatistica' não encontrado. Verifique a instalação.")
+                    except Exception as e:
+                        st.error(f"🚨 Erro na geração do relatório: {str(e)[:150]}")
 
-<hr style="border:none; height:1px; background:linear-gradient(to right, transparent, rgba(255,174,66,0.6), transparent); margin-top:18px; margin-bottom:12px;">
+        st.markdown("<div style='margin-bottom: 20px;'></div>", unsafe_allow_html=True)
+        st.markdown("""
+        <div style='margin-top:20px; margin-bottom:100px; padding:15px; background-color:#111; border-radius:8px;'>
+        <p style="color:#bbb; font-size:13px; line-height:1.7; text-align:left;">
 
-<div style="text-align:center; font-size:11px; color:#666; line-height:1.5;">
-© 2026 AXIOM - Strategic Intelligence Ltda — Todos os direitos reservados.<br>
-Este sistema é protegido por direitos autorais e legislação aplicável. Reprodução, distribuição, engenharia reversa, modificação ou utilização não autorizada são proibidas.
-</div>
-""", unsafe_allow_html=True)
+        <span style="color:#ffae42; font-weight:700; font-size:14px; letter-spacing:1px;">
+        DELTA-NEGOCIAÇÃO — GATE/PMESP
+        </span>
+
+
+        "O maior inimigo do conhecimento não é a ignorância, mas a ilusão do conhecimento."
+        — Stephen Hawking.
+
+
+        “Sem dados, você é apenas mais uma pessoa com opinião.”
+        — W. Edwards Deming.
+
+
+        Empenhados no desenvolvimento de treinamentos e na avaliação dos Negociadores, alicerçados no pensamento técnico-científico e no valor humano, guiados por dados.
+
+        <br>
+
+        <span style="color:#ffae42; font-weight:600;">
+        NEGOCIAÇÃO!
+        </span>
+
+        <br>
+
+        <span style="color:#777; font-size:11px;">
+        Dados confidenciais, de uso exclusivo da equipe de Negociação do Grupo de Ações Táticas Especiais.
+        </span>
+
+        </p>
+
+        <hr style="border:none; height:1px; background:linear-gradient(to right, transparent, rgba(255,174,66,0.6), transparent); margin-top:18px; margin-bottom:12px;">
+
+        <div style="text-align:center; font-size:11px; color:#666; line-height:1.5;">
+        © 2026 AXIOM - Strategic Intelligence Ltda — Todos os direitos reservados.<br>
+        Este sistema é protegido por direitos autorais e legislação aplicável. Reprodução, distribuição, engenharia reversa, modificação ou utilização não autorizada são proibidas.
+        </div>
+        """, unsafe_allow_html=True)
 
 
 
