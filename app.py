@@ -3930,14 +3930,15 @@ Este sistema é protegido por direitos autorais e legislação aplicável. Repro
             
             with st.spinner("⏳ Preparando dados..."):
                 # Encontrar colunas
-                col_agr_princ_ch = achar_coluna(df_quali_filt, "Principal", "Agressividade", "Chegada")
-                col_agr_princ_en = achar_coluna(df_quali_filt, "Principal", "Agressividade", "Encerramento")
-                col_agr_sec_ch = achar_coluna(df_quali_filt, "Secundário", "Agressividade", "Chegada")
-                col_agr_sec_en = achar_coluna(df_quali_filt, "Secundário", "Agressividade", "Encerramento")
-                col_agr_lider_ch = achar_coluna(df_quali_filt, "Líder", "Agressividade", "Chegada")
-                col_agr_lider_en = achar_coluna(df_quali_filt, "Líder", "Agressividade", "Encerramento")
                 
-                col_recep_princ_ch = achar_coluna(df_quali_filt, "Principal", "Receptividade", "Chegada")
+                col_agr_princ_ch = analise.achar_coluna(df_quali_filt, "Principal", "Agressividade", "Chegada")
+                col_agr_princ_en = analise.achar_coluna(df_quali_filt, "Principal", "Agressividade", "Encerramento")
+                col_agr_sec_ch = analise.achar_coluna(df_quali_filt, "Secundário", "Agressividade", "Chegada")
+                col_agr_sec_en = analise.achar_coluna(df_quali_filt, "Secundário", "Agressividade", "Encerramento")
+                col_agr_lider_ch = analise.achar_coluna(df_quali_filt, "Líder", "Agressividade", "Chegada")
+                col_agr_lider_en = analise.achar_coluna(df_quali_filt, "Líder", "Agressividade", "Encerramento")
+
+                col_recep_princ_ch = analise.achar_coluna(df_quali_filt, "Principal", "Receptividade", "Chegada")
                 
                 # Validar colunas
                 colunas_necessarias = [col_agr_princ_ch, col_agr_princ_en, col_agr_sec_ch, 
