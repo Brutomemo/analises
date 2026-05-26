@@ -3058,53 +3058,69 @@ def gerar_grafo_palavras(df_tecnicas, negociadores_cores):
 
 def gerar_legenda_negociadores_dinamica(negociadores_cores):
     """
-    Gera legenda HTML dinâmica com cores dos negociadores
+    Gera legenda HTML dinâmica baseada no dicionário de cores dos negociadores.
     """
-    if not negociadores_cores:
-        return None
-    
-    html = """
-    <div style='
-        background: rgba(30, 30, 30, 0.85);
-        backdrop-filter: blur(16px) saturate(180%);
-        -webkit-backdrop-filter: blur(16px) saturate(180%);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 12px;
-        padding: 15px;
-        margin-bottom: 20px;
-    '>
-    <h5 style='color: #FFD700; margin-top: 0; margin-bottom: 15px;'>🎨 Legenda de Negociadores</h5>
-    <div style='display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px;'>
-    """
-    
-    for neg, cor in sorted(negociadores_cores.items()):
-        html += f"""
-        <div style='
-            display: flex;
-            align-items: center;
-            background: rgba(255, 255, 255, 0.05);
-            padding: 10px;
-            border-radius: 8px;
-            border-left: 4px solid {cor};
-        '>
-            <div style='
-                width: 24px;
-                height: 24px;
-                background-color: {cor};
-                border-radius: 50%;
-                margin-right: 10px;
-                flex-shrink: 0;
-            '></div>
-            <span style='color: #FFF; font-weight: 500;'>{neg}</span>
+
+    try:
+        if not negociadores_cores:
+            return ""
+
+        html = """
+        <div style="
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 12px;
+            padding: 14px;
+            margin-bottom: 15px;
+            backdrop-filter: blur(12px);
+        ">
+        <h5 style='color:#FFD700; margin-top:0; margin-bottom:12px;'>
+        🎨 Legenda dos Negociadores
+        </h5>
+
+        <div style='display:flex; flex-wrap:wrap; gap:12px;'>
+        """
+
+        for negociador, cor in negociadores_cores.items():
+
+            html += f"""
+            <div style="
+                display:flex;
+                align-items:center;
+                gap:8px;
+                background: rgba(255,255,255,0.03);
+                padding:8px 12px;
+                border-radius:10px;
+                border:1px solid rgba(255,255,255,0.06);
+            ">
+                <div style="
+                    width:16px;
+                    height:16px;
+                    border-radius:50%;
+                    background:{cor};
+                    box-shadow:0 0 10px {cor};
+                    flex-shrink:0;
+                "></div>
+
+                <span style="
+                    color:#ddd;
+                    font-size:0.88rem;
+                    font-weight:500;
+                ">
+                    {negociador}
+                </span>
+            </div>
+            """
+
+        html += """
+        </div>
         </div>
         """
-    
-    html += """
-    </div>
-    </div>
-    """
-    
-    return html
+
+        return html
+
+    except Exception as e:
+        return f"<p style='color:red;'>Erro legenda: {str(e)}</p>"
 
 
 # ============================================================
