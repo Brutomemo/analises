@@ -2961,10 +2961,11 @@ def aplicar_kmeans(df_resultado, k=2):
 # 4. GRAFO DE PALAVRAS (PYVIS)
 # ============================================================
 
-def gerar_grafo_palavras(df_tecnicas, negociadores_cores):
+
+
+def gerar_grafo_palavras_com_estilo(df_tecnicas, negociadores_cores):
     """
-    Gera grafo Pyvis com palavras do 'TRECHO DA TRANSCRIÇÃO'
-    Nós = palavras, Cores = negociador, Conexões = co-ocorrência
+    Gera grafo Pyvis com fundo glassmorphism dinâmico
     """
     
     try:
@@ -2972,7 +2973,6 @@ def gerar_grafo_palavras(df_tecnicas, negociadores_cores):
     except ImportError:
         return None
     
-    # Stopwords português
     stopwords_pt = {
         'o', 'a', 'de', 'e', 'é', 'em', 'para', 'com', 'um', 'uma',
         'na', 'no', 'os', 'as', 'dos', 'das', 'ao', 'aos', 'por', 'se',
@@ -2980,147 +2980,123 @@ def gerar_grafo_palavras(df_tecnicas, negociadores_cores):
         'ele', 'ela', 'nós', 'eles', 'elas', 'meu', 'seu', 'seu', 'dele'
     }
     
-    # Contar palavras por negociador
     palavras_negociador = {}
     palavras_freq = Counter()
     
     for _, row in df_tecnicas.iterrows():
-        neg = row['NEGOCIADOR PRINCIPAL']
-        trecho = str(row.get('TRECHO DA TRANSCRIÇÃO', '')).lower()
-        
-        if not trecho or trecho == 'nan':
+        try:
+            neg = row['NEGOCIADOR PRINCIPAL']
+            trecho = str(row.get('TRECHO DA TRANSCRIÇÃO', '')).lower()
+            
+            if not trecho or trecho == 'nan' or not neg:
+                continue
+            
+            palavras = re.findall(r'\b\w+\b', trecho)
+            palavras = [p for p in palavras if p not in stopwords_pt and len(p) > 3]
+            
+            for p in palavras:
+                if p not in palavras_negociador:
+                    palavras_negociador[p] = Counter()
+                palavras_negociador[p][neg] += 1
+                palavras_freq[p] += 1
+        except:
             continue
-        
-        # Tokenizar
-        palavras = re.findall(r'\b\w+\b', trecho)
-        palavras = [p for p in palavras if p not in stopwords_pt and len(p) > 3]
-        
-        for p in palavras:
-            if p not in palavras_negociador:
-                palavras_negociador[p] = Counter()
-            palavras_negociador[p][neg] += 1
-            palavras_freq[p] += 1
     
-    if not palavras_freq:
+    if not palavras_freq or len(palavras_freq) < 5:
         return None
     
-    # Top 50 palavras
-    top_palavras = [p for p, _ in palavras_freq.most_common(50)]
-    
-    # Criar rede
-    net = Network(height='750px', width='100%', directed=False, notebook=False)
-    
-    # Configurar física (se disponível)
     try:
-        net.physics.enabled = True
-    except:
-        pass
-    
-    # Adicionar nós (palavras)
-    for palavra in top_palavras:
-        negociador_principal = palavras_negociador[palavra].most_common(1)[0][0]
-        cor = negociadores_cores.get(negociador_principal, '#888888')
-        size = min(int(palavras_freq[palavra] * 2), 50)
+        top_palavras = [p for p, _ in palavras_freq.most_common(50)]
+        net = Network(height='800px', width='100%', directed=False, notebook=False)
         
-        net.add_node(
-            palavra,
-            label=palavra,
-            title=f"{palavra} ({palavras_freq[palavra]}x)",
-            color=cor,
-            size=size,
-            font={'size': 14}
-        )
-    
-    # Adicionar conexões (co-ocorrência)
-    for _, row in df_tecnicas.iterrows():
-        trecho = str(row.get('TRECHO DA TRANSCRIÇÃO', '')).lower()
+        for palavra in top_palavras:
+            if palavra in palavras_negociador and len(palavras_negociador[palavra]) > 0:
+                negociador_principal = palavras_negociador[palavra].most_common(1)[0][0]
+                cor = negociadores_cores.get(negociador_principal, '#888888')
+                size = min(int(palavras_freq[palavra] * 2), 50)
+                
+                net.add_node(
+                    palavra,
+                    label=palavra,
+                    title=f"{palavra} ({palavras_freq[palavra]}x) - {negociador_principal}",
+                    color=cor,
+                    size=size,
+                    font={'size': 14, 'color': '#FFF'}
+                )
         
-        if not trecho or trecho == 'nan':
-            continue
+        arestas_adicionadas = set()
+        for _, row in df_tecnicas.iterrows():
+            try:
+                trecho = str(row.get('TRECHO DA TRANSCRIÇÃO', '')).lower()
+                
+                if not trecho or trecho == 'nan':
+                    continue
+                
+                palavras = re.findall(r'\b\w+\b', trecho)
+                palavras = [p for p in palavras if p in top_palavras]
+                
+                for i, p1 in enumerate(palavras):
+                    for p2 in palavras[i+1:]:
+                        edge_key = tuple(sorted([p1, p2]))
+                        if edge_key not in arestas_adicionadas:
+                            net.add_edge(p1, p2, color='rgba(249, 115, 22, 0.3)')
+                            arestas_adicionadas.add(edge_key)
+            except:
+                continue
         
-        palavras = re.findall(r'\b\w+\b', trecho)
-        palavras = [p for p in palavras if p in top_palavras]
-        
-        for i, p1 in enumerate(palavras):
-            for p2 in palavras[i+1:]:
-                net.add_edge(p1, p2, weight=1)
+        return net
     
-    # Configurar física (se disponível)
-    try:
-        net.physics.forceAtlas2based.gravitationalConstant = -26
-        net.physics.forceAtlas2based.centralGravity = 0.005
-        net.physics.forceAtlas2based.springLength = 200
-    except:
-        pass
-    
-    return net
+    except Exception as e:
+        return None
 
 
 def gerar_legenda_negociadores_dinamica(negociadores_cores):
+    """Gera legenda HTML dinâmica com cores dos negociadores"""
+    if not negociadores_cores:
+        return None
+    
+    html = """
+    <div style='
+        background: rgba(30, 30, 30, 0.85);
+        backdrop-filter: blur(16px) saturate(180%);
+        -webkit-backdrop-filter: blur(16px) saturate(180%);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 12px;
+        padding: 15px;
+        margin-bottom: 20px;
+    '>
+    <h5 style='color: #FFD700; margin-top: 0; margin-bottom: 15px;'>🎨 Legenda de Negociadores</h5>
+    <div style='display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px;'>
     """
-    Gera legenda HTML dinâmica baseada no dicionário de cores dos negociadores.
-    """
-
-    try:
-        if not negociadores_cores:
-            return ""
-
-        html = """
-        <div style="
-            background: rgba(255,255,255,0.04);
-            border: 1px solid rgba(255,255,255,0.08);
-            border-radius: 12px;
-            padding: 14px;
-            margin-bottom: 15px;
-            backdrop-filter: blur(12px);
-        ">
-        <h5 style='color:#FFD700; margin-top:0; margin-bottom:12px;'>
-        🎨 Legenda dos Negociadores
-        </h5>
-
-        <div style='display:flex; flex-wrap:wrap; gap:12px;'>
-        """
-
-        for negociador, cor in negociadores_cores.items():
-
-            html += f"""
-            <div style="
-                display:flex;
-                align-items:center;
-                gap:8px;
-                background: rgba(255,255,255,0.03);
-                padding:8px 12px;
-                border-radius:10px;
-                border:1px solid rgba(255,255,255,0.06);
-            ">
-                <div style="
-                    width:16px;
-                    height:16px;
-                    border-radius:50%;
-                    background:{cor};
-                    box-shadow:0 0 10px {cor};
-                    flex-shrink:0;
-                "></div>
-
-                <span style="
-                    color:#ddd;
-                    font-size:0.88rem;
-                    font-weight:500;
-                ">
-                    {negociador}
-                </span>
-            </div>
-            """
-
-        html += """
-        </div>
+    
+    for neg, cor in sorted(negociadores_cores.items()):
+        html += f"""
+        <div style='
+            display: flex;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 10px;
+            border-radius: 8px;
+            border-left: 4px solid {cor};
+        '>
+            <div style='
+                width: 24px;
+                height: 24px;
+                background-color: {cor};
+                border-radius: 50%;
+                margin-right: 10px;
+                flex-shrink: 0;
+            '></div>
+            <span style='color: #FFF; font-weight: 500;'>{neg}</span>
         </div>
         """
-
-        return html
-
-    except Exception as e:
-        return f"<p style='color:red;'>Erro legenda: {str(e)}</p>"
+    
+    html += """
+    </div>
+    </div>
+    """
+    
+    return html
 
 
 # ============================================================
