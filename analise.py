@@ -3051,52 +3051,63 @@ def gerar_grafo_palavras_com_estilo(df_tecnicas, negociadores_cores):
 
 
 def gerar_legenda_negociadores_dinamica(negociadores_cores):
-    """Gera legenda HTML dinâmica com cores dos negociadores"""
-    if not negociadores_cores:
-        return None
-    
-    html = """
-    <div style='
-        background: rgba(30, 30, 30, 0.85);
-        backdrop-filter: blur(16px) saturate(180%);
-        -webkit-backdrop-filter: blur(16px) saturate(180%);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 12px;
-        padding: 15px;
-        margin-bottom: 20px;
-    '>
-    <h5 style='color: #FFD700; margin-top: 0; margin-bottom: 15px;'>🎨 Legenda de Negociadores</h5>
-    <div style='display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px;'>
     """
-    
-    for neg, cor in sorted(negociadores_cores.items()):
-        html += f"""
-        <div style='
-            display: flex;
-            align-items: center;
-            background: rgba(255, 255, 255, 0.05);
-            padding: 10px;
-            border-radius: 8px;
-            border-left: 4px solid {cor};
-        '>
-            <div style='
-                width: 24px;
-                height: 24px;
-                background-color: {cor};
-                border-radius: 50%;
-                margin-right: 10px;
-                flex-shrink: 0;
-            '></div>
-            <span style='color: #FFF; font-weight: 500;'>{neg}</span>
-        </div>
+    Gera legenda HTML dinâmica baseada nas cores dos negociadores.
+    """
+
+    try:
+        if not negociadores_cores:
+            return ""
+
+        html = """
+        <div style="
+            display:flex;
+            flex-wrap:wrap;
+            gap:10px;
+            margin-bottom:15px;
+            padding:12px;
+            border-radius:12px;
+            background:rgba(255,255,255,0.04);
+            border:1px solid rgba(255,255,255,0.08);
+            backdrop-filter: blur(8px);
+        ">
         """
-    
-    html += """
-    </div>
-    </div>
-    """
-    
-    return html
+
+        for nome, cor in negociadores_cores.items():
+
+            html += f"""
+            <div style="
+                display:flex;
+                align-items:center;
+                gap:8px;
+                padding:6px 12px;
+                border-radius:999px;
+                background:rgba(255,255,255,0.05);
+            ">
+                <div style="
+                    width:14px;
+                    height:14px;
+                    border-radius:50%;
+                    background:{cor};
+                    border:1px solid rgba(255,255,255,0.25);
+                "></div>
+
+                <span style="
+                    color:#ddd;
+                    font-size:0.85rem;
+                    font-weight:500;
+                ">
+                    {nome}
+                </span>
+            </div>
+            """
+
+        html += "</div>"
+
+        return html
+
+    except Exception as e:
+        return f"<p style='color:red;'>Erro legenda: {str(e)}</p>"
 
 
 # ============================================================
