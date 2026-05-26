@@ -1,12 +1,31 @@
 import streamlit as st
 import requests
 import pandas as pd
+import os
 
 # ==========================================
-# CREDENCIAIS DO AIRTABLE (VIA SECRETS)
+# CREDENCIAIS DO AIRTABLE (VIA VARIÁVEIS DE AMBIENTE)
 # ==========================================
 def get_credentials():
-    return st.secrets["AIRTABLE_TOKEN"], st.secrets["BASE_ID"]
+    """Lê credenciais de variáveis de ambiente (Railway) ou secrets.toml (local)"""
+    
+    # Tentar ler de variáveis de ambiente (Railway)
+    airtable_token = os.getenv("AIRTABLE_TOKEN")
+    base_id = os.getenv("AIRTABLE_BASE_ID")
+    
+    # Se não encontrar, tentar de secrets.toml (local)
+    if not airtable_token or not base_id:
+        try:
+            airtable_token = st.secrets.get("AIRTABLE_TOKEN") or airtable_token
+            base_id = st.secrets.get("BASE_ID") or st.secrets.get("AIRTABLE_BASE_ID") or base_id
+        except:
+            pass
+    
+    # Validação
+    if not airtable_token or not base_id:
+        raise ValueError("❌ AIRTABLE_TOKEN ou AIRTABLE_BASE_ID não configurados!")
+    
+    return airtable_token, base_id
 
 TABELA_QUALITATIVA = "PARA ANALISE QUALITATIVA DA APA"
 TABELA_TECNICAS = "TABELA DE FREQUÊNCIAS DAS TÉCNICAS"
@@ -16,8 +35,10 @@ def buscar_tabela_airtable(nome_tabela):
     """Função mestre de conexão com a API (com captura de Record ID e Caching)."""
     try:
         AIRTABLE_TOKEN, BASE_ID = get_credentials()
-    except KeyError:
-        return pd.DataFrame(), "Erro: Credenciais do Airtable não encontradas nos secrets."
+    except ValueError as e:
+        return pd.DataFrame(), f"Erro: {str(e)}"
+    except Exception as e:
+        return pd.DataFrame(), f"Erro ao obter credenciais: {str(e)}"
 
     url = f"https://api.airtable.com/v0/{BASE_ID}/{nome_tabela}"
     headers = {"Authorization": f"Bearer {AIRTABLE_TOKEN}"}
@@ -27,7 +48,8 @@ def buscar_tabela_airtable(nome_tabela):
     
     while True:
         params = {}
-        if offset: params['offset'] = offset
+        if offset: 
+            params['offset'] = offset
             
         try:
             response = requests.get(url, headers=headers, params=params, timeout=15)
@@ -44,7 +66,8 @@ def buscar_tabela_airtable(nome_tabela):
             registos.append(campos)
         
         offset = dados.get('offset')
-        if not offset: break
+        if not offset: 
+            break
             
     return pd.DataFrame(registos), "Sucesso"
 
@@ -53,6 +76,7 @@ def buscar_tabela_airtable(nome_tabela):
 # ==========================================
 
 def buscar_dados_apa():
+    """Busca dados da tabela qualitativa"""
     df, status = buscar_tabela_airtable(TABELA_QUALITATIVA)
     # ÂNCORA 1: Salva a base de ocorrências no momento do download
     if status == "Sucesso" and not df.empty:
@@ -60,6 +84,7 @@ def buscar_dados_apa():
     return df, status
 
 def buscar_todas_tecnicas():
+    """Busca dados da tabela de técnicas"""
     df, status = buscar_tabela_airtable(TABELA_TECNICAS)
     # ÂNCORA 2: Salva a base de técnicas no momento do download
     if status == "Sucesso" and not df.empty:
