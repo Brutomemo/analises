@@ -17,6 +17,10 @@ from wordcloud import WordCloud
 from sklearn.metrics.pairwise import cosine_similarity
 import plotly.graph_objects as go
 import plotly.express as px
+from scipy import stats
+from sklearn.preprocessing import StandardScaler
+import warnings
+warnings.filterwarnings('ignore')
 
 # ============================================================
 # 1. STOPWORDS E CONFIGURAÇÕES GERAIS
@@ -283,6 +287,38 @@ DICIONARIO_OPERACIONAL = {
 # ============================================================
 # 3. FUNÇÕES AUXILIARES
 # ============================================================
+
+ 
+def norm_col(t):
+    """Normaliza nome de coluna removendo acentos e espaços"""
+    return (
+        unicodedata.normalize("NFKD", str(t))
+        .encode("ASCII", "ignore")
+        .decode("ASCII")
+        .lower()
+    )
+ 
+def achar_coluna(df, papel, metrica, momento):
+    """
+    Encontra coluna no dataframe por palavras-chave normalizadas
+    
+    Args:
+        df: DataFrame
+        papel: "Principal", "Secundário", "Líder"
+        metrica: "Agressividade", "Receptividade"
+        momento: "Chegada", "Encerramento"
+    
+    Returns:
+        Nome da coluna encontrada ou None
+    """
+    for col in df.columns:
+        cn = norm_col(col)
+        if (norm_col(papel) in cn and 
+            norm_col(metrica) in cn and 
+            norm_col(momento) in cn):
+            return col
+    return None
+
 
 def normalizar_texto(texto):
     if not texto or not isinstance(texto, str):
