@@ -4393,9 +4393,46 @@ Este sistema é protegido por direitos autorais e legislação aplicável. Repro
                         """, unsafe_allow_html=True)
                         
                         # ── LEGENDA DINÂMICA ──
-                        legenda_html = gerar_legenda_negociadores_dinamica(negociadores_cores)
-                        if legenda_html:
-                            st.markdown(legenda_html, unsafe_allow_html=True)
+                        
+                        if negociadores_cores:
+                            st.markdown("""
+                            <div style='
+                                background: rgba(30, 30, 30, 0.85);
+                                backdrop-filter: blur(16px) saturate(180%);
+                                -webkit-backdrop-filter: blur(16px) saturate(180%);
+                                border: 1px solid rgba(255, 255, 255, 0.1);
+                                border-radius: 12px;
+                                padding: 15px;
+                                margin-bottom: 20px;
+                            '>
+                            <h5 style='color: #FFD700; margin-top: 0; margin-bottom: 15px;'>🎨 Legenda de Negociadores</h5>
+                            <div style='display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px;'>
+                            """, unsafe_allow_html=True)
+                            
+                            cols = st.columns(min(3, len(negociadores_cores)))
+                            for i, (neg, cor) in enumerate(sorted(negociadores_cores.items())):
+                                with cols[i % len(cols)]:
+                                    st.markdown(f"""
+                                    <div style='
+                                        display: flex;
+                                        align-items: center;
+                                        background: rgba(255, 255, 255, 0.05);
+                                        padding: 10px;
+                                        border-radius: 8px;
+                                        border-left: 4px solid {cor};
+                                    '>
+                                        <div style='
+                                            width: 24px;
+                                            height: 24px;
+                                            background-color: {cor};
+                                            border-radius: 50%;
+                                            margin-right: 10px;
+                                        '></div>
+                                        <span style='color: #FFF; font-weight: 500;'>{neg}</span>
+                                    </div>
+                                    """, unsafe_allow_html=True)
+                            
+                            st.markdown("</div></div>", unsafe_allow_html=True)
                         
                         with st.spinner("⏳ Gerando grafo com glassmorphism..."):
                             try:
