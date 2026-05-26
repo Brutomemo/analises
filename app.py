@@ -2687,7 +2687,7 @@ with aba_individual:
                 col_left, col_center, col_right = st.columns([1, 1, 1])
                 with col_center:
                     is_transformer = render_toggle_button(
-                        label="✔️ Transformer Otimizado (10-15s)",
+                        label="✔️ Análise de Sentimento (Transformer)",
                         session_key="tab8_transformer_otimizado",
                         button_key="btn_tab8_transformer_otimizado"
                     )
