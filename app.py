@@ -4297,7 +4297,7 @@ Este sistema é protegido por direitos autorais e legislação aplicável. Repro
             # ── CARREGAR DADOS ──────────────────────────────────────────
             try:
                 # Importar função de análise
-                from analise_perfil_negociadores import (
+                from analise import (
                     analisar_perfil_negociadores,
                     gerar_grafo_palavras,
                     gerar_tabela_score,
