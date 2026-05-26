@@ -3897,8 +3897,8 @@ Este sistema é protegido por direitos autorais e legislação aplicável. Repro
 
         st.markdown("""
         <div class='info-card'>
-        <h5 style='color: #FFD700; margin-top: 0;'>📊 O que Prediz Queda de Agressividade?</h5>
-        <p style='font-size:1rem;color:#ddd;'>
+        <h5 style='color: #FFD700; margin-top: 0;'>O que Prediz Queda de Agressividade?</h5>
+        <p style='font-size:1.1rem;color:#ddd;'>
         Análise multivariada rigorosa com validação estatística.
         Identifica quais fatores realmente influenciam a redução de agressividade,
         controlando confundidores (viés de negociador, tipo de ocorrência, etc).
@@ -3985,7 +3985,7 @@ Este sistema é protegido por direitos autorais e legislação aplicável. Repro
                             
                             st.markdown("""
                             <div class='info-card'>
-                            <h5 style='color: #FFD700;'>📈 Qualidade do Modelo</h5>
+                            <h5 style='color: #FFD700;'>Qualidade do Modelo</h5>
                             """, unsafe_allow_html=True)
                             
                             col1, col2, col3, col4 = st.columns(4)
@@ -4099,7 +4099,7 @@ Este sistema é protegido por direitos autorais e legislação aplicável. Repro
                             
                             st.markdown("""
                             <div class='info-card'>
-                            <h5 style='color: #FFD700;'>🔍 Triangulação: Consenso dos 3 Negociadores</h5>
+                            <h5 style='color: #FFD700;'>Triangulação: Consenso dos 3 Negociadores</h5>
                             """, unsafe_allow_html=True)
                             
                             col_tri1, col_tri2, col_tri3, col_tri4 = st.columns(4)
@@ -4148,7 +4148,7 @@ Este sistema é protegido por direitos autorais e legislação aplicável. Repro
                             
                             st.markdown("""
                             <div class='info-card'>
-                            <h5 style='color: #FFD700;'>🔧 Diagnósticos do Modelo</h5>
+                            <h5 style='color: #FFD700;'>Diagnósticos do Modelo</h5>
                             <p style='font-size: 0.85rem; color: #aaa;'>
                             Validação de assumções estatísticas.
                             </p>
@@ -4203,7 +4203,7 @@ Este sistema é protegido por direitos autorais e legislação aplicável. Repro
                             
                             st.markdown("""
                             <div class='info-card'>
-                            <h5 style='color: #FFD700;'>📊 Diagnóstico de Resíduos</h5>
+                            <h5 style='color: #FFD700;'>Diagnóstico de Resíduos</h5>
                             """, unsafe_allow_html=True)
                             
                             col_res1, col_res2 = st.columns(2)
