@@ -319,6 +319,46 @@ def achar_coluna(df, papel, metrica, momento):
             return col
     return None
 
+def converter_escala(val):
+    """
+    Converte escala Likert para numérica
+    Não Observado (0) → 0
+    Não Agressivo → 1
+    Neutro → 2
+    Parcialmente Agressivo → 3
+    Agressivo → 4
+    Muito Agressivo → 5
+    """
+    if pd.isna(val):
+        return pd.NA
+    
+    val_str = str(val).strip().lower()
+    
+    mapeamento = {
+        'não observado': 0,
+        'nao observado': 0,
+        'não agressivo': 1,
+        'nao agressivo': 1,
+        'neutro': 2,
+        'parcialmente agressivo': 3,
+        'parcialmente agressivo': 3,
+        'agressivo': 4,
+        'muito agressivo': 5,
+    }
+    
+    # Se for número, retornar direto
+    try:
+        return float(val)
+    except:
+        pass
+    
+    # Se for string, buscar no mapeamento
+    for chave, valor in mapeamento.items():
+        if chave in val_str:
+            return valor
+    
+    return pd.NA
+
 
 def normalizar_texto(texto):
     if not texto or not isinstance(texto, str):
