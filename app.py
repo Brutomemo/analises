@@ -4658,7 +4658,7 @@ Este sistema é protegido por direitos autorais e legislação aplicável. Repro
         st.markdown("""
         <div class='info-card'>
         <h5 style='color: #FFD700; margin-top: 0;'>Síntese Interpretativa Assistida por Inteligência Artificial</h5>
-        <p style='font-size:1rem;color:#ddd;'>
+        <p style='font-size:1.1rem;color:#ddd;'>
         A interpretação da IA é colaborativa e NÃO substitui a análise e compreensão do Avaliador/Negociador.
         Exige constante aprimoramento de instruções.
         </p>
