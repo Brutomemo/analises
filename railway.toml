@@ -1,0 +1,16 @@
+# railway.toml - Configuração do Railway
+ 
+[build]
+builder = "docker"
+ 
+[deploy]
+startCommand = "streamlit run app.py --server.port=8000 --server.address=0.0.0.0"
+healthcheckPath = "/_stcore/health"
+restartPolicyType = "always"
+restartPolicyMaxRetries = 5
+ 
+[env]
+# Variáveis de ambiente do Railway (adicionar no dashboard)
+# AIRTABLE_TOKEN=seu_token_aqui
+# AIRTABLE_BASE_ID=seu_base_aqui
+# STREAMLIT_CLIENT_TOOLBARMODE=minimal
