@@ -2904,7 +2904,7 @@ def testar_chi_quadrado(df_tecnicas):
 def aplicar_kmeans(df_resultado, k=2):
     """K-means: Agrupar negociadores em k clusters baseado no score
     
-    CORRIGIDO: Remove NaN antes do K-means
+    CORRIGIDO: Diferencia clusters por score (Escuta vs Persuasão)
     """
     from sklearn.cluster import KMeans
     from sklearn.preprocessing import StandardScaler
@@ -2941,16 +2941,34 @@ def aplicar_kmeans(df_resultado, k=2):
         
         df_resultado['Cluster'] = clusters
         
-        # Interpretar clusters para k=2
+        # ── INTERPRETAR CLUSTERS PARA K=2 ──
         if k == 2:
+            clusters_info = []
             for i in range(2):
                 cluster_data = df_resultado[df_resultado['Cluster'] == i]
                 if len(cluster_data) > 0:
                     media_score = cluster_data['Score Tendência'].mean()
-                    if media_score > 0:
-                        df_resultado.loc[df_resultado['Cluster'] == i, 'Perfil_Cluster'] = 'Escuta Ativa'
-                    else:
-                        df_resultado.loc[df_resultado['Cluster'] == i, 'Perfil_Cluster'] = 'Persuasão'
+                    media_efet_escuta = cluster_data['Efetividade Escuta'].mean()
+                    clusters_info.append({
+                        'cluster': i,
+                        'media_score': media_score,
+                        'media_efet_escuta': media_efet_escuta,
+                        'tamanho': len(cluster_data)
+                    })
+            
+            # Ordenar por score - o com maior score é Escuta Ativa
+            clusters_info.sort(key=lambda x: x['media_score'], reverse=True)
+            
+            for idx, info in enumerate(clusters_info):
+                cluster_id = info['cluster']
+                if idx == 0:  # Primeiro (maior score) = Escuta Ativa
+                    perfil = 'Escuta Ativa'
+                    emoji = '🟢'
+                else:  # Segundo (menor score) = Persuasão
+                    perfil = 'Persuasão'
+                    emoji = '🟠'
+                
+                df_resultado.loc[df_resultado['Cluster'] == cluster_id, 'Perfil_Cluster'] = f"{emoji} {perfil}"
         
         return df_resultado, kmeans, scaler, X_scaled
     
