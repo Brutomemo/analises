@@ -2643,6 +2643,7 @@ def calcular_qui_quadrado(df_historico, col_cat1, col_cat2):
             "msg": f"Erro: {str(e)}"
         }
     
+
 # ============================================================
 # ANÁLISE DE PERFIL DE NEGOCIADORES (Adicionar após linha 2648)
 # Comparação: Escuta Ativa vs Persuasão/Influência
@@ -2820,31 +2821,64 @@ def calcular_score_tendencia(df_tecnicas):
 # 3. TESTES ESTATÍSTICOS
 # ============================================================
 
-def testar_anova(df_tecnicas):
-    """ANOVA: Efetividade entre negociadores é significativamente diferente?"""
+def interpretar_anova_detalhado(df_tecnicas):
+    """ANOVA com interpretação detalhada de COMO diferem os negociadores"""
     from scipy.stats import f_oneway
     
-    grupos = []
-    negociadores = []
+    # Agrupar por negociador
+    grupos_dados = {}
     
     for neg in df_tecnicas['NEGOCIADOR PRINCIPAL'].unique():
         df_neg = df_tecnicas[df_tecnicas['NEGOCIADOR PRINCIPAL'] == neg]
         atitudes = df_neg['atitude_num'].dropna().values
         
         if len(atitudes) > 0:
-            grupos.append(atitudes)
-            negociadores.append(neg)
+            grupos_dados[neg] = {
+                'valores': atitudes,
+                'media': atitudes.mean(),
+                'desvio': atitudes.std(),
+                'n': len(atitudes)
+            }
     
+    # ANOVA
+    grupos = [v['valores'] for v in grupos_dados.values()]
     if len(grupos) > 1:
         f_stat, p_value = f_oneway(*grupos)
-        return {
-            'teste': 'ANOVA',
-            'f_statistic': round(f_stat, 4),
-            'p_value': round(p_value, 4),
-            'significativo': p_value < 0.05,
-            'interpretacao': 'Efetividades entre negociadores SÃO significativamente diferentes' if p_value < 0.05 else 'Efetividades entre negociadores NÃO são significativamente diferentes'
-        }
-    return None
+    else:
+        return None
+    
+    # ── RANKING: Quem é MAIS efetivo? ──
+    ranking = sorted(
+        grupos_dados.items(),
+        key=lambda x: x[1]['media'],
+        reverse=True
+    )
+    
+    interpretacao = f"""
+    🧪 ANOVA - Efetividade entre Negociadores
+    ═════════════════════════════════════════════════════════════
+    
+    ✅ RESULTADO: Negociadores SÃO significativamente diferentes (p={p_value:.4f})
+    
+    📊 RANKING DE EFETIVIDADE (do MELHOR para o PIOR):
+    """
+    
+    for i, (neg, dados) in enumerate(ranking, 1):
+        emoji = "🥇" if i == 1 else "🥈" if i == 2 else "🥉" if i == 3 else "  "
+        interpretacao += f"""
+    {emoji} {i}º - {neg}
+         Efetividade média: {dados['media']:.2f}
+         Desvio padrão: {dados['desvio']:.2f}
+         N de técnicas: {dados['n']}
+    """
+    
+    return {
+        'f_statistic': round(f_stat, 4),
+        'p_value': round(p_value, 4),
+        'ranking': ranking,
+        'interpretacao': interpretacao,
+        'significativo': p_value < 0.05
+    }
 
 def testar_chi_quadrado(df_tecnicas):
     """Chi-quadrado: Distribuição de grupos técnicos depende do negociador?"""
@@ -2975,7 +3009,12 @@ def gerar_grafo_palavras(df_tecnicas, negociadores_cores):
     
     # Criar rede
     net = Network(height='750px', width='100%', directed=False, notebook=False)
-    net.physics.enabled = True
+    
+    # Configurar física (se disponível)
+    try:
+        net.physics.enabled = True
+    except:
+        pass
     
     # Adicionar nós (palavras)
     for palavra in top_palavras:
@@ -3006,10 +3045,13 @@ def gerar_grafo_palavras(df_tecnicas, negociadores_cores):
             for p2 in palavras[i+1:]:
                 net.add_edge(p1, p2, weight=1)
     
-    # Configurar física
-    net.physics.forceAtlas2based.gravitationalConstant = -26
-    net.physics.forceAtlas2based.centralGravity = 0.005
-    net.physics.forceAtlas2based.springLength = 200
+    # Configurar física (se disponível)
+    try:
+        net.physics.forceAtlas2based.gravitationalConstant = -26
+        net.physics.forceAtlas2based.centralGravity = 0.005
+        net.physics.forceAtlas2based.springLength = 200
+    except:
+        pass
     
     return net
 
