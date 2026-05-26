@@ -1437,1692 +1437,1692 @@ with aba_individual:
                 """, unsafe_allow_html=True)
 
                 
-                with st.spinner("Cruzando técnicas com reação do causador..."):
-                    try:
-                        record_id_atual = df_apa.get('Airtable_Record_ID')
+                    with st.spinner("Cruzando técnicas com reação do causador..."):
+                        try:
+                            record_id_atual = df_apa.get('Airtable_Record_ID')
 
-                        if not record_id_atual:
-                            st.warning("⚠️ ID do registro não encontrado.")
-                        else:
-                            df_tec = st.session_state.get("df_tec", pd.DataFrame())
-
-                            if df_tec.empty:
-                                st.warning("⚠️ Tabela de técnicas não carregada. Atualize os dados.")
+                            if not record_id_atual:
+                                st.warning("⚠️ ID do registro não encontrado.")
                             else:
-                                def vinculo_contem(val, record_id):
-                                    if isinstance(val, list):
-                                        return record_id in val
-                                    return str(val) == record_id
+                                df_tec = st.session_state.get("df_tec", pd.DataFrame())
 
-                                mask = df_tec['Vinculo_APA'].apply(
-                                    lambda x: vinculo_contem(x, record_id_atual)
-                                )
-                                df_tec_apa = df_tec[mask].copy()
-
-                                if df_tec_apa.empty:
-                                    st.info("Nenhuma técnica registrada para esta ocorrência.")
+                                if df_tec.empty:
+                                    st.warning("⚠️ Tabela de técnicas não carregada. Atualize os dados.")
                                 else:
-                                    def normalizar_reacao(val):
-                                        if val is None:
-                                            return None
-                                        s = str(val).strip()
-                                        if s in ["-1", "-1.0", "🔴 Reação Negativa", "Reação Negativa"]:
-                                            return -1
-                                        elif s in ["0", "0.0", "⚪ Reação Neutra", "Reação Neutra"]:
-                                            return 0
-                                        elif s in ["1", "1.0", "🟢 Reação Positiva", "Reação Positiva"]:
-                                            return 1
-                                        else:
-                                            return None
+                                    def vinculo_contem(val, record_id):
+                                        if isinstance(val, list):
+                                            return record_id in val
+                                        return str(val) == record_id
 
-                                    col_reacao = None
-                                    for c in ['ATITUDE DO CAUSADOR', 'Atitude do Causador', 'atitude_causador']:
-                                        if c in df_tec_apa.columns:
-                                            col_reacao = c
-                                            break
+                                    mask = df_tec['Vinculo_APA'].apply(
+                                        lambda x: vinculo_contem(x, record_id_atual)
+                                    )
+                                    df_tec_apa = df_tec[mask].copy()
 
-                                    col_tecnica = None
-                                    for c in ['TÉCNICAS', 'Técnicas', 'tecnicas']:
-                                        if c in df_tec_apa.columns:
-                                            col_tecnica = c
-                                            break
-
-                                    if not col_tecnica:
-                                        st.warning("⚠️ Coluna TÉCNICAS não encontrada.")
+                                    if df_tec_apa.empty:
+                                        st.info("Nenhuma técnica registrada para esta ocorrência.")
                                     else:
-                                        if col_reacao:
-                                            df_tec_apa['_reacao_num'] = df_tec_apa[col_reacao].apply(normalizar_reacao)
-                                        else:
-                                            df_tec_apa['_reacao_num'] = None
-
-                                        resumo = []
-                                        for tecnica, grupo in df_tec_apa.groupby(col_tecnica):
-                                            total    = len(grupo)
-                                            positivo = (grupo['_reacao_num'] == 1).sum()
-                                            neutro   = (grupo['_reacao_num'] == 0).sum()
-                                            negativo = (grupo['_reacao_num'] == -1).sum()
-                                            inaud    = grupo['_reacao_num'].isna().sum()
-
-                                            observados = positivo + neutro + negativo
-                                            if observados > 0:
-                                                score = round(((positivo - negativo) / observados) * 100, 1)
+                                        def normalizar_reacao(val):
+                                            if val is None:
+                                                return None
+                                            s = str(val).strip()
+                                            if s in ["-1", "-1.0", "🔴 Reação Negativa", "Reação Negativa"]:
+                                                return -1
+                                            elif s in ["0", "0.0", "⚪ Reação Neutra", "Reação Neutra"]:
+                                                return 0
+                                            elif s in ["1", "1.0", "🟢 Reação Positiva", "Reação Positiva"]:
+                                                return 1
                                             else:
-                                                score = None
-
-                                            resumo.append({
-                                                "Técnica":        tecnica,
-                                                "Total":          total,
-                                                "🟢 Positiva":    int(positivo),
-                                                "⚪ Neutra":      int(neutro),
-                                                "🔴 Negativa":    int(negativo),
-                                                "❓ Inaudível":   int(inaud),
-                                                "Score (%)":      score
-                                            })
-
-                                        df_resumo = pd.DataFrame(resumo)
-                                        df_resumo = df_resumo.sort_values("Score (%)", ascending=False, na_position='last')
-
-                                        st.session_state['tecnicas_analisadas'] = df_resumo
-                                        st.success(f"✅ {len(df_resumo)} técnicas analisadas!")
-
-                    except Exception as e:
-                        st.error(f"Erro ao analisar técnicas: {str(e)[:80]}")
-
-            # ✅ EXIBIÇÃO DOS RESULTADOS
-            if st.session_state.get('tecnicas_analisadas') is not None:
-                df_resumo = st.session_state['tecnicas_analisadas']
-
-                total_usos     = int(df_resumo["Total"].sum())
-                total_positivo = int(df_resumo["🟢 Positiva"].sum())
-                total_neutro   = int(df_resumo["⚪ Neutra"].sum())
-                total_negativo = int(df_resumo["🔴 Negativa"].sum())
-                observados_total = total_positivo + total_neutro + total_negativo
-                score_geral    = round(((total_positivo - total_negativo) / max(1, observados_total)) * 100, 1)
-
-                st.markdown("### ✔️ Resumo Geral")
-                col1, col2, col3, col4 = st.columns(4)
-                with col1:
-                    st.metric("Total de Usos", total_usos)
-                with col2:
-                    st.metric("🟢 Positivas", total_positivo)
-                with col3:
-                    st.metric("🔴 Negativas", total_negativo)
-                with col4:
-                    st.metric("Score Geral", f"{score_geral:+.1f}%")
-
-                st.markdown("### ✔️ Efetividade por Técnica")
-                st.dataframe(
-                    df_resumo,
-                    use_container_width=True,
-                    hide_index=True
-                )
-
-                st.markdown("### ✔️ Distribuição de Reações por Técnica")
-                try:
-                    import plotly.graph_objects as go
-
-                    tecnicas   = df_resumo["Técnica"].tolist()
-                    positivos  = df_resumo["🟢 Positiva"].tolist()
-                    neutros    = df_resumo["⚪ Neutra"].tolist()
-                    negativos  = df_resumo["🔴 Negativa"].tolist()
-
-                    fig_barras = go.Figure()
-
-                    fig_barras.add_trace(go.Bar(
-                        name="🟢 Positiva",
-                        x=tecnicas, y=positivos,
-                        marker_color="#10b981"
-                    ))
-                    fig_barras.add_trace(go.Bar(
-                        name="⚪ Neutra",
-                        x=tecnicas, y=neutros,
-                        marker_color="#6b7280"
-                    ))
-                    fig_barras.add_trace(go.Bar(
-                        name="🔴 Negativa",
-                        x=tecnicas, y=negativos,
-                        marker_color="#ef4444"
-                    ))
-
-                    fig_barras.update_layout(
-                        barmode="stack",
-                        paper_bgcolor="rgba(0,0,0,0)",
-                        plot_bgcolor="rgba(0,0,0,0)",
-                        font=dict(color="#fff"),
-                        legend=dict(
-                            font=dict(color="#fff"),
-                            bgcolor="rgba(0,0,0,0.4)"
-                        ),
-                        xaxis=dict(
-                            tickfont=dict(color="#FFD700"),
-                            gridcolor="#333"
-                        ),
-                        yaxis=dict(
-                            tickfont=dict(color="#aaa"),
-                            gridcolor="#333"
-                        ),
-                        height=420,
-                        margin=dict(t=20, b=120, l=40, r=40)
-                    )
-
-                    st.plotly_chart(fig_barras, use_container_width=True)
-
-                except Exception as e:
-                    st.error(f"Erro ao gerar gráfico: {str(e)[:80]}")
-
-                # ── NARRATIVA OPERACIONAL ────────────────────────────
-                st.markdown("---")
-                st.markdown("### ✔️ Leitura Operacional")
-
-                df_com_score = df_resumo[df_resumo["Score (%)"].notna()]
-                
-                if not df_com_score.empty:
-                    score_maximo = df_com_score["Score (%)"].max()
-                    tecnicas_maximas = df_com_score[df_com_score["Score (%)"] == score_maximo]
-                    
-                    if len(tecnicas_maximas) == 1:
-                        melhor = tecnicas_maximas.iloc[0]
-                        txt_melhor = (
-                            f"✅ <strong>Técnicas mais efetivas:</strong> {melhor['Técnica']} "
-                            f"— Score {melhor['Score (%)']:+.1f}% "
-                            f"({int(melhor['🟢 Positiva'])} positivo / {int(melhor['Total'])} usos)"
-                        )
-                    else:
-                        tecnicas_nomes = ", ".join(tecnicas_maximas['Técnica'].tolist())
-                        txt_melhor = (
-                            f"✅ <strong>Técnicas mais efetivas (empate):</strong> {tecnicas_nomes} "
-                            f"— Score {score_maximo:+.1f}%"
-                        )
-                    
-                    st.markdown(f"""
-                    <div style='background:rgba(16,185,129,0.08);padding:12px;border-radius:8px;border-left:3px solid #10b981;margin-bottom:10px;'>
-                    <p style='color:#ddd;font-size:0.9rem;margin:0;'>
-                    {txt_melhor}
-                    </p>
-                    </div>
-                    """, unsafe_allow_html=True)
-
-                if not df_com_score.empty:
-                    score_minimo = df_com_score["Score (%)"].min()
-                    tecnicas_minimas = df_com_score[df_com_score["Score (%)"] == score_minimo]
-                    
-                    if len(tecnicas_minimas) == 1:
-                        pior = tecnicas_minimas.iloc[0]
-                        txt_pior = (
-                            f"⚠️ <strong>Técnica menos efetiva:</strong> {pior['Técnica']} "
-                            f"— Score {pior['Score (%)']:+.1f}% "
-                            f"({int(pior['🔴 Negativa'])} negativo / {int(pior['Total'])} usos)"
-                        )
-                    else:
-                        tecnicas_nomes = ", ".join(tecnicas_minimas['Técnica'].tolist())
-                        txt_pior = (
-                            f"⚠️ <strong>Técnicas menos efetivas (empate):</strong> {tecnicas_nomes} "
-                            f"— Score {score_minimo:+.1f}%"
-                        )
-                    
-                    st.markdown(f"""
-                    <div style='background:rgba(239,68,68,0.08);padding:12px;border-radius:8px;border-left:3px solid #ef4444;margin-bottom:10px;'>
-                    <p style='color:#ddd;font-size:0.9rem;margin:0;'>
-                    {txt_pior}
-                    </p>
-                    </div>
-                    """, unsafe_allow_html=True)
-
-                st.markdown("---")
-                st.markdown("### ✔️ Efetividade Geral do Repertório Técnico")
-
-                media_geral = round(df_com_score["Score (%)"].mean(), 1) if not df_com_score.empty else 0
-
-                st.markdown(f"""
-                <div style='background:rgba(255,215,0,0.06);padding:12px;border-radius:8px;border:1px solid rgba(255,215,0,0.15);margin-bottom:15px;'>
-                <p style='font-size:0.85rem;color:#FFD700;margin:0 0 8px 0;'>
-                <strong>ℹ️ Como é medido:</strong>
-                </p>
-                <p style='font-size:0.85rem;color:#ddd;margin:0;line-height:1.6;'>
-                Efetividade Geral = Média dos scores de todas as técnicas<br>
-                Score de cada técnica = (positivas - negativas) / observadas × 100%<br>
-                <strong>Baseline desta análise:</strong> {media_geral:+.1f}%
-                </p>
-                </div>
-                """, unsafe_allow_html=True)
-
-                if score_geral >= 50:
-                    cor = "🟢"
-                    status = "ÓTIMA"
-                    explicacao = (
-                        f"O repertório técnico teve {score_geral:+.1f}% de efetividade geral "
-                        f"(acima do baseline de {media_geral:+.1f}%). "
-                        "Isso significa que positivas superaram negativas de forma significativa. "
-                        "Indicativo de estratégia técnica bem-sucedida nesta ocorrência."
-                    )
-                elif score_geral >= 0:
-                    cor = "🟡"
-                    status = "MODERADA"
-                    explicacao = (
-                        f"O repertório técnico teve {score_geral:+.1f}% de efetividade geral "
-                        f"(próximo ao baseline de {media_geral:+.1f}%). "
-                        "Positivas e negativas estão equilibradas. "
-                        "Há oportunidade de aprimoramento — algumas técnicas funcionaram melhor que outras."
-                    )
-                else:
-                    cor = "🔴"
-                    status = "FRACA"
-                    explicacao = (
-                        f"O repertório técnico teve {score_geral:+.1f}% de efetividade geral "
-                        f"(abaixo do baseline de {media_geral:+.1f}%). "
-                        "Negativas superaram positivas. "
-                        "Indicativo de mismatch entre técnicas empregadas e dinâmica do causador."
-                    )
-
-                st.markdown(f"""
-                <div style='background:rgba(0,0,0,0.3);padding:14px;border-radius:8px;border-left:4px solid {"#10b981" if score_geral >= 50 else "#f59e0b" if score_geral >= 0 else "#ef4444"};margin-bottom:15px;'>
-                <p style='font-size:0.95rem;color:#ddd;margin:0;'>
-                {cor} <strong>Efetividade Geral: {status}</strong><br><br>
-                {explicacao}
-                </p>
-                </div>
-                """, unsafe_allow_html=True)
-
-                st.markdown("### ✔️ Contexto Comparativo")
-
-                st.markdown(f"""
-                <p style='font-size:0.9rem;color:#aaa;line-height:1.6;'>
-                <strong>Técnicas com score positivo:</strong> {(df_com_score["Score (%)"] > 0).sum()} de {len(df_com_score)}<br>
-                <strong>Técnicas com score negativo:</strong> {(df_com_score["Score (%)"] < 0).sum()} de {len(df_com_score)}<br>
-                <strong>Técnicas neutras (0%):</strong> {(df_com_score["Score (%)"] == 0).sum()} de {len(df_com_score)}<br>
-                <strong>Variação entre técnicas:</strong> {df_com_score["Score (%)"].max() - df_com_score["Score (%)"].min():.1f} pontos percentuais<br>
-                <strong>Confiabilidade (volume de usos):</strong> {int(df_resumo["Total"].sum())} técnicas empregadas no total
-                </p>
-                """, unsafe_allow_html=True)
-
-                if score_geral >= 50:
-                    txt_geral = "✅ Repertório técnico com boa efetividade geral nesta ocorrência."
-                elif score_geral >= 0:
-                    txt_geral = "⚠️ Repertório técnico com efetividade moderada — oportunidade de melhoria."
-                else:
-                    txt_geral = "🔴 Repertório técnico com baixa efetividade — maioria das técnicas gerou reação negativa."
-
-                st.info(txt_geral)
-
-    st.markdown("---")
-
-        # PRÓXIMA SEÇÃO (ANÁLISE SEMÂNTICA, etc)
-        
-               
-    st.markdown("""
-    <h3 style='color: #FFD700;'>✔ Análise Semântica </h3>
-    <p style='color: #aaa; font-size: 0.95rem; margin-top: -10px;'>
-    <strong>O que o causador REALMENTE sente, quer e teme.</strong> 
-    Enquanto Similitude conta palavras repetidas, Semântica lê entre as linhas: intenções escondidas, 
-    gatilhos emocionais e pontos de alavanca para resolução.
-    </p></p>
-    """, unsafe_allow_html=True)
-
-    # --- INÍCIO DO BLOCO DE EXPLICAÇÃO ---
-    if "show_explicacao" not in st.session_state:
-        st.session_state["show_explicacao"] = False
-
-    label_btn = "▲ Ocultar Guia" if st.session_state["show_explicacao"] else "▼ Entenda como ler a Análise"
-    if st.button(label_btn, key="btn_explicacao_semantica"):
-        st.session_state["show_explicacao"] = not st.session_state["show_explicacao"]
-
-    if st.session_state["show_explicacao"]:
-
-        tab_pratica, tab_framework, tab_ngramas, tab_limitacoes = st.tabs([
-            "✔ Aplicação Prática",
-            "✔ Os Três Vetores",
-            "✔ Padrões & Fixações",
-            "✔ Limitações"
-        ])
-
-        with tab_pratica:
-            st.markdown("""
-            <div class='info-card'>
-            <h5 style='color:#FFD700;margin-top:0;'>Como ler os dados na prática?</h5>
-            <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
-            A análise semântica responde uma pergunta simples: <strong>"O que esse sujeito está vivendo agora?"</strong>
-            </p>
-            <hr style='border-color:#444;margin:12px 0;'>
-            <h5 style='color:#FFD700;'>📌 Passo 1: Identifique o ESTADO EMOCIONAL</h5>
-            <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
-            <strong>Procure por:</strong> Quanto de <strong>medo, raiva, desespero</strong> o causador está carregando?<br><br>
-            • <em>"vou me matar"</em> + <em>"não aguento mais"</em> → Desespero acima do limite (risco iminente)<br>
-            • <em>"ninguém entra aqui"</em> + <em>"vou atirar"</em> → Raiva/defesa (hostilidade)<br>
-            • <em>"perdi tudo"</em> + <em>"ninguém se importa"</em> → Abandono/desesperança (depressão)<br><br>
-            <strong>Por quê?</strong> Segundo William Ury (Harvard), antes de negociar, você precisa entender o <u>estado de espírito</u> 
-            da outra parte. Emoção descontrolada = impossível raciocínio lógico.
-            </p>
-            <hr style='border-color:#444;margin:12px 0;'>
-            <h5 style='color:#FFD700;'>📌 Passo 2: Identifique as EXIGÊNCIAS REAIS</h5>
-            <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
-            <strong>Procure por:</strong> O que esse sujeito <strong>quer concretamente</strong>? (não apenas ameaça)<br><br>
-            • <em>"quero a imprensa aqui"</em> → Exigência instrumental (segurança/poder/reconhecimento)<br>
-            • <em>"Quero que a imprensa saiba o que aconteceu"</em> → Exigência moral (dignidade)<br>
-            • <em>"preciso de dinheiro"</em> → Exigência material (sobrevivência)<br><br>
-            <strong>Por quê?</strong> Segundo William Ury (Harvard Negotiation Project), 
-            reconhecer a legitimidade da exigência (mesmo que você não possa cumprir) 
-            reduz hostilidade. O FBI e Chris Voss confirmam isso através de 
-            <u>escuta ativa</u> em negociações críticas. 
-            (mesmo que você não possa cumprir) reduz hostilidade. O causador quer ser OUVIDO, não necessariamente atendido.
-            </p>
-            <hr style='border-color:#444;margin:12px 0;'>
-            <h5 style='color:#FFD700;'>📌 Passo 3: Encontre os GANCHOS PARA DESESCALADA</h5>
-            <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
-            <strong>Procure por:</strong> Onde há <strong>abertura, ambivalência, vínculo</strong>?<br><br>
-            • <em>"me ajuda"</em> (mesmo que velado) → Pedido de ajuda (ponto de conexão)<br>
-            • <em>"fala comigo"</em> → Busca por contato (rapport possível)<br>
-            • <em>"minha filha"</em> → Vínculo afetivo (alavanca para mudança de decisão)<br><br>
-            <strong>Por quê?</strong> O Manual do FBI de Negociação enfatiza que <u>pequenos sinais de cooperação</u> 
-            devem ser amplificados. "Minha filha" não é só uma palavra — é a ponte entre desespero e vida.
-            </p>
-            <hr style='border-color:#444;margin:12px 0;'>
-            <h5 style='color:#FFD700;'>📌 Passo 4: Analise a ABORDAGEM DO NEGOCIADOR</h5>
-            <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
-            <strong>Procure por:</strong> Como o negociador respondeu? Conseguiu <strong>sincronizar?</strong><br><br>
-            • Se Causador diz <em>"ninguém me entende"</em> e Negociador responde <em>"entendo sua dor"</em> → Conversa bem dirigida ✅<br>
-            • Se Causador diz <em>"quero a imprensa"</em> e Negociador ignora → Falta de legitimação ❌<br>
-            • Se Negociador repete <em>"fica calmo"</em> 10 vezes → Não está ouvindo, está impondo ❌<br><br>
-            <strong>Por quê?</strong> Harvard explica que <u>validar a emoção da outra parte</u> 
-            não significa concordar com a ação — é reconhecer o estado emocional como real.
-            </p>
-            </div>
-            """, unsafe_allow_html=True)
-
-        with tab_framework:
-            st.markdown("""
-            <div class='info-card'>
-            <h5 style='color:#FFD700;margin-top:0;'>Os Três Vetores Explicados (e como interpretar)</h5>
-            <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
-            Pense nos vetores como três forças que estão em <strong>cabo de guerra</strong> dentro do causador.
-            </p>
-            <hr style='border-color:#444;margin:12px 0;'>
-            <div style='margin:12px 0;padding:12px;border-radius:10px;background:rgba(239,68,68,0.08);border-left:4px solid #ef4444;'>
-            <h5 style='color:#ef4444;margin-top:0;'>🔴 RISCO OBSERVADO — "Quanto de ameaça real há aqui?"</h5>
-            <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
-            Mede a <strong>densidade de linguagem agressiva/suicida</strong> no discurso do causador.<br><br>
-            <strong>Exemplos de alto risco:</strong><br>
-            • <em>"vou matar você"</em> (declaração direta)<br>
-            • <em>"tenho uma arma"</em> (capacidade + intenção)<br>
-            • <em>"quero morrer"</em> (risco para si mesmo)<br><br>
-            <strong>Interpretação para APA:</strong><br>
-            Se Risco Observado = 15% → Ameaça verbalizada, mas sem densidade alta<br>
-            Se Risco Observado = 25%+ → Linguagem carregada, escalada provável se negligenciada<br><br>
-            <strong>O que o negociador deveria fazer?</strong><br>
-            Alto risco = mudar de abordagem RÁPIDO. Deixar o causador falar (validar) antes de oferecer soluções.
-            </p>
-            </div>
-            <hr style='border-color:#444;margin:12px 0;'>
-            <div style='margin:12px 0;padding:12px;border-radius:10px;background:rgba(16,185,129,0.08);border-left:4px solid #10b981;'>
-            <h5 style='color:#10b981;margin-top:0;'>🟢 ABERTURA OBSERVADA — "Tem esperança aqui? Há ponte de desescalada?"</h5>
-            <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
-            Mede <strong>sinais de cooperação, rendição, pedido de ajuda</strong> (velado ou não) no causador.<br><br>
-            <strong>Exemplos de alta abertura:</strong><br>
-            • <em>"me ajuda"</em> (pedido direto)<br>
-            • <em>"minha filha está aqui"</em> (reconhecimento de terceiro, responsabilidade)<br>
-            • <em>"pode entrar"</em> (permissão = abandono da posição hostil)<br><br>
-            <strong>Interpretação para APA:</strong><br>
-            Se Abertura = 5% → Causador muito fechado, difícil entrada. Precisa mais validação.<br>
-            Se Abertura = 15%+ → Janela de oportunidade aberta. Negociador pode começar a propor.<br><br>
-            <strong>O que o negociador deveria fazer?</strong><br>
-            Sinais de abertura = AMPLIFICAR. "Você pediu ajuda? Estou aqui para isso." (FBI)
-            </p>
-            </div>
-            <hr style='border-color:#444;margin:12px 0;'>
-            <div style='margin:12px 0;padding:12px;border-radius:10px;background:rgba(251,146,60,0.08);border-left:4px solid #f97316;'>
-            <h5 style='color:#f97316;margin-top:0;'>🟡 RAIZ OBSERVADA — "Por que ele está assim? Qual é a verdadeira causa?"</h5>
-            <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
-            Mede <strong>gatilhos emocionais, perdas, traumas</strong> que explicam o estado atual.<br><br>
-            <strong>Exemplos de raiz clara:</strong><br>
-            • <em>"perdi meu emprego"</em> (causa: desespero financeiro)<br>
-            • <em>"ela me traiu"</em> (causa: abandono/humilhação)<br>
-            • <em>"ninguém se importa comigo"</em> (causa: isolamento/rejeição)<br><br>
-            <strong>Interpretação para APA:</strong><br>
-            Se Raiz = 8% → Causador talvez tenha gatilho recente ou bem localizado.<br>
-            If Raiz = 12%+ → Acúmulo de perdas, histórico de trauma. Mais difícil de resolver rápido.<br><br>
-            <strong>O que o negociador deveria fazer?</strong><br>
-            Ury diz: "Separe a pessoa do problema." A raiz é o PROBLEMA. Validá-la não é concordar, é RECONHECER.<br>
-            Ex: "Entendo que perder o emprego é devastador. Mas matar não resolve. Vamos pensar em saídas."
-            </p>
-            </div>
-            <hr style='border-color:#444;margin:12px 0;'>
-            <h5 style='color:#FFD700;'>⚖️ COMO OS TRÊS TRABALHAM JUNTOS</h5>
-            <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
-            <strong>Cenário 1: Alto Risco + Baixa Abertura + Raiz Clara</strong><br>
-            → Sujeito desesperado (raiz conhecida) mas barricado (nenhuma ponte). Técnica: Validar a raiz + oferecer saída.
-            <br><br>
-            <strong>Cenário 2: Alto Risco + Alta Abertura + Raiz Clara</strong><br>
-            → Sujeito em crise mas aberto à ajuda. JANELA CRÍTICA. Técnica: Rápida proposição de alternativa.
-            <br><br>
-            <strong>Cenário 3: Baixo Risco + Alta Abertura + Raiz Clara</strong><br>
-            → Sujeito já está em conversação. Técnica: Escuta ativa + proposição colaborativa.
-            </p>
-            </div>
-            """, unsafe_allow_html=True)
-
-        with tab_ngramas:
-            st.markdown("""
-            <div class='info-card'>
-            <h5 style='color:#FFD700;margin-top:0;'>Padrões Repetidos & Loop Cognitivo</h5>
-            <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
-            <strong>N-gramas:</strong> Frases de 2-3 palavras que o sujeito repete obessivamente.
-            </p>
-            <hr style='border-color:#444;margin:12px 0;'>
-            <h5 style='color:#FFD700;'>O que significa?</h5>
-            <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
-            Sob estresse extremo, o cérebro entra em <strong>loop cognitivo</strong>. 
-            A frase repetida é o <u>mantra da crise</u> — o que o sujeito está preso em pensar.<br><br>
-            <strong>Exemplos e interpretações:</strong><br><br>
-            • <em>"não aguento mais"</em> (repetido 5+ vezes)<br>
-            &nbsp;&nbsp; → Estado: Exaustão emocional severa. Risco: Iminente (suicida ou agressivo descontrolado)<br>
-            &nbsp;&nbsp; → Técnica: Validar o esgotamento, oferecer repouso/alívio imediato<br><br>
-            • <em>"cadê a imprensa"</em> (repetido 3+ vezes)<br>
-            &nbsp;&nbsp; → Estado: Fixação instrumental. O sujeito quer RECONHECIMENTO público<br>
-            &nbsp;&nbsp; → Técnica: Negociar sobre o que pode ser oferecido (não prometa imprensa se não há)<br><br>
-            • <em>"fica calmo"</em> (negociador repetindo)<br>
-            &nbsp;&nbsp; → Estado: Negociador não está OUVINDO. Está tentando impor.<br>
-            &nbsp;&nbsp; → Técnica: MUDAR DE ABORDAGEM. Perguntar em vez de ordenar<br><br>
-            </p>
-            <hr style='border-color:#444;margin:12px 0;'>
-            <h5 style='color:#FFD700;'>Nuvem de Palavras — O que cada interlocutor REALMENTE está focando</h5>
-            <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
-            A nuvem mostra visualmente o <strong>universo mental</strong> de cada um.<br><br>
-            <strong>Leitura prática:</strong><br>
-            Se a nuvem do Causador tem <em>"arma, polícia, morte"</em> gigantes → Fixação em escalada<br>
-            Se a nuvem tem <em>"filha, família, vida"</em> grandes → Ambivalência (quer viver mas está preso no medo)<br>
-            Se a nuvem do Negociador tem <em>"calma, tranquilo, relaxa"</em> → Talvez não esteja validando o real estado emocional<br><br>
-            <strong>Comparação:</strong><br>
-            Nuvem do Causador com "morte" grande + Nuvem do Negociador com "vida" grande = Boa direção<br>
-            Nuvem do Causador com "morte" grande + Nuvem do Negociador com "relaxa" grande = Desconexão
-            </p>
-            <div style='margin-top:12px;padding:12px;border-radius:10px;background:rgba(255,215,0,0.06);border:1px solid rgba(255,215,0,0.15);'>
-            <p style='font-size:0.9rem;color:#ddd;margin:0;line-height:1.6;'>
-            <strong>Atenção:</strong> Um padrão repetido não é risco por si. É um <u>sinal de fixação mental</u>. 
-            Pode ser esperança ("vou me entregar"), desespero ("vou morrer") ou instrumento ("exijo reconhecimento").
-            </p>
-            </div>
-            </div>
-            """, unsafe_allow_html=True)
-
-        with tab_limitacoes:
-            st.markdown("""
-            <div class='info-card'>
-            <h5 style='color:#FFD700;margin-top:0;'>Limitações — O que o sistema NÃO consegue ver</h5>
-            <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
-            Esta é uma <strong>ferramenta de leitura</strong>, não bola de cristal. Os números descrevem o que foi DITO, 
-            não o que vai acontecer.
-            </p>
-            <hr style='border-color:#444;margin:12px 0;'>
-            <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
-            ❌ <strong>Não vê o histórico do sujeito:</strong> Esse é o 1º suicida ou o 5º? Faz diferença.<br>
-            ❌ <strong>Não vê o contexto real:</strong> Há reféns? Há arma de verdade? O sistema não sabe.<br>
-            ❌ <strong>Não vê gírias/ironia:</strong> <em>"Vou me matar de rir"</em> aparece como risco, mas é brincadeira.<br>
-            ❌ <strong>Não vê o tom de voz:</strong> <em>"vou sair"</em> dito com calma é diferente de grito.<br>
-            ❌ <strong>Não vê interrupções:</strong> Se o transcrição está quebrada, a análise fica incompleta.
-            </p>
-            <div style='margin-top:12px;padding:12px;border-radius:10px;background:rgba(255,215,0,0.06);border:1px solid rgba(255,215,0,0.15);'>
-            <p style='font-size:0.9rem;color:#ddd;margin:0;line-height:1.6;'>
-            <strong>Regra de ouro para APA:</strong> Use estes dados + seu julgamento + contexto operacional. 
-            O sistema ILUMINA. A decisão é HUMANA.
-            </p>
-            </div>
-            </div>
-            """, unsafe_allow_html=True)
-
-    # --- FIM DO BLOCO DE EXPLICAÇÃO ---
-
-
-    st.markdown(
-        "<h5 style='color: #FFD700;'>Análise Temática e Detalhes da Transcrição (Nesta APA)</h5>",
-        unsafe_allow_html=True
-    )
-
-    col_left, col_center, col_right = st.columns([1, 1, 1])
-
-    with col_center:
-        is_analise_tematica = render_toggle_button(
-            label="✔️ Abrir Análise Temática",
-            session_key="analise_tematica",
-            button_key="btn_analise_tematica"
-        )
-
-    st.markdown("---")
-
-    if is_analise_tematica:
-    
-        def extrair_temas_e_metricas(resultado_lista):
-            """
-            Separa os temas das métricas APA.
-            Métricas começam com ** e contêm: Risco, Abertura, Raiz, Intensidade, Direção, Volatilidade
-            """
-            temas = []
-            metricas = []
-            
-            for linha in resultado_lista:
-                if any(keyword in linha for keyword in ['Risco Observado', 'Abertura Observada', 'Raiz Observada', 
-                                                        'Intensidade Geral', 'Direção:', 'Volatilidade', 
-                                                        'Classificação APA', 'Leitura Operacional']):
-                    metricas.append(linha)
-                else:
-                    temas.append(linha)
-            
-            return temas, metricas
-
-        
-
-        
-        with st.spinner("Processando padrões mentais, temas dominantes e gerando nuvens de palavras..."):
-            try:
-                texto_c  = analise.limpar_valor(df_apa.get('TRANSCRIÇÃO DO CAUSADOR', ''))
-                texto_np = analise.limpar_valor(df_apa.get('TRANSCRIÇÃO DO NEGOCIADOR PRINCIPAL', ''))
-                texto_ns = analise.limpar_valor(df_apa.get('TRANSCRIÇÃO DO NEGOCIADOR SECUNDÁRIO', ''))
-                texto_total = f"{texto_c} {texto_np} {texto_ns}"
-
-                resolucao_raw = analise.limpar_valor(
-                    df_apa.get('Resolução', df_apa.get('RESOLUÇÃO', df_apa.get('resolucao', '')))
-                ).strip()
-
-                # ✅ CORRIGIDO: detecta os 3 tipos reais GATE/PMESP
-                resolucao_norm = resolucao_raw.lower()
-                if not resolucao_norm:
-                    resolucao_tipo = "desconhecida"
-                elif "tática" in resolucao_norm or "tatica" in resolucao_norm:
-                    resolucao_tipo = "Negociação Tática"
-                elif "real" in resolucao_norm or "negocia" in resolucao_norm:
-                    resolucao_tipo = "Negociação Real"
-                elif "interven" in resolucao_norm:
-                    resolucao_tipo = "Intervenção"
-                else:
-                    resolucao_tipo = "desconhecida"
-
-                # ✅ NOVO: extrair tempos do Airtable com segurança
-                def extrair_tempo(valor):
-                    try:
-                        return int(float(str(analise.limpar_valor(valor)).replace(',', '.') or 0))
-                    except Exception:
-                        return 0
-
-                tempo_neg_real = extrair_tempo(
-                    df_apa.get('TEMPO NEGOCIAÇÃO REAL',
-                    df_apa.get('Tempo Negociação Real',
-                    df_apa.get('tempo_negociacao_real', 0)))
-                )
-                tempo_neg_tatica = extrair_tempo(
-                    df_apa.get('TEMPO NEGOCIAÇÃO TÁTICA',
-                    df_apa.get('Tempo Negociação Tática',
-                    df_apa.get('tempo_negociacao_tatica', 0)))
-                )
-
-                # ✅ NOVO: Separar temas e métricas
-                resultado_total = analise.extrair_topicos_ngrams(texto_total, resolucao_tipo=resolucao_tipo) if len(texto_total) > 10 else ["Texto insuficiente"]
-                resultado_c = analise.extrair_topicos_ngrams(texto_c, resolucao_tipo=resolucao_tipo) if len(texto_c) > 10 else ["Texto insuficiente"]
-                resultado_np = analise.extrair_topicos_ngrams(texto_np, resolucao_tipo=resolucao_tipo) if len(texto_np) > 10 else ["Texto insuficiente"]
-                resultado_ns = analise.extrair_topicos_ngrams(texto_ns, resolucao_tipo=resolucao_tipo) if len(texto_ns) > 10 else ["Texto insuficiente"]
-
-                temas_total, metricas_total = extrair_temas_e_metricas(resultado_total)
-                temas_c, metricas_c = extrair_temas_e_metricas(resultado_c)
-                temas_np, metricas_np = extrair_temas_e_metricas(resultado_np)
-                temas_ns, metricas_ns = extrair_temas_e_metricas(resultado_ns)
-
-                st.session_state['stats_calculados'] = {
-                    "temas":       temas_total,
-                    "temas_c":     temas_c,
-                    "temas_np":    temas_np,
-                    "temas_ns":    temas_ns,
-                    "wc_c":        analise.gerar_wordcloud(texto_c)  if len(texto_c)  > 5 else None,
-                    "wc_np":       analise.gerar_wordcloud(texto_np) if len(texto_np) > 5 else None,
-                    "wc_ns":       analise.gerar_wordcloud(texto_ns) if len(texto_ns) > 5 else None,
-                    "texto_c_raw":      texto_c,
-                    "texto_np_raw":     texto_np,
-                    "texto_ns_raw":     texto_ns,
-                    "resolucao_tipo":   resolucao_tipo,
-                    "resolucao_raw":    resolucao_raw,
-                    "tempo_neg_real":   tempo_neg_real,
-                    "tempo_neg_tatica": tempo_neg_tatica,
-                }
-                st.success("✅ Padrões mentais processados!")
-            except Exception as e:
-                st.error(f"Erro ao processar: {str(e)[:80]}")
-
-    if st.session_state.get('stats_calculados'):
-        stats = st.session_state['stats_calculados']
-
-        tab_ng1, tab_ng2, tab_ng3, tab_ng4, tab_ng5, tab_ng6, tab_ng7, tab_ng8 = st.tabs([
-            "🔴 Causador",
-            "🟢 Negociador Principal",
-            "🔵 Negociador Secundário",
-            "✔️ Análise Global",
-            "✔️ Comparativo das Nuvens de Palavras",
-            "✔️ Convergência Temática",
-            "✔️ Estado da Crise",
-            "✔️ Detalhes da Transcrição"
-        ])
-        
-        # --- TAB 1: CAUSADOR ---
-        with tab_ng1:
-            st.markdown("""
-            <div class='info-card'>
-            <h5 style='color: #ef4444; margin-top: 0;'>🔴 CAUSADOR — Em que ele estava REALMENTE focando?</h5>
-            <p style='font-size:0.9rem;color:#ddd;'>
-            Os temas dominantes abaixo revelam a <strong>obsessão mental</strong> do causador. 
-            Se "morte" é tema 1, o risco estava alto. Se "filha" aparece, há ambivalência.
-            </p>
-            </div>
-            """, unsafe_allow_html=True)
-
-            topicos_c = stats.get('temas_c', ["Análise individual ainda não gerada."])
-            for t in topicos_c:
-                st.markdown(t)
-
-            wc_c = stats.get('wc_c')
-            if wc_c:
-                st.markdown("#### Nuvem de Palavras — Foco Mental do Causador")
-                st.pyplot(wc_c)
-            else:
-                st.info("Sem transcrição suficiente para gerar nuvem.")
-            
-            
-
-        # --- TAB 2: NEGOCIADOR PRINCIPAL ---
-        with tab_ng2:
-            st.markdown("""
-            <div class='info-card'>
-            <h5 style='color: #10b981; margin-top: 0;'>🟢 NEGOCIADOR PRINCIPAL — Acompanhou os temas expostos pelo Causador?</h5>
-            <p style='font-size:0.9rem;color:#ddd;'>
-            Os temas do negociador mostram <strong>em que ele está focando</strong>. 
-            Compare com o causador: convergência = boa sintonia; divergência = falha de rapport.
-            </p>
-            </div>
-            """, unsafe_allow_html=True)
-
-            topicos_np = stats.get('temas_np', ["Análise individual ainda não gerada."])
-            for t in topicos_np:
-                st.markdown(t)
-
-            wc_np = stats.get('wc_np')
-            if wc_np:
-                st.markdown("#### Nuvem de Palavras — Estratégia do Negociador")
-                st.pyplot(wc_np)
-            else:
-                st.info("Sem transcrição suficiente para gerar nuvem.")
-            
-            
-
-        # --- TAB 3: NEGOCIADOR SECUNDÁRIO ---
-        with tab_ng3:
-            st.markdown("""
-            <div class='info-card'>
-            <h5 style='color: #3b82f6; margin-top: 0;'>🔵 NEGOCIADOR SECUNDÁRIO — Destacou alguma participação na transcrição?</h5>
-            <p style='font-size:0.9rem;color:#ddd;'>
-            Geralmente suporte. Seus temas indicam se estava reforçando a mensagem do principal ou dispersando esforços.
-            </p>
-            </div>
-            """, unsafe_allow_html=True)
-
-            topicos_ns = stats.get('temas_ns', ["Análise individual ainda não gerada."])
-            for t in topicos_ns:
-                st.markdown(t)
-
-            wc_ns = stats.get('wc_ns')
-            if wc_ns:
-                st.markdown("#### Nuvem de Palavras — Atuação do Secundário")
-                st.pyplot(wc_ns)
-            else:
-                st.info("Sem transcrição suficiente para gerar nuvem.")
-            
-            
-        # --- TAB 4: ANÁLISE GERAL ---
-        with tab_ng4:
-            st.markdown("""
-            <div class='info-card'>
-            <h5 style='color: #f97316; margin-top: 0;'>✔️ VISÃO GERAL — Os temas gerais do incidente</h5>
-            <p style='font-size:0.9rem;color:#ddd;'>
-            Agregando causador + negociadores, quais eram os assuntos DOMINANTES na negociação?
-            </p>
-            </div>
-            """, unsafe_allow_html=True)
-
-            topicos_globais = stats.get('temas', ["Sem dados"])
-            for t in topicos_globais:
-                st.markdown(t)
-            
-            
-
-        # --- TAB 5: MAPAS COMPARATIVOS ---
-        with tab_ng5:
-            st.markdown("""
-            <div class='info-card'>
-            <h5 style='color: #FFD700; margin-top: 0;'>✔️ NUVEM DE PALAVRAS LADO-A-LADO — Sincronização</h5>
-            <p style='font-size:0.9rem;color:#ddd;'>
-            Compare as nuvens visualmente. Se causador fala de "morte" e negociador de "vida", há conversação. 
-            Se causador de "morte" e negociador de "calma", há desconexão.
-            </p>
-            </div>
-            """, unsafe_allow_html=True)
-
-            col_wc_g1, col_wc_g2, col_wc_g3 = st.columns(3)
-
-            with col_wc_g1:
-                st.markdown("**Causador**")
-                wc_c = stats.get('wc_c')
-                if wc_c:
-                    st.pyplot(wc_c, clear_figure=True)
-                else:
-                    st.info("Sem nuvem.")
-
-            with col_wc_g2:
-                st.markdown("**Negociador Principal**")
-                wc_np = stats.get('wc_np')
-                if wc_np:
-                    st.pyplot(wc_np, clear_figure=True)
-                else:
-                    st.info("Sem nuvem.")
-
-            with col_wc_g3:
-                st.markdown("**Negociador Secundário**")
-                wc_ns = stats.get('wc_ns')
-                if wc_ns:
-                    st.pyplot(wc_ns, clear_figure=True)
-                else:
-                    st.info("Sem nuvem.")
-
-        # --- TAB 6: CONVERGÊNCIA TEMÁTICA (CORRIGIDO) ---
-        with tab_ng6:
-            st.markdown("""
-            <div class='info-card'>
-            <h4 style='color:#FFD700; margin-top:0;'>✔️ CONVERGÊNCIA TEMÁTICA — Quanto cada tema foi abordado?</h4>
-            <p style='color:#ccc; font-size:0.9rem; margin-bottom:1rem;'>
-            Compara a <strong>intensidade (score)</strong> de cada tema abordado por causador e negociador.
-            Polígonos sobrepostos = abordagem similar. Divergência = ênfase diferente.
-            </p>
-            </div>
-            """, unsafe_allow_html=True)
-
-            texto_c_raw  = stats.get('texto_c_raw', '')
-            texto_np_raw = stats.get('texto_np_raw', '')
-            texto_ns_raw = stats.get('texto_ns_raw', '')
-
-            if not texto_c_raw or not texto_np_raw:
-                st.warning("⚠️ Transcrições insuficientes para analisar convergência temática.")
-            else:
-                try:
-                    # ── Extrair temas reais ──────────────────────────
-                    temas_c = analise.extrair_temas_unicos(
-                        texto_c_raw,
-                        resolucao_tipo=stats.get('resolucao_tipo', 'desconhecida')
-                    )
-                    temas_np = analise.extrair_temas_unicos(
-                        texto_np_raw,
-                        resolucao_tipo=stats.get('resolucao_tipo', 'desconhecida')
-                    )
-
-                    # ── Calcular convergência ────────────────────────
-                    conv_tematica = analise.calcular_convergencia_tematica(temas_c, temas_np)
-
-                    # ── SCORECARD ────────────────────────────────────
-                    st.markdown("### ✔️ Resumo da Convergência")
-                    
+                                                return None
+
+                                        col_reacao = None
+                                        for c in ['ATITUDE DO CAUSADOR', 'Atitude do Causador', 'atitude_causador']:
+                                            if c in df_tec_apa.columns:
+                                                col_reacao = c
+                                                break
+
+                                        col_tecnica = None
+                                        for c in ['TÉCNICAS', 'Técnicas', 'tecnicas']:
+                                            if c in df_tec_apa.columns:
+                                                col_tecnica = c
+                                                break
+
+                                        if not col_tecnica:
+                                            st.warning("⚠️ Coluna TÉCNICAS não encontrada.")
+                                        else:
+                                            if col_reacao:
+                                                df_tec_apa['_reacao_num'] = df_tec_apa[col_reacao].apply(normalizar_reacao)
+                                            else:
+                                                df_tec_apa['_reacao_num'] = None
+
+                                            resumo = []
+                                            for tecnica, grupo in df_tec_apa.groupby(col_tecnica):
+                                                total    = len(grupo)
+                                                positivo = (grupo['_reacao_num'] == 1).sum()
+                                                neutro   = (grupo['_reacao_num'] == 0).sum()
+                                                negativo = (grupo['_reacao_num'] == -1).sum()
+                                                inaud    = grupo['_reacao_num'].isna().sum()
+
+                                                observados = positivo + neutro + negativo
+                                                if observados > 0:
+                                                    score = round(((positivo - negativo) / observados) * 100, 1)
+                                                else:
+                                                    score = None
+
+                                                resumo.append({
+                                                    "Técnica":        tecnica,
+                                                    "Total":          total,
+                                                    "🟢 Positiva":    int(positivo),
+                                                    "⚪ Neutra":      int(neutro),
+                                                    "🔴 Negativa":    int(negativo),
+                                                    "❓ Inaudível":   int(inaud),
+                                                    "Score (%)":      score
+                                                })
+
+                                            df_resumo = pd.DataFrame(resumo)
+                                            df_resumo = df_resumo.sort_values("Score (%)", ascending=False, na_position='last')
+
+                                            st.session_state['tecnicas_analisadas'] = df_resumo
+                                            st.success(f"✅ {len(df_resumo)} técnicas analisadas!")
+
+                        except Exception as e:
+                            st.error(f"Erro ao analisar técnicas: {str(e)[:80]}")
+
+                # ✅ EXIBIÇÃO DOS RESULTADOS
+                if st.session_state.get('tecnicas_analisadas') is not None:
+                    df_resumo = st.session_state['tecnicas_analisadas']
+
+                    total_usos     = int(df_resumo["Total"].sum())
+                    total_positivo = int(df_resumo["🟢 Positiva"].sum())
+                    total_neutro   = int(df_resumo["⚪ Neutra"].sum())
+                    total_negativo = int(df_resumo["🔴 Negativa"].sum())
+                    observados_total = total_positivo + total_neutro + total_negativo
+                    score_geral    = round(((total_positivo - total_negativo) / max(1, observados_total)) * 100, 1)
+
+                    st.markdown("### ✔️ Resumo Geral")
                     col1, col2, col3, col4 = st.columns(4)
-                    
                     with col1:
-                        conv_geral = conv_tematica["convergencia_geral"]
-                        st.metric(
-                            "Convergência Geral",
-                            f"{conv_geral:.1f}%"
-                        )
-                    
+                        st.metric("Total de Usos", total_usos)
                     with col2:
-                        compartilhados = len(conv_tematica["temas_compartilhados"])
-                        st.metric(
-                            "Temas Compartilhados",
-                            compartilhados
-                        )
-                    
+                        st.metric("🟢 Positivas", total_positivo)
                     with col3:
-                        excl_c = len(conv_tematica["temas_exclusivos_causador"])
-                        st.metric(
-                            "Só Causador",
-                            excl_c
-                        )
-                    
+                        st.metric("🔴 Negativas", total_negativo)
                     with col4:
-                        excl_np = len(conv_tematica["temas_exclusivos_negociador"])
-                        st.metric(
-                            "Só Negociador",
-                            excl_np
-                        )
+                        st.metric("Score Geral", f"{score_geral:+.1f}%")
 
-                    # ── RADAR TEMÁTICO (INTENSIDADE) ────────────────
-                    st.markdown("---")
-                    st.markdown("### ✔️ Intensidade de Abordagem por Tema (Radar)")
-                    st.markdown("""
-                    <p style='font-size:0.85rem;color:#aaa;'>
-                    Polígono vermelho = intensidade do causador. 
-                    Polígono verde = intensidade do negociador.
-                    Quanto maior o polígono, mais o tema foi abordado.
-                    </p>
-                    """, unsafe_allow_html=True)
-                    
-                    try:
-                        fig_radar_tematico = analise.gerar_radar_convergencia_tematica_corrigido(
-                            temas_c,
-                            temas_np,
-                            conv_tematica["convergencia_por_tema"]
-                        )
-                        st.plotly_chart(fig_radar_tematico, use_container_width=True)
-                    except Exception as e:
-                        st.error(f"Erro ao gerar radar: {str(e)[:80]}")
-
-                    # ── GRÁFICO DE BARRAS (ALTERNATIVA) ─────────────
-                    st.markdown("---")
-                    st.markdown("### ✔️ Intensidade por Tema (Gráfico de Barras)")
-                    st.markdown("""
-                    <p style='font-size:0.85rem;color:#aaa;'>
-                    Visualização alternativa: compare a altura das barras para cada tema.
-                    </p>
-                    """, unsafe_allow_html=True)
-                    
-                    try:
-                        fig_barras = analise.gerar_grafico_barras_intensidade_temas(
-                            conv_tematica["convergencia_por_tema"]
-                        )
-                        st.plotly_chart(fig_barras, use_container_width=True)
-                    except Exception as e:
-                        st.error(f"Erro ao gerar gráfico: {str(e)[:80]}")
-
-                    # ── TABELA DETALHADA ─────────────────────────────
-                    st.markdown("---")
-                    st.markdown("### 📋 Convergência Detalhada por Tema")
-                    
-                    df_conv_tab = analise.gerar_tabela_convergencia_tematica(conv_tematica)
+                    st.markdown("### ✔️ Efetividade por Técnica")
                     st.dataframe(
-                        df_conv_tab,
+                        df_resumo,
                         use_container_width=True,
                         hide_index=True
                     )
 
-                    # ── ANÁLISE NARRATIVA ────────────────────────────
+                    st.markdown("### ✔️ Distribuição de Reações por Técnica")
+                    try:
+                        import plotly.graph_objects as go
+
+                        tecnicas   = df_resumo["Técnica"].tolist()
+                        positivos  = df_resumo["🟢 Positiva"].tolist()
+                        neutros    = df_resumo["⚪ Neutra"].tolist()
+                        negativos  = df_resumo["🔴 Negativa"].tolist()
+
+                        fig_barras = go.Figure()
+
+                        fig_barras.add_trace(go.Bar(
+                            name="🟢 Positiva",
+                            x=tecnicas, y=positivos,
+                            marker_color="#10b981"
+                        ))
+                        fig_barras.add_trace(go.Bar(
+                            name="⚪ Neutra",
+                            x=tecnicas, y=neutros,
+                            marker_color="#6b7280"
+                        ))
+                        fig_barras.add_trace(go.Bar(
+                            name="🔴 Negativa",
+                            x=tecnicas, y=negativos,
+                            marker_color="#ef4444"
+                        ))
+
+                        fig_barras.update_layout(
+                            barmode="stack",
+                            paper_bgcolor="rgba(0,0,0,0)",
+                            plot_bgcolor="rgba(0,0,0,0)",
+                            font=dict(color="#fff"),
+                            legend=dict(
+                                font=dict(color="#fff"),
+                                bgcolor="rgba(0,0,0,0.4)"
+                            ),
+                            xaxis=dict(
+                                tickfont=dict(color="#FFD700"),
+                                gridcolor="#333"
+                            ),
+                            yaxis=dict(
+                                tickfont=dict(color="#aaa"),
+                                gridcolor="#333"
+                            ),
+                            height=420,
+                            margin=dict(t=20, b=120, l=40, r=40)
+                        )
+
+                        st.plotly_chart(fig_barras, use_container_width=True)
+
+                    except Exception as e:
+                        st.error(f"Erro ao gerar gráfico: {str(e)[:80]}")
+
+                    # ── NARRATIVA OPERACIONAL ────────────────────────────
                     st.markdown("---")
-                    st.markdown("### 📖 Análise Detalhada")
+                    st.markdown("### ✔️ Leitura Operacional")
+
+                    df_com_score = df_resumo[df_resumo["Score (%)"].notna()]
                     
-                    st.markdown(conv_tematica["analise_detalhada"])
-
-                    # ── INTERPRETAÇÃO GERAL ─────────────────────────
-                    st.markdown("---")
-                    st.markdown("### 💡 O que significa")
-                    
-                    conv_pct = conv_tematica["convergencia_geral"]
-                    
-                    st.markdown(f"""
-                        **Convergência Temática Observada: {conv_pct:.1f}%**
+                    if not df_com_score.empty:
+                        score_maximo = df_com_score["Score (%)"].max()
+                        tecnicas_maximas = df_com_score[df_com_score["Score (%)"] == score_maximo]
                         
-                        **O que é medido:**
-                        - Intensidade com que causador e negociador abordam cada tema compartilhado
-                        - Média das similitudes de score para os temas em comum
-                        - Escala: 0% (completamente divergentes) a 100% (perfeitamente alinhados)
+                        if len(tecnicas_maximas) == 1:
+                            melhor = tecnicas_maximas.iloc[0]
+                            txt_melhor = (
+                                f"✅ <strong>Técnicas mais efetivas:</strong> {melhor['Técnica']} "
+                                f"— Score {melhor['Score (%)']:+.1f}% "
+                                f"({int(melhor['🟢 Positiva'])} positivo / {int(melhor['Total'])} usos)"
+                            )
+                        else:
+                            tecnicas_nomes = ", ".join(tecnicas_maximas['Técnica'].tolist())
+                            txt_melhor = (
+                                f"✅ <strong>Técnicas mais efetivas (empate):</strong> {tecnicas_nomes} "
+                                f"— Score {score_maximo:+.1f}%"
+                            )
                         
-                        **Interpretação Descritiva (sem classificação):**
-                        
-                        | Range | O que significa |
-                        |-------|---|
-                        | **90-100%** | Ambos abordam os temas com intensidades praticamente idênticas |
-                        | **70-90%** | Maioria dos temas tem intensidades próximas, com variações pequenas |
-                        | **50-70%** | Alguns temas com intensidades similares, outros com diferenças notáveis |
-                        | **30-50%** | Intensidades frequentemente divergentes — énfases diferentes |
-                        | **0-30%** | Abordagens muito diferentes — possivelmente universos mentais distintos |
-                        
-                        **Seu caso: {conv_pct:.1f}%**
-                        
-                        - **Temas compartilhados:** {len(conv_tematica["temas_compartilhados"])}
-                        - **Temas só do causador:** {len(conv_tematica["temas_exclusivos_causador"])}
-                        - **Temas só do negociador:** {len(conv_tematica["temas_exclusivos_negociador"])}
-                        
-                        **Atenção:**
-                        Este é um índice DESCRITIVO. Não é preditivo de desfecho.
-                        Próxima etapa: comparar com histórico de 50+ APAs para validar padrões.
-                        """)
-
-                except Exception as e:
-                    st.error(f"Erro ao analisar convergência temática: {str(e)[:80]}")
-
-        # --- TAB 7: ESTADO DO CAUSADOR ---
-        with tab_ng7:
-            st.markdown("""
-            <div class='info-card'>
-            <h5 style='color:#FFD700; margin-top:0;'>✔️ ESTADO DO CAUSADOR (APA)</h5>
-            <p style='color:#ccc; font-size:0.9rem;'>
-            Análise estruturada do estado emocional/comportamental do causador.
-            </p>
-            </div>
-            """, unsafe_allow_html=True)
-
-            texto_c_raw = stats.get('texto_c_raw', '')
-
-            if texto_c_raw:
-                try:
-                    analise_crise = analise.analisar_crise_direcional(
-                        texto_c_raw,
-                        resolucao_tipo=stats.get('resolucao_tipo', 'desconhecida')
-                    )
-
-                    if analise_crise and 'sumario' in analise_crise:
-                        sumario = analise_crise['sumario']
-
-                        risco_observado    = sumario.get('risco_observado')
-                        abertura_observada = sumario.get('abertura_observada')
-                        raiz_observada     = sumario.get('raiz_observada')
-                        volatilidade_index = sumario.get('volatilidade_index')
-                        intensidade_index  = sumario.get('intensidade_index')
-                        direcao_index      = sumario.get('direcao_index')
-                        classificacao      = sumario.get('classificacao')
-                        leitura            = sumario.get('leitura')
-                        resolucao_tipo     = stats.get('resolucao_tipo', 'desconhecida')
-
-                        # ── SCORECARD ──────────────────────────────
-                        st.markdown("### ✔️ Resumo da Análise")
-                        col1, col2, col3 = st.columns(3)
-
-                        with col1:
-                            st.metric(
-                                "🔴 Risco Observado",
-                                f"{risco_observado:.1f}%" if risco_observado is not None else "N/D"
-                            )
-                        with col2:
-                            st.metric(
-                                "🟢 Abertura Observada",
-                                f"{abertura_observada:.1f}%" if abertura_observada is not None else "N/D"
-                            )
-                        with col3:
-                            st.metric(
-                                "🟡 Raiz Observada",
-                                f"{raiz_observada:.1f}%" if raiz_observada is not None else "N/D"
-                            )
-
-                        col4, col5, col6 = st.columns(3)
-
-                        with col4:
-                            st.metric(
-                                "⚡ Intensidade Global",
-                                f"{intensidade_index:.2f}" if intensidade_index is not None else "N/D"
-                            )
-                        with col5:
-                            st.metric(
-                                "➡️ Direção",
-                                f"{direcao_index:+.2f}" if direcao_index is not None else "N/D"
-                            )
-                        with col6:
-                            st.metric(
-                                "✔️ Volatilidade",
-                                f"{volatilidade_index:.2f}" if volatilidade_index is not None else "N/D"
-                            )
-
-                        # ── CLASSIFICAÇÃO ───────────────────────────
-                        st.markdown("---")
-                        st.markdown(f"### 🚨 Classificação: `{classificacao}`")
-                        st.info(leitura)
-
-                        # ── RADAR ───────────────────────────────────
-                        st.markdown("---")
-                        st.markdown("### ✔️ Padrão de Crise (Radar)")
-                        try:
-                            fig_crise = analise.gerar_radar_crise_individual(
-                                risco_observado    if risco_observado    is not None else 0,
-                                abertura_observada if abertura_observada is not None else 0,
-                                raiz_observada     if raiz_observada     is not None else 0,
-                                volatilidade_index if volatilidade_index is not None else 0
-                            )
-                            st.plotly_chart(fig_crise, use_container_width=True)
-                        except Exception as e:
-                            st.error(f"Erro ao gerar radar: {str(e)[:80]}")
-
-                        # ── NARRATIVA PARA LEIGOS ───────────────────
-                        st.markdown("---")
-                        st.markdown("### ✔️ Leitura Operacional (Linguagem Acessível)")
-
-                        st.markdown("""
-                        <div style='background:rgba(255,215,0,0.04);padding:4px 12px;border-left:3px solid #FFD700;margin-bottom:12px;'>
-                        <p style='color:#aaa;font-size:0.82rem;margin:6px 0;'>
-                        Interpretação automática dos indicadores em linguagem acessível.
-                        Destinada a leitura rápida por gestores, auditores e instrutores.
+                        st.markdown(f"""
+                        <div style='background:rgba(16,185,129,0.08);padding:12px;border-radius:8px;border-left:3px solid #10b981;margin-bottom:10px;'>
+                        <p style='color:#ddd;font-size:0.9rem;margin:0;'>
+                        {txt_melhor}
                         </p>
                         </div>
                         """, unsafe_allow_html=True)
 
-                        narrativa = analise.gerar_narrativa_crise(
-                            risco_observado    = risco_observado    or 0,
-                            abertura_observada = abertura_observada or 0,
-                            raiz_observada     = raiz_observada     or 0,
-                            intensidade_index  = intensidade_index  or 0,
-                            direcao_index      = direcao_index      or 0,
-                            volatilidade_index = volatilidade_index or 0,
-                            classificacao      = classificacao      or "INDETERMINADO",
-                            resolucao_tipo     = resolucao_tipo
-                        )
-                        st.markdown(narrativa)
-
-                    else:
-                        st.warning("Não foi possível gerar análise de crise")
-
-                except Exception as e:
-                    st.error(f"Erro ao analisar crise: {str(e)[:80]}")
-
-            else:
-                st.warning("⚠️ Nenhuma transcrição disponível para análise")                    
-                                        
-    # ============================================================
-    # TAB 8: QUALIDADE DO DISCURSO COM TRANSFORMER (LAZY LOADING)
-    # Cole TUDO isso DENTRO do: with tab_ng8:
-    # ============================================================
-
-    st.markdown("### ✔️ Detalhes da Transcrição")
-
-    col_caus = "TRANSCRIÇÃO DO CAUSADOR"
-    col_neg = "TRANSCRIÇÃO DO NEGOCIADOR PRINCIPAL"
-
-    if col_caus not in df_apa or col_neg not in df_apa:
-        st.warning("⚠️ Colunas de transcrição não encontradas")
-    else:
-        txt_caus = str(df_apa[col_caus]).strip()
-        txt_neg = str(df_apa[col_neg]).strip()
-        
-        if not txt_caus or not txt_neg or len(txt_caus) < 20 or len(txt_neg) < 20:
-            st.warning("⚠️ Transcrições insuficientes para análise")
-        else:
-            
-            # =========================================================
-            # SEÇÃO 1: ANÁLISE RÁPIDA (com toggle)
-            # =========================================================
-            
-            col_left, col_center, col_right = st.columns([1, 1, 1])
-            with col_center:
-                is_analise_rapida = render_toggle_button(
-                    label="✔️ Análise Rápida (Padrões Léxicos)",
-                    session_key="tab8_analise_rapida",
-                    button_key="btn_tab8_analise_rapida"
-                )
-            
-            st.markdown("---")
-            
-            if is_analise_rapida:
-                st.markdown("""
-                <p style='color: #aaa; font-size: 0.9rem; margin-bottom: 1rem;'>
-                Análise imediata baseada em frequência de palavras-chave.
-                <strong>Não usa modelo de IA.</strong> Rápido e transparente.
-                </p>
-                """, unsafe_allow_html=True)
-
-                # Rodar análise rápida
-                analise_rapida = analise.analise_rapida_discurso(txt_neg, txt_caus)
-
-                # SCORECARD - NEGOCIADOR
-                st.markdown("### 🟢 NEGOCIADOR PRINCIPAL")
-
-                col1, col2, col3 = st.columns(3)
-
-                with col1:
-                    st.metric(
-                        "Validação",
-                        analise_rapida['total_validacao'],
-                        f"x ocorrências"
-                    )
-
-                with col2:
-                    st.metric(
-                        "Confronto",
-                        analise_rapida['total_confronto'],
-                        f"x ocorrências"
-                    )
-
-                with col3:
-                    total_palavras_neg = len(txt_neg.split())
-                    st.metric(
-                        "Tamanho (Palavras)",
-                        total_palavras_neg,
-                        f"palavras"
-                    )
-
-                # SCORECARD - CAUSADOR
-                st.markdown("---")
-                st.markdown("### 🔴 CAUSADOR")
-
-                col1, col2 = st.columns(2)
-
-                with col1:
-                    st.metric(
-                        "Emoção Alta",
-                        analise_rapida['total_emocao'],
-                        f"x palavras fortes"
-                    )
-
-                with col2:
-                    total_palavras_caus = len(txt_caus.split())
-                    st.metric(
-                        "Tamanho (Palavras)",
-                        total_palavras_caus,
-                        f"palavras"
-                    )
-                
-                # Detalhes
-                st.markdown("---")
-                st.markdown("#### ✔️ Detalhes das Palavras-Chave Encontradas")
-                
-                st.markdown("### 🟢 NEGOCIADOR PRINCIPAL")
-
-                col_val, col_conf = st.columns(2)
-
-                with col_val:
-                    st.markdown("**Validação (Negociador):**")
-                    if analise_rapida['validacao']:
-                        for palavra, freq in sorted(
-                            analise_rapida['validacao'].items(),
-                            key=lambda x: x[1],
-                            reverse=True
-                        ):
-                            st.write(f"  • {palavra}: {freq}x")
-                    else:
-                        st.write("  (nenhuma encontrada)")
-
-                with col_conf:
-                    st.markdown("**Confronto (Negociador):**")
-                    if analise_rapida['confronto']:
-                        for palavra, freq in sorted(
-                            analise_rapida['confronto'].items(),
-                            key=lambda x: x[1],
-                            reverse=True
-                        ):
-                            st.write(f"  • {palavra}: {freq}x")
-                    else:
-                        st.write("  (nenhuma encontrada)")
-                
-                st.markdown("---")
-                st.markdown("### 🔴 CAUSADOR")
-
-                st.markdown("**Emoção Alta (Causador):**")
-                if analise_rapida['emocao_causador']:
-                    for palavra, freq in sorted(
-                        analise_rapida['emocao_causador'].items(),
-                        key=lambda x: x[1],
-                        reverse=True
-                    ):
-                        st.write(f"  • {palavra}: {freq}x")
-                else:
-                    st.write("  (nenhuma encontrada)")                     
-                
-                # Interpretação
-                st.markdown("---")
-                st.markdown("#### 💡 O Que Significa")
-                st.markdown("""
-                - **Validação**: Palavras que indicam reconhecimento, escuta, empatia
-                - **Confronto**: Palavras que indicam discordância, negação, imposição
-                - **Emoção Alta**: Indicadores de stress, medo, raiva no causador
-                
-                **Nota:** Essa análise conta frequência, não interpreta contexto.
-                "Não" pode ser "não vou bater" (protetor) ou "não faço isso" (negação).
-                Use como descritor, não como julgamento.
-                """)
-            
-            # ============================================================
-            # TAB 8: TRANSFORMER OTIMIZADO (SEM TRADUÇÃO - RÁPIDO)
-            # SUBSTITUA a seção do Transformer em seu_app.py
-            # ============================================================
-
-            st.markdown("---")
-            st.markdown("""
-            <div style='background: rgba(76, 175, 80, 0.1); border-left: 4px solid #4CAF50; padding: 15px; border-radius: 8px; margin-bottom: 20px;'>
-            <h5 style='color: #4CAF50; margin-top: 0;'> Análise de Sentimento (Biblioteca Transformer)</h5>
-            <p style='color: #aaa; font-size: 0.9rem; margin-bottom: 10px;'>
-            Análise com Transformer português otimizado: remove gírias e stopwords para melhor compreensão.
-            </p>
-            <ul style='color: #bbb; font-size: 0.9rem; line-height: 1.6; margin: 10px 0;'>
-            <li><strong>Pré-processamento:</strong> Normaliza gírias + remove stopwords</li>
-            <li><strong>Análise:</strong> Transformer direto no português limpo</li>
-            <li><strong>Tempo:</strong> ~10-15 segundos (muito mais rápido!)</li>
-            <li><strong>Mostrada:</strong> Original + Limpa</li>
-            </ul>
-            <p style='color: #4CAF50; font-size: 0.85rem; font-weight: bold; margin-bottom: 0;'>
-            Clique no botão abaixo para carregar a análise.
-            </p>
-            </div>
-            """, unsafe_allow_html=True)
-
-            col_left, col_center, col_right = st.columns([1, 1, 1])
-            with col_center:
-                is_transformer = render_toggle_button(
-                    label="✔️ Transformer Otimizado (10-15s)",
-                    session_key="tab8_transformer_otimizado",
-                    button_key="btn_tab8_transformer_otimizado"
-                )
-
-            st.markdown("---")
-
-            if is_transformer:
-                # Mostrar exemplo de limpeza
-                with st.expander("✔️ Como funciona a limpeza (exemplo)"):
-                    st.markdown("**Exemplo: Primeiras 3 sentenças**")
-                    
-                    exemplo_linhas = analise.dividir_em_sentencas(txt_neg)[:3]
-                    
-                    for idx, sentenca in enumerate(exemplo_linhas, 1):
-                        original = sentenca
-                        limpa = analise.limpar_sentenca(sentenca)
+                    if not df_com_score.empty:
+                        score_minimo = df_com_score["Score (%)"].min()
+                        tecnicas_minimas = df_com_score[df_com_score["Score (%)"] == score_minimo]
                         
-                        col1, col2 = st.columns([1, 1])
-                        with col1:
-                            st.markdown(f"**Original ({len(original.split())} palavras):**")
-                            st.write(f"_{original}_")
-                        with col2:
-                            st.markdown(f"**Limpa ({len(limpa.split())} palavras):**")
-                            st.write(f"_{limpa}_")
-                        st.markdown("---")
-                
-                with st.spinner("⏳ Carregando modelo Transformer..."):
-                    nlp_model = analise.carregar_transformer_portugues()
-                
-                if nlp_model is None:
-                    st.error("❌ Erro ao carregar modelo. Verifique instalação de `transformers`")
-                else:
-                    st.success("✔️ Modelo carregado com sucesso!")
-                    
-                    # Analisar negociador
-                    st.markdown("---")
-                    st.markdown("#### 🟢 Sentimento do Negociador")
-                    
-                    with st.spinner("Analisando fala do negociador..."):
-                        resultado_neg = analise.analise_sentimento_transformer_otimizado(txt_neg, nlp_model)
-                    
-                    if resultado_neg:
-                        # Contar positivos/negativos/neutros
-                        positivos = sum(1 for r in resultado_neg if r['label'] in ['POSITIVE', 'LABEL_2'])
-                        negativos = sum(1 for r in resultado_neg if r['label'] in ['NEGATIVE', 'LABEL_0'])
-                        neutros = sum(1 for r in resultado_neg if r['label'] in ['NEUTRAL', 'LABEL_1'])
-                        total_sent = len(resultado_neg)
-                        
-                        col1, col2, col3, col4 = st.columns(4)
-                        
-                        with col1:
-                            st.metric("Positivos", f"{positivos}/{total_sent}")
-                        
-                        with col2:
-                            st.metric("Neutros", f"{neutros}/{total_sent}")
-                        
-                        with col3:
-                            st.metric("Negativos", f"{negativos}/{total_sent}")
-                        
-                        with col4:
-                            pct_positivo = (positivos / total_sent * 100) if total_sent > 0 else 0
-                            st.metric("% Positivo", f"{pct_positivo:.0f}%")
-                        
-                        # Mostrar exemplos
-                        st.markdown("**Exemplos de Sentenças (Original → Limpa):**")
-                        
-                        col_pos, col_neu, col_neg = st.columns(3)
-                        
-                        with col_pos:
-                            st.markdown("✅ **Positivas:**")
-                            for r in [x for x in resultado_neg if x['label'] in ['POSITIVE', 'LABEL_2']][:3]:
-                                st.write(f"🇧🇷 _{r['sentenca_pt']}_")
-                                st.write(f"✂️ _{r['sentenca_limpa']}_")
-                                st.write("")
-                        
-                        with col_neu:
-                            st.markdown("⚪ **Neutras:**")
-                            for r in [x for x in resultado_neg if x['label'] in ['NEUTRAL', 'LABEL_1']][:3]:
-                                st.write(f"🇧🇷 _{r['sentenca_pt']}_")
-                                st.write(f"✂️ _{r['sentenca_limpa']}_")
-                                st.write("")
-                        
-                        with col_neg:
-                            st.markdown("❌ **Negativas:**")
-                            for r in [x for x in resultado_neg if x['label'] in ['NEGATIVE', 'LABEL_0']][:3]:
-                                st.write(f"🇧🇷 _{r['sentenca_pt']}_")
-                                st.write(f"✂️ _{r['sentenca_limpa']}_")
-                                st.write("")
-                    
-                    # Analisar causador
-                    st.markdown("---")
-                    st.markdown("#### 🔴 Sentimento do Causador")
-                    
-                    with st.spinner("Analisando fala do causador..."):
-                        resultado_caus = analise.analise_sentimento_transformer_otimizado(txt_caus, nlp_model)
-                    
-                    if resultado_caus:
-                        # Contar positivos/negativos/neutros
-                        positivos = sum(1 for r in resultado_caus if r['label'] in ['POSITIVE', 'LABEL_2'])
-                        negativos = sum(1 for r in resultado_caus if r['label'] in ['NEGATIVE', 'LABEL_0'])
-                        neutros = sum(1 for r in resultado_caus if r['label'] in ['NEUTRAL', 'LABEL_1'])
-                        total_sent = len(resultado_caus)
-                        
-                        col1, col2, col3, col4 = st.columns(4)
-                        
-                        with col1:
-                            st.metric("Positivos", f"{positivos}/{total_sent}")
-                        
-                        with col2:
-                            st.metric("Neutros", f"{neutros}/{total_sent}")
-                        
-                        with col3:
-                            st.metric("Negativos", f"{negativos}/{total_sent}")
-                        
-                        with col4:
-                            pct_negativo = (negativos / total_sent * 100) if total_sent > 0 else 0
-                            st.metric("% Negativo", f"{pct_negativo:.0f}%")
-                        
-                        # Mostrar exemplos
-                        st.markdown("**Exemplos de Sentenças:**")
-                        
-                        col_pos, col_neu, col_neg = st.columns(3)
-                        
-                        with col_pos:
-                            st.markdown("✅ **Positivas:**")
-                            for r in [x for x in resultado_caus if x['label'] in ['POSITIVE', 'LABEL_2']][:3]:
-                                st.write(f"🇧🇷 _{r['sentenca_pt']}_")
-                                st.write(f"✂️ _{r['sentenca_limpa']}_")
-                                st.write("")
-                        
-                        with col_neu:
-                            st.markdown("⚪ **Neutras:**")
-                            for r in [x for x in resultado_caus if x['label'] in ['NEUTRAL', 'LABEL_1']][:3]:
-                                st.write(f"🇧🇷 _{r['sentenca_pt']}_")
-                                st.write(f"✂️ _{r['sentenca_limpa']}_")
-                                st.write("")
-                        
-                        with col_neg:
-                            st.markdown("❌ **Negativas:**")
-                            for r in [x for x in resultado_caus if x['label'] in ['NEGATIVE', 'LABEL_0']][:3]:
-                                st.write(f"🇧🇷 _{r['sentenca_pt']}_")
-                                st.write(f"✂️ _{r['sentenca_limpa']}_")
-                                st.write("")
-                    
-                    # Análise Comparativa
-                    st.markdown("---")
-                    st.markdown("#### ✔️ Comparativo")
-                    
-                    if resultado_neg and resultado_caus:
-                        col1, col2 = st.columns(2)
-                        
-                        with col1:
-                            pct_pos_neg = (sum(1 for r in resultado_neg if r['label'] in ['POSITIVE', 'LABEL_2']) / len(resultado_neg) * 100)
-                            st.metric("Negociador % Positivo", f"{pct_pos_neg:.0f}%")
-                        
-                        with col2:
-                            pct_pos_caus = (sum(1 for r in resultado_caus if r['label'] in ['POSITIVE', 'LABEL_2']) / len(resultado_caus) * 100)
-                            st.metric("Causador % Positivo", f"{pct_pos_caus:.0f}%")
+                        if len(tecnicas_minimas) == 1:
+                            pior = tecnicas_minimas.iloc[0]
+                            txt_pior = (
+                                f"⚠️ <strong>Técnica menos efetiva:</strong> {pior['Técnica']} "
+                                f"— Score {pior['Score (%)']:+.1f}% "
+                                f"({int(pior['🔴 Negativa'])} negativo / {int(pior['Total'])} usos)"
+                            )
+                        else:
+                            tecnicas_nomes = ", ".join(tecnicas_minimas['Técnica'].tolist())
+                            txt_pior = (
+                                f"⚠️ <strong>Técnicas menos efetivas (empate):</strong> {tecnicas_nomes} "
+                                f"— Score {score_minimo:+.1f}%"
+                            )
                         
                         st.markdown(f"""
-                        **Interpretação:**
-                        - Negociador {pct_pos_neg:.0f}% positivo → {"Mantendo tom construtivo" if pct_pos_neg > 60 else "Tom mais técnico/neutro" if pct_pos_neg > 30 else "Tom defensivo"}
-                        - Causador {pct_pos_caus:.0f}% positivo → {"Muito receptivo" if pct_pos_caus > 60 else "Moderadamente receptivo" if pct_pos_caus > 40 else "Resistente, preocupado"}
-                        """)
+                        <div style='background:rgba(239,68,68,0.08);padding:12px;border-radius:8px;border-left:3px solid #ef4444;margin-bottom:10px;'>
+                        <p style='color:#ddd;font-size:0.9rem;margin:0;'>
+                        {txt_pior}
+                        </p>
+                        </div>
+                        """, unsafe_allow_html=True)
 
-            st.markdown("---")
-            st.markdown("""
-                                
-            ⚠️ **Limitações:**
-            
-            - Modelo treinado em resenhas de produtos em inglês
-            - Português coloquial pode ser mal interpretado
-            - "Entendi", "tranquilo" podem ser classificados errado            
-            - Gírias muito locais podem confundir
-            - Sarcasmo ainda pode não ser detectado
-            - Use como complemento da Análise Rápida
-            """)
+                    st.markdown("---")
+                    st.markdown("### ✔️ Efetividade Geral do Repertório Técnico")
 
-    st.markdown("---")
+                    media_geral = round(df_com_score["Score (%)"].mean(), 1) if not df_com_score.empty else 0
 
+                    st.markdown(f"""
+                    <div style='background:rgba(255,215,0,0.06);padding:12px;border-radius:8px;border:1px solid rgba(255,215,0,0.15);margin-bottom:15px;'>
+                    <p style='font-size:0.85rem;color:#FFD700;margin:0 0 8px 0;'>
+                    <strong>ℹ️ Como é medido:</strong>
+                    </p>
+                    <p style='font-size:0.85rem;color:#ddd;margin:0;line-height:1.6;'>
+                    Efetividade Geral = Média dos scores de todas as técnicas<br>
+                    Score de cada técnica = (positivas - negativas) / observadas × 100%<br>
+                    <strong>Baseline desta análise:</strong> {media_geral:+.1f}%
+                    </p>
+                    </div>
+                    """, unsafe_allow_html=True)
 
-    
-    st.markdown("---")
-                                
-                    # ===== PRÓXIMO BOTÃO (FORA DA TAB) =====
-    if st.button("✔ 3. GERAR ANALYTICS E EXPORTAR ANÁLISE (PDF)"):
-        with st.spinner("Compilando dados técnicos, consultando IA e desenhando PDF..."):
-            try:
-                t_causador = limpar_valor(df_apa.get('TRANSCRIÇÃO DO CAUSADOR'))
-                t_principal = limpar_valor(df_apa.get('TRANSCRIÇÃO DO NEGOCIADOR PRINCIPAL'))
-                t_secundario = limpar_valor(df_apa.get('TRANSCRIÇÃO DO NEGOCIADOR SECUNDÁRIO'))
-
-                df_transcricoes = pd.DataFrame([{
-                    "Causador": t_causador,
-                    "Neg_Principal": t_principal,
-                    "Neg_Secundario": t_secundario
-                }])
-
-                stats_calculados = st.session_state.get('stats_calculados', {}) or {}
-
-                temas_extraidos = stats_calculados.get('topicos') if stats_calculados else ["Etapa 2 não executada"]
-                if not isinstance(temas_extraidos, (list, tuple)):
-                    temas_extraidos = [str(temas_extraidos)]
-
-                meta_dict = df_apa.to_dict()
-                meta_dict["temas_dominantes_scikit_learn"] = " | ".join([str(t) for t in temas_extraidos])
-
-                # Envia para a IA as análises textuais já calculadas:
-                # - similitude lexical
-                # - n-grams / modelagem de tópicos
-                # - convergência
-                # - qualquer outro dado já existente em stats_calculados
-                meta_dict["analises_calculadas"] = {
-                    "similitude_lexical": stats_calculados.get(
-                        "similitude_lexical",
-                        stats_calculados.get("similitude", "Não executada")
-                    ),
-                    "ngrams": stats_calculados.get(
-                        "ngrams",
-                        stats_calculados.get("n_grams", "Não executada")
-                    ),
-                    "convergencia": stats_calculados.get(
-                        "convergencia",
-                        stats_calculados.get("convergencia_lexical", "Não executada")
-                    ),
-                    "topicos": temas_extraidos,
-                }
-
-                df_meta = pd.DataFrame([meta_dict])
-
-                dados_extraidos = {
-                    "transcricao": df_transcricoes,
-                    "metadados": df_meta
-                }
-
-                # ====
-                # MONTA AS TÉCNICAS DA APA E A FREQUÊNCIA PARA ENVIAR À IA
-                # ====
-                tecnicas_da_apa = []
-                freq_tecnicas_dict = {}
-                estatisticas_ocorrencia = {}
-
-                try:
-                    if not df_tec.empty:
-                        col_vinculo = next((c for c in df_tec.columns if 'VINCULO' in c.upper() or 'VÍNCULO' in c.upper()), None)
-
-                        if col_vinculo:
-                            id_visivel = str(apa_selecionada).strip()
-
-                            df_tec_tmp = df_tec.copy()
-                            df_tec_tmp['Vinculo_Str'] = (
-                                df_tec_tmp[col_vinculo]
-                                .astype(str)
-                                .str.replace(r"[\[\]'\"]", "", regex=True)
-                                .str.strip()
-                            )
-
-                            df_tec_filtrado_pdf = df_tec_tmp[df_tec_tmp['Vinculo_Str'] == id_visivel].copy()
-
-                            if df_tec_filtrado_pdf.empty and 'Airtable_Record_ID' in df_apa:
-                                id_interno = str(df_apa['Airtable_Record_ID']).strip()
-                                df_tec_filtrado_pdf = df_tec_tmp[
-                                    df_tec_tmp[col_vinculo].astype(str).str.contains(id_interno, na=False, regex=False)
-                                ].copy()
-
-                            if not df_tec_filtrado_pdf.empty:
-                                col_tecnica = next(
-                                    (col for col in ['TÉCNICAS', 'TECNICAS', 'TÉCNICA', 'TECNICA'] if col in df_tec_filtrado_pdf.columns),
-                                    None
-                                )
-
-                                if col_tecnica:
-                                    freq_abs = df_tec_filtrado_pdf[col_tecnica].value_counts()
-                                    freq_rel = (df_tec_filtrado_pdf[col_tecnica].value_counts(normalize=True) * 100).round(1)
-
-                                    df_freq_pdf = pd.DataFrame({
-                                        'Técnica Empregada': freq_abs.index,
-                                        'Frequência Absoluta': freq_abs.values,
-                                        'Frequência Relativa (%)': freq_rel.values
-                                    })
-
-                                    tecnicas_da_apa = df_freq_pdf['Técnica Empregada'].dropna().astype(str).tolist()
-
-                                    frequencia_tecnicas_ocorrencia = []
-                                    for _, row in df_freq_pdf.iterrows():
-                                        frequencia_tecnicas_ocorrencia.append({
-                                            "tecnica": str(row["Técnica Empregada"]),
-                                            "frequencia_absoluta": int(row["Frequência Absoluta"]),
-                                            "frequencia_relativa": float(row["Frequência Relativa (%)"])
-                                        })
-
-                                    freq_tecnicas_dict = dict(
-                                        zip(
-                                            df_freq_pdf['Técnica Empregada'].astype(str),
-                                            df_freq_pdf['Frequência Absoluta'].astype(int)
-                                        )
-                                    )
-
-                                    estatisticas_ocorrencia = {
-                                        "frequencia_tecnicas_ocorrencia": frequencia_tecnicas_ocorrencia,
-                                        "frequencia_absoluta_por_tecnica": freq_tecnicas_dict
-                                    }
-
-                except Exception as e:
-                    st.warning(f"Falha ao montar frequências para a IA: {e}")
-
-                resultado_ia = ia_link.analisar_ocorrencia_gate(
-                    dados_extraidos,
-                    estatisticas_ocorrencia=estatisticas_ocorrencia,
-                    tecnicas_ocorrencia=tecnicas_da_apa
-                )
-
-                if isinstance(resultado_ia, dict):
-                    parecer_ia = resultado_ia.get("parecer", "")
-                    sugestoes_treinamento = resultado_ia.get("sugestoes_treinamento", "")
-                else:
-                    parecer_ia = str(resultado_ia)
-                    sugestoes_treinamento = ""
-
-                def calcular_media_equipe(*valores):
-                    validos = [v for v in valores if v and v > 0]
-                    return sum(validos) / len(validos) if validos else None
-
-                likert_inicio = {
-                    'agressividade_media': calcular_media_equipe(p_agr_c_num, s_agr_c_num, l_agr_c_num),
-                    'receptividade_media': calcular_media_equipe(p_rec_c_num, s_rec_c_num, l_rec_c_num)
-                }
-                likert_fim = {
-                    'agressividade_media': calcular_media_equipe(p_agr_e_num, s_agr_e_num, l_agr_e_num),
-                    'receptividade_media': calcular_media_equipe(p_rec_e_num, s_rec_e_num, l_rec_e_num)
-                }
-                # Spearman entre serie de agressividade no inicio e no fim (3 pares: P, S, L)
-                try:
-                    import numpy as _np
-                    from scipy.stats import spearmanr as _spearmanr
-                    x_likert = [v for v in [p_agr_c_num, s_agr_c_num, l_agr_c_num] if v > 0]
-                    y_likert = [v for v in [p_agr_e_num, s_agr_e_num, l_agr_e_num] if v > 0]
-                    n_par = min(len(x_likert), len(y_likert))
-                    if n_par >= 3 and len(set(x_likert[:n_par])) > 1 and len(set(y_likert[:n_par])) > 1:
-                        rho_lk, p_lk = _spearmanr(x_likert[:n_par], y_likert[:n_par])
-                        stats_spearman = {'valido': True, 'p_value': float(p_lk), 'rho': float(rho_lk)}
+                    if score_geral >= 50:
+                        cor = "🟢"
+                        status = "ÓTIMA"
+                        explicacao = (
+                            f"O repertório técnico teve {score_geral:+.1f}% de efetividade geral "
+                            f"(acima do baseline de {media_geral:+.1f}%). "
+                            "Isso significa que positivas superaram negativas de forma significativa. "
+                            "Indicativo de estratégia técnica bem-sucedida nesta ocorrência."
+                        )
+                    elif score_geral >= 0:
+                        cor = "🟡"
+                        status = "MODERADA"
+                        explicacao = (
+                            f"O repertório técnico teve {score_geral:+.1f}% de efetividade geral "
+                            f"(próximo ao baseline de {media_geral:+.1f}%). "
+                            "Positivas e negativas estão equilibradas. "
+                            "Há oportunidade de aprimoramento — algumas técnicas funcionaram melhor que outras."
+                        )
                     else:
-                        stats_spearman = {'valido': False, 'p_value': 1.0, 'rho': 0.0}
-                except Exception:
-                    stats_spearman = {'valido': False, 'p_value': 1.0, 'rho': 0.0}
-                laudo_frio = ia_link.gerar_laudo_frio(likert_inicio, likert_fim, stats_spearman)
+                        cor = "🔴"
+                        status = "FRACA"
+                        explicacao = (
+                            f"O repertório técnico teve {score_geral:+.1f}% de efetividade geral "
+                            f"(abaixo do baseline de {media_geral:+.1f}%). "
+                            "Negativas superaram positivas. "
+                            "Indicativo de mismatch entre técnicas empregadas e dinâmica do causador."
+                        )
 
-                st.markdown(f"""
-                <div class="info-card" style="border-left: 4px solid #FFD700;">
-                <h4 style="color: #FFD700; margin-top: 0;">Inferência Estatística (Motor Frio)</h4>
-                <p style="font-size: 1.05rem; line-height: 1.6;">{laudo_frio}</p>
-                <hr style="border-color: rgba(255,255,255,0.1); margin: 15px 0;">
-                <h4 style="color: #06C755; margin-top: 0;">Leitura Analítica (Interpretação descritiva dos resultados)</h4>
-                <p style="font-size: 1.05rem; line-height: 1.6;">{parecer_ia}</p>
-                <hr style="border-color: rgba(255,255,255,0.1); margin: 15px 0;">
-                <h4 style="color: #FFA500; margin-top: 0;">Sugestões para treinamentos</h4>
-                <p style="font-size: 1.05rem; line-height: 1.6;">{sugestoes_treinamento or 'Sem base suficiente para sugerir treinamento específico.'}</p>
+                    st.markdown(f"""
+                    <div style='background:rgba(0,0,0,0.3);padding:14px;border-radius:8px;border-left:4px solid {"#10b981" if score_geral >= 50 else "#f59e0b" if score_geral >= 0 else "#ef4444"};margin-bottom:15px;'>
+                    <p style='font-size:0.95rem;color:#ddd;margin:0;'>
+                    {cor} <strong>Efetividade Geral: {status}</strong><br><br>
+                    {explicacao}
+                    </p>
+                    </div>
+                    """, unsafe_allow_html=True)
+
+                    st.markdown("### ✔️ Contexto Comparativo")
+
+                    st.markdown(f"""
+                    <p style='font-size:0.9rem;color:#aaa;line-height:1.6;'>
+                    <strong>Técnicas com score positivo:</strong> {(df_com_score["Score (%)"] > 0).sum()} de {len(df_com_score)}<br>
+                    <strong>Técnicas com score negativo:</strong> {(df_com_score["Score (%)"] < 0).sum()} de {len(df_com_score)}<br>
+                    <strong>Técnicas neutras (0%):</strong> {(df_com_score["Score (%)"] == 0).sum()} de {len(df_com_score)}<br>
+                    <strong>Variação entre técnicas:</strong> {df_com_score["Score (%)"].max() - df_com_score["Score (%)"].min():.1f} pontos percentuais<br>
+                    <strong>Confiabilidade (volume de usos):</strong> {int(df_resumo["Total"].sum())} técnicas empregadas no total
+                    </p>
+                    """, unsafe_allow_html=True)
+
+                    if score_geral >= 50:
+                        txt_geral = "✅ Repertório técnico com boa efetividade geral nesta ocorrência."
+                    elif score_geral >= 0:
+                        txt_geral = "⚠️ Repertório técnico com efetividade moderada — oportunidade de melhoria."
+                    else:
+                        txt_geral = "🔴 Repertório técnico com baixa efetividade — maioria das técnicas gerou reação negativa."
+
+                    st.info(txt_geral)
+
+        st.markdown("---")
+
+        # PRÓXIMA SEÇÃO (ANÁLISE SEMÂNTICA, etc)
+        
+               
+        st.markdown("""
+        <h3 style='color: #FFD700;'>✔ Análise Semântica </h3>
+        <p style='color: #aaa; font-size: 0.95rem; margin-top: -10px;'>
+        <strong>O que o causador REALMENTE sente, quer e teme.</strong> 
+        Enquanto Similitude conta palavras repetidas, Semântica lê entre as linhas: intenções escondidas, 
+        gatilhos emocionais e pontos de alavanca para resolução.
+        </p></p>
+        """, unsafe_allow_html=True)
+
+        # --- INÍCIO DO BLOCO DE EXPLICAÇÃO ---
+        if "show_explicacao" not in st.session_state:
+            st.session_state["show_explicacao"] = False
+
+        label_btn = "▲ Ocultar Guia" if st.session_state["show_explicacao"] else "▼ Entenda como ler a Análise"
+        if st.button(label_btn, key="btn_explicacao_semantica"):
+            st.session_state["show_explicacao"] = not st.session_state["show_explicacao"]
+
+        if st.session_state["show_explicacao"]:
+
+            tab_pratica, tab_framework, tab_ngramas, tab_limitacoes = st.tabs([
+                "✔ Aplicação Prática",
+                "✔ Os Três Vetores",
+                "✔ Padrões & Fixações",
+                "✔ Limitações"
+            ])
+
+            with tab_pratica:
+                st.markdown("""
+                <div class='info-card'>
+                <h5 style='color:#FFD700;margin-top:0;'>Como ler os dados na prática?</h5>
+                <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
+                A análise semântica responde uma pergunta simples: <strong>"O que esse sujeito está vivendo agora?"</strong>
+                </p>
+                <hr style='border-color:#444;margin:12px 0;'>
+                <h5 style='color:#FFD700;'>📌 Passo 1: Identifique o ESTADO EMOCIONAL</h5>
+                <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
+                <strong>Procure por:</strong> Quanto de <strong>medo, raiva, desespero</strong> o causador está carregando?<br><br>
+                • <em>"vou me matar"</em> + <em>"não aguento mais"</em> → Desespero acima do limite (risco iminente)<br>
+                • <em>"ninguém entra aqui"</em> + <em>"vou atirar"</em> → Raiva/defesa (hostilidade)<br>
+                • <em>"perdi tudo"</em> + <em>"ninguém se importa"</em> → Abandono/desesperança (depressão)<br><br>
+                <strong>Por quê?</strong> Segundo William Ury (Harvard), antes de negociar, você precisa entender o <u>estado de espírito</u> 
+                da outra parte. Emoção descontrolada = impossível raciocínio lógico.
+                </p>
+                <hr style='border-color:#444;margin:12px 0;'>
+                <h5 style='color:#FFD700;'>📌 Passo 2: Identifique as EXIGÊNCIAS REAIS</h5>
+                <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
+                <strong>Procure por:</strong> O que esse sujeito <strong>quer concretamente</strong>? (não apenas ameaça)<br><br>
+                • <em>"quero a imprensa aqui"</em> → Exigência instrumental (segurança/poder/reconhecimento)<br>
+                • <em>"Quero que a imprensa saiba o que aconteceu"</em> → Exigência moral (dignidade)<br>
+                • <em>"preciso de dinheiro"</em> → Exigência material (sobrevivência)<br><br>
+                <strong>Por quê?</strong> Segundo William Ury (Harvard Negotiation Project), 
+                reconhecer a legitimidade da exigência (mesmo que você não possa cumprir) 
+                reduz hostilidade. O FBI e Chris Voss confirmam isso através de 
+                <u>escuta ativa</u> em negociações críticas. 
+                (mesmo que você não possa cumprir) reduz hostilidade. O causador quer ser OUVIDO, não necessariamente atendido.
+                </p>
+                <hr style='border-color:#444;margin:12px 0;'>
+                <h5 style='color:#FFD700;'>📌 Passo 3: Encontre os GANCHOS PARA DESESCALADA</h5>
+                <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
+                <strong>Procure por:</strong> Onde há <strong>abertura, ambivalência, vínculo</strong>?<br><br>
+                • <em>"me ajuda"</em> (mesmo que velado) → Pedido de ajuda (ponto de conexão)<br>
+                • <em>"fala comigo"</em> → Busca por contato (rapport possível)<br>
+                • <em>"minha filha"</em> → Vínculo afetivo (alavanca para mudança de decisão)<br><br>
+                <strong>Por quê?</strong> O Manual do FBI de Negociação enfatiza que <u>pequenos sinais de cooperação</u> 
+                devem ser amplificados. "Minha filha" não é só uma palavra — é a ponte entre desespero e vida.
+                </p>
+                <hr style='border-color:#444;margin:12px 0;'>
+                <h5 style='color:#FFD700;'>📌 Passo 4: Analise a ABORDAGEM DO NEGOCIADOR</h5>
+                <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
+                <strong>Procure por:</strong> Como o negociador respondeu? Conseguiu <strong>sincronizar?</strong><br><br>
+                • Se Causador diz <em>"ninguém me entende"</em> e Negociador responde <em>"entendo sua dor"</em> → Conversa bem dirigida ✅<br>
+                • Se Causador diz <em>"quero a imprensa"</em> e Negociador ignora → Falta de legitimação ❌<br>
+                • Se Negociador repete <em>"fica calmo"</em> 10 vezes → Não está ouvindo, está impondo ❌<br><br>
+                <strong>Por quê?</strong> Harvard explica que <u>validar a emoção da outra parte</u> 
+                não significa concordar com a ação — é reconhecer o estado emocional como real.
+                </p>
                 </div>
                 """, unsafe_allow_html=True)
 
-                texto_str = f"""INFERENCIA ESTATISTICA (MOTOR FRIO)
+            with tab_framework:
+                st.markdown("""
+                <div class='info-card'>
+                <h5 style='color:#FFD700;margin-top:0;'>Os Três Vetores Explicados (e como interpretar)</h5>
+                <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
+                Pense nos vetores como três forças que estão em <strong>cabo de guerra</strong> dentro do causador.
+                </p>
+                <hr style='border-color:#444;margin:12px 0;'>
+                <div style='margin:12px 0;padding:12px;border-radius:10px;background:rgba(239,68,68,0.08);border-left:4px solid #ef4444;'>
+                <h5 style='color:#ef4444;margin-top:0;'>🔴 RISCO OBSERVADO — "Quanto de ameaça real há aqui?"</h5>
+                <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
+                Mede a <strong>densidade de linguagem agressiva/suicida</strong> no discurso do causador.<br><br>
+                <strong>Exemplos de alto risco:</strong><br>
+                • <em>"vou matar você"</em> (declaração direta)<br>
+                • <em>"tenho uma arma"</em> (capacidade + intenção)<br>
+                • <em>"quero morrer"</em> (risco para si mesmo)<br><br>
+                <strong>Interpretação para APA:</strong><br>
+                Se Risco Observado = 15% → Ameaça verbalizada, mas sem densidade alta<br>
+                Se Risco Observado = 25%+ → Linguagem carregada, escalada provável se negligenciada<br><br>
+                <strong>O que o negociador deveria fazer?</strong><br>
+                Alto risco = mudar de abordagem RÁPIDO. Deixar o causador falar (validar) antes de oferecer soluções.
+                </p>
+                </div>
+                <hr style='border-color:#444;margin:12px 0;'>
+                <div style='margin:12px 0;padding:12px;border-radius:10px;background:rgba(16,185,129,0.08);border-left:4px solid #10b981;'>
+                <h5 style='color:#10b981;margin-top:0;'>🟢 ABERTURA OBSERVADA — "Tem esperança aqui? Há ponte de desescalada?"</h5>
+                <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
+                Mede <strong>sinais de cooperação, rendição, pedido de ajuda</strong> (velado ou não) no causador.<br><br>
+                <strong>Exemplos de alta abertura:</strong><br>
+                • <em>"me ajuda"</em> (pedido direto)<br>
+                • <em>"minha filha está aqui"</em> (reconhecimento de terceiro, responsabilidade)<br>
+                • <em>"pode entrar"</em> (permissão = abandono da posição hostil)<br><br>
+                <strong>Interpretação para APA:</strong><br>
+                Se Abertura = 5% → Causador muito fechado, difícil entrada. Precisa mais validação.<br>
+                Se Abertura = 15%+ → Janela de oportunidade aberta. Negociador pode começar a propor.<br><br>
+                <strong>O que o negociador deveria fazer?</strong><br>
+                Sinais de abertura = AMPLIFICAR. "Você pediu ajuda? Estou aqui para isso." (FBI)
+                </p>
+                </div>
+                <hr style='border-color:#444;margin:12px 0;'>
+                <div style='margin:12px 0;padding:12px;border-radius:10px;background:rgba(251,146,60,0.08);border-left:4px solid #f97316;'>
+                <h5 style='color:#f97316;margin-top:0;'>🟡 RAIZ OBSERVADA — "Por que ele está assim? Qual é a verdadeira causa?"</h5>
+                <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
+                Mede <strong>gatilhos emocionais, perdas, traumas</strong> que explicam o estado atual.<br><br>
+                <strong>Exemplos de raiz clara:</strong><br>
+                • <em>"perdi meu emprego"</em> (causa: desespero financeiro)<br>
+                • <em>"ela me traiu"</em> (causa: abandono/humilhação)<br>
+                • <em>"ninguém se importa comigo"</em> (causa: isolamento/rejeição)<br><br>
+                <strong>Interpretação para APA:</strong><br>
+                Se Raiz = 8% → Causador talvez tenha gatilho recente ou bem localizado.<br>
+                If Raiz = 12%+ → Acúmulo de perdas, histórico de trauma. Mais difícil de resolver rápido.<br><br>
+                <strong>O que o negociador deveria fazer?</strong><br>
+                Ury diz: "Separe a pessoa do problema." A raiz é o PROBLEMA. Validá-la não é concordar, é RECONHECER.<br>
+                Ex: "Entendo que perder o emprego é devastador. Mas matar não resolve. Vamos pensar em saídas."
+                </p>
+                </div>
+                <hr style='border-color:#444;margin:12px 0;'>
+                <h5 style='color:#FFD700;'>⚖️ COMO OS TRÊS TRABALHAM JUNTOS</h5>
+                <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
+                <strong>Cenário 1: Alto Risco + Baixa Abertura + Raiz Clara</strong><br>
+                → Sujeito desesperado (raiz conhecida) mas barricado (nenhuma ponte). Técnica: Validar a raiz + oferecer saída.
+                <br><br>
+                <strong>Cenário 2: Alto Risco + Alta Abertura + Raiz Clara</strong><br>
+                → Sujeito em crise mas aberto à ajuda. JANELA CRÍTICA. Técnica: Rápida proposição de alternativa.
+                <br><br>
+                <strong>Cenário 3: Baixo Risco + Alta Abertura + Raiz Clara</strong><br>
+                → Sujeito já está em conversação. Técnica: Escuta ativa + proposição colaborativa.
+                </p>
+                </div>
+                """, unsafe_allow_html=True)
 
-    {laudo_frio}
+            with tab_ngramas:
+                st.markdown("""
+                <div class='info-card'>
+                <h5 style='color:#FFD700;margin-top:0;'>Padrões Repetidos & Loop Cognitivo</h5>
+                <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
+                <strong>N-gramas:</strong> Frases de 2-3 palavras que o sujeito repete obessivamente.
+                </p>
+                <hr style='border-color:#444;margin:12px 0;'>
+                <h5 style='color:#FFD700;'>O que significa?</h5>
+                <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
+                Sob estresse extremo, o cérebro entra em <strong>loop cognitivo</strong>. 
+                A frase repetida é o <u>mantra da crise</u> — o que o sujeito está preso em pensar.<br><br>
+                <strong>Exemplos e interpretações:</strong><br><br>
+                • <em>"não aguento mais"</em> (repetido 5+ vezes)<br>
+                &nbsp;&nbsp; → Estado: Exaustão emocional severa. Risco: Iminente (suicida ou agressivo descontrolado)<br>
+                &nbsp;&nbsp; → Técnica: Validar o esgotamento, oferecer repouso/alívio imediato<br><br>
+                • <em>"cadê a imprensa"</em> (repetido 3+ vezes)<br>
+                &nbsp;&nbsp; → Estado: Fixação instrumental. O sujeito quer RECONHECIMENTO público<br>
+                &nbsp;&nbsp; → Técnica: Negociar sobre o que pode ser oferecido (não prometa imprensa se não há)<br><br>
+                • <em>"fica calmo"</em> (negociador repetindo)<br>
+                &nbsp;&nbsp; → Estado: Negociador não está OUVINDO. Está tentando impor.<br>
+                &nbsp;&nbsp; → Técnica: MUDAR DE ABORDAGEM. Perguntar em vez de ordenar<br><br>
+                </p>
+                <hr style='border-color:#444;margin:12px 0;'>
+                <h5 style='color:#FFD700;'>Nuvem de Palavras — O que cada interlocutor REALMENTE está focando</h5>
+                <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
+                A nuvem mostra visualmente o <strong>universo mental</strong> de cada um.<br><br>
+                <strong>Leitura prática:</strong><br>
+                Se a nuvem do Causador tem <em>"arma, polícia, morte"</em> gigantes → Fixação em escalada<br>
+                Se a nuvem tem <em>"filha, família, vida"</em> grandes → Ambivalência (quer viver mas está preso no medo)<br>
+                Se a nuvem do Negociador tem <em>"calma, tranquilo, relaxa"</em> → Talvez não esteja validando o real estado emocional<br><br>
+                <strong>Comparação:</strong><br>
+                Nuvem do Causador com "morte" grande + Nuvem do Negociador com "vida" grande = Boa direção<br>
+                Nuvem do Causador com "morte" grande + Nuvem do Negociador com "relaxa" grande = Desconexão
+                </p>
+                <div style='margin-top:12px;padding:12px;border-radius:10px;background:rgba(255,215,0,0.06);border:1px solid rgba(255,215,0,0.15);'>
+                <p style='font-size:0.9rem;color:#ddd;margin:0;line-height:1.6;'>
+                <strong>Atenção:</strong> Um padrão repetido não é risco por si. É um <u>sinal de fixação mental</u>. 
+                Pode ser esperança ("vou me entregar"), desespero ("vou morrer") ou instrumento ("exijo reconhecimento").
+                </p>
+                </div>
+                </div>
+                """, unsafe_allow_html=True)
 
-    LEITURA ANALITICA
+            with tab_limitacoes:
+                st.markdown("""
+                <div class='info-card'>
+                <h5 style='color:#FFD700;margin-top:0;'>Limitações — O que o sistema NÃO consegue ver</h5>
+                <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
+                Esta é uma <strong>ferramenta de leitura</strong>, não bola de cristal. Os números descrevem o que foi DITO, 
+                não o que vai acontecer.
+                </p>
+                <hr style='border-color:#444;margin:12px 0;'>
+                <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
+                ❌ <strong>Não vê o histórico do sujeito:</strong> Esse é o 1º suicida ou o 5º? Faz diferença.<br>
+                ❌ <strong>Não vê o contexto real:</strong> Há reféns? Há arma de verdade? O sistema não sabe.<br>
+                ❌ <strong>Não vê gírias/ironia:</strong> <em>"Vou me matar de rir"</em> aparece como risco, mas é brincadeira.<br>
+                ❌ <strong>Não vê o tom de voz:</strong> <em>"vou sair"</em> dito com calma é diferente de grito.<br>
+                ❌ <strong>Não vê interrupções:</strong> Se o transcrição está quebrada, a análise fica incompleta.
+                </p>
+                <div style='margin-top:12px;padding:12px;border-radius:10px;background:rgba(255,215,0,0.06);border:1px solid rgba(255,215,0,0.15);'>
+                <p style='font-size:0.9rem;color:#ddd;margin:0;line-height:1.6;'>
+                <strong>Regra de ouro para APA:</strong> Use estes dados + seu julgamento + contexto operacional. 
+                O sistema ILUMINA. A decisão é HUMANA.
+                </p>
+                </div>
+                </div>
+                """, unsafe_allow_html=True)
 
-    {parecer_ia}
+        # --- FIM DO BLOCO DE EXPLICAÇÃO ---
 
-    SUGESTOES PARA TREINAMENTOS
 
-    {sugestoes_treinamento if sugestoes_treinamento else 'Sem base suficiente para sugerir treinamento específico.'}
-    """
+        st.markdown(
+            "<h5 style='color: #FFD700;'>Análise Temática e Detalhes da Transcrição (Nesta APA)</h5>",
+            unsafe_allow_html=True
+        )
 
-                texto_str = texto_str.replace("**", "").replace("### ", "")
-                texto_final_pdf = unicodedata.normalize('NFKD', texto_str).encode('ASCII', 'ignore').decode('ASCII')
+        col_left, col_center, col_right = st.columns([1, 1, 1])
 
-                pdf = FPDF()
-                pdf.add_page()
+        with col_center:
+            is_analise_tematica = render_toggle_button(
+                label="✔️ Abrir Análise Temática",
+                session_key="analise_tematica",
+                button_key="btn_analise_tematica"
+            )
 
-                pdf.set_fill_color(249, 115, 22)
-                pdf.rect(0, 0, 210, 40, 'F')
-                pdf.set_font("Arial", "B", 18)
-                pdf.set_text_color(255, 255, 255)
-                pdf.cell(0, 15, "LAUDO DE ANALISE POS-ACAO (APA)", ln=True, align="C")
-                pdf.set_font("Arial", "I", 12)
-                pdf.cell(0, 5, f"Unidade: GATE | ID: {apa_selecionada}", ln=True, align="C")
+        st.markdown("---")
 
-                pdf.ln(20)
-                pdf.set_text_color(0, 0, 0)
-                pdf.set_font("Arial", "B", 14)
-                pdf.set_fill_color(240, 240, 240)
-                pdf.cell(0, 10, " 1. INFORMACOES DO INCIDENTE", ln=True, fill=True)
-                pdf.set_font("Arial", "", 11)
+        if is_analise_tematica:
+        
+            def extrair_temas_e_metricas(resultado_lista):
+                """
+                Separa os temas das métricas APA.
+                Métricas começam com ** e contêm: Risco, Abertura, Raiz, Intensidade, Direção, Volatilidade
+                """
+                temas = []
+                metricas = []
+                
+                for linha in resultado_lista:
+                    if any(keyword in linha for keyword in ['Risco Observado', 'Abertura Observada', 'Raiz Observada', 
+                                                            'Intensidade Geral', 'Direção:', 'Volatilidade', 
+                                                            'Classificação APA', 'Leitura Operacional']):
+                        metricas.append(linha)
+                    else:
+                        temas.append(linha)
+                
+                return temas, metricas
 
-                dt_oc = limpar_valor(df_apa.get('Data da ocorrência'))
-                tip = limpar_valor(df_apa.get('Tipologia'))
-                neg = limpar_valor(df_apa.get('Negociador Principal'))
-                info_str = f"Data: {dt_oc} | Tipologia: {tip} | Negociador: {neg}"
+            
 
-                pdf.multi_cell(
-                    0,
-                    8,
-                    txt=unicodedata.normalize('NFKD', info_str).encode('ASCII', 'ignore').decode('ASCII'),
-                    border='L'
-                )
+            
+            with st.spinner("Processando padrões mentais, temas dominantes e gerando nuvens de palavras..."):
+                try:
+                    texto_c  = analise.limpar_valor(df_apa.get('TRANSCRIÇÃO DO CAUSADOR', ''))
+                    texto_np = analise.limpar_valor(df_apa.get('TRANSCRIÇÃO DO NEGOCIADOR PRINCIPAL', ''))
+                    texto_ns = analise.limpar_valor(df_apa.get('TRANSCRIÇÃO DO NEGOCIADOR SECUNDÁRIO', ''))
+                    texto_total = f"{texto_c} {texto_np} {texto_ns}"
 
-                pdf.ln(10)
-                pdf.set_font("Arial", "B", 14)
-                pdf.set_fill_color(249, 115, 22)
-                pdf.set_text_color(255, 255, 255)
-                pdf.cell(0, 10, " 2. INTELIGENCIA DE APOIO A DECISAO (IA)", ln=True, fill=True)
-                pdf.ln(5)
-                pdf.set_text_color(0, 0, 0)
-                pdf.set_font("Arial", "", 11)
+                    resolucao_raw = analise.limpar_valor(
+                        df_apa.get('Resolução', df_apa.get('RESOLUÇÃO', df_apa.get('resolucao', '')))
+                    ).strip()
 
-                pdf.multi_cell(0, 7, txt=texto_final_pdf)
+                    # ✅ CORRIGIDO: detecta os 3 tipos reais GATE/PMESP
+                    resolucao_norm = resolucao_raw.lower()
+                    if not resolucao_norm:
+                        resolucao_tipo = "desconhecida"
+                    elif "tática" in resolucao_norm or "tatica" in resolucao_norm:
+                        resolucao_tipo = "Negociação Tática"
+                    elif "real" in resolucao_norm or "negocia" in resolucao_norm:
+                        resolucao_tipo = "Negociação Real"
+                    elif "interven" in resolucao_norm:
+                        resolucao_tipo = "Intervenção"
+                    else:
+                        resolucao_tipo = "desconhecida"
 
-                pdf_saida = pdf.output(dest="S")
-                if isinstance(pdf_saida, str):
-                    pdf_bytes = pdf_saida.encode('latin-1', errors='replace')
+                    # ✅ NOVO: extrair tempos do Airtable com segurança
+                    def extrair_tempo(valor):
+                        try:
+                            return int(float(str(analise.limpar_valor(valor)).replace(',', '.') or 0))
+                        except Exception:
+                            return 0
+
+                    tempo_neg_real = extrair_tempo(
+                        df_apa.get('TEMPO NEGOCIAÇÃO REAL',
+                        df_apa.get('Tempo Negociação Real',
+                        df_apa.get('tempo_negociacao_real', 0)))
+                    )
+                    tempo_neg_tatica = extrair_tempo(
+                        df_apa.get('TEMPO NEGOCIAÇÃO TÁTICA',
+                        df_apa.get('Tempo Negociação Tática',
+                        df_apa.get('tempo_negociacao_tatica', 0)))
+                    )
+
+                    # ✅ NOVO: Separar temas e métricas
+                    resultado_total = analise.extrair_topicos_ngrams(texto_total, resolucao_tipo=resolucao_tipo) if len(texto_total) > 10 else ["Texto insuficiente"]
+                    resultado_c = analise.extrair_topicos_ngrams(texto_c, resolucao_tipo=resolucao_tipo) if len(texto_c) > 10 else ["Texto insuficiente"]
+                    resultado_np = analise.extrair_topicos_ngrams(texto_np, resolucao_tipo=resolucao_tipo) if len(texto_np) > 10 else ["Texto insuficiente"]
+                    resultado_ns = analise.extrair_topicos_ngrams(texto_ns, resolucao_tipo=resolucao_tipo) if len(texto_ns) > 10 else ["Texto insuficiente"]
+
+                    temas_total, metricas_total = extrair_temas_e_metricas(resultado_total)
+                    temas_c, metricas_c = extrair_temas_e_metricas(resultado_c)
+                    temas_np, metricas_np = extrair_temas_e_metricas(resultado_np)
+                    temas_ns, metricas_ns = extrair_temas_e_metricas(resultado_ns)
+
+                    st.session_state['stats_calculados'] = {
+                        "temas":       temas_total,
+                        "temas_c":     temas_c,
+                        "temas_np":    temas_np,
+                        "temas_ns":    temas_ns,
+                        "wc_c":        analise.gerar_wordcloud(texto_c)  if len(texto_c)  > 5 else None,
+                        "wc_np":       analise.gerar_wordcloud(texto_np) if len(texto_np) > 5 else None,
+                        "wc_ns":       analise.gerar_wordcloud(texto_ns) if len(texto_ns) > 5 else None,
+                        "texto_c_raw":      texto_c,
+                        "texto_np_raw":     texto_np,
+                        "texto_ns_raw":     texto_ns,
+                        "resolucao_tipo":   resolucao_tipo,
+                        "resolucao_raw":    resolucao_raw,
+                        "tempo_neg_real":   tempo_neg_real,
+                        "tempo_neg_tatica": tempo_neg_tatica,
+                    }
+                    st.success("✅ Padrões mentais processados!")
+                except Exception as e:
+                    st.error(f"Erro ao processar: {str(e)[:80]}")
+
+        if st.session_state.get('stats_calculados'):
+            stats = st.session_state['stats_calculados']
+
+            tab_ng1, tab_ng2, tab_ng3, tab_ng4, tab_ng5, tab_ng6, tab_ng7, tab_ng8 = st.tabs([
+                "🔴 Causador",
+                "🟢 Negociador Principal",
+                "🔵 Negociador Secundário",
+                "✔️ Análise Global",
+                "✔️ Comparativo das Nuvens de Palavras",
+                "✔️ Convergência Temática",
+                "✔️ Estado da Crise",
+                "✔️ Detalhes da Transcrição"
+            ])
+            
+            # --- TAB 1: CAUSADOR ---
+            with tab_ng1:
+                st.markdown("""
+                <div class='info-card'>
+                <h5 style='color: #ef4444; margin-top: 0;'>🔴 CAUSADOR — Em que ele estava REALMENTE focando?</h5>
+                <p style='font-size:0.9rem;color:#ddd;'>
+                Os temas dominantes abaixo revelam a <strong>obsessão mental</strong> do causador. 
+                Se "morte" é tema 1, o risco estava alto. Se "filha" aparece, há ambivalência.
+                </p>
+                </div>
+                """, unsafe_allow_html=True)
+
+                topicos_c = stats.get('temas_c', ["Análise individual ainda não gerada."])
+                for t in topicos_c:
+                    st.markdown(t)
+
+                wc_c = stats.get('wc_c')
+                if wc_c:
+                    st.markdown("#### Nuvem de Palavras — Foco Mental do Causador")
+                    st.pyplot(wc_c)
                 else:
-                    pdf_bytes = bytes(pdf_saida)
+                    st.info("Sem transcrição suficiente para gerar nuvem.")
+                
+                
 
-                st.download_button(
-                    label="📥 BAIXAR ANÁLISE COMPLETA (PDF)",
-                    data=pdf_bytes,
-                    file_name=f"Laudo_GATE_{apa_selecionada}.pdf",
-                    mime="application/pdf"
-                )
+            # --- TAB 2: NEGOCIADOR PRINCIPAL ---
+            with tab_ng2:
+                st.markdown("""
+                <div class='info-card'>
+                <h5 style='color: #10b981; margin-top: 0;'>🟢 NEGOCIADOR PRINCIPAL — Acompanhou os temas expostos pelo Causador?</h5>
+                <p style='font-size:0.9rem;color:#ddd;'>
+                Os temas do negociador mostram <strong>em que ele está focando</strong>. 
+                Compare com o causador: convergência = boa sintonia; divergência = falha de rapport.
+                </p>
+                </div>
+                """, unsafe_allow_html=True)
 
-            except Exception as e:
-                st.error(f"Erro na análise da IA ou geração do PDF: {str(e)}")
+                topicos_np = stats.get('temas_np', ["Análise individual ainda não gerada."])
+                for t in topicos_np:
+                    st.markdown(t)
 
-    st.markdown("<div style='margin-bottom: 20px;'></div>", unsafe_allow_html=True)
-    st.markdown("""
+                wc_np = stats.get('wc_np')
+                if wc_np:
+                    st.markdown("#### Nuvem de Palavras — Estratégia do Negociador")
+                    st.pyplot(wc_np)
+                else:
+                    st.info("Sem transcrição suficiente para gerar nuvem.")
+                
+                
+
+            # --- TAB 3: NEGOCIADOR SECUNDÁRIO ---
+            with tab_ng3:
+                st.markdown("""
+                <div class='info-card'>
+                <h5 style='color: #3b82f6; margin-top: 0;'>🔵 NEGOCIADOR SECUNDÁRIO — Destacou alguma participação na transcrição?</h5>
+                <p style='font-size:0.9rem;color:#ddd;'>
+                Geralmente suporte. Seus temas indicam se estava reforçando a mensagem do principal ou dispersando esforços.
+                </p>
+                </div>
+                """, unsafe_allow_html=True)
+
+                topicos_ns = stats.get('temas_ns', ["Análise individual ainda não gerada."])
+                for t in topicos_ns:
+                    st.markdown(t)
+
+                wc_ns = stats.get('wc_ns')
+                if wc_ns:
+                    st.markdown("#### Nuvem de Palavras — Atuação do Secundário")
+                    st.pyplot(wc_ns)
+                else:
+                    st.info("Sem transcrição suficiente para gerar nuvem.")
+                
+                
+            # --- TAB 4: ANÁLISE GERAL ---
+            with tab_ng4:
+                st.markdown("""
+                <div class='info-card'>
+                <h5 style='color: #f97316; margin-top: 0;'>✔️ VISÃO GERAL — Os temas gerais do incidente</h5>
+                <p style='font-size:0.9rem;color:#ddd;'>
+                Agregando causador + negociadores, quais eram os assuntos DOMINANTES na negociação?
+                </p>
+                </div>
+                """, unsafe_allow_html=True)
+
+                topicos_globais = stats.get('temas', ["Sem dados"])
+                for t in topicos_globais:
+                    st.markdown(t)
+                
+                
+
+            # --- TAB 5: MAPAS COMPARATIVOS ---
+            with tab_ng5:
+                st.markdown("""
+                <div class='info-card'>
+                <h5 style='color: #FFD700; margin-top: 0;'>✔️ NUVEM DE PALAVRAS LADO-A-LADO — Sincronização</h5>
+                <p style='font-size:0.9rem;color:#ddd;'>
+                Compare as nuvens visualmente. Se causador fala de "morte" e negociador de "vida", há conversação. 
+                Se causador de "morte" e negociador de "calma", há desconexão.
+                </p>
+                </div>
+                """, unsafe_allow_html=True)
+
+                col_wc_g1, col_wc_g2, col_wc_g3 = st.columns(3)
+
+                with col_wc_g1:
+                    st.markdown("**Causador**")
+                    wc_c = stats.get('wc_c')
+                    if wc_c:
+                        st.pyplot(wc_c, clear_figure=True)
+                    else:
+                        st.info("Sem nuvem.")
+
+                with col_wc_g2:
+                    st.markdown("**Negociador Principal**")
+                    wc_np = stats.get('wc_np')
+                    if wc_np:
+                        st.pyplot(wc_np, clear_figure=True)
+                    else:
+                        st.info("Sem nuvem.")
+
+                with col_wc_g3:
+                    st.markdown("**Negociador Secundário**")
+                    wc_ns = stats.get('wc_ns')
+                    if wc_ns:
+                        st.pyplot(wc_ns, clear_figure=True)
+                    else:
+                        st.info("Sem nuvem.")
+
+            # --- TAB 6: CONVERGÊNCIA TEMÁTICA (CORRIGIDO) ---
+            with tab_ng6:
+                st.markdown("""
+                <div class='info-card'>
+                <h4 style='color:#FFD700; margin-top:0;'>✔️ CONVERGÊNCIA TEMÁTICA — Quanto cada tema foi abordado?</h4>
+                <p style='color:#ccc; font-size:0.9rem; margin-bottom:1rem;'>
+                Compara a <strong>intensidade (score)</strong> de cada tema abordado por causador e negociador.
+                Polígonos sobrepostos = abordagem similar. Divergência = ênfase diferente.
+                </p>
+                </div>
+                """, unsafe_allow_html=True)
+
+                texto_c_raw  = stats.get('texto_c_raw', '')
+                texto_np_raw = stats.get('texto_np_raw', '')
+                texto_ns_raw = stats.get('texto_ns_raw', '')
+
+                if not texto_c_raw or not texto_np_raw:
+                    st.warning("⚠️ Transcrições insuficientes para analisar convergência temática.")
+                else:
+                    try:
+                        # ── Extrair temas reais ──────────────────────────
+                        temas_c = analise.extrair_temas_unicos(
+                            texto_c_raw,
+                            resolucao_tipo=stats.get('resolucao_tipo', 'desconhecida')
+                        )
+                        temas_np = analise.extrair_temas_unicos(
+                            texto_np_raw,
+                            resolucao_tipo=stats.get('resolucao_tipo', 'desconhecida')
+                        )
+
+                        # ── Calcular convergência ────────────────────────
+                        conv_tematica = analise.calcular_convergencia_tematica(temas_c, temas_np)
+
+                        # ── SCORECARD ────────────────────────────────────
+                        st.markdown("### ✔️ Resumo da Convergência")
+                        
+                        col1, col2, col3, col4 = st.columns(4)
+                        
+                        with col1:
+                            conv_geral = conv_tematica["convergencia_geral"]
+                            st.metric(
+                                "Convergência Geral",
+                                f"{conv_geral:.1f}%"
+                            )
+                        
+                        with col2:
+                            compartilhados = len(conv_tematica["temas_compartilhados"])
+                            st.metric(
+                                "Temas Compartilhados",
+                                compartilhados
+                            )
+                        
+                        with col3:
+                            excl_c = len(conv_tematica["temas_exclusivos_causador"])
+                            st.metric(
+                                "Só Causador",
+                                excl_c
+                            )
+                        
+                        with col4:
+                            excl_np = len(conv_tematica["temas_exclusivos_negociador"])
+                            st.metric(
+                                "Só Negociador",
+                                excl_np
+                            )
+
+                        # ── RADAR TEMÁTICO (INTENSIDADE) ────────────────
+                        st.markdown("---")
+                        st.markdown("### ✔️ Intensidade de Abordagem por Tema (Radar)")
+                        st.markdown("""
+                        <p style='font-size:0.85rem;color:#aaa;'>
+                        Polígono vermelho = intensidade do causador. 
+                        Polígono verde = intensidade do negociador.
+                        Quanto maior o polígono, mais o tema foi abordado.
+                        </p>
+                        """, unsafe_allow_html=True)
+                        
+                        try:
+                            fig_radar_tematico = analise.gerar_radar_convergencia_tematica_corrigido(
+                                temas_c,
+                                temas_np,
+                                conv_tematica["convergencia_por_tema"]
+                            )
+                            st.plotly_chart(fig_radar_tematico, use_container_width=True)
+                        except Exception as e:
+                            st.error(f"Erro ao gerar radar: {str(e)[:80]}")
+
+                        # ── GRÁFICO DE BARRAS (ALTERNATIVA) ─────────────
+                        st.markdown("---")
+                        st.markdown("### ✔️ Intensidade por Tema (Gráfico de Barras)")
+                        st.markdown("""
+                        <p style='font-size:0.85rem;color:#aaa;'>
+                        Visualização alternativa: compare a altura das barras para cada tema.
+                        </p>
+                        """, unsafe_allow_html=True)
+                        
+                        try:
+                            fig_barras = analise.gerar_grafico_barras_intensidade_temas(
+                                conv_tematica["convergencia_por_tema"]
+                            )
+                            st.plotly_chart(fig_barras, use_container_width=True)
+                        except Exception as e:
+                            st.error(f"Erro ao gerar gráfico: {str(e)[:80]}")
+
+                        # ── TABELA DETALHADA ─────────────────────────────
+                        st.markdown("---")
+                        st.markdown("### 📋 Convergência Detalhada por Tema")
+                        
+                        df_conv_tab = analise.gerar_tabela_convergencia_tematica(conv_tematica)
+                        st.dataframe(
+                            df_conv_tab,
+                            use_container_width=True,
+                            hide_index=True
+                        )
+
+                        # ── ANÁLISE NARRATIVA ────────────────────────────
+                        st.markdown("---")
+                        st.markdown("### 📖 Análise Detalhada")
+                        
+                        st.markdown(conv_tematica["analise_detalhada"])
+
+                        # ── INTERPRETAÇÃO GERAL ─────────────────────────
+                        st.markdown("---")
+                        st.markdown("### 💡 O que significa")
+                        
+                        conv_pct = conv_tematica["convergencia_geral"]
+                        
+                        st.markdown(f"""
+                            **Convergência Temática Observada: {conv_pct:.1f}%**
+                            
+                            **O que é medido:**
+                            - Intensidade com que causador e negociador abordam cada tema compartilhado
+                            - Média das similitudes de score para os temas em comum
+                            - Escala: 0% (completamente divergentes) a 100% (perfeitamente alinhados)
+                            
+                            **Interpretação Descritiva (sem classificação):**
+                            
+                            | Range | O que significa |
+                            |-------|---|
+                            | **90-100%** | Ambos abordam os temas com intensidades praticamente idênticas |
+                            | **70-90%** | Maioria dos temas tem intensidades próximas, com variações pequenas |
+                            | **50-70%** | Alguns temas com intensidades similares, outros com diferenças notáveis |
+                            | **30-50%** | Intensidades frequentemente divergentes — énfases diferentes |
+                            | **0-30%** | Abordagens muito diferentes — possivelmente universos mentais distintos |
+                            
+                            **Seu caso: {conv_pct:.1f}%**
+                            
+                            - **Temas compartilhados:** {len(conv_tematica["temas_compartilhados"])}
+                            - **Temas só do causador:** {len(conv_tematica["temas_exclusivos_causador"])}
+                            - **Temas só do negociador:** {len(conv_tematica["temas_exclusivos_negociador"])}
+                            
+                            **Atenção:**
+                            Este é um índice DESCRITIVO. Não é preditivo de desfecho.
+                            Próxima etapa: comparar com histórico de 50+ APAs para validar padrões.
+                            """)
+
+                    except Exception as e:
+                        st.error(f"Erro ao analisar convergência temática: {str(e)[:80]}")
+
+            # --- TAB 7: ESTADO DO CAUSADOR ---
+            with tab_ng7:
+                st.markdown("""
+                <div class='info-card'>
+                <h5 style='color:#FFD700; margin-top:0;'>✔️ ESTADO DO CAUSADOR (APA)</h5>
+                <p style='color:#ccc; font-size:0.9rem;'>
+                Análise estruturada do estado emocional/comportamental do causador.
+                </p>
+                </div>
+                """, unsafe_allow_html=True)
+
+                texto_c_raw = stats.get('texto_c_raw', '')
+
+                if texto_c_raw:
+                    try:
+                        analise_crise = analise.analisar_crise_direcional(
+                            texto_c_raw,
+                            resolucao_tipo=stats.get('resolucao_tipo', 'desconhecida')
+                        )
+
+                        if analise_crise and 'sumario' in analise_crise:
+                            sumario = analise_crise['sumario']
+
+                            risco_observado    = sumario.get('risco_observado')
+                            abertura_observada = sumario.get('abertura_observada')
+                            raiz_observada     = sumario.get('raiz_observada')
+                            volatilidade_index = sumario.get('volatilidade_index')
+                            intensidade_index  = sumario.get('intensidade_index')
+                            direcao_index      = sumario.get('direcao_index')
+                            classificacao      = sumario.get('classificacao')
+                            leitura            = sumario.get('leitura')
+                            resolucao_tipo     = stats.get('resolucao_tipo', 'desconhecida')
+
+                            # ── SCORECARD ──────────────────────────────
+                            st.markdown("### ✔️ Resumo da Análise")
+                            col1, col2, col3 = st.columns(3)
+
+                            with col1:
+                                st.metric(
+                                    "🔴 Risco Observado",
+                                    f"{risco_observado:.1f}%" if risco_observado is not None else "N/D"
+                                )
+                            with col2:
+                                st.metric(
+                                    "🟢 Abertura Observada",
+                                    f"{abertura_observada:.1f}%" if abertura_observada is not None else "N/D"
+                                )
+                            with col3:
+                                st.metric(
+                                    "🟡 Raiz Observada",
+                                    f"{raiz_observada:.1f}%" if raiz_observada is not None else "N/D"
+                                )
+
+                            col4, col5, col6 = st.columns(3)
+
+                            with col4:
+                                st.metric(
+                                    "⚡ Intensidade Global",
+                                    f"{intensidade_index:.2f}" if intensidade_index is not None else "N/D"
+                                )
+                            with col5:
+                                st.metric(
+                                    "➡️ Direção",
+                                    f"{direcao_index:+.2f}" if direcao_index is not None else "N/D"
+                                )
+                            with col6:
+                                st.metric(
+                                    "✔️ Volatilidade",
+                                    f"{volatilidade_index:.2f}" if volatilidade_index is not None else "N/D"
+                                )
+
+                            # ── CLASSIFICAÇÃO ───────────────────────────
+                            st.markdown("---")
+                            st.markdown(f"### 🚨 Classificação: `{classificacao}`")
+                            st.info(leitura)
+
+                            # ── RADAR ───────────────────────────────────
+                            st.markdown("---")
+                            st.markdown("### ✔️ Padrão de Crise (Radar)")
+                            try:
+                                fig_crise = analise.gerar_radar_crise_individual(
+                                    risco_observado    if risco_observado    is not None else 0,
+                                    abertura_observada if abertura_observada is not None else 0,
+                                    raiz_observada     if raiz_observada     is not None else 0,
+                                    volatilidade_index if volatilidade_index is not None else 0
+                                )
+                                st.plotly_chart(fig_crise, use_container_width=True)
+                            except Exception as e:
+                                st.error(f"Erro ao gerar radar: {str(e)[:80]}")
+
+                            # ── NARRATIVA PARA LEIGOS ───────────────────
+                            st.markdown("---")
+                            st.markdown("### ✔️ Leitura Operacional (Linguagem Acessível)")
+
+                            st.markdown("""
+                            <div style='background:rgba(255,215,0,0.04);padding:4px 12px;border-left:3px solid #FFD700;margin-bottom:12px;'>
+                            <p style='color:#aaa;font-size:0.82rem;margin:6px 0;'>
+                            Interpretação automática dos indicadores em linguagem acessível.
+                            Destinada a leitura rápida por gestores, auditores e instrutores.
+                            </p>
+                            </div>
+                            """, unsafe_allow_html=True)
+
+                            narrativa = analise.gerar_narrativa_crise(
+                                risco_observado    = risco_observado    or 0,
+                                abertura_observada = abertura_observada or 0,
+                                raiz_observada     = raiz_observada     or 0,
+                                intensidade_index  = intensidade_index  or 0,
+                                direcao_index      = direcao_index      or 0,
+                                volatilidade_index = volatilidade_index or 0,
+                                classificacao      = classificacao      or "INDETERMINADO",
+                                resolucao_tipo     = resolucao_tipo
+                            )
+                            st.markdown(narrativa)
+
+                        else:
+                            st.warning("Não foi possível gerar análise de crise")
+
+                    except Exception as e:
+                        st.error(f"Erro ao analisar crise: {str(e)[:80]}")
+
+                else:
+                    st.warning("⚠️ Nenhuma transcrição disponível para análise")                    
+                                            
+        # ============================================================
+        # TAB 8: QUALIDADE DO DISCURSO COM TRANSFORMER (LAZY LOADING)
+        # Cole TUDO isso DENTRO do: with tab_ng8:
+        # ============================================================
+
+        st.markdown("### ✔️ Detalhes da Transcrição")
+
+        col_caus = "TRANSCRIÇÃO DO CAUSADOR"
+        col_neg = "TRANSCRIÇÃO DO NEGOCIADOR PRINCIPAL"
+
+        if col_caus not in df_apa or col_neg not in df_apa:
+            st.warning("⚠️ Colunas de transcrição não encontradas")
+        else:
+            txt_caus = str(df_apa[col_caus]).strip()
+            txt_neg = str(df_apa[col_neg]).strip()
+            
+            if not txt_caus or not txt_neg or len(txt_caus) < 20 or len(txt_neg) < 20:
+                st.warning("⚠️ Transcrições insuficientes para análise")
+            else:
+                
+                # =========================================================
+                # SEÇÃO 1: ANÁLISE RÁPIDA (com toggle)
+                # =========================================================
+                
+                col_left, col_center, col_right = st.columns([1, 1, 1])
+                with col_center:
+                    is_analise_rapida = render_toggle_button(
+                        label="✔️ Análise Rápida (Padrões Léxicos)",
+                        session_key="tab8_analise_rapida",
+                        button_key="btn_tab8_analise_rapida"
+                    )
+                
+                st.markdown("---")
+                
+                if is_analise_rapida:
+                    st.markdown("""
+                    <p style='color: #aaa; font-size: 0.9rem; margin-bottom: 1rem;'>
+                    Análise imediata baseada em frequência de palavras-chave.
+                    <strong>Não usa modelo de IA.</strong> Rápido e transparente.
+                    </p>
+                    """, unsafe_allow_html=True)
+
+                    # Rodar análise rápida
+                    analise_rapida = analise.analise_rapida_discurso(txt_neg, txt_caus)
+
+                    # SCORECARD - NEGOCIADOR
+                    st.markdown("### 🟢 NEGOCIADOR PRINCIPAL")
+
+                    col1, col2, col3 = st.columns(3)
+
+                    with col1:
+                        st.metric(
+                            "Validação",
+                            analise_rapida['total_validacao'],
+                            f"x ocorrências"
+                        )
+
+                    with col2:
+                        st.metric(
+                            "Confronto",
+                            analise_rapida['total_confronto'],
+                            f"x ocorrências"
+                        )
+
+                    with col3:
+                        total_palavras_neg = len(txt_neg.split())
+                        st.metric(
+                            "Tamanho (Palavras)",
+                            total_palavras_neg,
+                            f"palavras"
+                        )
+
+                    # SCORECARD - CAUSADOR
+                    st.markdown("---")
+                    st.markdown("### 🔴 CAUSADOR")
+
+                    col1, col2 = st.columns(2)
+
+                    with col1:
+                        st.metric(
+                            "Emoção Alta",
+                            analise_rapida['total_emocao'],
+                            f"x palavras fortes"
+                        )
+
+                    with col2:
+                        total_palavras_caus = len(txt_caus.split())
+                        st.metric(
+                            "Tamanho (Palavras)",
+                            total_palavras_caus,
+                            f"palavras"
+                        )
+                    
+                    # Detalhes
+                    st.markdown("---")
+                    st.markdown("#### ✔️ Detalhes das Palavras-Chave Encontradas")
+                    
+                    st.markdown("### 🟢 NEGOCIADOR PRINCIPAL")
+
+                    col_val, col_conf = st.columns(2)
+
+                    with col_val:
+                        st.markdown("**Validação (Negociador):**")
+                        if analise_rapida['validacao']:
+                            for palavra, freq in sorted(
+                                analise_rapida['validacao'].items(),
+                                key=lambda x: x[1],
+                                reverse=True
+                            ):
+                                st.write(f"  • {palavra}: {freq}x")
+                        else:
+                            st.write("  (nenhuma encontrada)")
+
+                    with col_conf:
+                        st.markdown("**Confronto (Negociador):**")
+                        if analise_rapida['confronto']:
+                            for palavra, freq in sorted(
+                                analise_rapida['confronto'].items(),
+                                key=lambda x: x[1],
+                                reverse=True
+                            ):
+                                st.write(f"  • {palavra}: {freq}x")
+                        else:
+                            st.write("  (nenhuma encontrada)")
+                    
+                    st.markdown("---")
+                    st.markdown("### 🔴 CAUSADOR")
+
+                    st.markdown("**Emoção Alta (Causador):**")
+                    if analise_rapida['emocao_causador']:
+                        for palavra, freq in sorted(
+                            analise_rapida['emocao_causador'].items(),
+                            key=lambda x: x[1],
+                            reverse=True
+                        ):
+                            st.write(f"  • {palavra}: {freq}x")
+                    else:
+                        st.write("  (nenhuma encontrada)")                     
+                    
+                    # Interpretação
+                    st.markdown("---")
+                    st.markdown("#### 💡 O Que Significa")
+                    st.markdown("""
+                    - **Validação**: Palavras que indicam reconhecimento, escuta, empatia
+                    - **Confronto**: Palavras que indicam discordância, negação, imposição
+                    - **Emoção Alta**: Indicadores de stress, medo, raiva no causador
+                    
+                    **Nota:** Essa análise conta frequência, não interpreta contexto.
+                    "Não" pode ser "não vou bater" (protetor) ou "não faço isso" (negação).
+                    Use como descritor, não como julgamento.
+                    """)
+                
+                # ============================================================
+                # TAB 8: TRANSFORMER OTIMIZADO (SEM TRADUÇÃO - RÁPIDO)
+                # SUBSTITUA a seção do Transformer em seu_app.py
+                # ============================================================
+
+                st.markdown("---")
+                st.markdown("""
+                <div style='background: rgba(76, 175, 80, 0.1); border-left: 4px solid #4CAF50; padding: 15px; border-radius: 8px; margin-bottom: 20px;'>
+                <h5 style='color: #4CAF50; margin-top: 0;'> Análise de Sentimento (Biblioteca Transformer)</h5>
+                <p style='color: #aaa; font-size: 0.9rem; margin-bottom: 10px;'>
+                Análise com Transformer português otimizado: remove gírias e stopwords para melhor compreensão.
+                </p>
+                <ul style='color: #bbb; font-size: 0.9rem; line-height: 1.6; margin: 10px 0;'>
+                <li><strong>Pré-processamento:</strong> Normaliza gírias + remove stopwords</li>
+                <li><strong>Análise:</strong> Transformer direto no português limpo</li>
+                <li><strong>Tempo:</strong> ~10-15 segundos (muito mais rápido!)</li>
+                <li><strong>Mostrada:</strong> Original + Limpa</li>
+                </ul>
+                <p style='color: #4CAF50; font-size: 0.85rem; font-weight: bold; margin-bottom: 0;'>
+                Clique no botão abaixo para carregar a análise.
+                </p>
+                </div>
+                """, unsafe_allow_html=True)
+
+                col_left, col_center, col_right = st.columns([1, 1, 1])
+                with col_center:
+                    is_transformer = render_toggle_button(
+                        label="✔️ Transformer Otimizado (10-15s)",
+                        session_key="tab8_transformer_otimizado",
+                        button_key="btn_tab8_transformer_otimizado"
+                    )
+
+                st.markdown("---")
+
+                if is_transformer:
+                    # Mostrar exemplo de limpeza
+                    with st.expander("✔️ Como funciona a limpeza (exemplo)"):
+                        st.markdown("**Exemplo: Primeiras 3 sentenças**")
+                        
+                        exemplo_linhas = analise.dividir_em_sentencas(txt_neg)[:3]
+                        
+                        for idx, sentenca in enumerate(exemplo_linhas, 1):
+                            original = sentenca
+                            limpa = analise.limpar_sentenca(sentenca)
+                            
+                            col1, col2 = st.columns([1, 1])
+                            with col1:
+                                st.markdown(f"**Original ({len(original.split())} palavras):**")
+                                st.write(f"_{original}_")
+                            with col2:
+                                st.markdown(f"**Limpa ({len(limpa.split())} palavras):**")
+                                st.write(f"_{limpa}_")
+                            st.markdown("---")
+                    
+                    with st.spinner("⏳ Carregando modelo Transformer..."):
+                        nlp_model = analise.carregar_transformer_portugues()
+                    
+                    if nlp_model is None:
+                        st.error("❌ Erro ao carregar modelo. Verifique instalação de `transformers`")
+                    else:
+                        st.success("✔️ Modelo carregado com sucesso!")
+                        
+                        # Analisar negociador
+                        st.markdown("---")
+                        st.markdown("#### 🟢 Sentimento do Negociador")
+                        
+                        with st.spinner("Analisando fala do negociador..."):
+                            resultado_neg = analise.analise_sentimento_transformer_otimizado(txt_neg, nlp_model)
+                        
+                        if resultado_neg:
+                            # Contar positivos/negativos/neutros
+                            positivos = sum(1 for r in resultado_neg if r['label'] in ['POSITIVE', 'LABEL_2'])
+                            negativos = sum(1 for r in resultado_neg if r['label'] in ['NEGATIVE', 'LABEL_0'])
+                            neutros = sum(1 for r in resultado_neg if r['label'] in ['NEUTRAL', 'LABEL_1'])
+                            total_sent = len(resultado_neg)
+                            
+                            col1, col2, col3, col4 = st.columns(4)
+                            
+                            with col1:
+                                st.metric("Positivos", f"{positivos}/{total_sent}")
+                            
+                            with col2:
+                                st.metric("Neutros", f"{neutros}/{total_sent}")
+                            
+                            with col3:
+                                st.metric("Negativos", f"{negativos}/{total_sent}")
+                            
+                            with col4:
+                                pct_positivo = (positivos / total_sent * 100) if total_sent > 0 else 0
+                                st.metric("% Positivo", f"{pct_positivo:.0f}%")
+                            
+                            # Mostrar exemplos
+                            st.markdown("**Exemplos de Sentenças (Original → Limpa):**")
+                            
+                            col_pos, col_neu, col_neg = st.columns(3)
+                            
+                            with col_pos:
+                                st.markdown("✅ **Positivas:**")
+                                for r in [x for x in resultado_neg if x['label'] in ['POSITIVE', 'LABEL_2']][:3]:
+                                    st.write(f"🇧🇷 _{r['sentenca_pt']}_")
+                                    st.write(f"✂️ _{r['sentenca_limpa']}_")
+                                    st.write("")
+                            
+                            with col_neu:
+                                st.markdown("⚪ **Neutras:**")
+                                for r in [x for x in resultado_neg if x['label'] in ['NEUTRAL', 'LABEL_1']][:3]:
+                                    st.write(f"🇧🇷 _{r['sentenca_pt']}_")
+                                    st.write(f"✂️ _{r['sentenca_limpa']}_")
+                                    st.write("")
+                            
+                            with col_neg:
+                                st.markdown("❌ **Negativas:**")
+                                for r in [x for x in resultado_neg if x['label'] in ['NEGATIVE', 'LABEL_0']][:3]:
+                                    st.write(f"🇧🇷 _{r['sentenca_pt']}_")
+                                    st.write(f"✂️ _{r['sentenca_limpa']}_")
+                                    st.write("")
+                        
+                        # Analisar causador
+                        st.markdown("---")
+                        st.markdown("#### 🔴 Sentimento do Causador")
+                        
+                        with st.spinner("Analisando fala do causador..."):
+                            resultado_caus = analise.analise_sentimento_transformer_otimizado(txt_caus, nlp_model)
+                        
+                        if resultado_caus:
+                            # Contar positivos/negativos/neutros
+                            positivos = sum(1 for r in resultado_caus if r['label'] in ['POSITIVE', 'LABEL_2'])
+                            negativos = sum(1 for r in resultado_caus if r['label'] in ['NEGATIVE', 'LABEL_0'])
+                            neutros = sum(1 for r in resultado_caus if r['label'] in ['NEUTRAL', 'LABEL_1'])
+                            total_sent = len(resultado_caus)
+                            
+                            col1, col2, col3, col4 = st.columns(4)
+                            
+                            with col1:
+                                st.metric("Positivos", f"{positivos}/{total_sent}")
+                            
+                            with col2:
+                                st.metric("Neutros", f"{neutros}/{total_sent}")
+                            
+                            with col3:
+                                st.metric("Negativos", f"{negativos}/{total_sent}")
+                            
+                            with col4:
+                                pct_negativo = (negativos / total_sent * 100) if total_sent > 0 else 0
+                                st.metric("% Negativo", f"{pct_negativo:.0f}%")
+                            
+                            # Mostrar exemplos
+                            st.markdown("**Exemplos de Sentenças:**")
+                            
+                            col_pos, col_neu, col_neg = st.columns(3)
+                            
+                            with col_pos:
+                                st.markdown("✅ **Positivas:**")
+                                for r in [x for x in resultado_caus if x['label'] in ['POSITIVE', 'LABEL_2']][:3]:
+                                    st.write(f"🇧🇷 _{r['sentenca_pt']}_")
+                                    st.write(f"✂️ _{r['sentenca_limpa']}_")
+                                    st.write("")
+                            
+                            with col_neu:
+                                st.markdown("⚪ **Neutras:**")
+                                for r in [x for x in resultado_caus if x['label'] in ['NEUTRAL', 'LABEL_1']][:3]:
+                                    st.write(f"🇧🇷 _{r['sentenca_pt']}_")
+                                    st.write(f"✂️ _{r['sentenca_limpa']}_")
+                                    st.write("")
+                            
+                            with col_neg:
+                                st.markdown("❌ **Negativas:**")
+                                for r in [x for x in resultado_caus if x['label'] in ['NEGATIVE', 'LABEL_0']][:3]:
+                                    st.write(f"🇧🇷 _{r['sentenca_pt']}_")
+                                    st.write(f"✂️ _{r['sentenca_limpa']}_")
+                                    st.write("")
+                        
+                        # Análise Comparativa
+                        st.markdown("---")
+                        st.markdown("#### ✔️ Comparativo")
+                        
+                        if resultado_neg and resultado_caus:
+                            col1, col2 = st.columns(2)
+                            
+                            with col1:
+                                pct_pos_neg = (sum(1 for r in resultado_neg if r['label'] in ['POSITIVE', 'LABEL_2']) / len(resultado_neg) * 100)
+                                st.metric("Negociador % Positivo", f"{pct_pos_neg:.0f}%")
+                            
+                            with col2:
+                                pct_pos_caus = (sum(1 for r in resultado_caus if r['label'] in ['POSITIVE', 'LABEL_2']) / len(resultado_caus) * 100)
+                                st.metric("Causador % Positivo", f"{pct_pos_caus:.0f}%")
+                            
+                            st.markdown(f"""
+                            **Interpretação:**
+                            - Negociador {pct_pos_neg:.0f}% positivo → {"Mantendo tom construtivo" if pct_pos_neg > 60 else "Tom mais técnico/neutro" if pct_pos_neg > 30 else "Tom defensivo"}
+                            - Causador {pct_pos_caus:.0f}% positivo → {"Muito receptivo" if pct_pos_caus > 60 else "Moderadamente receptivo" if pct_pos_caus > 40 else "Resistente, preocupado"}
+                            """)
+
+                st.markdown("---")
+                st.markdown("""
+                                    
+                ⚠️ **Limitações:**
+                
+                - Modelo treinado em resenhas de produtos em inglês
+                - Português coloquial pode ser mal interpretado
+                - "Entendi", "tranquilo" podem ser classificados errado            
+                - Gírias muito locais podem confundir
+                - Sarcasmo ainda pode não ser detectado
+                - Use como complemento da Análise Rápida
+                """)
+
+        st.markdown("---")
+
+
+        
+        st.markdown("---")
+                                    
+                        # ===== PRÓXIMO BOTÃO (FORA DA TAB) =====
+        if st.button("✔ 3. GERAR ANALYTICS E EXPORTAR ANÁLISE (PDF)"):
+            with st.spinner("Compilando dados técnicos, consultando IA e desenhando PDF..."):
+                try:
+                    t_causador = limpar_valor(df_apa.get('TRANSCRIÇÃO DO CAUSADOR'))
+                    t_principal = limpar_valor(df_apa.get('TRANSCRIÇÃO DO NEGOCIADOR PRINCIPAL'))
+                    t_secundario = limpar_valor(df_apa.get('TRANSCRIÇÃO DO NEGOCIADOR SECUNDÁRIO'))
+
+                    df_transcricoes = pd.DataFrame([{
+                        "Causador": t_causador,
+                        "Neg_Principal": t_principal,
+                        "Neg_Secundario": t_secundario
+                    }])
+
+                    stats_calculados = st.session_state.get('stats_calculados', {}) or {}
+
+                    temas_extraidos = stats_calculados.get('topicos') if stats_calculados else ["Etapa 2 não executada"]
+                    if not isinstance(temas_extraidos, (list, tuple)):
+                        temas_extraidos = [str(temas_extraidos)]
+
+                    meta_dict = df_apa.to_dict()
+                    meta_dict["temas_dominantes_scikit_learn"] = " | ".join([str(t) for t in temas_extraidos])
+
+                    # Envia para a IA as análises textuais já calculadas:
+                    # - similitude lexical
+                    # - n-grams / modelagem de tópicos
+                    # - convergência
+                    # - qualquer outro dado já existente em stats_calculados
+                    meta_dict["analises_calculadas"] = {
+                        "similitude_lexical": stats_calculados.get(
+                            "similitude_lexical",
+                            stats_calculados.get("similitude", "Não executada")
+                        ),
+                        "ngrams": stats_calculados.get(
+                            "ngrams",
+                            stats_calculados.get("n_grams", "Não executada")
+                        ),
+                        "convergencia": stats_calculados.get(
+                            "convergencia",
+                            stats_calculados.get("convergencia_lexical", "Não executada")
+                        ),
+                        "topicos": temas_extraidos,
+                    }
+
+                    df_meta = pd.DataFrame([meta_dict])
+
+                    dados_extraidos = {
+                        "transcricao": df_transcricoes,
+                        "metadados": df_meta
+                    }
+
+                    # ====
+                    # MONTA AS TÉCNICAS DA APA E A FREQUÊNCIA PARA ENVIAR À IA
+                    # ====
+                    tecnicas_da_apa = []
+                    freq_tecnicas_dict = {}
+                    estatisticas_ocorrencia = {}
+
+                    try:
+                        if not df_tec.empty:
+                            col_vinculo = next((c for c in df_tec.columns if 'VINCULO' in c.upper() or 'VÍNCULO' in c.upper()), None)
+
+                            if col_vinculo:
+                                id_visivel = str(apa_selecionada).strip()
+
+                                df_tec_tmp = df_tec.copy()
+                                df_tec_tmp['Vinculo_Str'] = (
+                                    df_tec_tmp[col_vinculo]
+                                    .astype(str)
+                                    .str.replace(r"[\[\]'\"]", "", regex=True)
+                                    .str.strip()
+                                )
+
+                                df_tec_filtrado_pdf = df_tec_tmp[df_tec_tmp['Vinculo_Str'] == id_visivel].copy()
+
+                                if df_tec_filtrado_pdf.empty and 'Airtable_Record_ID' in df_apa:
+                                    id_interno = str(df_apa['Airtable_Record_ID']).strip()
+                                    df_tec_filtrado_pdf = df_tec_tmp[
+                                        df_tec_tmp[col_vinculo].astype(str).str.contains(id_interno, na=False, regex=False)
+                                    ].copy()
+
+                                if not df_tec_filtrado_pdf.empty:
+                                    col_tecnica = next(
+                                        (col for col in ['TÉCNICAS', 'TECNICAS', 'TÉCNICA', 'TECNICA'] if col in df_tec_filtrado_pdf.columns),
+                                        None
+                                    )
+
+                                    if col_tecnica:
+                                        freq_abs = df_tec_filtrado_pdf[col_tecnica].value_counts()
+                                        freq_rel = (df_tec_filtrado_pdf[col_tecnica].value_counts(normalize=True) * 100).round(1)
+
+                                        df_freq_pdf = pd.DataFrame({
+                                            'Técnica Empregada': freq_abs.index,
+                                            'Frequência Absoluta': freq_abs.values,
+                                            'Frequência Relativa (%)': freq_rel.values
+                                        })
+
+                                        tecnicas_da_apa = df_freq_pdf['Técnica Empregada'].dropna().astype(str).tolist()
+
+                                        frequencia_tecnicas_ocorrencia = []
+                                        for _, row in df_freq_pdf.iterrows():
+                                            frequencia_tecnicas_ocorrencia.append({
+                                                "tecnica": str(row["Técnica Empregada"]),
+                                                "frequencia_absoluta": int(row["Frequência Absoluta"]),
+                                                "frequencia_relativa": float(row["Frequência Relativa (%)"])
+                                            })
+
+                                        freq_tecnicas_dict = dict(
+                                            zip(
+                                                df_freq_pdf['Técnica Empregada'].astype(str),
+                                                df_freq_pdf['Frequência Absoluta'].astype(int)
+                                            )
+                                        )
+
+                                        estatisticas_ocorrencia = {
+                                            "frequencia_tecnicas_ocorrencia": frequencia_tecnicas_ocorrencia,
+                                            "frequencia_absoluta_por_tecnica": freq_tecnicas_dict
+                                        }
+
+                    except Exception as e:
+                        st.warning(f"Falha ao montar frequências para a IA: {e}")
+
+                    resultado_ia = ia_link.analisar_ocorrencia_gate(
+                        dados_extraidos,
+                        estatisticas_ocorrencia=estatisticas_ocorrencia,
+                        tecnicas_ocorrencia=tecnicas_da_apa
+                    )
+
+                    if isinstance(resultado_ia, dict):
+                        parecer_ia = resultado_ia.get("parecer", "")
+                        sugestoes_treinamento = resultado_ia.get("sugestoes_treinamento", "")
+                    else:
+                        parecer_ia = str(resultado_ia)
+                        sugestoes_treinamento = ""
+
+                    def calcular_media_equipe(*valores):
+                        validos = [v for v in valores if v and v > 0]
+                        return sum(validos) / len(validos) if validos else None
+
+                    likert_inicio = {
+                        'agressividade_media': calcular_media_equipe(p_agr_c_num, s_agr_c_num, l_agr_c_num),
+                        'receptividade_media': calcular_media_equipe(p_rec_c_num, s_rec_c_num, l_rec_c_num)
+                    }
+                    likert_fim = {
+                        'agressividade_media': calcular_media_equipe(p_agr_e_num, s_agr_e_num, l_agr_e_num),
+                        'receptividade_media': calcular_media_equipe(p_rec_e_num, s_rec_e_num, l_rec_e_num)
+                    }
+                    # Spearman entre serie de agressividade no inicio e no fim (3 pares: P, S, L)
+                    try:
+                        import numpy as _np
+                        from scipy.stats import spearmanr as _spearmanr
+                        x_likert = [v for v in [p_agr_c_num, s_agr_c_num, l_agr_c_num] if v > 0]
+                        y_likert = [v for v in [p_agr_e_num, s_agr_e_num, l_agr_e_num] if v > 0]
+                        n_par = min(len(x_likert), len(y_likert))
+                        if n_par >= 3 and len(set(x_likert[:n_par])) > 1 and len(set(y_likert[:n_par])) > 1:
+                            rho_lk, p_lk = _spearmanr(x_likert[:n_par], y_likert[:n_par])
+                            stats_spearman = {'valido': True, 'p_value': float(p_lk), 'rho': float(rho_lk)}
+                        else:
+                            stats_spearman = {'valido': False, 'p_value': 1.0, 'rho': 0.0}
+                    except Exception:
+                        stats_spearman = {'valido': False, 'p_value': 1.0, 'rho': 0.0}
+                    laudo_frio = ia_link.gerar_laudo_frio(likert_inicio, likert_fim, stats_spearman)
+
+                    st.markdown(f"""
+                    <div class="info-card" style="border-left: 4px solid #FFD700;">
+                    <h4 style="color: #FFD700; margin-top: 0;">Inferência Estatística (Motor Frio)</h4>
+                    <p style="font-size: 1.05rem; line-height: 1.6;">{laudo_frio}</p>
+                    <hr style="border-color: rgba(255,255,255,0.1); margin: 15px 0;">
+                    <h4 style="color: #06C755; margin-top: 0;">Leitura Analítica (Interpretação descritiva dos resultados)</h4>
+                    <p style="font-size: 1.05rem; line-height: 1.6;">{parecer_ia}</p>
+                    <hr style="border-color: rgba(255,255,255,0.1); margin: 15px 0;">
+                    <h4 style="color: #FFA500; margin-top: 0;">Sugestões para treinamentos</h4>
+                    <p style="font-size: 1.05rem; line-height: 1.6;">{sugestoes_treinamento or 'Sem base suficiente para sugerir treinamento específico.'}</p>
+                    </div>
+                    """, unsafe_allow_html=True)
+
+                    texto_str = f"""INFERENCIA ESTATISTICA (MOTOR FRIO)
+
+        {laudo_frio}
+
+        LEITURA ANALITICA
+
+        {parecer_ia}
+
+        SUGESTOES PARA TREINAMENTOS
+
+        {sugestoes_treinamento if sugestoes_treinamento else 'Sem base suficiente para sugerir treinamento específico.'}
+        """
+
+                    texto_str = texto_str.replace("**", "").replace("### ", "")
+                    texto_final_pdf = unicodedata.normalize('NFKD', texto_str).encode('ASCII', 'ignore').decode('ASCII')
+
+                    pdf = FPDF()
+                    pdf.add_page()
+
+                    pdf.set_fill_color(249, 115, 22)
+                    pdf.rect(0, 0, 210, 40, 'F')
+                    pdf.set_font("Arial", "B", 18)
+                    pdf.set_text_color(255, 255, 255)
+                    pdf.cell(0, 15, "LAUDO DE ANALISE POS-ACAO (APA)", ln=True, align="C")
+                    pdf.set_font("Arial", "I", 12)
+                    pdf.cell(0, 5, f"Unidade: GATE | ID: {apa_selecionada}", ln=True, align="C")
+
+                    pdf.ln(20)
+                    pdf.set_text_color(0, 0, 0)
+                    pdf.set_font("Arial", "B", 14)
+                    pdf.set_fill_color(240, 240, 240)
+                    pdf.cell(0, 10, " 1. INFORMACOES DO INCIDENTE", ln=True, fill=True)
+                    pdf.set_font("Arial", "", 11)
+
+                    dt_oc = limpar_valor(df_apa.get('Data da ocorrência'))
+                    tip = limpar_valor(df_apa.get('Tipologia'))
+                    neg = limpar_valor(df_apa.get('Negociador Principal'))
+                    info_str = f"Data: {dt_oc} | Tipologia: {tip} | Negociador: {neg}"
+
+                    pdf.multi_cell(
+                        0,
+                        8,
+                        txt=unicodedata.normalize('NFKD', info_str).encode('ASCII', 'ignore').decode('ASCII'),
+                        border='L'
+                    )
+
+                    pdf.ln(10)
+                    pdf.set_font("Arial", "B", 14)
+                    pdf.set_fill_color(249, 115, 22)
+                    pdf.set_text_color(255, 255, 255)
+                    pdf.cell(0, 10, " 2. INTELIGENCIA DE APOIO A DECISAO (IA)", ln=True, fill=True)
+                    pdf.ln(5)
+                    pdf.set_text_color(0, 0, 0)
+                    pdf.set_font("Arial", "", 11)
+
+                    pdf.multi_cell(0, 7, txt=texto_final_pdf)
+
+                    pdf_saida = pdf.output(dest="S")
+                    if isinstance(pdf_saida, str):
+                        pdf_bytes = pdf_saida.encode('latin-1', errors='replace')
+                    else:
+                        pdf_bytes = bytes(pdf_saida)
+
+                    st.download_button(
+                        label="📥 BAIXAR ANÁLISE COMPLETA (PDF)",
+                        data=pdf_bytes,
+                        file_name=f"Laudo_GATE_{apa_selecionada}.pdf",
+                        mime="application/pdf"
+                    )
+
+                except Exception as e:
+                    st.error(f"Erro na análise da IA ou geração do PDF: {str(e)}")
+
+        st.markdown("<div style='margin-bottom: 20px;'></div>", unsafe_allow_html=True)
+        st.markdown("""
 <div style='margin-top:20px; margin-bottom:100px; padding:15px; background-color:#111; border-radius:8px;'>
 <p style="color:#bbb; font-size:13px; line-height:1.7; text-align:left;">
 
