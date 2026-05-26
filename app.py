@@ -4272,7 +4272,289 @@ Este sistema é protegido por direitos autorais e legislação aplicável. Repro
                         </p>
                         </div>
                         """, unsafe_allow_html=True)
-               
+        
+
+        # ============================================================
+        # ANÁLISE DE PERFIL DE NEGOCIADORES
+        # (Adicionar na Série Histórica, ANTES da "Síntese Interpretativa por IA")
+        # ============================================================
+
+        st.markdown("""
+        <div class='info-card'>
+        <h5 style='color: #FFD700;'>✔️ Perfil de Negociadores: Escuta Ativa vs Persuasão</h5>
+        <p style='font-size:1rem;color:#ddd;'>
+        Análise estatística comparativa dos padrões de negociação por negociador.
+        Identifica tendências, agrupa similares e testa significância estatística.
+        </p>
+        </div>
+        """, unsafe_allow_html=True)
+
+        col_left, col_center, col_right = st.columns([1, 1, 1])
+
+        with col_center:
+            is_perfil_negociadores = render_toggle_button(
+                label="✔️ Abrir Análise de Perfil",
+                session_key="perfil_negociadores",
+                button_key="btn_perfil_negociadores"
+            )
+
+        st.markdown("---")
+
+        if is_perfil_negociadores:
+            
+            # ── CARREGAR DADOS ──────────────────────────────────────────
+            try:
+                # Importar função de análise
+                from analise_perfil_negociadores import (
+                    analisar_perfil_negociadores,
+                    gerar_grafo_palavras,
+                    gerar_tabela_score,
+                    gerar_scatter_score_efetividade,
+                    gerar_barras_grupos,
+                    classificar_tecnica
+                )
+                
+                # Assumindo que df_tec está carregado (como nas análises anteriores)
+                df_tec = st.session_state.get("df_tec", pd.DataFrame())
+                
+                if df_tec.empty:
+                    st.warning("⚠️ Tabela de técnicas não carregada.")
+                else:
+                    
+                    # ── EXECUTAR ANÁLISE ────────────────────────────────────
+                    with st.spinner("⏳ Analisando perfis de negociadores..."):
+                        resultado_analise = analisar_perfil_negociadores(df_tec)
+                        
+                        df_resultado = resultado_analise['df_resultado']
+                        df_tec_classificado = resultado_analise['df_tecnicas_classificadas']
+                        anova = resultado_analise['anova']
+                        chi2 = resultado_analise['chi2']
+                        kmeans = resultado_analise['kmeans']
+                    
+                    # Gerar paleta de cores para negociadores (dinâmica)
+                    negociadores_unicos = df_resultado['Negociador'].unique()
+                    paleta_cores = {
+                        'laranja_forte': '#F97316',
+                        'laranja_medio': '#FB923C',
+                        'laranja_claro': '#FDBA74',
+                        'amarelo': '#FBBF24',
+                        'preto': '#000000',
+                    }
+                    
+                    cores_lista = list(paleta_cores.values())
+                    negociadores_cores = {
+                        neg: cores_lista[i % len(cores_lista)]
+                        for i, neg in enumerate(negociadores_unicos)
+                    }
+                    
+                    # ── CRIAR TABS ──────────────────────────────────────────
+                    tab_score, tab_grafo, tab_stats, tab_kmeans = st.tabs([
+                        "📊 Scores e Efetividades",
+                        "🕸️ Grafo de Palavras",
+                        "📈 Testes Estatísticos",
+                        "🎯 Clusters (K-means)"
+                    ])
+                    
+                    # ── TAB 1: SCORES ───────────────────────────────────────
+                    with tab_score:
+                        st.markdown("""
+                        <div class='info-card'>
+                        <h5 style='color: #FFD700; margin-top: 0;'>Score de Tendência</h5>
+                        <p style='font-size:0.9rem;color:#aaa;'>
+                        Score = -100 (100% Persuasão) a +100 (100% Escuta Ativa)
+                        <br>Ponderado pela atitude do causador em cada técnica aplicada.
+                        </p>
+                        </div>
+                        """, unsafe_allow_html=True)
+                        
+                        # Tabela
+                        st.markdown("### 📋 Tabela de Resultados")
+                        df_display = gerar_tabela_score(df_resultado)
+                        st.dataframe(df_display, use_container_width=True, hide_index=True)
+                        
+                        # Gráfico Scatter
+                        st.markdown("---")
+                        st.markdown("### 📊 Score vs Efetividade Média")
+                        fig_scatter = gerar_scatter_score_efetividade(df_resultado)
+                        st.plotly_chart(fig_scatter, use_container_width=True)
+                        
+                        # Gráfico Barras
+                        st.markdown("---")
+                        st.markdown("### 📊 Distribuição de Técnicas")
+                        fig_barras = gerar_barras_grupos(df_resultado)
+                        st.plotly_chart(fig_barras, use_container_width=True)
+                    
+                    # ── TAB 2: GRAFO ────────────────────────────────────────
+                    with tab_grafo:
+                        st.markdown("""
+                        <div class='info-card'>
+                        <h5 style='color: #FFD700; margin-top: 0;'>Rede de Palavras</h5>
+                        <p style='font-size:0.9rem;color:#aaa;'>
+                        Palavras do "Trecho da Transcrição" onde técnicas foram aplicadas.
+                        <br>Cores = Negociador que mais usou | Tamanho = Frequência | Conexões = Co-ocorrência
+                        </p>
+                        </div>
+                        """, unsafe_allow_html=True)
+                        
+                        with st.spinner("⏳ Gerando grafo (Pyvis)..."):
+                            try:
+                                net = gerar_grafo_palavras(df_tec_classificado, negociadores_cores)
+                                
+                                # Salvar grafo
+                                net.show('temp_grafo.html')
+                                
+                                # Exibir
+                                with open('temp_grafo.html', 'r', encoding='utf-8') as f:
+                                    html_grafo = f.read()
+                                
+                                st.components.v1.html(html_grafo, height=800)
+                                
+                                st.success("✅ Grafo gerado com sucesso!")
+                                
+                            except Exception as e:
+                                st.error(f"❌ Erro ao gerar grafo: {str(e)[:100]}")
+                    
+                    # ── TAB 3: TESTES ESTATÍSTICOS ──────────────────────────
+                    with tab_stats:
+                        st.markdown("""
+                        <div class='info-card'>
+                        <h5 style='color: #FFD700; margin-top: 0;'>Testes Estatísticos</h5>
+                        <p style='font-size:0.9rem;color:#aaa;'>
+                        Validação estatística das diferenças entre negociadores.
+                        </p>
+                        </div>
+                        """, unsafe_allow_html=True)
+                        
+                        # ANOVA
+                        if anova:
+                            st.markdown("### 🧪 ANOVA - Efetividade entre Negociadores")
+                            
+                            col1, col2, col3 = st.columns(3)
+                            with col1:
+                                st.metric("F-statistic", anova['f_statistic'])
+                            with col2:
+                                st.metric("P-value", anova['p_value'])
+                            with col3:
+                                status = "✅ Significativo" if anova['significativo'] else "❌ Não significativo"
+                                st.metric("Resultado", status)
+                            
+                            st.markdown(f"**Interpretação:** {anova['interpretacao']}")
+                            st.markdown("---")
+                        
+                        # Chi-quadrado
+                        if chi2:
+                            st.markdown("### 🧪 Chi-Quadrado - Distribuição de Técnicas")
+                            
+                            col1, col2, col3, col4 = st.columns(4)
+                            with col1:
+                                st.metric("χ²-statistic", chi2['chi2_statistic'])
+                            with col2:
+                                st.metric("P-value", chi2['p_value'])
+                            with col3:
+                                st.metric("Graus de Liberdade", chi2['df'])
+                            with col4:
+                                status = "✅ Significativo" if chi2['significativo'] else "❌ Não significativo"
+                                st.metric("Resultado", status)
+                            
+                            st.markdown(f"**Interpretação:** {chi2['interpretacao']}")
+                    
+                    # ── TAB 4: K-MEANS ──────────────────────────────────────
+                    with tab_kmeans:
+                        st.markdown("""
+                        <div class='info-card'>
+                        <h5 style='color: #FFD700; margin-top: 0;'>Clustering K-means (k=2)</h5>
+                        <p style='font-size:0.9rem;color:#aaa;'>
+                        Agrupa negociadores em 2 clusters: Escuta Ativa vs Persuasão/Influência.
+                        </p>
+                        </div>
+                        """, unsafe_allow_html=True)
+                        
+                        # Tabela com clusters
+                        st.markdown("### 📋 Atribuição de Clusters")
+                        df_clusters = df_resultado[['Negociador', 'Score Tendência', 'Cluster']].copy()
+                        
+                        if 'Perfil_Cluster' in df_resultado.columns:
+                            df_clusters['Perfil'] = df_resultado['Perfil_Cluster']
+                        
+                        st.dataframe(df_clusters, use_container_width=True, hide_index=True)
+                        
+                        # Visualizar clusters
+                        st.markdown("---")
+                        st.markdown("### 📊 Visualização dos Clusters")
+                        
+                        fig_clusters = go.Figure()
+                        
+                        for cluster in sorted(df_resultado['Cluster'].unique()):
+                            df_cluster = df_resultado[df_resultado['Cluster'] == cluster]
+                            
+                            perfil = df_cluster['Perfil_Cluster'].iloc[0] if 'Perfil_Cluster' in df_resultado.columns else f"Cluster {cluster}"
+                            cor = '#10b981' if perfil == 'Escuta Ativa' else '#f59e0b'
+                            
+                            fig_clusters.add_trace(go.Scatter(
+                                x=df_cluster['Score Tendência'],
+                                y=df_cluster['Efetividade Escuta'],
+                                mode='markers+text',
+                                name=perfil,
+                                text=df_cluster['Negociador'],
+                                textposition='top center',
+                                marker=dict(size=15, color=cor),
+                            ))
+                        
+                        fig_clusters.update_layout(
+                            title='Clustering de Negociadores',
+                            xaxis_title='Score Tendência',
+                            yaxis_title='Efetividade Escuta Ativa',
+                            paper_bgcolor="rgba(0,0,0,0)",
+                            plot_bgcolor="rgba(0,0,0,0)",
+                            font_color="#FFF",
+                            height=500
+                        )
+                        
+                        st.plotly_chart(fig_clusters, use_container_width=True)
+                        
+                        # Interpretação
+                        st.markdown("---")
+                        st.markdown("### 💡 Interpretação")
+                        
+                        for cluster in sorted(df_resultado['Cluster'].unique()):
+                            df_clust = df_resultado[df_resultado['Cluster'] == cluster]
+                            
+                            perfil = df_clust['Perfil_Cluster'].iloc[0] if 'Perfil_Cluster' in df_resultado.columns else f"Cluster {cluster}"
+                            negociadores = ', '.join(df_clust['Negociador'].tolist())
+                            score_medio = df_clust['Score Tendência'].mean()
+                            
+                            if perfil == 'Escuta Ativa':
+                                emoji = "🟢"
+                                desc = "Tendem a usar mais **Escuta Ativa** (Paráfrase, Empatia, Resumo)"
+                            else:
+                                emoji = "🟠"
+                                desc = "Tendem a usar mais **Persuasão/Influência** (Desconstrução, Reciprocidade, Medo)"
+                            
+                            st.markdown(f"""
+                            {emoji} **{perfil}** (Score médio: {score_medio:.1f}%)
+                            - Negociadores: {negociadores}
+                            - Padrão: {desc}
+                            """)
+            
+            except ImportError as e:
+                st.error(f"❌ Erro ao importar módulo: {str(e)}")
+            except Exception as e:
+                st.error(f"❌ Erro na análise: {str(e)[:200]}")
+
+        st.markdown("---")
+
+        # SÍNTESE INTERPRETATIVA POR IA
+        st.markdown("""
+        <div class='info-card'>
+        <h5 style='color: #FFD700; margin-top: 0;'>Síntese Interpretativa Assistida por Inteligência Artificial</h5>
+        <p style='font-size:1rem;color:#ddd;'>
+        A interpretação da IA é colaborativa e NÃO substitui a análise e compreensão do Avaliador/Negociador.
+        Exige constante aprimoramento de instruções.
+        </p>
+        </div>
+        """, unsafe_allow_html=True)
+
+              
         
 
         if st.button("✔ GERAR RELATÓRIO INTERPRETADO POR IA"):
