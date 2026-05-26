@@ -4383,7 +4383,6 @@ Este sistema é protegido por direitos autorais e legislação aplicável. Repro
                         <h5 style='color: #FFD700; margin-top: 0;'>Rede de Palavras</h5>
                         <p style='font-size:0.9rem;color:#aaa;'>
                         Palavras do "Trecho da Transcrição" onde técnicas foram aplicadas.
-                        <br>Cores = Negociador que mais usou | Tamanho = Frequência | Conexões = Co-ocorrência
                         </p>
                         </div>
                         """, unsafe_allow_html=True)
@@ -4392,17 +4391,20 @@ Este sistema é protegido por direitos autorais e legislação aplicável. Repro
                             try:
                                 net = gerar_grafo_palavras(df_tec_classificado, negociadores_cores)
                                 
-                                # Salvar grafo
-                                net.show('temp_grafo.html')
-                                
-                                # Exibir
-                                with open('temp_grafo.html', 'r', encoding='utf-8') as f:
-                                    html_grafo = f.read()
-                                
-                                st.components.v1.html(html_grafo, height=800)
-                                
-                                st.success("✅ Grafo gerado com sucesso!")
-                                
+                                if net is None:
+                                    st.warning("⚠️ Dados insuficientes para gerar o grafo (precisa de mais trechos de transcrição).")
+                                else:
+                                    # Salvar grafo
+                                    net.show('temp_grafo.html')
+                                    
+                                    # Exibir
+                                    with open('temp_grafo.html', 'r', encoding='utf-8') as f:
+                                        html_grafo = f.read()
+                                    
+                                    st.components.v1.html(html_grafo, height=800)
+                                    
+                                    st.success("✅ Grafo gerado com sucesso!")
+                            
                             except Exception as e:
                                 st.error(f"❌ Erro ao gerar grafo: {str(e)[:100]}")
                     
@@ -4462,7 +4464,7 @@ Este sistema é protegido por direitos autorais e legislação aplicável. Repro
                         """, unsafe_allow_html=True)
                         
                         # Tabela com clusters
-                        st.markdown("### 📋 Atribuição de Clusters")
+                        st.markdown("### ✔️ Atribuição de Clusters")
                         df_clusters = df_resultado[['Negociador', 'Score Tendência', 'Cluster']].copy()
                         
                         if 'Perfil_Cluster' in df_resultado.columns:
