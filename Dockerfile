@@ -1,4 +1,4 @@
-FROM python:3.10-slim
+FROM python:3.9-slim
 
 WORKDIR /app
 
@@ -20,7 +20,7 @@ COPY . .
 # Criar diretório para secrets
 RUN mkdir -p ~/.streamlit
 
-# Configurar Streamlit
+# Configurar Streamlit para Railway
 RUN echo "\
 [general]\n\
 headless = true\n\
@@ -28,7 +28,7 @@ headless = true\n\
 [server]\n\
 port = 8000\n\
 headless = true\n\
-runOnSave = true\n\
+runOnSave = false\n\
 \n\
 [logger]\n\
 level = info\n\
