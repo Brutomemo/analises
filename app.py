@@ -2668,7 +2668,7 @@ with aba_individual:
                 st.markdown("---")
                 st.markdown("""
                 <div style='background: rgba(76, 175, 80, 0.1); border-left: 4px solid #4CAF50; padding: 15px; border-radius: 8px; margin-bottom: 20px;'>
-                <h5 style='color: #4CAF50; margin-top: 0;'> Análise de Sentimento (Biblioteca Transformer)</h5>
+                <h5 style='color: #FFD700; margin-top: 0;'> Análise de Sentimento (Biblioteca Transformer)</h5>
                 <p style='color: #aaa; font-size: 0.9rem; margin-bottom: 10px;'>
                 Análise com Transformer português otimizado: remove gírias e stopwords para melhor compreensão.
                 </p>
@@ -2678,7 +2678,7 @@ with aba_individual:
                 <li><strong>Tempo:</strong> ~10-15 segundos (muito mais rápido!)</li>
                 <li><strong>Mostrada:</strong> Original + Limpa</li>
                 </ul>
-                <p style='color: #4CAF50; font-size: 0.85rem; font-weight: bold; margin-bottom: 0;'>
+                <p style='color: #FFD700; font-size: 0.85rem; font-weight: bold; margin-bottom: 0;'>
                 Clique no botão abaixo para carregar a análise.
                 </p>
                 </div>
@@ -4263,16 +4263,7 @@ Este sistema é protegido por direitos autorais e legislação aplicável. Repro
             """)
         st.markdown("---")
 
-        
-        st.markdown("""
-                        <div class='info-card'>
-                        <h5 style='color: #FFD700; margin-top: 0;'>Síntese Interpretativa Assistida por Inteligência Artificial</h5>
-                        <p style='font-size:1.2rem;color:#ddd;'>
-                        A interpretação da IA é colaborativa e NÃO substitui a analise e compreenção do Avaliador/Negociador. Exige constante aprimoramento de instruções</strong>                 
-                        </p>
-                        </div>
-                        """, unsafe_allow_html=True)
-        
+                       
 
         # ============================================================
         # ANÁLISE DE PERFIL DE NEGOCIADORES
@@ -4553,7 +4544,6 @@ Este sistema é protegido por direitos autorais e legislação aplicável. Repro
         </p>
         </div>
         """, unsafe_allow_html=True)
-
               
         
 
