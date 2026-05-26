@@ -2873,295 +2873,295 @@ with aba_individual:
             st.markdown("---")
                                     
                         # ===== PRÓXIMO BOTÃO (FORA DA TAB) =====
-            if st.button("✔ 3. GERAR ANALYTICS E EXPORTAR ANÁLISE (PDF)"):
-                with st.spinner("Compilando dados técnicos, consultando IA e desenhando PDF..."):
+        if st.button("✔ 3. GERAR ANALYTICS E EXPORTAR ANÁLISE (PDF)"):
+            with st.spinner("Compilando dados técnicos, consultando IA e desenhando PDF..."):
+                try:
+                    t_causador = limpar_valor(df_apa.get('TRANSCRIÇÃO DO CAUSADOR'))
+                    t_principal = limpar_valor(df_apa.get('TRANSCRIÇÃO DO NEGOCIADOR PRINCIPAL'))
+                    t_secundario = limpar_valor(df_apa.get('TRANSCRIÇÃO DO NEGOCIADOR SECUNDÁRIO'))
+
+                    df_transcricoes = pd.DataFrame([{
+                        "Causador": t_causador,
+                        "Neg_Principal": t_principal,
+                        "Neg_Secundario": t_secundario
+                    }])
+
+                    stats_calculados = st.session_state.get('stats_calculados', {}) or {}
+
+                    temas_extraidos = stats_calculados.get('topicos') if stats_calculados else ["Etapa 2 não executada"]
+                    if not isinstance(temas_extraidos, (list, tuple)):
+                        temas_extraidos = [str(temas_extraidos)]
+
+                    meta_dict = df_apa.to_dict()
+                    meta_dict["temas_dominantes_scikit_learn"] = " | ".join([str(t) for t in temas_extraidos])
+
+                    # Envia para a IA as análises textuais já calculadas:
+                    # - similitude lexical
+                    # - n-grams / modelagem de tópicos
+                    # - convergência
+                    # - qualquer outro dado já existente em stats_calculados
+                    meta_dict["analises_calculadas"] = {
+                        "similitude_lexical": stats_calculados.get(
+                            "similitude_lexical",
+                            stats_calculados.get("similitude", "Não executada")
+                        ),
+                        "ngrams": stats_calculados.get(
+                            "ngrams",
+                            stats_calculados.get("n_grams", "Não executada")
+                        ),
+                        "convergencia": stats_calculados.get(
+                            "convergencia",
+                            stats_calculados.get("convergencia_lexical", "Não executada")
+                        ),
+                        "topicos": temas_extraidos,
+                    }
+
+                    df_meta = pd.DataFrame([meta_dict])
+
+                    dados_extraidos = {
+                        "transcricao": df_transcricoes,
+                        "metadados": df_meta
+                    }
+
+                    # ====
+                    # MONTA AS TÉCNICAS DA APA E A FREQUÊNCIA PARA ENVIAR À IA
+                    # ====
+                    tecnicas_da_apa = []
+                    freq_tecnicas_dict = {}
+                    estatisticas_ocorrencia = {}
+
                     try:
-                        t_causador = limpar_valor(df_apa.get('TRANSCRIÇÃO DO CAUSADOR'))
-                        t_principal = limpar_valor(df_apa.get('TRANSCRIÇÃO DO NEGOCIADOR PRINCIPAL'))
-                        t_secundario = limpar_valor(df_apa.get('TRANSCRIÇÃO DO NEGOCIADOR SECUNDÁRIO'))
+                        if not df_tec.empty:
+                            col_vinculo = next((c for c in df_tec.columns if 'VINCULO' in c.upper() or 'VÍNCULO' in c.upper()), None)
 
-                        df_transcricoes = pd.DataFrame([{
-                            "Causador": t_causador,
-                            "Neg_Principal": t_principal,
-                            "Neg_Secundario": t_secundario
-                        }])
+                            if col_vinculo:
+                                id_visivel = str(apa_selecionada).strip()
 
-                        stats_calculados = st.session_state.get('stats_calculados', {}) or {}
+                                df_tec_tmp = df_tec.copy()
+                                df_tec_tmp['Vinculo_Str'] = (
+                                    df_tec_tmp[col_vinculo]
+                                    .astype(str)
+                                    .str.replace(r"[\[\]'\"]", "", regex=True)
+                                    .str.strip()
+                                )
 
-                        temas_extraidos = stats_calculados.get('topicos') if stats_calculados else ["Etapa 2 não executada"]
-                        if not isinstance(temas_extraidos, (list, tuple)):
-                            temas_extraidos = [str(temas_extraidos)]
+                                df_tec_filtrado_pdf = df_tec_tmp[df_tec_tmp['Vinculo_Str'] == id_visivel].copy()
 
-                        meta_dict = df_apa.to_dict()
-                        meta_dict["temas_dominantes_scikit_learn"] = " | ".join([str(t) for t in temas_extraidos])
+                                if df_tec_filtrado_pdf.empty and 'Airtable_Record_ID' in df_apa:
+                                    id_interno = str(df_apa['Airtable_Record_ID']).strip()
+                                    df_tec_filtrado_pdf = df_tec_tmp[
+                                        df_tec_tmp[col_vinculo].astype(str).str.contains(id_interno, na=False, regex=False)
+                                    ].copy()
 
-                        # Envia para a IA as análises textuais já calculadas:
-                        # - similitude lexical
-                        # - n-grams / modelagem de tópicos
-                        # - convergência
-                        # - qualquer outro dado já existente em stats_calculados
-                        meta_dict["analises_calculadas"] = {
-                            "similitude_lexical": stats_calculados.get(
-                                "similitude_lexical",
-                                stats_calculados.get("similitude", "Não executada")
-                            ),
-                            "ngrams": stats_calculados.get(
-                                "ngrams",
-                                stats_calculados.get("n_grams", "Não executada")
-                            ),
-                            "convergencia": stats_calculados.get(
-                                "convergencia",
-                                stats_calculados.get("convergencia_lexical", "Não executada")
-                            ),
-                            "topicos": temas_extraidos,
-                        }
-
-                        df_meta = pd.DataFrame([meta_dict])
-
-                        dados_extraidos = {
-                            "transcricao": df_transcricoes,
-                            "metadados": df_meta
-                        }
-
-                        # ====
-                        # MONTA AS TÉCNICAS DA APA E A FREQUÊNCIA PARA ENVIAR À IA
-                        # ====
-                        tecnicas_da_apa = []
-                        freq_tecnicas_dict = {}
-                        estatisticas_ocorrencia = {}
-
-                        try:
-                            if not df_tec.empty:
-                                col_vinculo = next((c for c in df_tec.columns if 'VINCULO' in c.upper() or 'VÍNCULO' in c.upper()), None)
-
-                                if col_vinculo:
-                                    id_visivel = str(apa_selecionada).strip()
-
-                                    df_tec_tmp = df_tec.copy()
-                                    df_tec_tmp['Vinculo_Str'] = (
-                                        df_tec_tmp[col_vinculo]
-                                        .astype(str)
-                                        .str.replace(r"[\[\]'\"]", "", regex=True)
-                                        .str.strip()
+                                if not df_tec_filtrado_pdf.empty:
+                                    col_tecnica = next(
+                                        (col for col in ['TÉCNICAS', 'TECNICAS', 'TÉCNICA', 'TECNICA'] if col in df_tec_filtrado_pdf.columns),
+                                        None
                                     )
 
-                                    df_tec_filtrado_pdf = df_tec_tmp[df_tec_tmp['Vinculo_Str'] == id_visivel].copy()
+                                    if col_tecnica:
+                                        freq_abs = df_tec_filtrado_pdf[col_tecnica].value_counts()
+                                        freq_rel = (df_tec_filtrado_pdf[col_tecnica].value_counts(normalize=True) * 100).round(1)
 
-                                    if df_tec_filtrado_pdf.empty and 'Airtable_Record_ID' in df_apa:
-                                        id_interno = str(df_apa['Airtable_Record_ID']).strip()
-                                        df_tec_filtrado_pdf = df_tec_tmp[
-                                            df_tec_tmp[col_vinculo].astype(str).str.contains(id_interno, na=False, regex=False)
-                                        ].copy()
+                                        df_freq_pdf = pd.DataFrame({
+                                            'Técnica Empregada': freq_abs.index,
+                                            'Frequência Absoluta': freq_abs.values,
+                                            'Frequência Relativa (%)': freq_rel.values
+                                        })
 
-                                    if not df_tec_filtrado_pdf.empty:
-                                        col_tecnica = next(
-                                            (col for col in ['TÉCNICAS', 'TECNICAS', 'TÉCNICA', 'TECNICA'] if col in df_tec_filtrado_pdf.columns),
-                                            None
-                                        )
+                                        tecnicas_da_apa = df_freq_pdf['Técnica Empregada'].dropna().astype(str).tolist()
 
-                                        if col_tecnica:
-                                            freq_abs = df_tec_filtrado_pdf[col_tecnica].value_counts()
-                                            freq_rel = (df_tec_filtrado_pdf[col_tecnica].value_counts(normalize=True) * 100).round(1)
-
-                                            df_freq_pdf = pd.DataFrame({
-                                                'Técnica Empregada': freq_abs.index,
-                                                'Frequência Absoluta': freq_abs.values,
-                                                'Frequência Relativa (%)': freq_rel.values
+                                        frequencia_tecnicas_ocorrencia = []
+                                        for _, row in df_freq_pdf.iterrows():
+                                            frequencia_tecnicas_ocorrencia.append({
+                                                "tecnica": str(row["Técnica Empregada"]),
+                                                "frequencia_absoluta": int(row["Frequência Absoluta"]),
+                                                "frequencia_relativa": float(row["Frequência Relativa (%)"])
                                             })
 
-                                            tecnicas_da_apa = df_freq_pdf['Técnica Empregada'].dropna().astype(str).tolist()
-
-                                            frequencia_tecnicas_ocorrencia = []
-                                            for _, row in df_freq_pdf.iterrows():
-                                                frequencia_tecnicas_ocorrencia.append({
-                                                    "tecnica": str(row["Técnica Empregada"]),
-                                                    "frequencia_absoluta": int(row["Frequência Absoluta"]),
-                                                    "frequencia_relativa": float(row["Frequência Relativa (%)"])
-                                                })
-
-                                            freq_tecnicas_dict = dict(
-                                                zip(
-                                                    df_freq_pdf['Técnica Empregada'].astype(str),
-                                                    df_freq_pdf['Frequência Absoluta'].astype(int)
-                                                )
+                                        freq_tecnicas_dict = dict(
+                                            zip(
+                                                df_freq_pdf['Técnica Empregada'].astype(str),
+                                                df_freq_pdf['Frequência Absoluta'].astype(int)
                                             )
+                                        )
 
-                                            estatisticas_ocorrencia = {
-                                                "frequencia_tecnicas_ocorrencia": frequencia_tecnicas_ocorrencia,
-                                                "frequencia_absoluta_por_tecnica": freq_tecnicas_dict
-                                            }
-
-                        except Exception as e:
-                            st.warning(f"Falha ao montar frequências para a IA: {e}")
-
-                        resultado_ia = ia_link.analisar_ocorrencia_gate(
-                            dados_extraidos,
-                            estatisticas_ocorrencia=estatisticas_ocorrencia,
-                            tecnicas_ocorrencia=tecnicas_da_apa
-                        )
-
-                        if isinstance(resultado_ia, dict):
-                            parecer_ia = resultado_ia.get("parecer", "")
-                            sugestoes_treinamento = resultado_ia.get("sugestoes_treinamento", "")
-                        else:
-                            parecer_ia = str(resultado_ia)
-                            sugestoes_treinamento = ""
-
-                        def calcular_media_equipe(*valores):
-                            validos = [v for v in valores if v and v > 0]
-                            return sum(validos) / len(validos) if validos else None
-
-                        likert_inicio = {
-                            'agressividade_media': calcular_media_equipe(p_agr_c_num, s_agr_c_num, l_agr_c_num),
-                            'receptividade_media': calcular_media_equipe(p_rec_c_num, s_rec_c_num, l_rec_c_num)
-                        }
-                        likert_fim = {
-                            'agressividade_media': calcular_media_equipe(p_agr_e_num, s_agr_e_num, l_agr_e_num),
-                            'receptividade_media': calcular_media_equipe(p_rec_e_num, s_rec_e_num, l_rec_e_num)
-                        }
-                        # Spearman entre serie de agressividade no inicio e no fim (3 pares: P, S, L)
-                        try:
-                            import numpy as _np
-                            from scipy.stats import spearmanr as _spearmanr
-                            x_likert = [v for v in [p_agr_c_num, s_agr_c_num, l_agr_c_num] if v > 0]
-                            y_likert = [v for v in [p_agr_e_num, s_agr_e_num, l_agr_e_num] if v > 0]
-                            n_par = min(len(x_likert), len(y_likert))
-                            if n_par >= 3 and len(set(x_likert[:n_par])) > 1 and len(set(y_likert[:n_par])) > 1:
-                                rho_lk, p_lk = _spearmanr(x_likert[:n_par], y_likert[:n_par])
-                                stats_spearman = {'valido': True, 'p_value': float(p_lk), 'rho': float(rho_lk)}
-                            else:
-                                stats_spearman = {'valido': False, 'p_value': 1.0, 'rho': 0.0}
-                        except Exception:
-                            stats_spearman = {'valido': False, 'p_value': 1.0, 'rho': 0.0}
-                        laudo_frio = ia_link.gerar_laudo_frio(likert_inicio, likert_fim, stats_spearman)
-
-                        st.markdown(f"""
-                        <div class="info-card" style="border-left: 4px solid #FFD700;">
-                        <h4 style="color: #FFD700; margin-top: 0;">Inferência Estatística (Motor Frio)</h4>
-                        <p style="font-size: 1.05rem; line-height: 1.6;">{laudo_frio}</p>
-                        <hr style="border-color: rgba(255,255,255,0.1); margin: 15px 0;">
-                        <h4 style="color: #06C755; margin-top: 0;">Leitura Analítica (Interpretação descritiva dos resultados)</h4>
-                        <p style="font-size: 1.05rem; line-height: 1.6;">{parecer_ia}</p>
-                        <hr style="border-color: rgba(255,255,255,0.1); margin: 15px 0;">
-                        <h4 style="color: #FFA500; margin-top: 0;">Sugestões para treinamentos</h4>
-                        <p style="font-size: 1.05rem; line-height: 1.6;">{sugestoes_treinamento or 'Sem base suficiente para sugerir treinamento específico.'}</p>
-                        </div>
-                        """, unsafe_allow_html=True)
-
-                        texto_str = f"""INFERENCIA ESTATISTICA (MOTOR FRIO)
-
-            {laudo_frio}
-
-            LEITURA ANALITICA
-
-            {parecer_ia}
-
-            SUGESTOES PARA TREINAMENTOS
-
-            {sugestoes_treinamento if sugestoes_treinamento else 'Sem base suficiente para sugerir treinamento específico.'}
-            """
-
-                        texto_str = texto_str.replace("**", "").replace("### ", "")
-                        texto_final_pdf = unicodedata.normalize('NFKD', texto_str).encode('ASCII', 'ignore').decode('ASCII')
-
-                        pdf = FPDF()
-                        pdf.add_page()
-
-                        pdf.set_fill_color(249, 115, 22)
-                        pdf.rect(0, 0, 210, 40, 'F')
-                        pdf.set_font("Arial", "B", 18)
-                        pdf.set_text_color(255, 255, 255)
-                        pdf.cell(0, 15, "LAUDO DE ANALISE POS-ACAO (APA)", ln=True, align="C")
-                        pdf.set_font("Arial", "I", 12)
-                        pdf.cell(0, 5, f"Unidade: GATE | ID: {apa_selecionada}", ln=True, align="C")
-
-                        pdf.ln(20)
-                        pdf.set_text_color(0, 0, 0)
-                        pdf.set_font("Arial", "B", 14)
-                        pdf.set_fill_color(240, 240, 240)
-                        pdf.cell(0, 10, " 1. INFORMACOES DO INCIDENTE", ln=True, fill=True)
-                        pdf.set_font("Arial", "", 11)
-
-                        dt_oc = limpar_valor(df_apa.get('Data da ocorrência'))
-                        tip = limpar_valor(df_apa.get('Tipologia'))
-                        neg = limpar_valor(df_apa.get('Negociador Principal'))
-                        info_str = f"Data: {dt_oc} | Tipologia: {tip} | Negociador: {neg}"
-
-                        pdf.multi_cell(
-                            0,
-                            8,
-                            txt=unicodedata.normalize('NFKD', info_str).encode('ASCII', 'ignore').decode('ASCII'),
-                            border='L'
-                        )
-
-                        pdf.ln(10)
-                        pdf.set_font("Arial", "B", 14)
-                        pdf.set_fill_color(249, 115, 22)
-                        pdf.set_text_color(255, 255, 255)
-                        pdf.cell(0, 10, " 2. INTELIGENCIA DE APOIO A DECISAO (IA)", ln=True, fill=True)
-                        pdf.ln(5)
-                        pdf.set_text_color(0, 0, 0)
-                        pdf.set_font("Arial", "", 11)
-
-                        pdf.multi_cell(0, 7, txt=texto_final_pdf)
-
-                        pdf_saida = pdf.output(dest="S")
-                        if isinstance(pdf_saida, str):
-                            pdf_bytes = pdf_saida.encode('latin-1', errors='replace')
-                        else:
-                            pdf_bytes = bytes(pdf_saida)
-
-                        st.download_button(
-                            label="📥 BAIXAR ANÁLISE COMPLETA (PDF)",
-                            data=pdf_bytes,
-                            file_name=f"Laudo_GATE_{apa_selecionada}.pdf",
-                            mime="application/pdf"
-                        )
+                                        estatisticas_ocorrencia = {
+                                            "frequencia_tecnicas_ocorrencia": frequencia_tecnicas_ocorrencia,
+                                            "frequencia_absoluta_por_tecnica": freq_tecnicas_dict
+                                        }
 
                     except Exception as e:
-                        st.error(f"Erro na análise da IA ou geração do PDF: {str(e)}")
+                        st.warning(f"Falha ao montar frequências para a IA: {e}")
 
-            st.markdown("<div style='margin-bottom: 20px;'></div>", unsafe_allow_html=True)
-            st.markdown("""
-    <div style='margin-top:20px; margin-bottom:100px; padding:15px; background-color:#111; border-radius:8px;'>
-    <p style="color:#bbb; font-size:13px; line-height:1.7; text-align:left;">
+                    resultado_ia = ia_link.analisar_ocorrencia_gate(
+                        dados_extraidos,
+                        estatisticas_ocorrencia=estatisticas_ocorrencia,
+                        tecnicas_ocorrencia=tecnicas_da_apa
+                    )
 
-    <span style="color:#ffae42; font-weight:700; font-size:14px; letter-spacing:1px;">
-    DELTA-NEGOCIAÇÃO — GATE/PMESP
-    </span>
+                    if isinstance(resultado_ia, dict):
+                        parecer_ia = resultado_ia.get("parecer", "")
+                        sugestoes_treinamento = resultado_ia.get("sugestoes_treinamento", "")
+                    else:
+                        parecer_ia = str(resultado_ia)
+                        sugestoes_treinamento = ""
+
+                    def calcular_media_equipe(*valores):
+                        validos = [v for v in valores if v and v > 0]
+                        return sum(validos) / len(validos) if validos else None
+
+                    likert_inicio = {
+                        'agressividade_media': calcular_media_equipe(p_agr_c_num, s_agr_c_num, l_agr_c_num),
+                        'receptividade_media': calcular_media_equipe(p_rec_c_num, s_rec_c_num, l_rec_c_num)
+                    }
+                    likert_fim = {
+                        'agressividade_media': calcular_media_equipe(p_agr_e_num, s_agr_e_num, l_agr_e_num),
+                        'receptividade_media': calcular_media_equipe(p_rec_e_num, s_rec_e_num, l_rec_e_num)
+                    }
+                    # Spearman entre serie de agressividade no inicio e no fim (3 pares: P, S, L)
+                    try:
+                        import numpy as _np
+                        from scipy.stats import spearmanr as _spearmanr
+                        x_likert = [v for v in [p_agr_c_num, s_agr_c_num, l_agr_c_num] if v > 0]
+                        y_likert = [v for v in [p_agr_e_num, s_agr_e_num, l_agr_e_num] if v > 0]
+                        n_par = min(len(x_likert), len(y_likert))
+                        if n_par >= 3 and len(set(x_likert[:n_par])) > 1 and len(set(y_likert[:n_par])) > 1:
+                            rho_lk, p_lk = _spearmanr(x_likert[:n_par], y_likert[:n_par])
+                            stats_spearman = {'valido': True, 'p_value': float(p_lk), 'rho': float(rho_lk)}
+                        else:
+                            stats_spearman = {'valido': False, 'p_value': 1.0, 'rho': 0.0}
+                    except Exception:
+                        stats_spearman = {'valido': False, 'p_value': 1.0, 'rho': 0.0}
+                    laudo_frio = ia_link.gerar_laudo_frio(likert_inicio, likert_fim, stats_spearman)
+
+                    st.markdown(f"""
+                    <div class="info-card" style="border-left: 4px solid #FFD700;">
+                    <h4 style="color: #FFD700; margin-top: 0;">Inferência Estatística (Motor Frio)</h4>
+                    <p style="font-size: 1.05rem; line-height: 1.6;">{laudo_frio}</p>
+                    <hr style="border-color: rgba(255,255,255,0.1); margin: 15px 0;">
+                    <h4 style="color: #06C755; margin-top: 0;">Leitura Analítica (Interpretação descritiva dos resultados)</h4>
+                    <p style="font-size: 1.05rem; line-height: 1.6;">{parecer_ia}</p>
+                    <hr style="border-color: rgba(255,255,255,0.1); margin: 15px 0;">
+                    <h4 style="color: #FFA500; margin-top: 0;">Sugestões para treinamentos</h4>
+                    <p style="font-size: 1.05rem; line-height: 1.6;">{sugestoes_treinamento or 'Sem base suficiente para sugerir treinamento específico.'}</p>
+                    </div>
+                    """, unsafe_allow_html=True)
+
+                    texto_str = f"""INFERENCIA ESTATISTICA (MOTOR FRIO)
+
+        {laudo_frio}
+
+        LEITURA ANALITICA
+
+        {parecer_ia}
+
+        SUGESTOES PARA TREINAMENTOS
+
+        {sugestoes_treinamento if sugestoes_treinamento else 'Sem base suficiente para sugerir treinamento específico.'}
+        """
+
+                    texto_str = texto_str.replace("**", "").replace("### ", "")
+                    texto_final_pdf = unicodedata.normalize('NFKD', texto_str).encode('ASCII', 'ignore').decode('ASCII')
+
+                    pdf = FPDF()
+                    pdf.add_page()
+
+                    pdf.set_fill_color(249, 115, 22)
+                    pdf.rect(0, 0, 210, 40, 'F')
+                    pdf.set_font("Arial", "B", 18)
+                    pdf.set_text_color(255, 255, 255)
+                    pdf.cell(0, 15, "LAUDO DE ANALISE POS-ACAO (APA)", ln=True, align="C")
+                    pdf.set_font("Arial", "I", 12)
+                    pdf.cell(0, 5, f"Unidade: GATE | ID: {apa_selecionada}", ln=True, align="C")
+
+                    pdf.ln(20)
+                    pdf.set_text_color(0, 0, 0)
+                    pdf.set_font("Arial", "B", 14)
+                    pdf.set_fill_color(240, 240, 240)
+                    pdf.cell(0, 10, " 1. INFORMACOES DO INCIDENTE", ln=True, fill=True)
+                    pdf.set_font("Arial", "", 11)
+
+                    dt_oc = limpar_valor(df_apa.get('Data da ocorrência'))
+                    tip = limpar_valor(df_apa.get('Tipologia'))
+                    neg = limpar_valor(df_apa.get('Negociador Principal'))
+                    info_str = f"Data: {dt_oc} | Tipologia: {tip} | Negociador: {neg}"
+
+                    pdf.multi_cell(
+                        0,
+                        8,
+                        txt=unicodedata.normalize('NFKD', info_str).encode('ASCII', 'ignore').decode('ASCII'),
+                        border='L'
+                    )
+
+                    pdf.ln(10)
+                    pdf.set_font("Arial", "B", 14)
+                    pdf.set_fill_color(249, 115, 22)
+                    pdf.set_text_color(255, 255, 255)
+                    pdf.cell(0, 10, " 2. INTELIGENCIA DE APOIO A DECISAO (IA)", ln=True, fill=True)
+                    pdf.ln(5)
+                    pdf.set_text_color(0, 0, 0)
+                    pdf.set_font("Arial", "", 11)
+
+                    pdf.multi_cell(0, 7, txt=texto_final_pdf)
+
+                    pdf_saida = pdf.output(dest="S")
+                    if isinstance(pdf_saida, str):
+                        pdf_bytes = pdf_saida.encode('latin-1', errors='replace')
+                    else:
+                        pdf_bytes = bytes(pdf_saida)
+
+                    st.download_button(
+                        label="📥 BAIXAR ANÁLISE COMPLETA (PDF)",
+                        data=pdf_bytes,
+                        file_name=f"Laudo_GATE_{apa_selecionada}.pdf",
+                        mime="application/pdf"
+                    )
+
+                except Exception as e:
+                    st.error(f"Erro na análise da IA ou geração do PDF: {str(e)}")
+
+        st.markdown("<div style='margin-bottom: 20px;'></div>", unsafe_allow_html=True)
+        st.markdown("""
+<div style='margin-top:20px; margin-bottom:100px; padding:15px; background-color:#111; border-radius:8px;'>
+<p style="color:#bbb; font-size:13px; line-height:1.7; text-align:left;">
+
+<span style="color:#ffae42; font-weight:700; font-size:14px; letter-spacing:1px;">
+DELTA-NEGOCIAÇÃO — GATE/PMESP
+</span>
 
 
-    "O maior inimigo do conhecimento não é a ignorância, mas a ilusão do conhecimento."
-    — Stephen Hawking.
+"O maior inimigo do conhecimento não é a ignorância, mas a ilusão do conhecimento."
+— Stephen Hawking.
 
 
-    “Sem dados, você é apenas mais uma pessoa com opinião.”
-    — W. Edwards Deming.
+“Sem dados, você é apenas mais uma pessoa com opinião.”
+— W. Edwards Deming.
 
 
-    Empenhados no desenvolvimento de treinamentos e na avaliação dos Negociadores, alicerçados no pensamento técnico-científico e no valor humano, guiados por dados.
+Empenhados no desenvolvimento de treinamentos e na avaliação dos Negociadores, alicerçados no pensamento técnico-científico e no valor humano, guiados por dados.
 
-    <br>
+<br>
 
-    <span style="color:#ffae42; font-weight:600;">
-    NEGOCIAÇÃO!
-    </span>
+<span style="color:#ffae42; font-weight:600;">
+NEGOCIAÇÃO!
+</span>
 
-    <br>
+<br>
 
-    <span style="color:#777; font-size:11px;">
-    Dados confidenciais, de uso exclusivo da equipe de Negociação do Grupo de Ações Táticas Especiais.
-    </span>
+<span style="color:#777; font-size:11px;">
+Dados confidenciais, de uso exclusivo da equipe de Negociação do Grupo de Ações Táticas Especiais.
+</span>
 
-    </p>
+</p>
 
-    <hr style="border:none; height:1px; background:linear-gradient(to right, transparent, rgba(255,174,66,0.6), transparent); margin-top:18px; margin-bottom:12px;">
+<hr style="border:none; height:1px; background:linear-gradient(to right, transparent, rgba(255,174,66,0.6), transparent); margin-top:18px; margin-bottom:12px;">
 
-    <div style="text-align:center; font-size:11px; color:#666; line-height:1.5;">
-    © 2026 AXIOM - Strategic Intelligence Ltda — Todos os direitos reservados.<br>
-    Este sistema é protegido por direitos autorais e legislação aplicável. Reprodução, distribuição, engenharia reversa, modificação ou utilização não autorizada são proibidas.
-    </div>
-    """, unsafe_allow_html=True)
+<div style="text-align:center; font-size:11px; color:#666; line-height:1.5;">
+© 2026 AXIOM - Strategic Intelligence Ltda — Todos os direitos reservados.<br>
+Este sistema é protegido por direitos autorais e legislação aplicável. Reprodução, distribuição, engenharia reversa, modificação ou utilização não autorizada são proibidas.
+</div>
+""", unsafe_allow_html=True)
 
     # ====
     # ABA 2: PAINEL (HISTÓRICO)
