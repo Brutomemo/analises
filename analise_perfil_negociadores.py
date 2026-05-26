@@ -63,6 +63,8 @@ def classificar_tecnica(tecnica_nome):
 # 2. CÁLCULO DE SCORE DE TENDÊNCIA (PONDERADO POR EFETIVIDADE)
 # ============================================================
 
+
+
 def calcular_score_tendencia(df_tecnicas):
     """
     Calcula score de tendência para cada negociador.
@@ -70,6 +72,35 @@ def calcular_score_tendencia(df_tecnicas):
     
     Resultado: -100 (Persuasão) a +100 (Escuta Ativa)
     """
+
+    # CORRIGIR: Garantir que NEGOCIADOR PRINCIPAL é string, não lista
+    df_tecnicas['NEGOCIADOR PRINCIPAL'] = df_tecnicas['NEGOCIADOR PRINCIPAL'].apply(
+        lambda x: x[0] if isinstance(x, list) else str(x)
+    )
+    
+    # Classificar técnicas
+    df_tecnicas['grupo'] = df_tecnicas['TÉCNICAS'].apply(classificar_tecnica)
+    
+    # Converter ATITUDE DO CAUSADOR para numérico
+    df_tecnicas['atitude_num'] = df_tecnicas['ATITUDE DO CAUSADOR'].apply(
+        lambda x: {
+            '🟢 Reação Positiva': 1,
+            'Reação Positiva': 1,
+            '1': 1,
+            1: 1,
+            1.0: 1,
+            '⚪ Reação Neutra': 0,
+            'Reação Neutra': 0,
+            '0': 0,
+            0: 0,
+            0.0: 0,
+            '🔴 Reação Negativa': -1,
+            'Reação Negativa': -1,
+            '-1': -1,
+            -1: -1,
+            -1.0: -1,
+        }.get(x, np.nan)
+    )
     
     # Classificar técnicas
     df_tecnicas['grupo'] = df_tecnicas['TÉCNICAS'].apply(classificar_tecnica)
