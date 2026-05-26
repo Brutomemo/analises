@@ -31,7 +31,7 @@ headless = true\n\
 runOnSave = false\n\
 \n\
 [logger]\n\
-level = info\n\
+level = "info"\n\
 " > ~/.streamlit/config.toml
 
 # Expor porta
