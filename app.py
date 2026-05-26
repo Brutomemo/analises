@@ -1436,7 +1436,7 @@ with aba_individual:
                 </div>
                 """, unsafe_allow_html=True)
 
-                
+                if st.button("✔ Analisar Efetividade das Técnicas", key="btn_efetividade_tecnicas"):
                     with st.spinner("Cruzando técnicas com reação do causador..."):
                         try:
                             record_id_atual = df_apa.get('Airtable_Record_ID')
