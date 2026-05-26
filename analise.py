@@ -2964,7 +2964,7 @@ def aplicar_kmeans(df_resultado, k=2):
 
 def gerar_grafo_palavras_com_estilo(df_tecnicas, negociadores_cores):
     """
-    Gera grafo Pyvis com fundo glassmorphism dinâmico
+    Gera grafo Pyvis com fundo glassmorphism e labels visíveis
     """
     
     try:
@@ -3008,6 +3008,7 @@ def gerar_grafo_palavras_com_estilo(df_tecnicas, negociadores_cores):
         top_palavras = [p for p, _ in palavras_freq.most_common(50)]
         net = Network(height='800px', width='100%', directed=False, notebook=False)
         
+        # ── ADICIONAR NÓS ──
         for palavra in top_palavras:
             if palavra in palavras_negociador and len(palavras_negociador[palavra]) > 0:
                 negociador_principal = palavras_negociador[palavra].most_common(1)[0][0]
@@ -3020,9 +3021,10 @@ def gerar_grafo_palavras_com_estilo(df_tecnicas, negociadores_cores):
                     title=f"{palavra} ({palavras_freq[palavra]}x) - {negociador_principal}",
                     color=cor,
                     size=size,
-                    font={'size': 14, 'color': '#FFF'}
+                    font={'size': 16, 'color': '#000000', 'face': 'Arial', 'bold': {'size': 18}}
                 )
         
+        # ── ADICIONAR ARESTAS ──
         arestas_adicionadas = set()
         for _, row in df_tecnicas.iterrows():
             try:
@@ -3042,6 +3044,27 @@ def gerar_grafo_palavras_com_estilo(df_tecnicas, negociadores_cores):
                             arestas_adicionadas.add(edge_key)
             except:
                 continue
+        
+        # ── CONFIGURAR FÍSICA E RENDERIZAÇÃO ──
+        net.options = {
+            "physics": {
+                "enabled": True,
+                "forceAtlas2Based": {
+                    "gravitationalConstant": -26,
+                    "centralGravity": 0.005,
+                    "springLength": 200,
+                    "springConstant": 0.08
+                },
+                "max_velocity": 50,
+                "solver": "forceAtlas2Based",
+                "timestep": 0.35,
+                "stabilization": {"iterations": 150}
+            },
+            "interaction": {
+                "navigationButtons": True,
+                "keyboard": True
+            }
+        }
         
         return net
     

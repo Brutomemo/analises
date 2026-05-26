@@ -4327,12 +4327,30 @@ Este sistema é protegido por direitos autorais e legislação aplicável. Repro
                     # Gerar paleta de cores para negociadores (dinâmica)
                     negociadores_unicos = df_resultado['Negociador'].unique()
                     paleta_cores = {
-                        'laranja_forte': '#F97316',
-                        'laranja_medio': '#FB923C',
-                        'laranja_claro': '#FDBA74',
-                        'amarelo': '#FBBF24',
-                        'preto': '#000000',
+                        'laranja_forte': '#F97316',        # Laranja vibrante (principal)
+                        'laranja_medio': '#FB923C',        # Laranja médio
+                        'laranja_claro': '#FDBA74',        # Laranja claro
+                        'laranja_muito_claro': '#FED7AA',  # Laranja pastel
+                        'amarelo': '#FBBF24',              # Amarelo ouro
+                        'amarelo_claro': '#FCD34D',        # Amarelo claro
+                        'amber': '#F59E0B',                # Âmbar quente
+                        'amber_claro': '#FDBF28',          # Âmbar claro
+                        'preto': '#000000',                # Preto puro
+                        'cinza_escuro': '#1F2937',         # Cinza escuro (neutro)
+                        'cinza_medio': '#374151',          # Cinza médio
+                        'laranja_escuro': '#EA580C',       # Laranja escuro
+                        'vermelho_laranja': '#DC2626',     # Vermelho-laranja
                     }
+                    
+                    # Converter para lista para melhor controle de alocação
+                    cores_lista = list(paleta_cores.values())
+                    
+                    # Alocar cores dinamicamente aos negociadores
+                    negociadores_cores = {
+                        neg: cores_lista[i % len(cores_lista)]
+                        for i, neg in enumerate(negociadores_unicos)
+                    }
+ 
                     
                     cores_lista = list(paleta_cores.values())
                     negociadores_cores = {
@@ -4434,7 +4452,7 @@ Este sistema é protegido por direitos autorais e legislação aplicável. Repro
                             
                             st.markdown("</div></div>", unsafe_allow_html=True)
                         
-                        with st.spinner("⏳ Gerando grafo com glassmorphism..."):
+                        with st.spinner("✔️ Gerando grafo com glassmorphism..."):
                             try:
                                 net = gerar_grafo_palavras_com_estilo(df_tec_classificado, negociadores_cores)
                                 
