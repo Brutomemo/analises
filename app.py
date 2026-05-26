@@ -4299,7 +4299,8 @@ Este sistema é protegido por direitos autorais e legislação aplicável. Repro
                 # Importar função de análise
                 from analise import (
                     analisar_perfil_negociadores,
-                    gerar_grafo_palavras,
+                    gerar_grafo_palavras_com_estilo,
+                    gerar_legenda_negociadores_dinamica,
                     gerar_tabela_score,
                     gerar_scatter_score_efetividade,
                     gerar_barras_grupos,
