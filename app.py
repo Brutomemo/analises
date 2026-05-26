@@ -4377,8 +4377,7 @@ Este sistema é protegido por direitos autorais e legislação aplicável. Repro
                         st.plotly_chart(fig_barras, use_container_width=True)
                     
                     # ── TAB 2: GRAFO ────────────────────────────────────────
-                    # SUBSTITUA o código da tab_grafo no seu app.py por isto:
-
+                    
                     with tab_grafo:
                         st.markdown("""
                         <div class='info-card'>
@@ -4406,7 +4405,7 @@ Este sistema é protegido por direitos autorais e legislação aplicável. Repro
                                         temp_file = f.name
                                     
                                     # Renderizar e salvar
-                                    net.show(temp_file)
+                                    net.write_html(temp_file, notebook=False)
                                     
                                     # Ler e exibir
                                     with open(temp_file, 'r', encoding='utf-8') as f:
