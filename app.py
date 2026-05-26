@@ -1344,7 +1344,7 @@ with aba_individual:
         # ════════════════════════════════════════════════════════════════════════
 
         st.markdown(
-            "<h5 style='color: #FFD700;'>✔ Frequência das Técnicas Aplicadas (Nesta APA)</h5>",
+            "<h5 style='color: #FFD700;'>Frequência e Efetividade das Técnicas Aplicadas (Nesta APA)</h5>",
             unsafe_allow_html=True
         )
 
@@ -1375,7 +1375,7 @@ with aba_individual:
             with tab_freq:
                 st.markdown("""
                 <div style='margin-bottom:15px;'>
-                <h5 style='color:#FFD700;'>📊 Frequência das Técnicas Aplicadas</h5>
+                <h5 style='color:#FFD700;'>✔️Frequência das Técnicas Aplicadas</h5>
                 <p style='color:#aaa;font-size:0.9rem;'>
                 Análise de quantas vezes cada técnica foi utilizada nesta ocorrência.
                 </p>
