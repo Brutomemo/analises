@@ -4378,54 +4378,71 @@ Este sistema é protegido por direitos autorais e legislação aplicável. Repro
                     
                     # ── TAB 2: GRAFO ────────────────────────────────────────
                     
+                    #
+
                     with tab_grafo:
                         st.markdown("""
                         <div class='info-card'>
                         <h5 style='color: #FFD700; margin-top: 0;'>🕸️ Rede de Palavras</h5>
                         <p style='font-size:0.9rem;color:#aaa;'>
-                        Palavras do "Trecho da Transcrição" onde técnicas foram aplicadas.
-                        Cores = Negociador | Tamanho = Frequência | Conexões = Co-ocorrência
+                        Palavras dos trechos de transcrição, coloridas por negociador.
+                        Tamanho = Frequência | Conexões = Co-ocorrência
                         </p>
                         </div>
                         """, unsafe_allow_html=True)
                         
-                        try:
-                            net = gerar_grafo_palavras(df_tec_classificado, negociadores_cores)
-                            
-                            if net is None:
-                                st.warning("⚠️ Dados insuficientes para gerar o grafo.")
-                                st.info("Precisa de pelo menos 5 palavras diferentes nos trechos de transcrição.")
-                            else:
-                                try:
-                                    import tempfile
-                                    import os
-                                    
-                                    # Usar arquivo temporário
-                                    with tempfile.NamedTemporaryFile(mode='w', suffix='.html', delete=False) as f:
-                                        temp_file = f.name
-                                    
-                                    # Renderizar e salvar
-                                    net.write_html(temp_file, notebook=False)
-                                    
-                                    # Ler e exibir
-                                    with open(temp_file, 'r', encoding='utf-8') as f:
-                                        html_content = f.read()
-                                    
-                                    st.components.v1.html(html_content, height=800)
-                                    
-                                    # Limpar arquivo temporário
-                                    try:
-                                        os.remove(temp_file)
-                                    except:
-                                        pass
-                                    
-                                    st.success("✅ Grafo gerado com sucesso!")
-                                    
-                                except Exception as e:
-                                    st.error(f"❌ Erro ao renderizar grafo: {str(e)[:80]}")
+                        # ── LEGENDA DINÂMICA ──
+                        legenda_html = gerar_legenda_negociadores_dinamica(negociadores_cores)
+                        if legenda_html:
+                            st.markdown(legenda_html, unsafe_allow_html=True)
                         
-                        except Exception as e:
-                            st.error(f"❌ Erro geral: {str(e)[:100]}")
+                        with st.spinner("⏳ Gerando grafo com glassmorphism..."):
+                            try:
+                                net = gerar_grafo_palavras_com_estilo(df_tec_classificado, negociadores_cores)
+                                
+                                if net is None:
+                                    st.warning("⚠️ Dados insuficientes para gerar o grafo (precisa de mais trechos de transcrição).")
+                                else:
+                                    try:
+                                        import tempfile
+                                        import os
+                                        
+                                        # Usar arquivo temporário
+                                        with tempfile.NamedTemporaryFile(mode='w', suffix='.html', delete=False) as f:
+                                            temp_file = f.name
+                                        
+                                        # Renderizar e salvar
+                                        net.write_html(temp_file, notebook=False)
+                                        
+                                        # Ler e exibir
+                                        with open(temp_file, 'r', encoding='utf-8') as f:
+                                            html_content = f.read()
+                                        
+                                        # Exibir grafo
+                                        st.components.v1.html(html_content, height=800, scrolling=True)
+                                        
+                                        # Limpar arquivo temporário
+                                        try:
+                                            os.remove(temp_file)
+                                        except:
+                                            pass
+                                        
+                                        st.success("✅ Grafo gerado com sucesso!")
+                                        
+                                        # Informações sobre o grafo
+                                        st.markdown("""
+                                        ### 💡 Como interpretar:
+                                        - **Bolinha GRANDE**: Palavra muito frequente
+                                        - **Bolinha PEQUENA**: Palavra pouco frequente
+                                        - **COR**: Qual negociador mais usou a palavra
+                                        - **LINHAS**: Palavras que aparecem juntas nos trechos
+                                        """)
+                                        
+                                    except Exception as e:
+                                        st.error(f"❌ Erro ao renderizar grafo: {str(e)[:80]}")
+                            
+                            except Exception as e:
+                                st.error(f"❌ Erro geral: {str(e)[:100]}")
                     
                     # ── TAB 3: TESTES ESTATÍSTICOS ──────────────────────────
                     with tab_stats:
