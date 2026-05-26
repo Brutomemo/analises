@@ -4469,10 +4469,29 @@ Este sistema é protegido por direitos autorais e legislação aplicável. Repro
                                         
                                         # Renderizar e salvar
                                         net.write_html(temp_file, notebook=False)
-                                        
-                                        # Ler e exibir
+                    
+                                        # Ler arquivo
                                         with open(temp_file, 'r', encoding='utf-8') as f:
                                             html_content = f.read()
+                                        
+                                        # INJETAR CSS PARA FUNDO PRETO/GLASSMORPHISM
+                                        html_content = html_content.replace(
+                                            '<style type="text/css">',
+                                            '''<style type="text/css">
+                                            html, body {
+                                                margin: 0;
+                                                padding: 0;
+                                                background: rgba(0, 0, 0, 0.95) !important;
+                                                backdrop-filter: blur(16px) saturate(180%);
+                                                -webkit-backdrop-filter: blur(16px) saturate(180%);
+                                            }
+                                            #mynetwork {
+                                                background: rgba(30, 30, 30, 0.9) !important;
+                                                backdrop-filter: blur(16px) saturate(180%);
+                                                -webkit-backdrop-filter: blur(16px) saturate(180%);
+                                            }
+                                            '''
+                                        )
                                         
                                         # Exibir grafo
                                         st.components.v1.html(html_content, height=800, scrolling=True)
