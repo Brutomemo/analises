@@ -2723,8 +2723,8 @@ def calcular_score_tendencia(df_tecnicas):
     
     resultados = []
     
-    for negociador in df_tecnicas['NEGOCIADOR QUE APLICOU'].unique():
-        df_neg = df_tecnicas[df_tecnicas['NEGOCIADOR QUE APLICOU'] == negociador]
+    for negociador in df_tecnicas['NEGOCIADOR PRINCIPAL'].unique():
+        df_neg = df_tecnicas[df_tecnicas['NEGOCIADOR PRINCIPAL'] == negociador]
         
         # Escuta Ativa
         escuta = df_neg[df_neg['grupo'] == 'Escuta Ativa']
@@ -2773,8 +2773,8 @@ def testar_anova(df_tecnicas):
     grupos = []
     negociadores = []
     
-    for neg in df_tecnicas['NEGOCIADOR QUE APLICOU'].unique():
-        df_neg = df_tecnicas[df_tecnicas['NEGOCIADOR QUE APLICOU'] == neg]
+    for neg in df_tecnicas['NEGOCIADOR PRINCIPAL'].unique():
+        df_neg = df_tecnicas[df_tecnicas['NEGOCIADOR PRINCIPAL'] == neg]
         atitudes = df_neg['atitude_num'].dropna().values
         
         if len(atitudes) > 0:
@@ -2798,7 +2798,7 @@ def testar_chi_quadrado(df_tecnicas):
     
     # Tabela de contingência
     tabela = pd.crosstab(
-        df_tecnicas['NEGOCIADOR QUE APLICOU'],
+        df_tecnicas['NEGOCIADOR PRINCIPAL'],
         df_tecnicas['grupo']
     )
     
@@ -2869,7 +2869,7 @@ def gerar_grafo_palavras(df_tecnicas, negociadores_cores):
     palavras_freq = Counter()
     
     for _, row in df_tecnicas.iterrows():
-        neg = row['NEGOCIADOR QUE APLICOU']
+        neg = row['NEGOCIADOR PRINCIPAL']
         trecho = str(row.get('TRECHO DA TRANSCRIÇÃO', '')).lower()
         
         if not trecho or trecho == 'nan':
