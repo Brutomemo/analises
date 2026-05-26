@@ -1145,9 +1145,7 @@ with aba_individual:
         # ────────────────────────────────────────────────────────────────
         if is_percep_neg:
 
-            if st.session_state.get('stats_calculados'):
-                stats = st.session_state['stats_calculados']
-
+            
                 tab_pc1, tab_pc2 = st.tabs([
                     "✔️ Linha de Tendência",
                     "✔️ Visão Geral"                        
