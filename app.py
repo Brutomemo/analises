@@ -1436,537 +1436,537 @@ with aba_individual:
                 </div>
                 """, unsafe_allow_html=True)
 
-                if st.button("✔ Analisar Efetividade das Técnicas", key="btn_efetividade_tecnicas"):
-                    with st.spinner("Cruzando técnicas com reação do causador..."):
-                        try:
-                            record_id_atual = df_apa.get('Airtable_Record_ID')
-
-                            if not record_id_atual:
-                                st.warning("⚠️ ID do registro não encontrado.")
-                            else:
-                                df_tec = st.session_state.get("df_tec", pd.DataFrame())
-
-                                if df_tec.empty:
-                                    st.warning("⚠️ Tabela de técnicas não carregada. Atualize os dados.")
-                                else:
-                                    def vinculo_contem(val, record_id):
-                                        if isinstance(val, list):
-                                            return record_id in val
-                                        return str(val) == record_id
-
-                                    mask = df_tec['Vinculo_APA'].apply(
-                                        lambda x: vinculo_contem(x, record_id_atual)
-                                    )
-                                    df_tec_apa = df_tec[mask].copy()
-
-                                    if df_tec_apa.empty:
-                                        st.info("Nenhuma técnica registrada para esta ocorrência.")
-                                    else:
-                                        def normalizar_reacao(val):
-                                            if val is None:
-                                                return None
-                                            s = str(val).strip()
-                                            if s in ["-1", "-1.0", "🔴 Reação Negativa", "Reação Negativa"]:
-                                                return -1
-                                            elif s in ["0", "0.0", "⚪ Reação Neutra", "Reação Neutra"]:
-                                                return 0
-                                            elif s in ["1", "1.0", "🟢 Reação Positiva", "Reação Positiva"]:
-                                                return 1
-                                            else:
-                                                return None
-
-                                        col_reacao = None
-                                        for c in ['ATITUDE DO CAUSADOR', 'Atitude do Causador', 'atitude_causador']:
-                                            if c in df_tec_apa.columns:
-                                                col_reacao = c
-                                                break
-
-                                        col_tecnica = None
-                                        for c in ['TÉCNICAS', 'Técnicas', 'tecnicas']:
-                                            if c in df_tec_apa.columns:
-                                                col_tecnica = c
-                                                break
-
-                                        if not col_tecnica:
-                                            st.warning("⚠️ Coluna TÉCNICAS não encontrada.")
-                                        else:
-                                            if col_reacao:
-                                                df_tec_apa['_reacao_num'] = df_tec_apa[col_reacao].apply(normalizar_reacao)
-                                            else:
-                                                df_tec_apa['_reacao_num'] = None
-
-                                            resumo = []
-                                            for tecnica, grupo in df_tec_apa.groupby(col_tecnica):
-                                                total    = len(grupo)
-                                                positivo = (grupo['_reacao_num'] == 1).sum()
-                                                neutro   = (grupo['_reacao_num'] == 0).sum()
-                                                negativo = (grupo['_reacao_num'] == -1).sum()
-                                                inaud    = grupo['_reacao_num'].isna().sum()
-
-                                                observados = positivo + neutro + negativo
-                                                if observados > 0:
-                                                    score = round(((positivo - negativo) / observados) * 100, 1)
-                                                else:
-                                                    score = None
-
-                                                resumo.append({
-                                                    "Técnica":        tecnica,
-                                                    "Total":          total,
-                                                    "🟢 Positiva":    int(positivo),
-                                                    "⚪ Neutra":      int(neutro),
-                                                    "🔴 Negativa":    int(negativo),
-                                                    "❓ Inaudível":   int(inaud),
-                                                    "Score (%)":      score
-                                                })
-
-                                            df_resumo = pd.DataFrame(resumo)
-                                            df_resumo = df_resumo.sort_values("Score (%)", ascending=False, na_position='last')
-
-                                            st.session_state['tecnicas_analisadas'] = df_resumo
-                                            st.success(f"✅ {len(df_resumo)} técnicas analisadas!")
-
-                        except Exception as e:
-                            st.error(f"Erro ao analisar técnicas: {str(e)[:80]}")
-
-                # ✅ EXIBIÇÃO DOS RESULTADOS
-                if st.session_state.get('tecnicas_analisadas') is not None:
-                    df_resumo = st.session_state['tecnicas_analisadas']
-
-                    total_usos     = int(df_resumo["Total"].sum())
-                    total_positivo = int(df_resumo["🟢 Positiva"].sum())
-                    total_neutro   = int(df_resumo["⚪ Neutra"].sum())
-                    total_negativo = int(df_resumo["🔴 Negativa"].sum())
-                    observados_total = total_positivo + total_neutro + total_negativo
-                    score_geral    = round(((total_positivo - total_negativo) / max(1, observados_total)) * 100, 1)
-
-                    st.markdown("### ✔️ Resumo Geral")
-                    col1, col2, col3, col4 = st.columns(4)
-                    with col1:
-                        st.metric("Total de Usos", total_usos)
-                    with col2:
-                        st.metric("🟢 Positivas", total_positivo)
-                    with col3:
-                        st.metric("🔴 Negativas", total_negativo)
-                    with col4:
-                        st.metric("Score Geral", f"{score_geral:+.1f}%")
-
-                    st.markdown("### ✔️ Efetividade por Técnica")
-                    st.dataframe(
-                        df_resumo,
-                        use_container_width=True,
-                        hide_index=True
-                    )
-
-                    st.markdown("### ✔️ Distribuição de Reações por Técnica")
+                
+                with st.spinner("Cruzando técnicas com reação do causador..."):
                     try:
-                        import plotly.graph_objects as go
+                        record_id_atual = df_apa.get('Airtable_Record_ID')
 
-                        tecnicas   = df_resumo["Técnica"].tolist()
-                        positivos  = df_resumo["🟢 Positiva"].tolist()
-                        neutros    = df_resumo["⚪ Neutra"].tolist()
-                        negativos  = df_resumo["🔴 Negativa"].tolist()
+                        if not record_id_atual:
+                            st.warning("⚠️ ID do registro não encontrado.")
+                        else:
+                            df_tec = st.session_state.get("df_tec", pd.DataFrame())
 
-                        fig_barras = go.Figure()
+                            if df_tec.empty:
+                                st.warning("⚠️ Tabela de técnicas não carregada. Atualize os dados.")
+                            else:
+                                def vinculo_contem(val, record_id):
+                                    if isinstance(val, list):
+                                        return record_id in val
+                                    return str(val) == record_id
 
-                        fig_barras.add_trace(go.Bar(
-                            name="🟢 Positiva",
-                            x=tecnicas, y=positivos,
-                            marker_color="#10b981"
-                        ))
-                        fig_barras.add_trace(go.Bar(
-                            name="⚪ Neutra",
-                            x=tecnicas, y=neutros,
-                            marker_color="#6b7280"
-                        ))
-                        fig_barras.add_trace(go.Bar(
-                            name="🔴 Negativa",
-                            x=tecnicas, y=negativos,
-                            marker_color="#ef4444"
-                        ))
+                                mask = df_tec['Vinculo_APA'].apply(
+                                    lambda x: vinculo_contem(x, record_id_atual)
+                                )
+                                df_tec_apa = df_tec[mask].copy()
 
-                        fig_barras.update_layout(
-                            barmode="stack",
-                            paper_bgcolor="rgba(0,0,0,0)",
-                            plot_bgcolor="rgba(0,0,0,0)",
-                            font=dict(color="#fff"),
-                            legend=dict(
-                                font=dict(color="#fff"),
-                                bgcolor="rgba(0,0,0,0.4)"
-                            ),
-                            xaxis=dict(
-                                tickfont=dict(color="#FFD700"),
-                                gridcolor="#333"
-                            ),
-                            yaxis=dict(
-                                tickfont=dict(color="#aaa"),
-                                gridcolor="#333"
-                            ),
-                            height=420,
-                            margin=dict(t=20, b=120, l=40, r=40)
-                        )
+                                if df_tec_apa.empty:
+                                    st.info("Nenhuma técnica registrada para esta ocorrência.")
+                                else:
+                                    def normalizar_reacao(val):
+                                        if val is None:
+                                            return None
+                                        s = str(val).strip()
+                                        if s in ["-1", "-1.0", "🔴 Reação Negativa", "Reação Negativa"]:
+                                            return -1
+                                        elif s in ["0", "0.0", "⚪ Reação Neutra", "Reação Neutra"]:
+                                            return 0
+                                        elif s in ["1", "1.0", "🟢 Reação Positiva", "Reação Positiva"]:
+                                            return 1
+                                        else:
+                                            return None
 
-                        st.plotly_chart(fig_barras, use_container_width=True)
+                                    col_reacao = None
+                                    for c in ['ATITUDE DO CAUSADOR', 'Atitude do Causador', 'atitude_causador']:
+                                        if c in df_tec_apa.columns:
+                                            col_reacao = c
+                                            break
+
+                                    col_tecnica = None
+                                    for c in ['TÉCNICAS', 'Técnicas', 'tecnicas']:
+                                        if c in df_tec_apa.columns:
+                                            col_tecnica = c
+                                            break
+
+                                    if not col_tecnica:
+                                        st.warning("⚠️ Coluna TÉCNICAS não encontrada.")
+                                    else:
+                                        if col_reacao:
+                                            df_tec_apa['_reacao_num'] = df_tec_apa[col_reacao].apply(normalizar_reacao)
+                                        else:
+                                            df_tec_apa['_reacao_num'] = None
+
+                                        resumo = []
+                                        for tecnica, grupo in df_tec_apa.groupby(col_tecnica):
+                                            total    = len(grupo)
+                                            positivo = (grupo['_reacao_num'] == 1).sum()
+                                            neutro   = (grupo['_reacao_num'] == 0).sum()
+                                            negativo = (grupo['_reacao_num'] == -1).sum()
+                                            inaud    = grupo['_reacao_num'].isna().sum()
+
+                                            observados = positivo + neutro + negativo
+                                            if observados > 0:
+                                                score = round(((positivo - negativo) / observados) * 100, 1)
+                                            else:
+                                                score = None
+
+                                            resumo.append({
+                                                "Técnica":        tecnica,
+                                                "Total":          total,
+                                                "🟢 Positiva":    int(positivo),
+                                                "⚪ Neutra":      int(neutro),
+                                                "🔴 Negativa":    int(negativo),
+                                                "❓ Inaudível":   int(inaud),
+                                                "Score (%)":      score
+                                            })
+
+                                        df_resumo = pd.DataFrame(resumo)
+                                        df_resumo = df_resumo.sort_values("Score (%)", ascending=False, na_position='last')
+
+                                        st.session_state['tecnicas_analisadas'] = df_resumo
+                                        st.success(f"✅ {len(df_resumo)} técnicas analisadas!")
 
                     except Exception as e:
-                        st.error(f"Erro ao gerar gráfico: {str(e)[:80]}")
+                        st.error(f"Erro ao analisar técnicas: {str(e)[:80]}")
 
-                    # ── NARRATIVA OPERACIONAL ────────────────────────────
-                    st.markdown("---")
-                    st.markdown("### ✔️ Leitura Operacional")
+            # ✅ EXIBIÇÃO DOS RESULTADOS
+            if st.session_state.get('tecnicas_analisadas') is not None:
+                df_resumo = st.session_state['tecnicas_analisadas']
 
-                    df_com_score = df_resumo[df_resumo["Score (%)"].notna()]
+                total_usos     = int(df_resumo["Total"].sum())
+                total_positivo = int(df_resumo["🟢 Positiva"].sum())
+                total_neutro   = int(df_resumo["⚪ Neutra"].sum())
+                total_negativo = int(df_resumo["🔴 Negativa"].sum())
+                observados_total = total_positivo + total_neutro + total_negativo
+                score_geral    = round(((total_positivo - total_negativo) / max(1, observados_total)) * 100, 1)
+
+                st.markdown("### ✔️ Resumo Geral")
+                col1, col2, col3, col4 = st.columns(4)
+                with col1:
+                    st.metric("Total de Usos", total_usos)
+                with col2:
+                    st.metric("🟢 Positivas", total_positivo)
+                with col3:
+                    st.metric("🔴 Negativas", total_negativo)
+                with col4:
+                    st.metric("Score Geral", f"{score_geral:+.1f}%")
+
+                st.markdown("### ✔️ Efetividade por Técnica")
+                st.dataframe(
+                    df_resumo,
+                    use_container_width=True,
+                    hide_index=True
+                )
+
+                st.markdown("### ✔️ Distribuição de Reações por Técnica")
+                try:
+                    import plotly.graph_objects as go
+
+                    tecnicas   = df_resumo["Técnica"].tolist()
+                    positivos  = df_resumo["🟢 Positiva"].tolist()
+                    neutros    = df_resumo["⚪ Neutra"].tolist()
+                    negativos  = df_resumo["🔴 Negativa"].tolist()
+
+                    fig_barras = go.Figure()
+
+                    fig_barras.add_trace(go.Bar(
+                        name="🟢 Positiva",
+                        x=tecnicas, y=positivos,
+                        marker_color="#10b981"
+                    ))
+                    fig_barras.add_trace(go.Bar(
+                        name="⚪ Neutra",
+                        x=tecnicas, y=neutros,
+                        marker_color="#6b7280"
+                    ))
+                    fig_barras.add_trace(go.Bar(
+                        name="🔴 Negativa",
+                        x=tecnicas, y=negativos,
+                        marker_color="#ef4444"
+                    ))
+
+                    fig_barras.update_layout(
+                        barmode="stack",
+                        paper_bgcolor="rgba(0,0,0,0)",
+                        plot_bgcolor="rgba(0,0,0,0)",
+                        font=dict(color="#fff"),
+                        legend=dict(
+                            font=dict(color="#fff"),
+                            bgcolor="rgba(0,0,0,0.4)"
+                        ),
+                        xaxis=dict(
+                            tickfont=dict(color="#FFD700"),
+                            gridcolor="#333"
+                        ),
+                        yaxis=dict(
+                            tickfont=dict(color="#aaa"),
+                            gridcolor="#333"
+                        ),
+                        height=420,
+                        margin=dict(t=20, b=120, l=40, r=40)
+                    )
+
+                    st.plotly_chart(fig_barras, use_container_width=True)
+
+                except Exception as e:
+                    st.error(f"Erro ao gerar gráfico: {str(e)[:80]}")
+
+                # ── NARRATIVA OPERACIONAL ────────────────────────────
+                st.markdown("---")
+                st.markdown("### ✔️ Leitura Operacional")
+
+                df_com_score = df_resumo[df_resumo["Score (%)"].notna()]
+                
+                if not df_com_score.empty:
+                    score_maximo = df_com_score["Score (%)"].max()
+                    tecnicas_maximas = df_com_score[df_com_score["Score (%)"] == score_maximo]
                     
-                    if not df_com_score.empty:
-                        score_maximo = df_com_score["Score (%)"].max()
-                        tecnicas_maximas = df_com_score[df_com_score["Score (%)"] == score_maximo]
-                        
-                        if len(tecnicas_maximas) == 1:
-                            melhor = tecnicas_maximas.iloc[0]
-                            txt_melhor = (
-                                f"✅ <strong>Técnicas mais efetivas:</strong> {melhor['Técnica']} "
-                                f"— Score {melhor['Score (%)']:+.1f}% "
-                                f"({int(melhor['🟢 Positiva'])} positivo / {int(melhor['Total'])} usos)"
-                            )
-                        else:
-                            tecnicas_nomes = ", ".join(tecnicas_maximas['Técnica'].tolist())
-                            txt_melhor = (
-                                f"✅ <strong>Técnicas mais efetivas (empate):</strong> {tecnicas_nomes} "
-                                f"— Score {score_maximo:+.1f}%"
-                            )
-                        
-                        st.markdown(f"""
-                        <div style='background:rgba(16,185,129,0.08);padding:12px;border-radius:8px;border-left:3px solid #10b981;margin-bottom:10px;'>
-                        <p style='color:#ddd;font-size:0.9rem;margin:0;'>
-                        {txt_melhor}
-                        </p>
-                        </div>
-                        """, unsafe_allow_html=True)
-
-                    if not df_com_score.empty:
-                        score_minimo = df_com_score["Score (%)"].min()
-                        tecnicas_minimas = df_com_score[df_com_score["Score (%)"] == score_minimo]
-                        
-                        if len(tecnicas_minimas) == 1:
-                            pior = tecnicas_minimas.iloc[0]
-                            txt_pior = (
-                                f"⚠️ <strong>Técnica menos efetiva:</strong> {pior['Técnica']} "
-                                f"— Score {pior['Score (%)']:+.1f}% "
-                                f"({int(pior['🔴 Negativa'])} negativo / {int(pior['Total'])} usos)"
-                            )
-                        else:
-                            tecnicas_nomes = ", ".join(tecnicas_minimas['Técnica'].tolist())
-                            txt_pior = (
-                                f"⚠️ <strong>Técnicas menos efetivas (empate):</strong> {tecnicas_nomes} "
-                                f"— Score {score_minimo:+.1f}%"
-                            )
-                        
-                        st.markdown(f"""
-                        <div style='background:rgba(239,68,68,0.08);padding:12px;border-radius:8px;border-left:3px solid #ef4444;margin-bottom:10px;'>
-                        <p style='color:#ddd;font-size:0.9rem;margin:0;'>
-                        {txt_pior}
-                        </p>
-                        </div>
-                        """, unsafe_allow_html=True)
-
-                    st.markdown("---")
-                    st.markdown("### ✔️ Efetividade Geral do Repertório Técnico")
-
-                    media_geral = round(df_com_score["Score (%)"].mean(), 1) if not df_com_score.empty else 0
-
+                    if len(tecnicas_maximas) == 1:
+                        melhor = tecnicas_maximas.iloc[0]
+                        txt_melhor = (
+                            f"✅ <strong>Técnicas mais efetivas:</strong> {melhor['Técnica']} "
+                            f"— Score {melhor['Score (%)']:+.1f}% "
+                            f"({int(melhor['🟢 Positiva'])} positivo / {int(melhor['Total'])} usos)"
+                        )
+                    else:
+                        tecnicas_nomes = ", ".join(tecnicas_maximas['Técnica'].tolist())
+                        txt_melhor = (
+                            f"✅ <strong>Técnicas mais efetivas (empate):</strong> {tecnicas_nomes} "
+                            f"— Score {score_maximo:+.1f}%"
+                        )
+                    
                     st.markdown(f"""
-                    <div style='background:rgba(255,215,0,0.06);padding:12px;border-radius:8px;border:1px solid rgba(255,215,0,0.15);margin-bottom:15px;'>
-                    <p style='font-size:0.85rem;color:#FFD700;margin:0 0 8px 0;'>
-                    <strong>ℹ️ Como é medido:</strong>
-                    </p>
-                    <p style='font-size:0.85rem;color:#ddd;margin:0;line-height:1.6;'>
-                    Efetividade Geral = Média dos scores de todas as técnicas<br>
-                    Score de cada técnica = (positivas - negativas) / observadas × 100%<br>
-                    <strong>Baseline desta análise:</strong> {media_geral:+.1f}%
+                    <div style='background:rgba(16,185,129,0.08);padding:12px;border-radius:8px;border-left:3px solid #10b981;margin-bottom:10px;'>
+                    <p style='color:#ddd;font-size:0.9rem;margin:0;'>
+                    {txt_melhor}
                     </p>
                     </div>
                     """, unsafe_allow_html=True)
 
-                    if score_geral >= 50:
-                        cor = "🟢"
-                        status = "ÓTIMA"
-                        explicacao = (
-                            f"O repertório técnico teve {score_geral:+.1f}% de efetividade geral "
-                            f"(acima do baseline de {media_geral:+.1f}%). "
-                            "Isso significa que positivas superaram negativas de forma significativa. "
-                            "Indicativo de estratégia técnica bem-sucedida nesta ocorrência."
-                        )
-                    elif score_geral >= 0:
-                        cor = "🟡"
-                        status = "MODERADA"
-                        explicacao = (
-                            f"O repertório técnico teve {score_geral:+.1f}% de efetividade geral "
-                            f"(próximo ao baseline de {media_geral:+.1f}%). "
-                            "Positivas e negativas estão equilibradas. "
-                            "Há oportunidade de aprimoramento — algumas técnicas funcionaram melhor que outras."
+                if not df_com_score.empty:
+                    score_minimo = df_com_score["Score (%)"].min()
+                    tecnicas_minimas = df_com_score[df_com_score["Score (%)"] == score_minimo]
+                    
+                    if len(tecnicas_minimas) == 1:
+                        pior = tecnicas_minimas.iloc[0]
+                        txt_pior = (
+                            f"⚠️ <strong>Técnica menos efetiva:</strong> {pior['Técnica']} "
+                            f"— Score {pior['Score (%)']:+.1f}% "
+                            f"({int(pior['🔴 Negativa'])} negativo / {int(pior['Total'])} usos)"
                         )
                     else:
-                        cor = "🔴"
-                        status = "FRACA"
-                        explicacao = (
-                            f"O repertório técnico teve {score_geral:+.1f}% de efetividade geral "
-                            f"(abaixo do baseline de {media_geral:+.1f}%). "
-                            "Negativas superaram positivas. "
-                            "Indicativo de mismatch entre técnicas empregadas e dinâmica do causador."
+                        tecnicas_nomes = ", ".join(tecnicas_minimas['Técnica'].tolist())
+                        txt_pior = (
+                            f"⚠️ <strong>Técnicas menos efetivas (empate):</strong> {tecnicas_nomes} "
+                            f"— Score {score_minimo:+.1f}%"
                         )
-
+                    
                     st.markdown(f"""
-                    <div style='background:rgba(0,0,0,0.3);padding:14px;border-radius:8px;border-left:4px solid {"#10b981" if score_geral >= 50 else "#f59e0b" if score_geral >= 0 else "#ef4444"};margin-bottom:15px;'>
-                    <p style='font-size:0.95rem;color:#ddd;margin:0;'>
-                    {cor} <strong>Efetividade Geral: {status}</strong><br><br>
-                    {explicacao}
+                    <div style='background:rgba(239,68,68,0.08);padding:12px;border-radius:8px;border-left:3px solid #ef4444;margin-bottom:10px;'>
+                    <p style='color:#ddd;font-size:0.9rem;margin:0;'>
+                    {txt_pior}
                     </p>
                     </div>
                     """, unsafe_allow_html=True)
 
-                    st.markdown("### ✔️ Contexto Comparativo")
+                st.markdown("---")
+                st.markdown("### ✔️ Efetividade Geral do Repertório Técnico")
 
-                    st.markdown(f"""
-                    <p style='font-size:0.9rem;color:#aaa;line-height:1.6;'>
-                    <strong>Técnicas com score positivo:</strong> {(df_com_score["Score (%)"] > 0).sum()} de {len(df_com_score)}<br>
-                    <strong>Técnicas com score negativo:</strong> {(df_com_score["Score (%)"] < 0).sum()} de {len(df_com_score)}<br>
-                    <strong>Técnicas neutras (0%):</strong> {(df_com_score["Score (%)"] == 0).sum()} de {len(df_com_score)}<br>
-                    <strong>Variação entre técnicas:</strong> {df_com_score["Score (%)"].max() - df_com_score["Score (%)"].min():.1f} pontos percentuais<br>
-                    <strong>Confiabilidade (volume de usos):</strong> {int(df_resumo["Total"].sum())} técnicas empregadas no total
-                    </p>
-                    """, unsafe_allow_html=True)
+                media_geral = round(df_com_score["Score (%)"].mean(), 1) if not df_com_score.empty else 0
 
-                    if score_geral >= 50:
-                        txt_geral = "✅ Repertório técnico com boa efetividade geral nesta ocorrência."
-                    elif score_geral >= 0:
-                        txt_geral = "⚠️ Repertório técnico com efetividade moderada — oportunidade de melhoria."
-                    else:
-                        txt_geral = "🔴 Repertório técnico com baixa efetividade — maioria das técnicas gerou reação negativa."
+                st.markdown(f"""
+                <div style='background:rgba(255,215,0,0.06);padding:12px;border-radius:8px;border:1px solid rgba(255,215,0,0.15);margin-bottom:15px;'>
+                <p style='font-size:0.85rem;color:#FFD700;margin:0 0 8px 0;'>
+                <strong>ℹ️ Como é medido:</strong>
+                </p>
+                <p style='font-size:0.85rem;color:#ddd;margin:0;line-height:1.6;'>
+                Efetividade Geral = Média dos scores de todas as técnicas<br>
+                Score de cada técnica = (positivas - negativas) / observadas × 100%<br>
+                <strong>Baseline desta análise:</strong> {media_geral:+.1f}%
+                </p>
+                </div>
+                """, unsafe_allow_html=True)
 
-                    st.info(txt_geral)
+                if score_geral >= 50:
+                    cor = "🟢"
+                    status = "ÓTIMA"
+                    explicacao = (
+                        f"O repertório técnico teve {score_geral:+.1f}% de efetividade geral "
+                        f"(acima do baseline de {media_geral:+.1f}%). "
+                        "Isso significa que positivas superaram negativas de forma significativa. "
+                        "Indicativo de estratégia técnica bem-sucedida nesta ocorrência."
+                    )
+                elif score_geral >= 0:
+                    cor = "🟡"
+                    status = "MODERADA"
+                    explicacao = (
+                        f"O repertório técnico teve {score_geral:+.1f}% de efetividade geral "
+                        f"(próximo ao baseline de {media_geral:+.1f}%). "
+                        "Positivas e negativas estão equilibradas. "
+                        "Há oportunidade de aprimoramento — algumas técnicas funcionaram melhor que outras."
+                    )
+                else:
+                    cor = "🔴"
+                    status = "FRACA"
+                    explicacao = (
+                        f"O repertório técnico teve {score_geral:+.1f}% de efetividade geral "
+                        f"(abaixo do baseline de {media_geral:+.1f}%). "
+                        "Negativas superaram positivas. "
+                        "Indicativo de mismatch entre técnicas empregadas e dinâmica do causador."
+                    )
 
-        st.markdown("---")
+                st.markdown(f"""
+                <div style='background:rgba(0,0,0,0.3);padding:14px;border-radius:8px;border-left:4px solid {"#10b981" if score_geral >= 50 else "#f59e0b" if score_geral >= 0 else "#ef4444"};margin-bottom:15px;'>
+                <p style='font-size:0.95rem;color:#ddd;margin:0;'>
+                {cor} <strong>Efetividade Geral: {status}</strong><br><br>
+                {explicacao}
+                </p>
+                </div>
+                """, unsafe_allow_html=True)
+
+                st.markdown("### ✔️ Contexto Comparativo")
+
+                st.markdown(f"""
+                <p style='font-size:0.9rem;color:#aaa;line-height:1.6;'>
+                <strong>Técnicas com score positivo:</strong> {(df_com_score["Score (%)"] > 0).sum()} de {len(df_com_score)}<br>
+                <strong>Técnicas com score negativo:</strong> {(df_com_score["Score (%)"] < 0).sum()} de {len(df_com_score)}<br>
+                <strong>Técnicas neutras (0%):</strong> {(df_com_score["Score (%)"] == 0).sum()} de {len(df_com_score)}<br>
+                <strong>Variação entre técnicas:</strong> {df_com_score["Score (%)"].max() - df_com_score["Score (%)"].min():.1f} pontos percentuais<br>
+                <strong>Confiabilidade (volume de usos):</strong> {int(df_resumo["Total"].sum())} técnicas empregadas no total
+                </p>
+                """, unsafe_allow_html=True)
+
+                if score_geral >= 50:
+                    txt_geral = "✅ Repertório técnico com boa efetividade geral nesta ocorrência."
+                elif score_geral >= 0:
+                    txt_geral = "⚠️ Repertório técnico com efetividade moderada — oportunidade de melhoria."
+                else:
+                    txt_geral = "🔴 Repertório técnico com baixa efetividade — maioria das técnicas gerou reação negativa."
+
+                st.info(txt_geral)
+
+    st.markdown("---")
 
         # PRÓXIMA SEÇÃO (ANÁLISE SEMÂNTICA, etc)
         
                
-        st.markdown("""
-        <h3 style='color: #FFD700;'>✔ Análise Semântica </h3>
-        <p style='color: #aaa; font-size: 0.95rem; margin-top: -10px;'>
-        <strong>O que o causador REALMENTE sente, quer e teme.</strong> 
-        Enquanto Similitude conta palavras repetidas, Semântica lê entre as linhas: intenções escondidas, 
-        gatilhos emocionais e pontos de alavanca para resolução.
-        </p></p>
-        """, unsafe_allow_html=True)
+    st.markdown("""
+    <h3 style='color: #FFD700;'>✔ Análise Semântica </h3>
+    <p style='color: #aaa; font-size: 0.95rem; margin-top: -10px;'>
+    <strong>O que o causador REALMENTE sente, quer e teme.</strong> 
+    Enquanto Similitude conta palavras repetidas, Semântica lê entre as linhas: intenções escondidas, 
+    gatilhos emocionais e pontos de alavanca para resolução.
+    </p></p>
+    """, unsafe_allow_html=True)
 
-        # --- INÍCIO DO BLOCO DE EXPLICAÇÃO ---
-        if "show_explicacao" not in st.session_state:
-            st.session_state["show_explicacao"] = False
+    # --- INÍCIO DO BLOCO DE EXPLICAÇÃO ---
+    if "show_explicacao" not in st.session_state:
+        st.session_state["show_explicacao"] = False
 
-        label_btn = "▲ Ocultar Guia" if st.session_state["show_explicacao"] else "▼ Entenda como ler a Análise"
-        if st.button(label_btn, key="btn_explicacao_semantica"):
-            st.session_state["show_explicacao"] = not st.session_state["show_explicacao"]
+    label_btn = "▲ Ocultar Guia" if st.session_state["show_explicacao"] else "▼ Entenda como ler a Análise"
+    if st.button(label_btn, key="btn_explicacao_semantica"):
+        st.session_state["show_explicacao"] = not st.session_state["show_explicacao"]
 
-        if st.session_state["show_explicacao"]:
+    if st.session_state["show_explicacao"]:
 
-            tab_pratica, tab_framework, tab_ngramas, tab_limitacoes = st.tabs([
-                "✔ Aplicação Prática",
-                "✔ Os Três Vetores",
-                "✔ Padrões & Fixações",
-                "✔ Limitações"
-            ])
+        tab_pratica, tab_framework, tab_ngramas, tab_limitacoes = st.tabs([
+            "✔ Aplicação Prática",
+            "✔ Os Três Vetores",
+            "✔ Padrões & Fixações",
+            "✔ Limitações"
+        ])
 
-            with tab_pratica:
-                st.markdown("""
-                <div class='info-card'>
-                <h5 style='color:#FFD700;margin-top:0;'>Como ler os dados na prática?</h5>
-                <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
-                A análise semântica responde uma pergunta simples: <strong>"O que esse sujeito está vivendo agora?"</strong>
-                </p>
-                <hr style='border-color:#444;margin:12px 0;'>
-                <h5 style='color:#FFD700;'>📌 Passo 1: Identifique o ESTADO EMOCIONAL</h5>
-                <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
-                <strong>Procure por:</strong> Quanto de <strong>medo, raiva, desespero</strong> o causador está carregando?<br><br>
-                • <em>"vou me matar"</em> + <em>"não aguento mais"</em> → Desespero acima do limite (risco iminente)<br>
-                • <em>"ninguém entra aqui"</em> + <em>"vou atirar"</em> → Raiva/defesa (hostilidade)<br>
-                • <em>"perdi tudo"</em> + <em>"ninguém se importa"</em> → Abandono/desesperança (depressão)<br><br>
-                <strong>Por quê?</strong> Segundo William Ury (Harvard), antes de negociar, você precisa entender o <u>estado de espírito</u> 
-                da outra parte. Emoção descontrolada = impossível raciocínio lógico.
-                </p>
-                <hr style='border-color:#444;margin:12px 0;'>
-                <h5 style='color:#FFD700;'>📌 Passo 2: Identifique as EXIGÊNCIAS REAIS</h5>
-                <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
-                <strong>Procure por:</strong> O que esse sujeito <strong>quer concretamente</strong>? (não apenas ameaça)<br><br>
-                • <em>"quero a imprensa aqui"</em> → Exigência instrumental (segurança/poder/reconhecimento)<br>
-                • <em>"Quero que a imprensa saiba o que aconteceu"</em> → Exigência moral (dignidade)<br>
-                • <em>"preciso de dinheiro"</em> → Exigência material (sobrevivência)<br><br>
-                <strong>Por quê?</strong> Segundo William Ury (Harvard Negotiation Project), 
-                reconhecer a legitimidade da exigência (mesmo que você não possa cumprir) 
-                reduz hostilidade. O FBI e Chris Voss confirmam isso através de 
-                <u>escuta ativa</u> em negociações críticas. 
-                (mesmo que você não possa cumprir) reduz hostilidade. O causador quer ser OUVIDO, não necessariamente atendido.
-                </p>
-                <hr style='border-color:#444;margin:12px 0;'>
-                <h5 style='color:#FFD700;'>📌 Passo 3: Encontre os GANCHOS PARA DESESCALADA</h5>
-                <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
-                <strong>Procure por:</strong> Onde há <strong>abertura, ambivalência, vínculo</strong>?<br><br>
-                • <em>"me ajuda"</em> (mesmo que velado) → Pedido de ajuda (ponto de conexão)<br>
-                • <em>"fala comigo"</em> → Busca por contato (rapport possível)<br>
-                • <em>"minha filha"</em> → Vínculo afetivo (alavanca para mudança de decisão)<br><br>
-                <strong>Por quê?</strong> O Manual do FBI de Negociação enfatiza que <u>pequenos sinais de cooperação</u> 
-                devem ser amplificados. "Minha filha" não é só uma palavra — é a ponte entre desespero e vida.
-                </p>
-                <hr style='border-color:#444;margin:12px 0;'>
-                <h5 style='color:#FFD700;'>📌 Passo 4: Analise a ABORDAGEM DO NEGOCIADOR</h5>
-                <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
-                <strong>Procure por:</strong> Como o negociador respondeu? Conseguiu <strong>sincronizar?</strong><br><br>
-                • Se Causador diz <em>"ninguém me entende"</em> e Negociador responde <em>"entendo sua dor"</em> → Conversa bem dirigida ✅<br>
-                • Se Causador diz <em>"quero a imprensa"</em> e Negociador ignora → Falta de legitimação ❌<br>
-                • Se Negociador repete <em>"fica calmo"</em> 10 vezes → Não está ouvindo, está impondo ❌<br><br>
-                <strong>Por quê?</strong> Harvard explica que <u>validar a emoção da outra parte</u> 
-                não significa concordar com a ação — é reconhecer o estado emocional como real.
-                </p>
-                </div>
-                """, unsafe_allow_html=True)
+        with tab_pratica:
+            st.markdown("""
+            <div class='info-card'>
+            <h5 style='color:#FFD700;margin-top:0;'>Como ler os dados na prática?</h5>
+            <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
+            A análise semântica responde uma pergunta simples: <strong>"O que esse sujeito está vivendo agora?"</strong>
+            </p>
+            <hr style='border-color:#444;margin:12px 0;'>
+            <h5 style='color:#FFD700;'>📌 Passo 1: Identifique o ESTADO EMOCIONAL</h5>
+            <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
+            <strong>Procure por:</strong> Quanto de <strong>medo, raiva, desespero</strong> o causador está carregando?<br><br>
+            • <em>"vou me matar"</em> + <em>"não aguento mais"</em> → Desespero acima do limite (risco iminente)<br>
+            • <em>"ninguém entra aqui"</em> + <em>"vou atirar"</em> → Raiva/defesa (hostilidade)<br>
+            • <em>"perdi tudo"</em> + <em>"ninguém se importa"</em> → Abandono/desesperança (depressão)<br><br>
+            <strong>Por quê?</strong> Segundo William Ury (Harvard), antes de negociar, você precisa entender o <u>estado de espírito</u> 
+            da outra parte. Emoção descontrolada = impossível raciocínio lógico.
+            </p>
+            <hr style='border-color:#444;margin:12px 0;'>
+            <h5 style='color:#FFD700;'>📌 Passo 2: Identifique as EXIGÊNCIAS REAIS</h5>
+            <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
+            <strong>Procure por:</strong> O que esse sujeito <strong>quer concretamente</strong>? (não apenas ameaça)<br><br>
+            • <em>"quero a imprensa aqui"</em> → Exigência instrumental (segurança/poder/reconhecimento)<br>
+            • <em>"Quero que a imprensa saiba o que aconteceu"</em> → Exigência moral (dignidade)<br>
+            • <em>"preciso de dinheiro"</em> → Exigência material (sobrevivência)<br><br>
+            <strong>Por quê?</strong> Segundo William Ury (Harvard Negotiation Project), 
+            reconhecer a legitimidade da exigência (mesmo que você não possa cumprir) 
+            reduz hostilidade. O FBI e Chris Voss confirmam isso através de 
+            <u>escuta ativa</u> em negociações críticas. 
+            (mesmo que você não possa cumprir) reduz hostilidade. O causador quer ser OUVIDO, não necessariamente atendido.
+            </p>
+            <hr style='border-color:#444;margin:12px 0;'>
+            <h5 style='color:#FFD700;'>📌 Passo 3: Encontre os GANCHOS PARA DESESCALADA</h5>
+            <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
+            <strong>Procure por:</strong> Onde há <strong>abertura, ambivalência, vínculo</strong>?<br><br>
+            • <em>"me ajuda"</em> (mesmo que velado) → Pedido de ajuda (ponto de conexão)<br>
+            • <em>"fala comigo"</em> → Busca por contato (rapport possível)<br>
+            • <em>"minha filha"</em> → Vínculo afetivo (alavanca para mudança de decisão)<br><br>
+            <strong>Por quê?</strong> O Manual do FBI de Negociação enfatiza que <u>pequenos sinais de cooperação</u> 
+            devem ser amplificados. "Minha filha" não é só uma palavra — é a ponte entre desespero e vida.
+            </p>
+            <hr style='border-color:#444;margin:12px 0;'>
+            <h5 style='color:#FFD700;'>📌 Passo 4: Analise a ABORDAGEM DO NEGOCIADOR</h5>
+            <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
+            <strong>Procure por:</strong> Como o negociador respondeu? Conseguiu <strong>sincronizar?</strong><br><br>
+            • Se Causador diz <em>"ninguém me entende"</em> e Negociador responde <em>"entendo sua dor"</em> → Conversa bem dirigida ✅<br>
+            • Se Causador diz <em>"quero a imprensa"</em> e Negociador ignora → Falta de legitimação ❌<br>
+            • Se Negociador repete <em>"fica calmo"</em> 10 vezes → Não está ouvindo, está impondo ❌<br><br>
+            <strong>Por quê?</strong> Harvard explica que <u>validar a emoção da outra parte</u> 
+            não significa concordar com a ação — é reconhecer o estado emocional como real.
+            </p>
+            </div>
+            """, unsafe_allow_html=True)
 
-            with tab_framework:
-                st.markdown("""
-                <div class='info-card'>
-                <h5 style='color:#FFD700;margin-top:0;'>Os Três Vetores Explicados (e como interpretar)</h5>
-                <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
-                Pense nos vetores como três forças que estão em <strong>cabo de guerra</strong> dentro do causador.
-                </p>
-                <hr style='border-color:#444;margin:12px 0;'>
-                <div style='margin:12px 0;padding:12px;border-radius:10px;background:rgba(239,68,68,0.08);border-left:4px solid #ef4444;'>
-                <h5 style='color:#ef4444;margin-top:0;'>🔴 RISCO OBSERVADO — "Quanto de ameaça real há aqui?"</h5>
-                <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
-                Mede a <strong>densidade de linguagem agressiva/suicida</strong> no discurso do causador.<br><br>
-                <strong>Exemplos de alto risco:</strong><br>
-                • <em>"vou matar você"</em> (declaração direta)<br>
-                • <em>"tenho uma arma"</em> (capacidade + intenção)<br>
-                • <em>"quero morrer"</em> (risco para si mesmo)<br><br>
-                <strong>Interpretação para APA:</strong><br>
-                Se Risco Observado = 15% → Ameaça verbalizada, mas sem densidade alta<br>
-                Se Risco Observado = 25%+ → Linguagem carregada, escalada provável se negligenciada<br><br>
-                <strong>O que o negociador deveria fazer?</strong><br>
-                Alto risco = mudar de abordagem RÁPIDO. Deixar o causador falar (validar) antes de oferecer soluções.
-                </p>
-                </div>
-                <hr style='border-color:#444;margin:12px 0;'>
-                <div style='margin:12px 0;padding:12px;border-radius:10px;background:rgba(16,185,129,0.08);border-left:4px solid #10b981;'>
-                <h5 style='color:#10b981;margin-top:0;'>🟢 ABERTURA OBSERVADA — "Tem esperança aqui? Há ponte de desescalada?"</h5>
-                <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
-                Mede <strong>sinais de cooperação, rendição, pedido de ajuda</strong> (velado ou não) no causador.<br><br>
-                <strong>Exemplos de alta abertura:</strong><br>
-                • <em>"me ajuda"</em> (pedido direto)<br>
-                • <em>"minha filha está aqui"</em> (reconhecimento de terceiro, responsabilidade)<br>
-                • <em>"pode entrar"</em> (permissão = abandono da posição hostil)<br><br>
-                <strong>Interpretação para APA:</strong><br>
-                Se Abertura = 5% → Causador muito fechado, difícil entrada. Precisa mais validação.<br>
-                Se Abertura = 15%+ → Janela de oportunidade aberta. Negociador pode começar a propor.<br><br>
-                <strong>O que o negociador deveria fazer?</strong><br>
-                Sinais de abertura = AMPLIFICAR. "Você pediu ajuda? Estou aqui para isso." (FBI)
-                </p>
-                </div>
-                <hr style='border-color:#444;margin:12px 0;'>
-                <div style='margin:12px 0;padding:12px;border-radius:10px;background:rgba(251,146,60,0.08);border-left:4px solid #f97316;'>
-                <h5 style='color:#f97316;margin-top:0;'>🟡 RAIZ OBSERVADA — "Por que ele está assim? Qual é a verdadeira causa?"</h5>
-                <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
-                Mede <strong>gatilhos emocionais, perdas, traumas</strong> que explicam o estado atual.<br><br>
-                <strong>Exemplos de raiz clara:</strong><br>
-                • <em>"perdi meu emprego"</em> (causa: desespero financeiro)<br>
-                • <em>"ela me traiu"</em> (causa: abandono/humilhação)<br>
-                • <em>"ninguém se importa comigo"</em> (causa: isolamento/rejeição)<br><br>
-                <strong>Interpretação para APA:</strong><br>
-                Se Raiz = 8% → Causador talvez tenha gatilho recente ou bem localizado.<br>
-                If Raiz = 12%+ → Acúmulo de perdas, histórico de trauma. Mais difícil de resolver rápido.<br><br>
-                <strong>O que o negociador deveria fazer?</strong><br>
-                Ury diz: "Separe a pessoa do problema." A raiz é o PROBLEMA. Validá-la não é concordar, é RECONHECER.<br>
-                Ex: "Entendo que perder o emprego é devastador. Mas matar não resolve. Vamos pensar em saídas."
-                </p>
-                </div>
-                <hr style='border-color:#444;margin:12px 0;'>
-                <h5 style='color:#FFD700;'>⚖️ COMO OS TRÊS TRABALHAM JUNTOS</h5>
-                <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
-                <strong>Cenário 1: Alto Risco + Baixa Abertura + Raiz Clara</strong><br>
-                → Sujeito desesperado (raiz conhecida) mas barricado (nenhuma ponte). Técnica: Validar a raiz + oferecer saída.
-                <br><br>
-                <strong>Cenário 2: Alto Risco + Alta Abertura + Raiz Clara</strong><br>
-                → Sujeito em crise mas aberto à ajuda. JANELA CRÍTICA. Técnica: Rápida proposição de alternativa.
-                <br><br>
-                <strong>Cenário 3: Baixo Risco + Alta Abertura + Raiz Clara</strong><br>
-                → Sujeito já está em conversação. Técnica: Escuta ativa + proposição colaborativa.
-                </p>
-                </div>
-                """, unsafe_allow_html=True)
+        with tab_framework:
+            st.markdown("""
+            <div class='info-card'>
+            <h5 style='color:#FFD700;margin-top:0;'>Os Três Vetores Explicados (e como interpretar)</h5>
+            <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
+            Pense nos vetores como três forças que estão em <strong>cabo de guerra</strong> dentro do causador.
+            </p>
+            <hr style='border-color:#444;margin:12px 0;'>
+            <div style='margin:12px 0;padding:12px;border-radius:10px;background:rgba(239,68,68,0.08);border-left:4px solid #ef4444;'>
+            <h5 style='color:#ef4444;margin-top:0;'>🔴 RISCO OBSERVADO — "Quanto de ameaça real há aqui?"</h5>
+            <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
+            Mede a <strong>densidade de linguagem agressiva/suicida</strong> no discurso do causador.<br><br>
+            <strong>Exemplos de alto risco:</strong><br>
+            • <em>"vou matar você"</em> (declaração direta)<br>
+            • <em>"tenho uma arma"</em> (capacidade + intenção)<br>
+            • <em>"quero morrer"</em> (risco para si mesmo)<br><br>
+            <strong>Interpretação para APA:</strong><br>
+            Se Risco Observado = 15% → Ameaça verbalizada, mas sem densidade alta<br>
+            Se Risco Observado = 25%+ → Linguagem carregada, escalada provável se negligenciada<br><br>
+            <strong>O que o negociador deveria fazer?</strong><br>
+            Alto risco = mudar de abordagem RÁPIDO. Deixar o causador falar (validar) antes de oferecer soluções.
+            </p>
+            </div>
+            <hr style='border-color:#444;margin:12px 0;'>
+            <div style='margin:12px 0;padding:12px;border-radius:10px;background:rgba(16,185,129,0.08);border-left:4px solid #10b981;'>
+            <h5 style='color:#10b981;margin-top:0;'>🟢 ABERTURA OBSERVADA — "Tem esperança aqui? Há ponte de desescalada?"</h5>
+            <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
+            Mede <strong>sinais de cooperação, rendição, pedido de ajuda</strong> (velado ou não) no causador.<br><br>
+            <strong>Exemplos de alta abertura:</strong><br>
+            • <em>"me ajuda"</em> (pedido direto)<br>
+            • <em>"minha filha está aqui"</em> (reconhecimento de terceiro, responsabilidade)<br>
+            • <em>"pode entrar"</em> (permissão = abandono da posição hostil)<br><br>
+            <strong>Interpretação para APA:</strong><br>
+            Se Abertura = 5% → Causador muito fechado, difícil entrada. Precisa mais validação.<br>
+            Se Abertura = 15%+ → Janela de oportunidade aberta. Negociador pode começar a propor.<br><br>
+            <strong>O que o negociador deveria fazer?</strong><br>
+            Sinais de abertura = AMPLIFICAR. "Você pediu ajuda? Estou aqui para isso." (FBI)
+            </p>
+            </div>
+            <hr style='border-color:#444;margin:12px 0;'>
+            <div style='margin:12px 0;padding:12px;border-radius:10px;background:rgba(251,146,60,0.08);border-left:4px solid #f97316;'>
+            <h5 style='color:#f97316;margin-top:0;'>🟡 RAIZ OBSERVADA — "Por que ele está assim? Qual é a verdadeira causa?"</h5>
+            <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
+            Mede <strong>gatilhos emocionais, perdas, traumas</strong> que explicam o estado atual.<br><br>
+            <strong>Exemplos de raiz clara:</strong><br>
+            • <em>"perdi meu emprego"</em> (causa: desespero financeiro)<br>
+            • <em>"ela me traiu"</em> (causa: abandono/humilhação)<br>
+            • <em>"ninguém se importa comigo"</em> (causa: isolamento/rejeição)<br><br>
+            <strong>Interpretação para APA:</strong><br>
+            Se Raiz = 8% → Causador talvez tenha gatilho recente ou bem localizado.<br>
+            If Raiz = 12%+ → Acúmulo de perdas, histórico de trauma. Mais difícil de resolver rápido.<br><br>
+            <strong>O que o negociador deveria fazer?</strong><br>
+            Ury diz: "Separe a pessoa do problema." A raiz é o PROBLEMA. Validá-la não é concordar, é RECONHECER.<br>
+            Ex: "Entendo que perder o emprego é devastador. Mas matar não resolve. Vamos pensar em saídas."
+            </p>
+            </div>
+            <hr style='border-color:#444;margin:12px 0;'>
+            <h5 style='color:#FFD700;'>⚖️ COMO OS TRÊS TRABALHAM JUNTOS</h5>
+            <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
+            <strong>Cenário 1: Alto Risco + Baixa Abertura + Raiz Clara</strong><br>
+            → Sujeito desesperado (raiz conhecida) mas barricado (nenhuma ponte). Técnica: Validar a raiz + oferecer saída.
+            <br><br>
+            <strong>Cenário 2: Alto Risco + Alta Abertura + Raiz Clara</strong><br>
+            → Sujeito em crise mas aberto à ajuda. JANELA CRÍTICA. Técnica: Rápida proposição de alternativa.
+            <br><br>
+            <strong>Cenário 3: Baixo Risco + Alta Abertura + Raiz Clara</strong><br>
+            → Sujeito já está em conversação. Técnica: Escuta ativa + proposição colaborativa.
+            </p>
+            </div>
+            """, unsafe_allow_html=True)
 
-            with tab_ngramas:
-                st.markdown("""
-                <div class='info-card'>
-                <h5 style='color:#FFD700;margin-top:0;'>Padrões Repetidos & Loop Cognitivo</h5>
-                <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
-                <strong>N-gramas:</strong> Frases de 2-3 palavras que o sujeito repete obessivamente.
-                </p>
-                <hr style='border-color:#444;margin:12px 0;'>
-                <h5 style='color:#FFD700;'>O que significa?</h5>
-                <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
-                Sob estresse extremo, o cérebro entra em <strong>loop cognitivo</strong>. 
-                A frase repetida é o <u>mantra da crise</u> — o que o sujeito está preso em pensar.<br><br>
-                <strong>Exemplos e interpretações:</strong><br><br>
-                • <em>"não aguento mais"</em> (repetido 5+ vezes)<br>
-                &nbsp;&nbsp; → Estado: Exaustão emocional severa. Risco: Iminente (suicida ou agressivo descontrolado)<br>
-                &nbsp;&nbsp; → Técnica: Validar o esgotamento, oferecer repouso/alívio imediato<br><br>
-                • <em>"cadê a imprensa"</em> (repetido 3+ vezes)<br>
-                &nbsp;&nbsp; → Estado: Fixação instrumental. O sujeito quer RECONHECIMENTO público<br>
-                &nbsp;&nbsp; → Técnica: Negociar sobre o que pode ser oferecido (não prometa imprensa se não há)<br><br>
-                • <em>"fica calmo"</em> (negociador repetindo)<br>
-                &nbsp;&nbsp; → Estado: Negociador não está OUVINDO. Está tentando impor.<br>
-                &nbsp;&nbsp; → Técnica: MUDAR DE ABORDAGEM. Perguntar em vez de ordenar<br><br>
-                </p>
-                <hr style='border-color:#444;margin:12px 0;'>
-                <h5 style='color:#FFD700;'>Nuvem de Palavras — O que cada interlocutor REALMENTE está focando</h5>
-                <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
-                A nuvem mostra visualmente o <strong>universo mental</strong> de cada um.<br><br>
-                <strong>Leitura prática:</strong><br>
-                Se a nuvem do Causador tem <em>"arma, polícia, morte"</em> gigantes → Fixação em escalada<br>
-                Se a nuvem tem <em>"filha, família, vida"</em> grandes → Ambivalência (quer viver mas está preso no medo)<br>
-                Se a nuvem do Negociador tem <em>"calma, tranquilo, relaxa"</em> → Talvez não esteja validando o real estado emocional<br><br>
-                <strong>Comparação:</strong><br>
-                Nuvem do Causador com "morte" grande + Nuvem do Negociador com "vida" grande = Boa direção<br>
-                Nuvem do Causador com "morte" grande + Nuvem do Negociador com "relaxa" grande = Desconexão
-                </p>
-                <div style='margin-top:12px;padding:12px;border-radius:10px;background:rgba(255,215,0,0.06);border:1px solid rgba(255,215,0,0.15);'>
-                <p style='font-size:0.9rem;color:#ddd;margin:0;line-height:1.6;'>
-                <strong>Atenção:</strong> Um padrão repetido não é risco por si. É um <u>sinal de fixação mental</u>. 
-                Pode ser esperança ("vou me entregar"), desespero ("vou morrer") ou instrumento ("exijo reconhecimento").
-                </p>
-                </div>
-                </div>
-                """, unsafe_allow_html=True)
+        with tab_ngramas:
+            st.markdown("""
+            <div class='info-card'>
+            <h5 style='color:#FFD700;margin-top:0;'>Padrões Repetidos & Loop Cognitivo</h5>
+            <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
+            <strong>N-gramas:</strong> Frases de 2-3 palavras que o sujeito repete obessivamente.
+            </p>
+            <hr style='border-color:#444;margin:12px 0;'>
+            <h5 style='color:#FFD700;'>O que significa?</h5>
+            <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
+            Sob estresse extremo, o cérebro entra em <strong>loop cognitivo</strong>. 
+            A frase repetida é o <u>mantra da crise</u> — o que o sujeito está preso em pensar.<br><br>
+            <strong>Exemplos e interpretações:</strong><br><br>
+            • <em>"não aguento mais"</em> (repetido 5+ vezes)<br>
+            &nbsp;&nbsp; → Estado: Exaustão emocional severa. Risco: Iminente (suicida ou agressivo descontrolado)<br>
+            &nbsp;&nbsp; → Técnica: Validar o esgotamento, oferecer repouso/alívio imediato<br><br>
+            • <em>"cadê a imprensa"</em> (repetido 3+ vezes)<br>
+            &nbsp;&nbsp; → Estado: Fixação instrumental. O sujeito quer RECONHECIMENTO público<br>
+            &nbsp;&nbsp; → Técnica: Negociar sobre o que pode ser oferecido (não prometa imprensa se não há)<br><br>
+            • <em>"fica calmo"</em> (negociador repetindo)<br>
+            &nbsp;&nbsp; → Estado: Negociador não está OUVINDO. Está tentando impor.<br>
+            &nbsp;&nbsp; → Técnica: MUDAR DE ABORDAGEM. Perguntar em vez de ordenar<br><br>
+            </p>
+            <hr style='border-color:#444;margin:12px 0;'>
+            <h5 style='color:#FFD700;'>Nuvem de Palavras — O que cada interlocutor REALMENTE está focando</h5>
+            <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
+            A nuvem mostra visualmente o <strong>universo mental</strong> de cada um.<br><br>
+            <strong>Leitura prática:</strong><br>
+            Se a nuvem do Causador tem <em>"arma, polícia, morte"</em> gigantes → Fixação em escalada<br>
+            Se a nuvem tem <em>"filha, família, vida"</em> grandes → Ambivalência (quer viver mas está preso no medo)<br>
+            Se a nuvem do Negociador tem <em>"calma, tranquilo, relaxa"</em> → Talvez não esteja validando o real estado emocional<br><br>
+            <strong>Comparação:</strong><br>
+            Nuvem do Causador com "morte" grande + Nuvem do Negociador com "vida" grande = Boa direção<br>
+            Nuvem do Causador com "morte" grande + Nuvem do Negociador com "relaxa" grande = Desconexão
+            </p>
+            <div style='margin-top:12px;padding:12px;border-radius:10px;background:rgba(255,215,0,0.06);border:1px solid rgba(255,215,0,0.15);'>
+            <p style='font-size:0.9rem;color:#ddd;margin:0;line-height:1.6;'>
+            <strong>Atenção:</strong> Um padrão repetido não é risco por si. É um <u>sinal de fixação mental</u>. 
+            Pode ser esperança ("vou me entregar"), desespero ("vou morrer") ou instrumento ("exijo reconhecimento").
+            </p>
+            </div>
+            </div>
+            """, unsafe_allow_html=True)
 
-            with tab_limitacoes:
-                st.markdown("""
-                <div class='info-card'>
-                <h5 style='color:#FFD700;margin-top:0;'>Limitações — O que o sistema NÃO consegue ver</h5>
-                <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
-                Esta é uma <strong>ferramenta de leitura</strong>, não bola de cristal. Os números descrevem o que foi DITO, 
-                não o que vai acontecer.
-                </p>
-                <hr style='border-color:#444;margin:12px 0;'>
-                <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
-                ❌ <strong>Não vê o histórico do sujeito:</strong> Esse é o 1º suicida ou o 5º? Faz diferença.<br>
-                ❌ <strong>Não vê o contexto real:</strong> Há reféns? Há arma de verdade? O sistema não sabe.<br>
-                ❌ <strong>Não vê gírias/ironia:</strong> <em>"Vou me matar de rir"</em> aparece como risco, mas é brincadeira.<br>
-                ❌ <strong>Não vê o tom de voz:</strong> <em>"vou sair"</em> dito com calma é diferente de grito.<br>
-                ❌ <strong>Não vê interrupções:</strong> Se o transcrição está quebrada, a análise fica incompleta.
-                </p>
-                <div style='margin-top:12px;padding:12px;border-radius:10px;background:rgba(255,215,0,0.06);border:1px solid rgba(255,215,0,0.15);'>
-                <p style='font-size:0.9rem;color:#ddd;margin:0;line-height:1.6;'>
-                <strong>Regra de ouro para APA:</strong> Use estes dados + seu julgamento + contexto operacional. 
-                O sistema ILUMINA. A decisão é HUMANA.
-                </p>
-                </div>
-                </div>
-                """, unsafe_allow_html=True)
+        with tab_limitacoes:
+            st.markdown("""
+            <div class='info-card'>
+            <h5 style='color:#FFD700;margin-top:0;'>Limitações — O que o sistema NÃO consegue ver</h5>
+            <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
+            Esta é uma <strong>ferramenta de leitura</strong>, não bola de cristal. Os números descrevem o que foi DITO, 
+            não o que vai acontecer.
+            </p>
+            <hr style='border-color:#444;margin:12px 0;'>
+            <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
+            ❌ <strong>Não vê o histórico do sujeito:</strong> Esse é o 1º suicida ou o 5º? Faz diferença.<br>
+            ❌ <strong>Não vê o contexto real:</strong> Há reféns? Há arma de verdade? O sistema não sabe.<br>
+            ❌ <strong>Não vê gírias/ironia:</strong> <em>"Vou me matar de rir"</em> aparece como risco, mas é brincadeira.<br>
+            ❌ <strong>Não vê o tom de voz:</strong> <em>"vou sair"</em> dito com calma é diferente de grito.<br>
+            ❌ <strong>Não vê interrupções:</strong> Se o transcrição está quebrada, a análise fica incompleta.
+            </p>
+            <div style='margin-top:12px;padding:12px;border-radius:10px;background:rgba(255,215,0,0.06);border:1px solid rgba(255,215,0,0.15);'>
+            <p style='font-size:0.9rem;color:#ddd;margin:0;line-height:1.6;'>
+            <strong>Regra de ouro para APA:</strong> Use estes dados + seu julgamento + contexto operacional. 
+            O sistema ILUMINA. A decisão é HUMANA.
+            </p>
+            </div>
+            </div>
+            """, unsafe_allow_html=True)
 
         # --- FIM DO BLOCO DE EXPLICAÇÃO ---
 
