@@ -2668,7 +2668,7 @@ with aba_individual:
                 st.markdown("---")
                 st.markdown("""
                 <div style='background: rgba(76, 175, 80, 0.1); border-left: 4px solid #4CAF50; padding: 15px; border-radius: 8px; margin-bottom: 20px;'>
-                <h5 style='color: #4CAF50; margin-top: 0;'>🤖 Análise Avançada com Transformer (Otimizado)</h5>
+                <h5 style='color: #4CAF50; margin-top: 0;'> Análise de Sentimento (Biblioteca Transformer)</h5>
                 <p style='color: #aaa; font-size: 0.9rem; margin-bottom: 10px;'>
                 Análise com Transformer português otimizado: remove gírias e stopwords para melhor compreensão.
                 </p>
