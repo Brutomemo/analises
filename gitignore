@@ -1,0 +1,66 @@
+# Secrets e Credenciais
+.streamlit/secrets.toml
+.env
+.env.local
+.env.*.local
+credentials.json
+*.pem
+*.key
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual environments
+venv/
+ENV/
+env/
+.venv
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Streamlit
+.streamlit/
+.cache/
+*.cache
+
+# Dados sensíveis
+.airtable_token
+airtable_key.txt
+api_keys.txt
+
+# Logs
+*.log
+logs/
+
+# Temporários
+*.tmp
+*.temp
+/tmp/
