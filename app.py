@@ -10,9 +10,7 @@ except PermissionError:
     st.error("❌ Erro: LICENSE.txt não encontrado na raiz do projeto.")
     st.stop()
 
-# ====
-# 1. CONFIGURAÇÃO DA PÁGINA (DEVE SER O PRIMEIRO COMANDO STREAMLIT)
-# ====
+# 1. CONFIGURAÇÃO DA PÁGINA
 import streamlit as st
 import subprocess
 import sys
@@ -20,9 +18,7 @@ import os
 
 st.set_page_config(page_title="Analise Qualitativa - Negociação", layout="wide", initial_sidebar_state="collapsed")
 
-# ====
-# 2. SEUS IMPORTS ORIGINAIS (MANTIDOS E COMPLETOS)
-# ====
+# 2. IMPORTS ORIGINAIS
 from PIL import Image
 import base64
 import pandas as pd
@@ -36,6 +32,13 @@ import re
 from collections import Counter
 import matplotlib.pyplot as plt
 import seaborn as sns
+
+# 3. IMPORTS PARA REGRESSÃO LINEAR (NOVO)
+import numpy as np
+from scipy import stats as sp_stats
+from sklearn.preprocessing import StandardScaler
+import warnings
+warnings.filterwarnings('ignore')
 
 # ====
 # 2.1. IMPORTAÇÃO DOS MÓDULOS DE IA E DADOS
@@ -3888,271 +3891,383 @@ Este sistema é protegido por direitos autorais e legislação aplicável. Repro
                 else:
                     st.warning('⚠️ Colunas de transcrição não encontradas.')
         # ──────────────────────────────────────────────────────────
-        # ANÁLISE: CORRELAÇÕES E ASSOCIAÇÕES
-        # ──────────────────────────────────────────────────────────
+# ANÁLISE: REGRESSÃO LINEAR MULTIVARIADA
+# O que prediz queda de agressividade? Análise robusta e validada
+# ──────────────────────────────────────────────────────────
 
-        st.markdown("""
-                        <div class='info-card'>
-                        <h5 style='color: #FFD700; margin-top: 0;'>O que os Dados dizem sobre a Resolução das Ocorrências?</h5>
-                        <p style='font-size:1.2rem;color:#ddd;'>
-                        Correlação do tempo da ocorrência com variação da agressividade do causador e Qui-quadrado de técnicas usadas vs Negociador, Modalidade e Tipologia</strong>                 
-                        </p>
-                        </div>
-                        """, unsafe_allow_html=True)  
-                
+st.markdown("""
+<div class='info-card'>
+<h5 style='color: #FFD700; margin-top: 0;'>📊 O que Prediz Queda de Agressividade?</h5>
+<p style='font-size:1rem;color:#ddd;'>
+Análise multivariada rigorosa com validação estatística.
+Identifica quais fatores realmente influenciam a redução de agressividade,
+controlando confundidores (viés de negociador, tipo de ocorrência, etc).
+</p>
+</div>
+""", unsafe_allow_html=True)
 
-        # ──────────────────────────────────────────────────────────
-        # Helpers estatísticos locais
-        # ──────────────────────────────────────────────────────────
-        import unicodedata
+# ──────────────────────────────────────────────────────────
+# BOTÃO TOGGLE
+# ──────────────────────────────────────────────────────────
+col_left, col_center, col_right = st.columns([1, 1, 1])
+with col_center:
+    is_regressao = render_toggle_button(
+        label="✔️ Abrir Análise Multivariada",
+        session_key="analise_regressao",
+        button_key="btn_analise_regressao"
+    )
 
-        def norm_col(t):
-            return (
-                unicodedata.normalize("NFKD", str(t))
-                .encode("ASCII", "ignore")
-                .decode("ASCII")
-                .lower()
+st.markdown("---")
+
+# ──────────────────────────────────────────────────────────
+# CONTEÚDO (Dentro do if)
+# ──────────────────────────────────────────────────────────
+if is_regressao:
+    
+    # ═══════════════════════════════════════════════════════════
+    # PASSO 1: PREPARAR DADOS
+    # ═══════════════════════════════════════════════════════════
+    
+    with st.spinner("⏳ Preparando dados..."):
+        # Encontrar colunas
+        col_agr_princ_ch = achar_coluna(df_quali_filt, "Principal", "Agressividade", "Chegada")
+        col_agr_princ_en = achar_coluna(df_quali_filt, "Principal", "Agressividade", "Encerramento")
+        col_agr_sec_ch = achar_coluna(df_quali_filt, "Secundário", "Agressividade", "Chegada")
+        col_agr_sec_en = achar_coluna(df_quali_filt, "Secundário", "Agressividade", "Encerramento")
+        col_agr_lider_ch = achar_coluna(df_quali_filt, "Líder", "Agressividade", "Chegada")
+        col_agr_lider_en = achar_coluna(df_quali_filt, "Líder", "Agressividade", "Encerramento")
+        
+        col_recep_princ_ch = achar_coluna(df_quali_filt, "Principal", "Receptividade", "Chegada")
+        
+        # Validar colunas
+        colunas_necessarias = [col_agr_princ_ch, col_agr_princ_en, col_agr_sec_ch, 
+                              col_agr_sec_en, col_agr_lider_ch, col_agr_lider_en]
+        
+        if not all(colunas_necessarias):
+            st.error("❌ Colunas de agressividade não encontradas. Verifique o formulário.")
+        else:
+            # Calcular deltas
+            df_reg_prep = analise.calcular_delta_agressividade_consenso(
+                df_quali_filt,
+                col_agr_princ_ch, col_agr_princ_en,
+                col_agr_sec_ch, col_agr_sec_en,
+                col_agr_lider_ch, col_agr_lider_en
             )
-
-        def achar_coluna(df, papel, metrica, momento):
-            for col in df.columns:
-                cn = norm_col(col)
-                if norm_col(papel) in cn and norm_col(metrica) in cn and norm_col(momento) in cn:
-                    return col
-            return None
-
-        def tempo_para_minutos(val):
-            """Converte segundos (inteiro ou lista) para minutos float."""
-            try:
-                if isinstance(val, list):
-                    val = val[0]
-                if pd.isna(val) or str(val).strip().lower() in ("", "n/d", "nan", "none"):
-                    return None
-                segundos = float(val)
-                return segundos / 60 if segundos > 0 else None
-            except Exception:
-                return None
-
-        # ──────────────────────────────────────────────────────────
-        # Configurações iniciais (APENAS COM df_quali_filt)
-        # ──────────────────────────────────────────────────────────
-        lixo = {"none", "nan", "n/d", "", "null", "[]"}
-
-        col_agr_c = achar_coluna(df_quali_filt, "Principal", "Agressividade", "Chegada")
-        col_agr_e = achar_coluna(df_quali_filt, "Principal", "Agressividade", "Encerramento")
-
-        id_col = next(
-            (c for c in df_quali_filt.columns if "ID" in c.upper() or "VINCULO" in c.upper()),
-            None,
-        )
-
-        # ──────────────────────────────────────────────────────────
-        # BOTÃO TOGGLE (Centralizado)
-        # ──────────────────────────────────────────────────────────
-        col_left, col_center, col_right = st.columns([1, 1, 1])
-        with col_center:
-            is_correlacao_associacao = render_toggle_button(
-                label="✔️ Abrir Correlações e Associações",
-                session_key="correlacao_associacao",
-                button_key="btn_correlacao_associacao"
-            )
-
-        st.markdown("---")
-
-        # ──────────────────────────────────────────────────────────
-        # CONTEÚDO (Dentro do if)
-        # ──────────────────────────────────────────────────────────
-        if is_correlacao_associacao:
             
-            # Layout das duas colunas de análise
-            c_sp1, c_sp2 = st.columns(2)
-
-            # ══════════════════════════════════════════════════════════════════════════════
-            # COLUNA 1 — Spearman: Duração vs. Queda de Agressividade
-            # ══════════════════════════════════════════════════════════════════════════════
-            with c_sp1:
-                st.markdown(
-                    """
-                    <div class='info-card'>
-                    <strong>Ocorrências mais longas terminam com o causador menos agressivo?</strong><br>
-                    <span style='font-size: 0.82rem; color: #aaa;'>
-                    Verifica se existe uma relação matemática entre o tempo da negociação
-                    e a queda de agressividade do causador do início ao fim da ocorrência.
-                    </span>
-                    """,
-                    unsafe_allow_html=True,
-                )
-
-                df_sp = df_quali_filt.copy()
-
-                # Verificações de pré-requisito
-                colunas_ausentes = []
-                if not col_agr_c:
-                    colunas_ausentes.append("Agressividade na Chegada")
-                if not col_agr_e:
-                    colunas_ausentes.append("Agressividade no Encerramento")
-                if "Tempo de Negociação Real" not in df_sp.columns:
-                    colunas_ausentes.append("Tempo de Negociação Real")
-
-                if colunas_ausentes:
-                    st.warning(
-                        f"⚠️ Colunas ausentes nos dados: {', '.join(colunas_ausentes)}. "
-                        "Verifique o formulário de registro."
-                    )
-
+            # Preparar para regressão
+            df_modelo, erro = analise.preparar_dados_regressao(
+                df_reg_prep,
+                col_tempo="Tempo de Negociação Real",
+                col_negociador="Negociador Principal do incidente crítico",
+                col_tipologia="Tipologia",
+                col_modalidade="Modalidade",
+                col_resolucao="Resolução",
+                col_recep_chegada=col_recep_princ_ch
+            )
+            
+            if erro:
+                st.warning(f"⚠️ {erro}")
+            else:
+                # ═══════════════════════════════════════════════════════════
+                # PASSO 2: AJUSTAR MODELO
+                # ═══════════════════════════════════════════════════════════
+                
+                resultado_modelo, erro_modelo = analise.ajustar_regressao_linear(df_modelo)
+                
+                if erro_modelo:
+                    st.error(f"❌ {erro_modelo}")
                 else:
-                    # Converte escalas e remove "Não Observado" (0)
-                    df_sp["Agr_Inicio"] = (
-                        df_sp[col_agr_c].apply(converter_escala).replace(0, pd.NA)
-                    )
-                    df_sp["Agr_Fim"] = (
-                        df_sp[col_agr_e].apply(converter_escala).replace(0, pd.NA)
-                    )
-                    df_sp["Tempo_Min"] = df_sp["Tempo de Negociação Real"].apply(
-                        tempo_para_minutos
-                    )
-
-                    # Remove linhas sem os três valores necessários
-                    df_sp = df_sp.dropna(subset=["Agr_Inicio", "Agr_Fim", "Tempo_Min"])
-
-                    # Delta positivo = queda de agressividade (bom sinal)
-                    df_sp["Delta_Agressividade"] = df_sp["Agr_Inicio"] - df_sp["Agr_Fim"]
-
-                    n_valido = len(df_sp)
-
-                    if n_valido < 5:
-                        # Barra de progresso visual
-                        progresso = int((n_valido / 5) * 100)
-                        st.warning(
-                            f"⏳ **Aguardando mais dados (N={n_valido}/5)**\n\n"
-                            "São necessárias pelo menos **5 ocorrências encerradas** "
-                            "com agressividade registrada nos dois momentos para calcular "
-                            "este indicador de forma confiável."
-                        )
-                        st.progress(progresso)
-
-                    else:
-                        res_sp = analise.calcular_spearman(df_sp, "Tempo_Min", "Delta_Agressividade")
-
-                        if res_sp.get("valido", False):
-                            rho = res_sp["rho"]
-                            p = res_sp["p_value"]
-                            significativo = p < 0.05
-
-                            # Veredito em linguagem clara
-                            if significativo and rho > 0:
-                                icone = "✅"
-                                titulo_veredito = "Sim — ocorrências mais longas terminam com menos agressividade"
-                                cor_veredito = "success"
-                                forca_correlacao = "muito forte" if abs(rho) > 0.7 else "forte" if abs(rho) > 0.5 else "moderada"
-                                explicacao = (
-                                    f"**O que isso significa:** Existe uma **relação {forca_correlacao}** entre duração e queda de agressividade. "
-                                    f"Em outras palavras: quanto mais tempo a negociação leva, maior a chance de o causador terminar menos agressivo.\n\n"
-                                    f"**Por que temos certeza?** Analisamos {n_valido} ocorrências e o padrão encontrado é tão consistente "
-                                    f"que a probabilidade de ser mera coincidência é menor que 5% (p < 0,05). Isso significa que o padrão é **real**.\n\n"
-                                    f"**Métrica técnica:** Rho = {rho:.2f} (escala de -1 a +1, onde +1 = relação perfeita)."
-                                )
-                            elif significativo and rho < 0:
-                                icone = "⚠️"
-                                titulo_veredito = "Atenção — ocorrências mais longas terminam COM MAIS agressividade"
-                                cor_veredito = "warning"
-                                forca_correlacao = "muito forte" if abs(rho) > 0.7 else "forte" if abs(rho) > 0.5 else "moderada"
-                                explicacao = (
-                                    f"**O que isso significa:** Existe uma **relação {forca_correlacao} inversa**. "
-                                    f"Ocorrências que demoram mais tempo tendem a terminar com o causador **mais agressivo**, não menos.\n\n"
-                                    f"**Por que isso preocupa?** Isso pode indicar que:\n"
-                                    f"  • O tempo prolongado está gerando **desgaste ou frustração** no causador\n"
-                                    f"  • A estratégia de longa negociação pode não estar sendo efetiva em alguns cenários\n"
-                                    f"  • Pode haver um ponto de saturação após o qual continuar negociando piora as coisas\n\n"
-                                    f"**Por que temos certeza?** O padrão foi encontrado em {n_valido} ocorrências e é improvável ser coincidência (p < 0,05).\n\n"
-                                    f"**Métrica técnica:** Rho = {rho:.2f} (negativo indica relação inversa)."
-                                )
-                            elif not significativo and abs(rho) > 0.3:
-                                icone = "🔎"
-                                titulo_veredito = "Há uma tendência, mas ainda é cedo para confirmar"
-                                cor_veredito = "info"
-                                direcao = "positiva (mais tempo = menos agressividade)" if rho > 0 else "negativa (mais tempo = mais agressividade)"
-                                explicacao = (
-                                    f"**O que observamos:** Existe uma tendência {direcao}, mas com {n_valido} ocorrências, "
-                                    f"não podemos ter certeza se é um padrão real ou coincidência.\n\n"
-                                    f"**Por que não temos certeza?** A probabilidade de isso ser acaso é {p*100:.1f}% — acima do limite de 5% que os estatísticos usam como referência.\n\n"
-                                    f"**O que fazer?** Colete mais registros de negociações. Com 10-15 ocorrências a mais, essa tendência pode se confirmar ou se desfazer.\n\n"
-                                    f"**Métrica técnica:** Rho = {rho:.2f}, p = {p:.4f} (p > 0,05 = não significativo ainda)."
-                                )
-                            else:
-                                icone = "➖"
-                                titulo_veredito = "Nenhuma relação detectada entre duração e agressividade"
-                                cor_veredito = "info"
-                                explicacao = (
-                                    f"**O que isso significa:** A duração da ocorrência **não está associada** à queda de agressividade. "
-                                    f"Ocorrências longas terminam com queda de agressividade tão frequentemente quanto as curtas.\n\n"
-                                    f"**O que fazer?** Isso não é necessariamente ruim — significa que o tempo não é o fator determinante. "
-                                    f"Procure investigar outros fatores: técnicas usadas, perfil do causador, contexto da ocorrência, etc.\n\n"
-                                    f"**Por que temos certeza?** A relação encontrada (Rho = {rho:.2f}) é tão fraca que não conseguimos descartar coincidência (p = {p:.4f}).\n\n"
-                                    f"**Próximo passo:** Se quiser, rode os outros testes abaixo para explorar quais fatores **realmente** influenciam o desfecho."
-                                )
-
-                            # Exibe o veredito
-                            getattr(st, cor_veredito)(f"{icone} **{titulo_veredito}**\n\n{explicacao}")
-                        else:
-                            st.warning(res_sp.get("msg", "Dados insuficientes para o cálculo (N < 3)."))
-
-                st.markdown("</div>", unsafe_allow_html=True)
-
-            # ══════════════════════════════════════════════════════════════════════════════
-            # COLUNA 2 — Distribuição de Características
-            # ══════════════════════════════════════════════════════════════════════════════
-            with c_sp2:
-                st.markdown(
-                    """
+                    
+                    # ═══════════════════════════════════════════════════════════
+                    # SEÇÃO 1: RESUMO DO MODELO
+                    # ═══════════════════════════════════════════════════════════
+                    
+                    st.markdown("""
                     <div class='info-card'>
-                    <strong>Padrão de Características da Ocorrência</strong><br>
-                    <span style='font-size: 0.82rem; color: #aaa;'>
-                    Analisa como diferentes características estão distribuídas na série histórica.
-                    </span>
-                    """,
-                    unsafe_allow_html=True,
-                )
-
-                # Opções simples (usando df_quali_filt)
-                opcoes_variaveis = {
-                    "Tipologia": "Tip_Limpa",
-                    "Negociador": "Neg_Limpo",
-                    "Modalidade": "Mod_Limpa",
-                }
-
-                var_analise = st.selectbox(
-                    "Analisar distribuição de:",
-                    list(opcoes_variaveis.keys()),
-                    index=0,
-                    key="selectbox_distribuicao"
-                )
-                col_v1_key = opcoes_variaveis[var_analise]
-
-                # Análise simples da variável
-                if col_v1_key in df_quali_filt.columns:
-                    df_anal = df_quali_filt[[col_v1_key]].dropna()
-                    df_anal = df_anal[~df_anal[col_v1_key].astype(str).str.strip().str.lower().isin(lixo)]
-
-                    if not df_anal.empty:
-                        distribuicao = df_anal[col_v1_key].value_counts()
+                    <h5 style='color: #FFD700;'>📈 Qualidade do Modelo</h5>
+                    """, unsafe_allow_html=True)
+                    
+                    col1, col2, col3, col4 = st.columns(4)
+                    
+                    with col1:
+                        st.metric("N (Ocorrências)", resultado_modelo['n'])
+                    with col2:
+                        st.metric("R² (Variância Explicada)", f"{resultado_modelo['r2']:.1%}")
+                    with col3:
+                        st.metric("R² Ajustado", f"{resultado_modelo['r2_adj']:.1%}")
+                    with col4:
+                        p_f = resultado_modelo['p_f']
+                        sig = "✅ Significativo" if p_f < 0.05 else "❌ Não significativo"
+                        st.metric("Modelo Global", sig)
+                    
+                    st.markdown("""
+                    <div style='background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px; margin-top: 10px;'>
+                    <strong>Interpretação:</strong> O modelo explica <strong>{:.1%}</strong> da variação em queda de agressividade.
+                    O p-value global é <strong>{:.4f}</strong> ({}).
+                    </div>
+                    """.format(
+                        resultado_modelo['r2'],
+                        resultado_modelo['p_f'],
+                        "✅ Modelo válido (p < 0.05)" if resultado_modelo['p_f'] < 0.05 else "❌ Modelo fraco (p ≥ 0.05)"
+                    ), unsafe_allow_html=True)
+                    
+                    st.markdown("</div>", unsafe_allow_html=True)
+                    
+                    # ═══════════════════════════════════════════════════════════
+                    # SEÇÃO 2: COEFICIENTES
+                    # ═══════════════════════════════════════════════════════════
+                    
+                    st.markdown("""
+                    <div class='info-card'>
+                    <h5 style='color: #FFD700;'>🎯 Coeficientes do Modelo</h5>
+                    """, unsafe_allow_html=True)
+                    
+                    df_coef = analise.extrair_coeficientes_significativos(resultado_modelo)
+                    
+                    # Tabela formatada
+                    st.dataframe(
+                        df_coef.style.format({
+                            'Coeficiente': '{:.3f}',
+                            'SE': '{:.3f}',
+                            't-stat': '{:.2f}',
+                            'p-value': '{:.4f}',
+                            'IC_Lower': '{:.3f}',
+                            'IC_Upper': '{:.3f}'
+                        }).highlight_max(subset=['Coeficiente'], color='#10b981', axis=0)
+                        .highlight_min(subset=['Coeficiente'], color='#f59e0b', axis=0),
+                        use_container_width=True,
+                        hide_index=True
+                    )
+                    
+                    # Gráfico de coeficientes com IC
+                    df_plot = df_coef[df_coef['Variável'] != '(Intercept)'].copy()
+                    
+                    fig = go.Figure()
+                    fig.add_trace(go.Scatter(
+                        x=df_plot['IC_Lower'],
+                        y=df_plot['Variável'],
+                        mode='markers',
+                        marker=dict(size=1, color='rgba(0,0,0,0)'),
+                        showlegend=False
+                    ))
+                    
+                    fig.add_trace(go.Scatter(
+                        x=df_plot['Coeficiente'],
+                        y=df_plot['Variável'],
+                        mode='markers',
+                        marker=dict(
+                            size=8,
+                            color=['#10b981' if x > 0 else '#f59e0b' for x in df_plot['Coeficiente']]
+                        ),
+                        name='Coeficiente',
+                        text=df_plot.apply(
+                            lambda r: f"{r['Variável']}<br>β = {r['Coeficiente']:.3f}<br>p = {r['p-value']:.4f}",
+                            axis=1
+                        ),
+                        hovertemplate='%{text}<extra></extra>'
+                    ))
+                    
+                    for idx, row in df_plot.iterrows():
+                        fig.add_trace(go.Scatter(
+                            x=[row['IC_Lower'], row['IC_Upper']],
+                            y=[row['Variável'], row['Variável']],
+                            mode='lines',
+                            line=dict(color='#888', width=2),
+                            showlegend=False,
+                            hoverinfo='skip'
+                        ))
+                    
+                    fig.add_vline(x=0, line_dash="dash", line_color="gray", opacity=0.5)
+                    fig.update_layout(
+                        title="Coeficientes com IC 95%",
+                        xaxis_title="Coeficiente",
+                        yaxis_title="Variável",
+                        height=400,
+                        paper_bgcolor="rgba(0,0,0,0)",
+                        plot_bgcolor="rgba(0,0,0,0)",
+                        font_color="#FFF",
+                        hovermode='closest'
+                    )
+                    st.plotly_chart(fig, use_container_width=True)
+                    
+                    st.markdown("</div>", unsafe_allow_html=True)
+                    
+                    # ═══════════════════════════════════════════════════════════
+                    # SEÇÃO 3: COMPARAÇÃO DE PERCEPÇÕES
+                    # ═══════════════════════════════════════════════════════════
+                    
+                    st.markdown("""
+                    <div class='info-card'>
+                    <h5 style='color: #FFD700;'>🔍 Triangulação: Consenso dos 3 Negociadores</h5>
+                    """, unsafe_allow_html=True)
+                    
+                    col_tri1, col_tri2, col_tri3, col_tri4 = st.columns(4)
+                    
+                    delta_princ_mean = df_reg_prep['delta_princ'].dropna().mean()
+                    delta_sec_mean = df_reg_prep['delta_sec'].dropna().mean()
+                    delta_lider_mean = df_reg_prep['delta_lider'].dropna().mean()
+                    delta_cons_mean = df_reg_prep['delta_consenso'].dropna().mean()
+                    
+                    with col_tri1:
+                        st.metric("Principal (Média)", f"{delta_princ_mean:.2f}")
+                    with col_tri2:
+                        st.metric("Secundário (Média)", f"{delta_sec_mean:.2f}")
+                    with col_tri3:
+                        st.metric("Líder (Média)", f"{delta_lider_mean:.2f}")
+                    with col_tri4:
+                        st.metric("Consenso (Média)", f"{delta_cons_mean:.2f}")
+                    
+                    # Gráfico de distribuição
+                    fig_dist = go.Figure()
+                    
+                    for label, dados, cor in [
+                        ("Principal", df_reg_prep['delta_princ'].dropna(), '#F97316'),
+                        ("Secundário", df_reg_prep['delta_sec'].dropna(), '#FB923C'),
+                        ("Líder", df_reg_prep['delta_lider'].dropna(), '#FBBF24'),
+                        ("Consenso", df_reg_prep['delta_consenso'].dropna(), '#10b981')
+                    ]:
+                        fig_dist.add_trace(go.Box(y=dados, name=label, marker_color=cor))
+                    
+                    fig_dist.update_layout(
+                        title="Distribuição de Deltas por Negociador",
+                        yaxis_title="Delta de Agressividade",
+                        height=350,
+                        paper_bgcolor="rgba(0,0,0,0)",
+                        plot_bgcolor="rgba(0,0,0,0)",
+                        font_color="#FFF",
+                        boxmode='group'
+                    )
+                    st.plotly_chart(fig_dist, use_container_width=True)
+                    
+                    st.markdown("</div>", unsafe_allow_html=True)
+                    
+                    # ═══════════════════════════════════════════════════════════
+                    # SEÇÃO 4: DIAGNÓSTICOS
+                    # ═══════════════════════════════════════════════════════════
+                    
+                    st.markdown("""
+                    <div class='info-card'>
+                    <h5 style='color: #FFD700;'>🔧 Diagnósticos do Modelo</h5>
+                    <p style='font-size: 0.85rem; color: #aaa;'>
+                    Validação de assumções estatísticas.
+                    </p>
+                    """, unsafe_allow_html=True)
+                    
+                    diags = analise.diagnosticos_qualidade(resultado_modelo)
+                    
+                    col_d1, col_d2, col_d3 = st.columns(3)
+                    
+                    with col_d1:
+                        status = "✅" if diags['normalidade']['p_value'] > 0.05 else "⚠️"
+                        st.markdown(f"""
+                        **{status} Normalidade dos Resíduos**
                         
-                        st.info(
-                            f"**Distribuição de {var_analise}**\n\n"
-                            f"Total de registros: {len(df_anal)}\n"
-                            f"Categorias únicas: {df_anal[col_v1_key].nunique()}\n\n"
-                            f"**Top 5 mais frequentes:**\n"
-                            + "\n".join([f"• {cat}: {count} ({count/len(df_anal)*100:.1f}%)" 
-                                        for cat, count in distribuicao.head(5).items()])
+                        p-value: {diags['normalidade']['p_value']:.4f}
+                        
+                        {diags['normalidade']['interpretacao']}
+                        
+                        _{diags['normalidade']['implicacao']}_
+                        """)
+                    
+                    with col_d2:
+                        status = "✅" if diags['homocedasticidade']['p_value'] > 0.05 else "⚠️"
+                        st.markdown(f"""
+                        **{status} Homocedasticidade**
+                        
+                        p-value: {diags['homocedasticidade']['p_value']:.4f}
+                        
+                        {diags['homocedasticidade']['interpretacao']}
+                        
+                        _{diags['homocedasticidade']['implicacao']}_
+                        """)
+                    
+                    with col_d3:
+                        vif_max = diags['colinearidade']['vif_max']
+                        status = "✅" if vif_max < 5 else "⚠️"
+                        st.markdown(f"""
+                        **{status} Colinearidade (VIF)**
+                        
+                        VIF máximo: {vif_max:.2f}
+                        
+                        {diags['colinearidade']['interpretacao']}
+                        
+                        _{diags['colinearidade']['implicacao']}_
+                        """)
+                    
+                    st.markdown("</div>", unsafe_allow_html=True)
+                    
+                    # ═══════════════════════════════════════════════════════════
+                    # SEÇÃO 5: RESÍDUOS
+                    # ═══════════════════════════════════════════════════════════
+                    
+                    st.markdown("""
+                    <div class='info-card'>
+                    <h5 style='color: #FFD700;'>📊 Diagnóstico de Resíduos</h5>
+                    """, unsafe_allow_html=True)
+                    
+                    col_res1, col_res2 = st.columns(2)
+                    
+                    with col_res1:
+                        fig_res = go.Figure()
+                        fig_res.add_trace(go.Scatter(
+                            x=resultado_modelo['y_pred'],
+                            y=resultado_modelo['residuos'],
+                            mode='markers',
+                            marker=dict(color='#F97316', size=6),
+                            text=resultado_modelo['residuos'],
+                            hovertemplate='Predito: %{x:.2f}<br>Resíduo: %{y:.2f}<extra></extra>'
+                        ))
+                        fig_res.add_hline(y=0, line_dash="dash", line_color="gray")
+                        fig_res.update_layout(
+                            title="Resíduos vs Preditos",
+                            xaxis_title="Valores Preditos",
+                            yaxis_title="Resíduos",
+                            height=300,
+                            paper_bgcolor="rgba(0,0,0,0)",
+                            plot_bgcolor="rgba(0,0,0,0)",
+                            font_color="#FFF"
                         )
-                    else:
-                        st.warning("Sem dados válidos para esta análise.")
-                else:
-                    st.warning(f"Coluna '{col_v1_key}' não encontrada nos dados.")
+                        st.plotly_chart(fig_res, use_container_width=True)
+                    
+                    with col_res2:
+                        fig_qq = go.Figure()
+                        res_sorted = np.sort(resultado_modelo['residuos'])
+                        q_teorico = np.sort(np.random.normal(0, resultado_modelo['se_residuos'], 1000))
+                        
+                        fig_qq.add_trace(go.Scatter(
+                            x=q_teorico,
+                            y=res_sorted,
+                            mode='markers',
+                            marker=dict(color='#10b981', size=5),
+                            name='Q-Q Plot'
+                        ))
+                        
+                        # Linha diagonal
+                        min_val = min(q_teorico.min(), res_sorted.min())
+                        max_val = max(q_teorico.max(), res_sorted.max())
+                        fig_qq.add_trace(go.Scatter(
+                            x=[min_val, max_val],
+                            y=[min_val, max_val],
+                            mode='lines',
+                            line=dict(color='gray', dash='dash'),
+                            name='Normal',
+                            showlegend=True
+                        ))
+                        
+                        fig_qq.update_layout(
+                            title="Q-Q Plot (Normalidade)",
+                            xaxis_title="Quantis Teóricos",
+                            yaxis_title="Quantis Observados",
+                            height=300,
+                            paper_bgcolor="rgba(0,0,0,0)",
+                            plot_bgcolor="rgba(0,0,0,0)",
+                            font_color="#FFF"
+                        )
+                        st.plotly_chart(fig_qq, use_container_width=True)
+                    
+                    st.markdown("</div>", unsafe_allow_html=True)
 
-                st.markdown("</div>", unsafe_allow_html=True)
-
-        st.markdown("---")
+st.markdown("---")
 
         # ══════════════════════════════════════════════════════════════════════════════
         # SEÇÃO: ENTENDA OS TESTES ESTATÍSTICOS

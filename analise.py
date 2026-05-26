@@ -15,6 +15,8 @@ from scipy.stats import chi2_contingency, spearmanr
 from sklearn.feature_extraction.text import CountVectorizer
 from wordcloud import WordCloud
 from sklearn.metrics.pairwise import cosine_similarity
+import plotly.graph_objects as go
+import plotly.express as px
 
 # ============================================================
 # 1. STOPWORDS E CONFIGURAÇÕES GERAIS
@@ -3236,3 +3238,254 @@ def analisar_perfil_negociadores(df_tecnicas):
         'scaler': scaler,
         'X_scaled': X_scaled
     }
+
+# ============================================================
+# ANÁLISE MULTIVARIADA: REGRESSÃO LINEAR MÚLTIPLA
+# Preditors de Queda de Agressividade (Consenso 3 negociadores)
+# ============================================================
+
+import numpy as np
+import pandas as pd
+from scipy import stats
+from sklearn.preprocessing import StandardScaler
+import warnings
+warnings.filterwarnings('ignore')
+
+def calcular_delta_agressividade_consenso(df, col_agr_princ_chegada, col_agr_princ_encerr,
+                                          col_agr_sec_chegada, col_agr_sec_encerr,
+                                          col_agr_lider_chegada, col_agr_lider_encerr):
+    """
+    Calcula delta de agressividade (consenso dos 3 negociadores)
+    Consenso = média dos 3 deltas individuais
+    """
+    df = df.copy()
+    
+    # Converter escalas
+    df['agr_princ_ch'] = df[col_agr_princ_chegada].apply(converter_escala).replace(0, pd.NA)
+    df['agr_princ_en'] = df[col_agr_princ_encerr].apply(converter_escala).replace(0, pd.NA)
+    
+    df['agr_sec_ch'] = df[col_agr_sec_chegada].apply(converter_escala).replace(0, pd.NA)
+    df['agr_sec_en'] = df[col_agr_sec_encerr].apply(converter_escala).replace(0, pd.NA)
+    
+    df['agr_lider_ch'] = df[col_agr_lider_chegada].apply(converter_escala).replace(0, pd.NA)
+    df['agr_lider_en'] = df[col_agr_lider_encerr].apply(converter_escala).replace(0, pd.NA)
+    
+    # Deltas individuais (positivo = queda de agressividade)
+    df['delta_princ'] = df['agr_princ_ch'] - df['agr_princ_en']
+    df['delta_sec'] = df['agr_sec_ch'] - df['agr_sec_en']
+    df['delta_lider'] = df['agr_lider_ch'] - df['agr_lider_en']
+    
+    # Consenso (média dos 3)
+    df['delta_consenso'] = df[['delta_princ', 'delta_sec', 'delta_lider']].mean(axis=1)
+    
+    # Receptividade consenso
+    df['recep_princ_ch'] = df[col_agr_princ_chegada.replace('Agressividade', 'Receptividade')].apply(converter_escala).replace(0, pd.NA)
+    
+    return df
+
+def preparar_dados_regressao(df, col_tempo, col_negociador, col_tipologia, col_modalidade,
+                             col_resolucao=None, col_recep_chegada=None):
+    """
+    Prepara dados para regressão linear (codificação, tratamento de missing, etc)
+    """
+    df = df.copy()
+    
+    # Remover linhas com delta ou tempo faltantes
+    df = df.dropna(subset=['delta_consenso', col_tempo])
+    
+    if len(df) < 10:
+        return None, "Amostra muito pequena (N < 10)"
+    
+    # Converter tempo para minutos
+    df['tempo_min'] = df[col_tempo].apply(
+        lambda x: x[0]/60 if isinstance(x, list) else x/60 if pd.notna(x) else None
+    )
+    df = df[df['tempo_min'].notna()]
+    
+    # Codificar categóricas (one-hot encoding)
+    df_reg = df[['delta_consenso', 'tempo_min']].copy()
+    
+    # Negociador (reference: primeiro)
+    if col_negociador and col_negociador in df.columns:
+        neg_dummies = pd.get_dummies(df[col_negociador], prefix='neg', drop_first=True)
+        df_reg = pd.concat([df_reg, neg_dummies], axis=1)
+    
+    # Tipologia (reference: primeiro)
+    if col_tipologia and col_tipologia in df.columns:
+        tip_dummies = pd.get_dummies(df[col_tipologia], prefix='tip', drop_first=True)
+        df_reg = pd.concat([df_reg, tip_dummies], axis=1)
+    
+    # Modalidade (reference: primeiro)
+    if col_modalidade and col_modalidade in df.columns:
+        mod_dummies = pd.get_dummies(df[col_modalidade], prefix='mod', drop_first=True)
+        df_reg = pd.concat([df_reg, mod_dummies], axis=1)
+    
+    # Receptividade (contínua, escalar)
+    if col_recep_chegada and col_recep_chegada in df.columns:
+        df_reg['recep_consenso'] = df[col_recep_chegada].apply(converter_escala).replace(0, pd.NA)
+    
+    df_reg = df_reg.dropna()
+    
+    if len(df_reg) < 5:
+        return None, f"Amostra insuficiente após limpeza (N={len(df_reg)})"
+    
+    return df_reg, None
+
+def ajustar_regressao_linear(df_reg):
+    """
+    Ajusta modelo de regressão linear múltipla
+    Retorna coeficientes, estatísticas, diagnósticos
+    """
+    from scipy import stats as sp_stats
+    
+    # Preparar X e y
+    y = df_reg['delta_consenso'].values
+    X = df_reg.drop('delta_consenso', axis=1).values
+    colnames = df_reg.drop('delta_consenso', axis=1).columns.tolist()
+    
+    n = len(y)
+    k = X.shape[1]
+    
+    # Adicionar intercepto
+    X_com_const = np.column_stack([np.ones(n), X])
+    colnames_com_const = ['(Intercept)'] + colnames
+    
+    # Ajustar OLS
+    try:
+        beta = np.linalg.lstsq(X_com_const, y, rcond=None)[0]
+    except:
+        return None, "Erro ao ajustar modelo (matriz singular)"
+    
+    # Predições e resíduos
+    y_pred = X_com_const @ beta
+    residuos = y - y_pred
+    
+    # Soma de quadrados
+    ss_total = np.sum((y - np.mean(y))**2)
+    ss_residual = np.sum(residuos**2)
+    ss_regression = ss_total - ss_residual
+    
+    # R² e R² ajustado
+    r2 = 1 - (ss_residual / ss_total)
+    r2_adj = 1 - ((1 - r2) * (n - 1) / (n - k - 1))
+    
+    # Variância dos erros
+    mse = ss_residual / (n - k - 1)
+    se_residuos = np.sqrt(mse)
+    
+    # Matriz de covariância
+    try:
+        X_inv = np.linalg.inv(X_com_const.T @ X_com_const)
+        var_beta = mse * np.diag(X_inv)
+        se_beta = np.sqrt(np.maximum(var_beta, 0))  # Evitar sqrt de negativos
+    except:
+        se_beta = np.full_like(beta, np.nan)
+    
+    # t-stats e p-values
+    t_stats = np.where(se_beta != 0, beta / se_beta, np.nan)
+    p_values = 2 * (1 - sp_stats.t.cdf(np.abs(t_stats), n - k - 1))
+    
+    # IC 95%
+    t_crit = sp_stats.t.ppf(0.975, n - k - 1)
+    ic_lower = beta - t_crit * se_beta
+    ic_upper = beta + t_crit * se_beta
+    
+    # F-test global
+    f_stat = (ss_regression / k) / (ss_residual / (n - k - 1))
+    p_f = 1 - sp_stats.f.cdf(f_stat, k, n - k - 1)
+    
+    # Diagnósticos
+    # 1. Normalidade (Shapiro-Wilk)
+    _, p_shapiro = sp_stats.shapiro(residuos)
+    
+    # 2. Homocedasticidade (Breusch-Pagan)
+    residuos_sq = residuos**2
+    X_bp = np.column_stack([np.ones(n), X])
+    beta_bp = np.linalg.lstsq(X_bp, residuos_sq, rcond=None)[0]
+    y_bp_pred = X_bp @ beta_bp
+    ss_bp = np.sum((residuos_sq - np.mean(residuos_sq))**2)
+    ss_bp_res = np.sum((residuos_sq - y_bp_pred)**2)
+    bp_stat = (n * ss_bp_res) / (2 * (np.sum(residuos_sq)**2 / n))
+    p_bp = 1 - sp_stats.chi2.cdf(bp_stat, k)
+    
+    # 3. VIF (Variance Inflation Factor) - colinearidade
+    vif = []
+    for i in range(X.shape[1]):
+        X_temp = X[:, [j for j in range(X.shape[1]) if j != i]]
+        X_temp = np.column_stack([np.ones(n), X_temp])
+        try:
+            r2_temp = 1 - (np.sum((X[:, i] - (X_temp @ np.linalg.lstsq(X_temp, X[:, i], rcond=None)[0]))**2) / 
+                          np.sum((X[:, i] - np.mean(X[:, i]))**2))
+            vif.append(1 / (1 - r2_temp) if r2_temp < 0.99 else np.inf)
+        except:
+            vif.append(np.nan)
+    
+    resultado = {
+        'valido': True,
+        'n': n,
+        'k': k,
+        'beta': beta,
+        'colnames': colnames_com_const,
+        'se_beta': se_beta,
+        't_stats': t_stats,
+        'p_values': p_values,
+        'ic_lower': ic_lower,
+        'ic_upper': ic_upper,
+        'r2': r2,
+        'r2_adj': r2_adj,
+        'f_stat': f_stat,
+        'p_f': p_f,
+        'residuos': residuos,
+        'y_pred': y_pred,
+        'y_obs': y,
+        'mse': mse,
+        'se_residuos': se_residuos,
+        'p_shapiro': p_shapiro,
+        'p_bp': p_bp,
+        'vif': vif
+    }
+    
+    return resultado, None
+
+def extrair_coeficientes_significativos(resultado, threshold=0.05):
+    """
+    Extrai coeficientes significativos para visualização
+    """
+    df_coef = pd.DataFrame({
+        'Variável': resultado['colnames'],
+        'Coeficiente': resultado['beta'],
+        'SE': resultado['se_beta'],
+        't-stat': resultado['t_stats'],
+        'p-value': resultado['p_values'],
+        'IC_Lower': resultado['ic_lower'],
+        'IC_Upper': resultado['ic_upper']
+    })
+    
+    df_coef['Significativo'] = df_coef['p-value'] < threshold
+    df_coef = df_coef.sort_values('Coeficiente', key=abs, ascending=False)
+    
+    return df_coef
+
+def diagnosticos_qualidade(resultado):
+    """
+    Retorna interpretação dos diagnósticos do modelo
+    """
+    diagnosticos = {
+        'normalidade': {
+            'p_value': resultado['p_shapiro'],
+            'interpretacao': 'OK' if resultado['p_shapiro'] > 0.05 else 'Resíduos não normais',
+            'implicacao': 'Inferência válida' if resultado['p_shapiro'] > 0.05 else 'IC podem estar enviesados'
+        },
+        'homocedasticidade': {
+            'p_value': resultado['p_bp'],
+            'interpretacao': 'OK' if resultado['p_bp'] > 0.05 else 'Variância não homogênea',
+            'implicacao': 'Estimativas válidas' if resultado['p_bp'] > 0.05 else 'SE podem estar enviesados'
+        },
+        'colinearidade': {
+            'vif_max': max(resultado['vif']) if resultado['vif'] else np.nan,
+            'interpretacao': 'OK' if max(resultado['vif']) < 5 else 'Colinearidade detectada',
+            'implicacao': 'Coeficientes estáveis' if max(resultado['vif']) < 5 else 'Coeficientes podem estar instáveis'
+        }
+    }
+    
+    return diagnosticos
