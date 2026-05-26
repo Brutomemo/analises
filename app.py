@@ -4264,11 +4264,7 @@ Este sistema é protegido por direitos autorais e legislação aplicável. Repro
         st.markdown("---")
 
 
-        # DEBUG: Ver exatamente qual é o nome da coluna
-        st.write("Colunas do df_tec:", df_tec.columns.tolist())
-        st.write("Primeiras linhas:", df_tec.head())
-
-                       
+                             
 
         # ============================================================
         # ANÁLISE DE PERFIL DE NEGOCIADORES
