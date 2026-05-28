@@ -5364,9 +5364,9 @@ with aba_chat:
         ]
 
     # ── Renderizar histórico de chat ───────────────────────
-    for msg in st.session_state.mensagens_chat:
-        with st.chat_message(msg["role"]):
-            st.markdown(msg["content"])
+        for msg in st.session_state.mensagens_chat:
+            with st.chat_message(msg["role"]):
+                st.markdown(msg["content"])
 
     # ✅ CHAT INPUT - AQUI FORA DE QUALQUER CONTAINER
     pergunta = st.chat_input("Ex: Quais técnicas o negociador X mais usou?")
