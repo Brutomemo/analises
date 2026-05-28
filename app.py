@@ -5368,78 +5368,78 @@ with aba_chat:
             st.markdown(msg["content"])
 
     # ✅ CORRETO: chat_input FORA do expander
-pergunta = st.chat_input("Ex: Quais técnicas o negociador X mais usou?")
+    pergunta = st.chat_input("Ex: Quais técnicas o negociador X mais usou?")
 
-if pergunta:
-    with st.chat_message("user"):
-        st.markdown(pergunta)
-    st.session_state.mensagens_chat.append({"role": "user", "content": pergunta})
+    if pergunta:
+        with st.chat_message("user"):
+            st.markdown(pergunta)
+        st.session_state.mensagens_chat.append({"role": "user", "content": pergunta})
 
-    tipo_query = classificar_query(pergunta)
-    modelo_selecionado = selecionar_modelo(tipo_query)
-    temperatura_selecionada = selecionar_temperatura(tipo_query)
+        tipo_query = classificar_query(pergunta)
+        modelo_selecionado = selecionar_modelo(tipo_query)
+        temperatura_selecionada = selecionar_temperatura(tipo_query)
 
-    camada_label = "🧠 Camada Doutrinária ativa" if tipo_query == "doutrinaria" else "📊 Consulta factual"
-    
-    with st.spinner(f"[{camada_label}] A analisar os dados e a construir a resposta..."):
-        try:
-            historico_texto = ""
-            mensagens_recentes = st.session_state.mensagens_chat[-5:-1]
-            if len(mensagens_recentes) > 0:
-                historico_texto = "CONTEXTO DA CONVERSA RECENTE:\n" + "\n".join(
-                    [f"{m['role'].upper()}: {m['content']}" for m in mensagens_recentes]
-                ) + "\n\nNOVA PERGUNTA DO USUÁRIO:\n"
+        camada_label = "🧠 Camada Doutrinária ativa" if tipo_query == "doutrinaria" else "📊 Consulta factual"
+        
+        with st.spinner(f"[{camada_label}] A analisar os dados e a construir a resposta..."):
+            try:
+                historico_texto = ""
+                mensagens_recentes = st.session_state.mensagens_chat[-5:-1]
+                if len(mensagens_recentes) > 0:
+                    historico_texto = "CONTEXTO DA CONVERSA RECENTE:\n" + "\n".join(
+                        [f"{m['role'].upper()}: {m['content']}" for m in mensagens_recentes]
+                    ) + "\n\nNOVA PERGUNTA DO USUÁRIO:\n"
 
-            input_enriquecido = historico_texto + pergunta
-            prefix_dinamico = montar_prefix(tipo_query)
+                input_enriquecido = historico_texto + pergunta
+                prefix_dinamico = montar_prefix(tipo_query)
 
-            from langchain_openai import ChatOpenAI
-            import os
-            
-            # ✅ LER DE VARIÁVEIS DE AMBIENTE (Railway)
-            openai_api_key = os.getenv("OPENAI_API_KEY") or st.secrets.get("OPENAI_API_KEY")
-            if not openai_api_key:
-                raise ValueError("❌ OPENAI_API_KEY não configurada!")
-            
-            llm = ChatOpenAI(
-                model=modelo_selecionado,
-                temperature=temperatura_selecionada,
-                api_key=openai_api_key,  # ✅ MUDOU AQUI
-                max_tokens=4096,
-            )
+                from langchain_openai import ChatOpenAI
+                import os
+                
+                # ✅ LER DE VARIÁVEIS DE AMBIENTE (Railway)
+                openai_api_key = os.getenv("OPENAI_API_KEY") or st.secrets.get("OPENAI_API_KEY")
+                if not openai_api_key:
+                    raise ValueError("❌ OPENAI_API_KEY não configurada!")
+                
+                llm = ChatOpenAI(
+                    model=modelo_selecionado,
+                    temperature=temperatura_selecionada,
+                    api_key=openai_api_key,  # ✅ MUDOU AQUI
+                    max_tokens=4096,
+                )
 
-            from langchain_experimental.agents.agent_toolkits import create_pandas_dataframe_agent
-            
-            agent_executor = create_pandas_dataframe_agent(
-                llm=llm,
-                df=[df_chat, df_tec_chat, df_stats], 
-                verbose=True,
-                agent_type="openai-tools",
-                prefix=prefix_dinamico,
-                allow_dangerous_code=True,
-                max_iterations=10, 
-                handle_parsing_errors=True,
-                number_of_head_rows=1,
-            )
+                from langchain_experimental.agents.agent_toolkits import create_pandas_dataframe_agent
+                
+                agent_executor = create_pandas_dataframe_agent(
+                    llm=llm,
+                    df=[df_chat, df_tec_chat, df_stats], 
+                    verbose=True,
+                    agent_type="openai-tools",
+                    prefix=prefix_dinamico,
+                    allow_dangerous_code=True,
+                    max_iterations=10, 
+                    handle_parsing_errors=True,
+                    number_of_head_rows=1,
+                )
 
-            resultado = agent_executor.invoke({"input": input_enriquecido})
-            resposta = resultado.get("output", "Não consegui processar a resposta.")
-            registrar_interacao(pergunta, tipo_query, modelo_selecionado, len(resposta))
+                resultado = agent_executor.invoke({"input": input_enriquecido})
+                resposta = resultado.get("output", "Não consegui processar a resposta.")
+                registrar_interacao(pergunta, tipo_query, modelo_selecionado, len(resposta))
 
-        except Exception as e:
-            resposta = f"⚠️ **Erro na execução:** {str(e)}"
-    
-    with st.chat_message("assistant"):
-        st.markdown(resposta)
-    st.session_state.mensagens_chat.append({"role": "assistant", "content": resposta})
+            except Exception as e:
+                resposta = f"⚠️ **Erro na execução:** {str(e)}"
+        
+        with st.chat_message("assistant"):
+            st.markdown(resposta)
+        st.session_state.mensagens_chat.append({"role": "assistant", "content": resposta})
 
-# ── RODAPÉ INFORMATIVO ──────────────────────────────
-st.markdown("""
-<div style='margin-top:30px; margin-bottom:100px; padding:15px; 
-            background-color:#111; border-radius:8px;'>
-    <p style='color:#bbb; font-size:13px;'>
-    <b>Sobre o DELTA — Assistente Analítico GATE/PMESP:</b><br><br>
-    ...resto do conteúdo...
-    </p>
-</div>
-""", unsafe_allow_html=True)
+    # ── RODAPÉ INFORMATIVO ──────────────────────────────
+    st.markdown("""
+    <div style='margin-top:30px; margin-bottom:100px; padding:15px; 
+                background-color:#111; border-radius:8px;'>
+        <p style='color:#bbb; font-size:13px;'>
+        <b>Sobre o DELTA — Assistente Analítico GATE/PMESP:</b><br><br>
+        ...resto do conteúdo...
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
