@@ -4517,22 +4517,26 @@ Este sistema é protegido por direitos autorais e legislação aplicável. Repro
                             st.markdown("### ✔️ Recomendações Estratégicas")
                             st.markdown(relatorio_json.get("conclusao", "N/D"))
                             
+                            # ✅ COLUMNS FORA DO EXPANDER
+                            col_ia1, col_ia2 = st.columns(2)
+                            
+                            with col_ia1:
+                                st.markdown("**Objetivo Analítico**")
+                                st.markdown(relatorio_json.get("objetivo", "N/D"))
+                                
+                                st.markdown("**Premissas da Análise**")
+                                st.markdown(relatorio_json.get("premissas", "N/D"))
+                            
+                            with col_ia2:
+                                st.markdown("**Tamanho do Efeito**")
+                                st.markdown(relatorio_json.get("tamanho_efeito", "N/D"))
+                                
+                                st.markdown("**Limitações Técnicas**")
+                                st.markdown(relatorio_json.get("limitacoes", "N/D"))
+                            
+                            # ✅ EXPANDER AGORA FICA AQUI (opcional)
                             with st.expander("✔️ Ver Análise Completa (Expandir)"):
-                                col_ia1, col_ia2 = st.columns(2)
-                                
-                                with col_ia1:
-                                    st.markdown("**Objetivo Analítico**")
-                                    st.markdown(relatorio_json.get("objetivo", "N/D"))
-                                    
-                                    st.markdown("**Premissas da Análise**")
-                                    st.markdown(relatorio_json.get("premissas", "N/D"))
-                                
-                                with col_ia2:
-                                    st.markdown("**Tamanho do Efeito**")
-                                    st.markdown(relatorio_json.get("tamanho_efeito", "N/D"))
-                                    
-                                    st.markdown("**Limitações Técnicas**")
-                                    st.markdown(relatorio_json.get("limitacoes", "N/D"))
+                                st.markdown("Conteúdo do expander aqui")
 
                             st.markdown("---")
                             st.markdown("### 📥 Exportar Relatório em PDF")
