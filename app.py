@@ -983,60 +983,142 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-# ====
-# 3. CONEXÃO E NAVEGAÇÃO PRINCIPAL (ABAS)
-# ====
-# Os dados ja foram carregados acima no "porteiro" (lazy load com session_state).
-# Mantemos status_q/status_t aqui para compatibilidade com mensagens de erro abaixo.
+# ============================================================
+# 3. CONEXÃO E NAVEGAÇÃO PRINCIPAL
+# ============================================================
+
+# Os dados já foram carregados acima no "porteiro"
+# (lazy load com session_state).
+
 status_q = st.session_state.get("status_q", "OK")
 status_t = st.session_state.get("status_t", "OK")
+
+# ============================================================
+# CSS GLOBAL
+# ============================================================
 
 st.markdown(
     """
     <style>
-    .stTabs [data-baseweb="tab-list"] {
-        gap: 0;
-        border-bottom: 1.5px solid #2a2d35 !important;
-        background: transparent;
+
+    /* =====================================================
+       MENU HORIZONTAL
+    ===================================================== */
+
+    div[role="radiogroup"] {
+        display: flex;
+        gap: 0.5rem;
+        margin-bottom: 1.5rem;
+        border-bottom: 1.5px solid #2a2d35;
+        padding-bottom: 8px;
     }
-    .stTabs [data-baseweb="tab"] {
-        padding: 9px 22px;
-        font-size: 14px;
-        color: #8b8fa8;
-        border-bottom: 2px solid transparent;
-        background: transparent;
+
+    div[role="radiogroup"] label {
+        background: transparent !important;
+        border: none !important;
+        padding: 10px 18px !important;
+        border-radius: 6px;
+        color: #8b8fa8 !important;
+        font-size: 14px !important;
+        transition: all 0.2s ease;
     }
-    .stTabs [aria-selected="true"] {
+
+    div[role="radiogroup"] label:hover {
+        background: rgba(255,255,255,0.03) !important;
+        color: #d4d6e0 !important;
+    }
+
+    div[role="radiogroup"] label[data-checked="true"] {
         color: #d4a017 !important;
         border-bottom: 2px solid #d4a017 !important;
-        font-weight: 500;
+        font-weight: 600 !important;
     }
-    .stTabs [data-baseweb="tab"]:hover {
-        color: #d4d6e0;
-        background: rgba(255,255,255,0.03);
-    }
-    .stTabs [data-baseweb="tab-highlight"] { display: none; }
-    .stTabs [data-baseweb="tab-border"]    { display: none; }
 
-    /* TAMANHO DOS TÍTULOS H3 (###) */
-    h3 { font-size: 20px !important; font-weight: 500 !important; }
-    /* Se quiser ajustar H2 (##) também: */
-    h2 { font-size: 22px !important; font-weight: 500 !important; }
+    /* =====================================================
+       ESCONDE CÍRCULO DO RADIO
+    ===================================================== */
+
+    div[role="radiogroup"] input {
+        display: none;
+    }
+
+    /* =====================================================
+       TÍTULOS
+    ===================================================== */
+
+    h3 {
+        font-size: 20px !important;
+        font-weight: 500 !important;
+    }
+
+    h2 {
+        font-size: 22px !important;
+        font-weight: 500 !important;
+    }
+
     </style>
     """,
     unsafe_allow_html=True,
 )
 
+# ============================================================
+# VALIDAÇÃO AIRTABLE
+# ============================================================
+
 if df_quali.empty:
-    st.error(f"Erro na conexão com Airtable: {status_q}")
+
+    st.error(
+        f"Erro na conexão com Airtable: {status_q}"
+    )
+
 else:
-    # INCLUSÃO DA TERCEIRA ABA (Chat Analítico)
-    aba_individual, aba_geral, aba_chat = st.tabs(["✔ Visão seletiva", "✔ Série Histórica", "✔ Chat Analítico"])
+
+    # ========================================================
+    # NAVEGAÇÃO PRINCIPAL
+    # ========================================================
+
+    pagina = st.radio(
+        label="",
+        options=[
+            "✔ Visão seletiva",
+            "✔ Série Histórica",
+            "✔ Chat Analítico"
+        ],
+        horizontal=True,
+        key="menu_principal_delta"
+    )
+
+    # ========================================================
+    # ABA 1 — VISÃO SELETIVA
+    # ========================================================
+
+    if pagina == "✔ Visão seletiva":
+
+        # SEU CÓDIGO DA ABA INDIVIDUAL AQUI
+        pass
+
+    # ========================================================
+    # ABA 2 — SÉRIE HISTÓRICA
+    # ========================================================
+
+    elif pagina == "✔ Série Histórica":
+
+        # SEU CÓDIGO DA ABA GERAL AQUI
+        pass
+
+    # ========================================================
+    # ABA 3 — CHAT ANALÍTICO
+    # ========================================================
+
+    elif pagina == "✔ Chat Analítico":
+
+        # SEU BLOCO DO CHAT AQUI
+        pass
                  
     # ====
 # ABA 1: VISÃO DA NEGOCIAÇÃO SOBRE O INCIDENTE EM ANÁLISE
 # ====
-with aba_individual:
+if pagina == "✔ Visão seletiva":
     st.markdown("<h5 style='color: #FFD700;'> Seleção e Metadados da Ocorrência</h5>", unsafe_allow_html=True)        
 
     df_quali['Neg_Limpo'] = df_quali['Negociador Principal'].apply(limpar_valor)
@@ -2972,7 +3054,7 @@ Este sistema é protegido por direitos autorais e legislação aplicável. Repro
     # ====
     # ABA 2: PAINEL (HISTÓRICO)
     # ====
-    with aba_geral:
+elif pagina == "✔ Série Histórica":
         st.markdown("### Série Histórica - Negociações GATE")
         st.markdown("<h5 style='color: #f97;'>Filtros por: Negociador, Tipologia e Modalidade do Incidente</h5>", unsafe_allow_html=True)
         
@@ -5314,393 +5396,392 @@ def preparar_df_estatisticas(stats_calculados) -> pd.DataFrame:
 # BLOCO F — INTERFACE DO CHAT
 # ============================================================
 
-with aba_chat:
+elif pagina == "✔ Chat Analítico":
+st.markdown("### 💬 DELTA-NEGOCIAÇÃO — Assistente Analítico Operacional | GATE")
 
-    st.markdown("### 💬 DELTA-NEGOCIAÇÃO — Assistente Analítico Operacional | GATE")
+st.markdown(
+    """
+    <p style='color:#aaa; font-size:13px;'>
+    Consultas baseadas exclusivamente em dados reais via Tool Calling.
+    O agente executa análises Pandas cruzando Ocorrências e Técnicas,
+    interpreta modelos estatísticos e traça perfis operacionais de negociadores.
+    </p>
+    """,
+    unsafe_allow_html=True,
+)
 
-    st.markdown(
-        """
-        <p style='color:#aaa; font-size:13px;'>
-        Consultas baseadas exclusivamente em dados reais via Tool Calling.
-        O agente executa análises Pandas cruzando Ocorrências e Técnicas,
-        interpreta modelos estatísticos e traça perfis operacionais de negociadores.
-        </p>
-        """,
-        unsafe_allow_html=True,
+# ─────────────────────────────────────────────
+# PREPARAÇÃO DOS DADOS
+# ─────────────────────────────────────────────
+
+if "df_quali" not in st.session_state or "df_tec" not in st.session_state:
+
+    with st.spinner("A sincronizar a base de dados com o Airtable..."):
+
+        import airtable_link
+
+        df_q, _ = airtable_link.buscar_dados_apa()
+        df_t, _ = airtable_link.buscar_todas_tecnicas()
+
+        st.session_state["df_quali"] = df_q
+        st.session_state["df_tec"] = df_t
+
+df_chat = preparar_df_ocorrencias(
+    st.session_state["df_quali"]
+)
+
+df_tec_chat = preparar_df_tecnicas(
+    st.session_state["df_tec"]
+)
+
+stats_calculados = st.session_state.get(
+    "stats_calculados",
+    "Nenhuma análise estatística processada."
+)
+
+df_stats = preparar_df_estatisticas(
+    stats_calculados
+)
+
+# ─────────────────────────────────────────────
+# HISTÓRICO DO CHAT
+# ─────────────────────────────────────────────
+
+if "mensagens_chat" not in st.session_state:
+
+    st.session_state.mensagens_chat = [
+
+        {
+            "role": "assistant",
+            "content": (
+                "🟢 **DELTA operacional.** "
+                "Base de ocorrências e banco de técnicas conectados.\n\n"
+
+                "Posso responder a consultas descritivas, "
+                "cruzar dados entre ocorrências e técnicas, "
+                "interpretar modelos estatísticos "
+                "(Spearman, χ², GEE), "
+                "traçar perfis de negociadores "
+                "e sugerir treinos com base nos dados.\n\n"
+
+                "**Exemplos de perguntas:**\n"
+
+                "- Perguntas descritivas\n"
+                "- Quais as 5 técnicas mais usadas em ocorrências com resolução X?\n"
+                "- Trace o perfil operacional completo do negociador X."
+            )
+        }
+
+    ]
+
+# ─────────────────────────────────────────────
+# RENDERIZAÇÃO DO HISTÓRICO
+# ─────────────────────────────────────────────
+
+for msg in st.session_state.mensagens_chat:
+
+    with st.chat_message(msg["role"]):
+
+        st.markdown(msg["content"])
+
+# ─────────────────────────────────────────────
+# INPUT CUSTOMIZADO
+# (SUBSTITUI st.chat_input)
+# ─────────────────────────────────────────────
+
+st.markdown("### 📥 Consulta Operacional")
+
+col1, col2 = st.columns([8, 1])
+
+with col1:
+
+    pergunta = st.text_input(
+        label="",
+        placeholder="Ex: Quais técnicas o negociador X mais usou?",
+        key="chat_input_operacional"
     )
 
-    # ─────────────────────────────────────────────
-    # PREPARAÇÃO DOS DADOS
-    # ─────────────────────────────────────────────
+with col2:
 
-    if "df_quali" not in st.session_state or "df_tec" not in st.session_state:
-
-        with st.spinner("A sincronizar a base de dados com o Airtable..."):
-
-            import airtable_link
-
-            df_q, _ = airtable_link.buscar_dados_apa()
-            df_t, _ = airtable_link.buscar_todas_tecnicas()
-
-            st.session_state["df_quali"] = df_q
-            st.session_state["df_tec"] = df_t
-
-    df_chat = preparar_df_ocorrencias(
-        st.session_state["df_quali"]
+    enviar = st.button(
+        "Enviar",
+        use_container_width=True
     )
 
-    df_tec_chat = preparar_df_tecnicas(
-        st.session_state["df_tec"]
+# ─────────────────────────────────────────────
+# PROCESSAMENTO DA PERGUNTA
+# ─────────────────────────────────────────────
+
+if enviar and pergunta:
+
+    # USER MESSAGE
+
+    with st.chat_message("user"):
+
+        st.markdown(pergunta)
+
+    st.session_state.mensagens_chat.append(
+        {
+            "role": "user",
+            "content": pergunta
+        }
     )
 
-    stats_calculados = st.session_state.get(
-        "stats_calculados",
-        "Nenhuma análise estatística processada."
+    # CLASSIFICAÇÃO
+
+    tipo_query = classificar_query(pergunta)
+
+    modelo_selecionado = selecionar_modelo(
+        tipo_query
     )
 
-    df_stats = preparar_df_estatisticas(
-        stats_calculados
+    temperatura_selecionada = selecionar_temperatura(
+        tipo_query
     )
 
-    # ─────────────────────────────────────────────
-    # HISTÓRICO DO CHAT
-    # ─────────────────────────────────────────────
+    camada_label = (
+        "Camada Doutrinária ativa"
+        if tipo_query == "doutrinaria"
+        else "Consulta factual"
+    )
 
-    if "mensagens_chat" not in st.session_state:
+    # PROCESSAMENTO PRINCIPAL
 
-        st.session_state.mensagens_chat = [
+    with st.spinner(
+        f"[{camada_label}] "
+        "A analisar os dados e a construir a resposta..."
+    ):
 
-            {
-                "role": "assistant",
-                "content": (
-                    "🟢 **DELTA operacional.** "
-                    "Base de ocorrências e banco de técnicas conectados.\n\n"
+        try:
 
-                    "Posso responder a consultas descritivas, "
-                    "cruzar dados entre ocorrências e técnicas, "
-                    "interpretar modelos estatísticos "
-                    "(Spearman, χ², GEE), "
-                    "traçar perfis de negociadores "
-                    "e sugerir treinos com base nos dados.\n\n"
+            historico_texto = ""
 
-                    "**Exemplos de perguntas:**\n"
+            mensagens_recentes = (
+                st.session_state.mensagens_chat[-5:-1]
+            )
 
-                    "- Perguntas descritivas\n"
-                    "- Quais as 5 técnicas mais usadas em ocorrências com resolução X?\n"
-                    "- Trace o perfil operacional completo do negociador X."
-                )
-            }
+            if len(mensagens_recentes) > 0:
 
-        ]
-
-    # ─────────────────────────────────────────────
-    # RENDERIZAÇÃO DO HISTÓRICO
-    # ─────────────────────────────────────────────
-
-    for msg in st.session_state.mensagens_chat:
-
-        with st.chat_message(msg["role"]):
-
-            st.markdown(msg["content"])
-
-    # ─────────────────────────────────────────────
-    # INPUT CUSTOMIZADO
-    # (SUBSTITUI st.chat_input)
-    # ─────────────────────────────────────────────
-
-    st.markdown("### 📥 Consulta Operacional")
-
-    col1, col2 = st.columns([8, 1])
-
-    with col1:
-
-        pergunta = st.text_input(
-            label="",
-            placeholder="Ex: Quais técnicas o negociador X mais usou?",
-            key="chat_input_operacional"
-        )
-
-    with col2:
-
-        enviar = st.button(
-            "Enviar",
-            use_container_width=True
-        )
-
-    # ─────────────────────────────────────────────
-    # PROCESSAMENTO DA PERGUNTA
-    # ─────────────────────────────────────────────
-
-    if enviar and pergunta:
-
-        # USER MESSAGE
-
-        with st.chat_message("user"):
-
-            st.markdown(pergunta)
-
-        st.session_state.mensagens_chat.append(
-            {
-                "role": "user",
-                "content": pergunta
-            }
-        )
-
-        # CLASSIFICAÇÃO
-
-        tipo_query = classificar_query(pergunta)
-
-        modelo_selecionado = selecionar_modelo(
-            tipo_query
-        )
-
-        temperatura_selecionada = selecionar_temperatura(
-            tipo_query
-        )
-
-        camada_label = (
-            "🧠 Camada Doutrinária ativa"
-            if tipo_query == "doutrinaria"
-            else "📊 Consulta factual"
-        )
-
-        # PROCESSAMENTO PRINCIPAL
-
-        with st.spinner(
-            f"[{camada_label}] "
-            "A analisar os dados e a construir a resposta..."
-        ):
-
-            try:
-
-                historico_texto = ""
-
-                mensagens_recentes = (
-                    st.session_state.mensagens_chat[-5:-1]
-                )
-
-                if len(mensagens_recentes) > 0:
-
-                    historico_texto = (
-                        "CONTEXTO DA CONVERSA RECENTE:\n"
-                        +
-                        "\n".join(
-                            [
-                                f"{m['role'].upper()}: {m['content']}"
-                                for m in mensagens_recentes
-                            ]
-                        )
-                        +
-                        "\n\nNOVA PERGUNTA DO USUÁRIO:\n"
+                historico_texto = (
+                    "CONTEXTO DA CONVERSA RECENTE:\n"
+                    +
+                    "\n".join(
+                        [
+                            f"{m['role'].upper()}: {m['content']}"
+                            for m in mensagens_recentes
+                        ]
                     )
-
-                input_enriquecido = (
-                    historico_texto + pergunta
+                    +
+                    "\n\nNOVA PERGUNTA DO USUÁRIO:\n"
                 )
 
-                prefix_dinamico = montar_prefix(
-                    tipo_query
+            input_enriquecido = (
+                historico_texto + pergunta
+            )
+
+            prefix_dinamico = montar_prefix(
+                tipo_query
+            )
+
+            from langchain_openai import ChatOpenAI
+            from langchain_experimental.agents.agent_toolkits import (
+                create_pandas_dataframe_agent
+            )
+
+            import os
+
+            # ─────────────────────────────────
+            # OPENAI API KEY
+            # ─────────────────────────────────
+
+            openai_api_key = (
+                os.getenv("OPENAI_API_KEY")
+                or
+                st.secrets.get("OPENAI_API_KEY")
+            )
+
+            if not openai_api_key:
+
+                raise ValueError(
+                    "❌ OPENAI_API_KEY não configurada!"
                 )
 
-                from langchain_openai import ChatOpenAI
-                from langchain_experimental.agents.agent_toolkits import (
-                    create_pandas_dataframe_agent
+            # ─────────────────────────────────
+            # MODELO
+            # ─────────────────────────────────
+
+            llm = ChatOpenAI(
+                model=modelo_selecionado,
+                temperature=temperatura_selecionada,
+                api_key=openai_api_key,
+                max_tokens=4096,
+            )
+
+            # ─────────────────────────────────
+            # AGENTE PANDAS
+            # ─────────────────────────────────
+
+            agent_executor = (
+                create_pandas_dataframe_agent(
+                    llm=llm,
+                    df=[
+                        df_chat,
+                        df_tec_chat,
+                        df_stats
+                    ],
+                    verbose=True,
+                    agent_type="openai-tools",
+                    prefix=prefix_dinamico,
+                    allow_dangerous_code=True,
+                    max_iterations=10,
+                    handle_parsing_errors=True,
+                    number_of_head_rows=1,
                 )
+            )
 
-                import os
+            # ─────────────────────────────────
+            # EXECUÇÃO
+            # ─────────────────────────────────
 
-                # ─────────────────────────────────
-                # OPENAI API KEY
-                # ─────────────────────────────────
+            resultado = agent_executor.invoke(
+                {
+                    "input": input_enriquecido
+                }
+            )
 
-                openai_api_key = (
-                    os.getenv("OPENAI_API_KEY")
-                    or
-                    st.secrets.get("OPENAI_API_KEY")
-                )
+            resposta = resultado.get(
+                "output",
+                "Não consegui processar a resposta."
+            )
 
-                if not openai_api_key:
+            registrar_interacao(
+                pergunta,
+                tipo_query,
+                modelo_selecionado,
+                len(resposta)
+            )
 
-                    raise ValueError(
-                        "❌ OPENAI_API_KEY não configurada!"
-                    )
+        except Exception as e:
 
-                # ─────────────────────────────────
-                # MODELO
-                # ─────────────────────────────────
+            resposta = (
+                f"⚠️ **Erro na execução:** {str(e)}"
+            )
 
-                llm = ChatOpenAI(
-                    model=modelo_selecionado,
-                    temperature=temperatura_selecionada,
-                    api_key=openai_api_key,
-                    max_tokens=4096,
-                )
+    # ─────────────────────────────────────────
+    # RESPOSTA DO ASSISTENTE
+    # ─────────────────────────────────────────
 
-                # ─────────────────────────────────
-                # AGENTE PANDAS
-                # ─────────────────────────────────
+    with st.chat_message("assistant"):
 
-                agent_executor = (
-                    create_pandas_dataframe_agent(
-                        llm=llm,
-                        df=[
-                            df_chat,
-                            df_tec_chat,
-                            df_stats
-                        ],
-                        verbose=True,
-                        agent_type="openai-tools",
-                        prefix=prefix_dinamico,
-                        allow_dangerous_code=True,
-                        max_iterations=10,
-                        handle_parsing_errors=True,
-                        number_of_head_rows=1,
-                    )
-                )
+        st.markdown(resposta)
 
-                # ─────────────────────────────────
-                # EXECUÇÃO
-                # ─────────────────────────────────
-
-                resultado = agent_executor.invoke(
-                    {
-                        "input": input_enriquecido
-                    }
-                )
-
-                resposta = resultado.get(
-                    "output",
-                    "Não consegui processar a resposta."
-                )
-
-                registrar_interacao(
-                    pergunta,
-                    tipo_query,
-                    modelo_selecionado,
-                    len(resposta)
-                )
-
-            except Exception as e:
-
-                resposta = (
-                    f"⚠️ **Erro na execução:** {str(e)}"
-                )
-
-        # ─────────────────────────────────────────
-        # RESPOSTA DO ASSISTENTE
-        # ─────────────────────────────────────────
-
-        with st.chat_message("assistant"):
-
-            st.markdown(resposta)
-
-        st.session_state.mensagens_chat.append(
-            {
-                "role": "assistant",
-                "content": resposta
-            }
-        )
-
-    # ─────────────────────────────────────────────
-    # RODAPÉ
-    # ─────────────────────────────────────────────
-
-    st.markdown(
-        """
-        <div style='margin-top:20px;
-                    margin-bottom:100px;
-                    padding:15px;
-                    background-color:#111;
-                    border-radius:8px;'>
-
-        <p style="
-            color:#bbb;
-            font-size:13px;
-            line-height:1.7;
-            text-align:left;
-        ">
-
-        <span style="
-            color:#ffae42;
-            font-weight:700;
-            font-size:14px;
-            letter-spacing:1px;
-        ">
-        DELTA-NEGOCIAÇÃO — GATE/PMESP
-        </span>
-
-        <br><br>
-
-        "O maior inimigo do conhecimento não é a ignorância,
-        mas a ilusão do conhecimento."
-        — Stephen Hawking.
-
-        <br><br>
-
-        “Sem dados, você é apenas mais uma pessoa com opinião.”
-        — W. Edwards Deming.
-
-        <br><br>
-
-        Empenhados no desenvolvimento de treinamentos
-        e na avaliação dos Negociadores,
-        alicerçados no pensamento técnico-científico
-        e no valor humano, guiados por dados.
-
-        <br><br>
-
-        <span style="
-            color:#ffae42;
-            font-weight:600;
-        ">
-        NEGOCIAÇÃO!
-        </span>
-
-        <br><br>
-
-        <span style="
-            color:#777;
-            font-size:11px;
-        ">
-        Dados confidenciais,
-        de uso exclusivo da equipe de Negociação
-        do Grupo de Ações Táticas Especiais.
-        </span>
-
-        </p>
-
-        <hr style="
-            border:none;
-            height:1px;
-            background:linear-gradient(
-                to right,
-                transparent,
-                rgba(255,174,66,0.6),
-                transparent
-            );
-            margin-top:18px;
-            margin-bottom:12px;
-        ">
-
-        <div style="
-            text-align:center;
-            font-size:11px;
-            color:#666;
-            line-height:1.5;
-        ">
-        © 2026 AXIOM - Strategic Intelligence Ltda —
-        Todos os direitos reservados.<br>
-
-        Este sistema é protegido por direitos autorais
-        e legislação aplicável.
-
-        Reprodução, distribuição,
-        engenharia reversa,
-        modificação ou utilização não autorizada
-        são proibidas.
-        </div>
-
-        </div>
-        """,
-        unsafe_allow_html=True
+    st.session_state.mensagens_chat.append(
+        {
+            "role": "assistant",
+            "content": resposta
+        }
     )
+
+# ─────────────────────────────────────────────
+# RODAPÉ
+# ─────────────────────────────────────────────
+
+st.markdown(
+    """
+    <div style='margin-top:20px;
+                margin-bottom:100px;
+                padding:15px;
+                background-color:#111;
+                border-radius:8px;'>
+
+    <p style="
+        color:#bbb;
+        font-size:13px;
+        line-height:1.7;
+        text-align:left;
+    ">
+
+    <span style="
+        color:#ffae42;
+        font-weight:700;
+        font-size:14px;
+        letter-spacing:1px;
+    ">
+    DELTA-NEGOCIAÇÃO — GATE/PMESP
+    </span>
+
+    <br><br>
+
+    "O maior inimigo do conhecimento não é a ignorância,
+    mas a ilusão do conhecimento."
+    — Stephen Hawking.
+
+    <br><br>
+
+    “Sem dados, você é apenas mais uma pessoa com opinião.”
+    — W. Edwards Deming.
+
+    <br><br>
+
+    Empenhados no desenvolvimento de treinamentos
+    e na avaliação dos Negociadores,
+    alicerçados no pensamento técnico-científico
+    e no valor humano, guiados por dados.
+
+    <br><br>
+
+    <span style="
+        color:#ffae42;
+        font-weight:600;
+    ">
+    NEGOCIAÇÃO!
+    </span>
+
+    <br><br>
+
+    <span style="
+        color:#777;
+        font-size:11px;
+    ">
+    Dados confidenciais,
+    de uso exclusivo da equipe de Negociação
+    do Grupo de Ações Táticas Especiais.
+    </span>
+
+    </p>
+
+    <hr style="
+        border:none;
+        height:1px;
+        background:linear-gradient(
+            to right,
+            transparent,
+            rgba(255,174,66,0.6),
+            transparent
+        );
+        margin-top:18px;
+        margin-bottom:12px;
+    ">
+
+    <div style="
+        text-align:center;
+        font-size:11px;
+        color:#666;
+        line-height:1.5;
+    ">
+    © 2026 AXIOM - Strategic Intelligence Ltda —
+    Todos os direitos reservados.<br>
+
+    Este sistema é protegido por direitos autorais
+    e legislação aplicável.
+
+    Reprodução, distribuição,
+    engenharia reversa,
+    modificação ou utilização não autorizada
+    são proibidas.
+    </div>
+
+    </div>
+    """,
+    unsafe_allow_html=True
+)
