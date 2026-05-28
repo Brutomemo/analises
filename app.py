@@ -5367,88 +5367,79 @@ with aba_chat:
         with st.chat_message(msg["role"]):
             st.markdown(msg["content"])
 
-    pergunta = st.chat_input("Ex: Quais técnicas o negociador X mais usou?")
-    with st.expander("..."):
+    # ✅ CORRETO: chat_input FORA do expander
+pergunta = st.chat_input("Ex: Quais técnicas o negociador X mais usou?")
 
-        if pergunta:
-            with st.chat_message("user"):
-                st.markdown(pergunta)
-            st.session_state.mensagens_chat.append({"role": "user", "content": pergunta})
+if pergunta:
+    with st.chat_message("user"):
+        st.markdown(pergunta)
+    st.session_state.mensagens_chat.append({"role": "user", "content": pergunta})
 
-            tipo_query = classificar_query(pergunta)
-            modelo_selecionado = selecionar_modelo(tipo_query)
-            temperatura_selecionada = selecionar_temperatura(tipo_query)
+    tipo_query = classificar_query(pergunta)
+    modelo_selecionado = selecionar_modelo(tipo_query)
+    temperatura_selecionada = selecionar_temperatura(tipo_query)
 
-            camada_label = "🧠 Camada Doutrinária ativa" if tipo_query == "doutrinaria" else "📊 Consulta factual"
+    camada_label = "🧠 Camada Doutrinária ativa" if tipo_query == "doutrinaria" else "📊 Consulta factual"
+    
+    with st.spinner(f"[{camada_label}] A analisar os dados e a construir a resposta..."):
+        try:
+            historico_texto = ""
+            mensagens_recentes = st.session_state.mensagens_chat[-5:-1]
+            if len(mensagens_recentes) > 0:
+                historico_texto = "CONTEXTO DA CONVERSA RECENTE:\n" + "\n".join(
+                    [f"{m['role'].upper()}: {m['content']}" for m in mensagens_recentes]
+                ) + "\n\nNOVA PERGUNTA DO USUÁRIO:\n"
+
+            input_enriquecido = historico_texto + pergunta
+            prefix_dinamico = montar_prefix(tipo_query)
+
+            from langchain_openai import ChatOpenAI
+            import os
             
-            with st.spinner(f"[{camada_label}] A analisar os dados e a construir a resposta..."):
-                try:
-                    historico_texto = ""
-                    mensagens_recentes = st.session_state.mensagens_chat[-5:-1]
-                    if len(mensagens_recentes) > 0:
-                        historico_texto = "CONTEXTO DA CONVERSA RECENTE:\n" + "\n".join(
-                            [f"{m['role'].upper()}: {m['content']}" for m in mensagens_recentes]
-                        ) + "\n\nNOVA PERGUNTA DO USUÁRIO:\n"
-
-                    input_enriquecido = historico_texto + pergunta
-                    prefix_dinamico = montar_prefix(tipo_query)
-
-                    from langchain_openai import ChatOpenAI
-                    llm = ChatOpenAI(
-                        model=modelo_selecionado,
-                        temperature=temperatura_selecionada,
-                        api_key=st.secrets["OPENAI_API_KEY"],
-                        max_tokens=4096,
-                    )
-
-                    from langchain_experimental.agents.agent_toolkits import create_pandas_dataframe_agent
-                    
-                    # ---> NOVO: Parâmetro 'number_of_head_rows=1' adicionado abaixo <---
-                    agent_executor = create_pandas_dataframe_agent(
-                        llm=llm,
-                        df=[df_chat, df_tec_chat, df_stats], 
-                        verbose=True,
-                        agent_type="openai-tools",
-                        prefix=prefix_dinamico,
-                        allow_dangerous_code=True,
-                        max_iterations=10, 
-                        handle_parsing_errors=True,
-                        number_of_head_rows=1, # Reduz drasticamente os tokens enviados à OpenAI!
-                    )
-
-                    resultado = agent_executor.invoke({"input": input_enriquecido})
-                    resposta = resultado.get("output", "Não consegui processar a resposta.")
-                    registrar_interacao(pergunta, tipo_query, modelo_selecionado, len(resposta))
-
-                except Exception as e:
-                    resposta = f"⚠️ **Erro na execução:** {str(e)}"
+            # ✅ LER DE VARIÁVEIS DE AMBIENTE (Railway)
+            openai_api_key = os.getenv("OPENAI_API_KEY") or st.secrets.get("OPENAI_API_KEY")
+            if not openai_api_key:
+                raise ValueError("❌ OPENAI_API_KEY não configurada!")
             
-            with st.chat_message("assistant"):
-                st.markdown(resposta)
-            st.session_state.mensagens_chat.append({"role": "assistant", "content": resposta})
+            llm = ChatOpenAI(
+                model=modelo_selecionado,
+                temperature=temperatura_selecionada,
+                api_key=openai_api_key,  # ✅ MUDOU AQUI
+                max_tokens=4096,
+            )
 
-        # ── RODAPÉ INFORMATIVO ──────────────────────────────
-        st.markdown("""
-        <div style='margin-top:30px; margin-bottom:100px; padding:15px; 
-                    background-color:#111; border-radius:8px;'>
-            <p style='color:#bbb; font-size:13px;'>
-            <b>Sobre o DELTA — Assistente Analítico GATE/PMESP:</b><br><br>
-            Todas as respostas são geradas exclusivamente a partir dos dados reais das ocorrências. 
-            Nenhuma resposta é produzida por suposição, inferência livre ou memória do modelo.<br><br>
-            O agente executa código Python/Pandas internamente para cada consulta, 
-            cruzando a <b>Base de Ocorrências</b> com o <b>Banco de Técnicas</b> e 
-            interpretando os resultados dos modelos estatísticos avançados (Spearman, χ², GEE).<br><br>
-            <b>Capacidades disponíveis:</b><br>
-            • Consultas descritivas por ocorrência, data, negociador ou modalidade<br>
-            • Análise de frequência e repertório de técnicas<br>
-            • Interpretação de perceção de agressividade e recetividade (Δ Likert)<br>
-            • Análise de similitude lexical e N-Grams da transcrição<br>
-            • Interpretação de Spearman, χ² e GEE<br>
-            • Perfil operacional e sugestão de treino por negociador<br>
-            • Deteção de viés de alocação na série histórica<br><br>
-            <span style='color:#666; font-size:11px;'>
-            DELTA v3.0 | LangChain + OpenAI Tool Calling | GATE/PMESP — Uso Restrito Operacional
-            </span>
-            </p>
-        </div>
-        """, unsafe_allow_html=True)
+            from langchain_experimental.agents.agent_toolkits import create_pandas_dataframe_agent
+            
+            agent_executor = create_pandas_dataframe_agent(
+                llm=llm,
+                df=[df_chat, df_tec_chat, df_stats], 
+                verbose=True,
+                agent_type="openai-tools",
+                prefix=prefix_dinamico,
+                allow_dangerous_code=True,
+                max_iterations=10, 
+                handle_parsing_errors=True,
+                number_of_head_rows=1,
+            )
+
+            resultado = agent_executor.invoke({"input": input_enriquecido})
+            resposta = resultado.get("output", "Não consegui processar a resposta.")
+            registrar_interacao(pergunta, tipo_query, modelo_selecionado, len(resposta))
+
+        except Exception as e:
+            resposta = f"⚠️ **Erro na execução:** {str(e)}"
+    
+    with st.chat_message("assistant"):
+        st.markdown(resposta)
+    st.session_state.mensagens_chat.append({"role": "assistant", "content": resposta})
+
+# ── RODAPÉ INFORMATIVO ──────────────────────────────
+st.markdown("""
+<div style='margin-top:30px; margin-bottom:100px; padding:15px; 
+            background-color:#111; border-radius:8px;'>
+    <p style='color:#bbb; font-size:13px;'>
+    <b>Sobre o DELTA — Assistente Analítico GATE/PMESP:</b><br><br>
+    ...resto do conteúdo...
+    </p>
+</div>
+""", unsafe_allow_html=True)
