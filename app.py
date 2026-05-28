@@ -5310,99 +5310,225 @@ def preparar_df_estatisticas(stats_calculados) -> pd.DataFrame:
     except Exception:
         return pd.DataFrame([{"Status": "Sem dados estatísticos processados"}])
 
-
 # ============================================================
-# BLOCO F — INTERFACE DO CHAT 
+# BLOCO F — INTERFACE DO CHAT
 # ============================================================
 
 with aba_chat:
+
     st.markdown("### 💬 DELTA-NEGOCIAÇÃO — Assistente Analítico Operacional | GATE")
+
     st.markdown(
-        "<p style='color:#aaa; font-size:13px;'>"
-        "Consultas baseadas exclusivamente em dados reais via Tool Calling. "
-        "O agente executa análises Pandas cruzando Ocorrências e Técnicas, "
-        "interpreta modelos estatísticos e traça perfis operacionais de negociadores."
-        "</p>",
+        """
+        <p style='color:#aaa; font-size:13px;'>
+        Consultas baseadas exclusivamente em dados reais via Tool Calling.
+        O agente executa análises Pandas cruzando Ocorrências e Técnicas,
+        interpreta modelos estatísticos e traça perfis operacionais de negociadores.
+        </p>
+        """,
         unsafe_allow_html=True,
     )
 
-    # ── Preparação dos dados (BLINDADA E LIMPA) ──────────────────
-    
+    # ─────────────────────────────────────────────
+    # PREPARAÇÃO DOS DADOS
+    # ─────────────────────────────────────────────
+
     if "df_quali" not in st.session_state or "df_tec" not in st.session_state:
+
         with st.spinner("A sincronizar a base de dados com o Airtable..."):
+
             import airtable_link
+
             df_q, _ = airtable_link.buscar_dados_apa()
             df_t, _ = airtable_link.buscar_todas_tecnicas()
+
             st.session_state["df_quali"] = df_q
             st.session_state["df_tec"] = df_t
 
-    df_chat = preparar_df_ocorrencias(st.session_state["df_quali"])
-    df_tec_chat = preparar_df_tecnicas(st.session_state["df_tec"])
-    
+    df_chat = preparar_df_ocorrencias(
+        st.session_state["df_quali"]
+    )
+
+    df_tec_chat = preparar_df_tecnicas(
+        st.session_state["df_tec"]
+    )
+
     stats_calculados = st.session_state.get(
-        "stats_calculados", 
+        "stats_calculados",
         "Nenhuma análise estatística processada."
     )
-    df_stats = preparar_df_estatisticas(stats_calculados)
 
-    # ── Inicialização do histórico de chat ───────────────────────
+    df_stats = preparar_df_estatisticas(
+        stats_calculados
+    )
+
+    # ─────────────────────────────────────────────
+    # HISTÓRICO DO CHAT
+    # ─────────────────────────────────────────────
+
     if "mensagens_chat" not in st.session_state:
+
         st.session_state.mensagens_chat = [
+
             {
-                "role": "assistant", 
+                "role": "assistant",
                 "content": (
-                    "🟢 **DELTA operacional.** Base de ocorrências e banco de técnicas conectados.\n\n"
-                    "Posso responder a consultas descritivas, cruzar dados entre ocorrências e técnicas, "
-                    "interpretar modelos estatísticos (Spearman, χ², GEE), traçar perfis de negociadores "
+                    "🟢 **DELTA operacional.** "
+                    "Base de ocorrências e banco de técnicas conectados.\n\n"
+
+                    "Posso responder a consultas descritivas, "
+                    "cruzar dados entre ocorrências e técnicas, "
+                    "interpretar modelos estatísticos "
+                    "(Spearman, χ², GEE), "
+                    "traçar perfis de negociadores "
                     "e sugerir treinos com base nos dados.\n\n"
+
                     "**Exemplos de perguntas:**\n"
-                    "- *Perguntas descritivas*\n"
-                    "- *Quais as 5 técnicas mais usadas em ocorrências com resolução X?*\n"
-                    "- *Trace o perfil operacional completo do negociador [x].*"
+
+                    "- Perguntas descritivas\n"
+                    "- Quais as 5 técnicas mais usadas em ocorrências com resolução X?\n"
+                    "- Trace o perfil operacional completo do negociador X."
                 )
             }
+
         ]
 
-    # ── Renderizar histórico de chat ───────────────────────
-        for msg in st.session_state.mensagens_chat:
-            with st.chat_message(msg["role"]):
-                st.markdown(msg["content"])
+    # ─────────────────────────────────────────────
+    # RENDERIZAÇÃO DO HISTÓRICO
+    # ─────────────────────────────────────────────
 
-    # ✅ CHAT INPUT - AQUI FORA DE QUALQUER CONTAINER
-    pergunta = st.chat_input("Ex: Quais técnicas o negociador X mais usou?")
+    for msg in st.session_state.mensagens_chat:
 
-    # ── Processar pergunta ───────────────────────
-    if pergunta:
+        with st.chat_message(msg["role"]):
+
+            st.markdown(msg["content"])
+
+    # ─────────────────────────────────────────────
+    # INPUT CUSTOMIZADO
+    # (SUBSTITUI st.chat_input)
+    # ─────────────────────────────────────────────
+
+    st.markdown("### 📥 Consulta Operacional")
+
+    col1, col2 = st.columns([8, 1])
+
+    with col1:
+
+        pergunta = st.text_input(
+            label="",
+            placeholder="Ex: Quais técnicas o negociador X mais usou?",
+            key="chat_input_operacional"
+        )
+
+    with col2:
+
+        enviar = st.button(
+            "Enviar",
+            use_container_width=True
+        )
+
+    # ─────────────────────────────────────────────
+    # PROCESSAMENTO DA PERGUNTA
+    # ─────────────────────────────────────────────
+
+    if enviar and pergunta:
+
+        # USER MESSAGE
+
         with st.chat_message("user"):
+
             st.markdown(pergunta)
-        st.session_state.mensagens_chat.append({"role": "user", "content": pergunta})
+
+        st.session_state.mensagens_chat.append(
+            {
+                "role": "user",
+                "content": pergunta
+            }
+        )
+
+        # CLASSIFICAÇÃO
 
         tipo_query = classificar_query(pergunta)
-        modelo_selecionado = selecionar_modelo(tipo_query)
-        temperatura_selecionada = selecionar_temperatura(tipo_query)
 
-        camada_label = "🧠 Camada Doutrinária ativa" if tipo_query == "doutrinaria" else "📊 Consulta factual"
-        
-        with st.spinner(f"[{camada_label}] A analisar os dados e a construir a resposta..."):
+        modelo_selecionado = selecionar_modelo(
+            tipo_query
+        )
+
+        temperatura_selecionada = selecionar_temperatura(
+            tipo_query
+        )
+
+        camada_label = (
+            "🧠 Camada Doutrinária ativa"
+            if tipo_query == "doutrinaria"
+            else "📊 Consulta factual"
+        )
+
+        # PROCESSAMENTO PRINCIPAL
+
+        with st.spinner(
+            f"[{camada_label}] "
+            "A analisar os dados e a construir a resposta..."
+        ):
+
             try:
-                historico_texto = ""
-                mensagens_recentes = st.session_state.mensagens_chat[-5:-1]
-                if len(mensagens_recentes) > 0:
-                    historico_texto = "CONTEXTO DA CONVERSA RECENTE:\n" + "\n".join(
-                        [f"{m['role'].upper()}: {m['content']}" for m in mensagens_recentes]
-                    ) + "\n\nNOVA PERGUNTA DO USUÁRIO:\n"
 
-                input_enriquecido = historico_texto + pergunta
-                prefix_dinamico = montar_prefix(tipo_query)
+                historico_texto = ""
+
+                mensagens_recentes = (
+                    st.session_state.mensagens_chat[-5:-1]
+                )
+
+                if len(mensagens_recentes) > 0:
+
+                    historico_texto = (
+                        "CONTEXTO DA CONVERSA RECENTE:\n"
+                        +
+                        "\n".join(
+                            [
+                                f"{m['role'].upper()}: {m['content']}"
+                                for m in mensagens_recentes
+                            ]
+                        )
+                        +
+                        "\n\nNOVA PERGUNTA DO USUÁRIO:\n"
+                    )
+
+                input_enriquecido = (
+                    historico_texto + pergunta
+                )
+
+                prefix_dinamico = montar_prefix(
+                    tipo_query
+                )
 
                 from langchain_openai import ChatOpenAI
+                from langchain_experimental.agents.agent_toolkits import (
+                    create_pandas_dataframe_agent
+                )
+
                 import os
-                
-                # ✅ LER DE VARIÁVEIS DE AMBIENTE (Railway)
-                openai_api_key = os.getenv("OPENAI_API_KEY") or st.secrets.get("OPENAI_API_KEY")
+
+                # ─────────────────────────────────
+                # OPENAI API KEY
+                # ─────────────────────────────────
+
+                openai_api_key = (
+                    os.getenv("OPENAI_API_KEY")
+                    or
+                    st.secrets.get("OPENAI_API_KEY")
+                )
+
                 if not openai_api_key:
-                    raise ValueError("❌ OPENAI_API_KEY não configurada!")
-                
+
+                    raise ValueError(
+                        "❌ OPENAI_API_KEY não configurada!"
+                    )
+
+                # ─────────────────────────────────
+                # MODELO
+                # ─────────────────────────────────
+
                 llm = ChatOpenAI(
                     model=modelo_selecionado,
                     temperature=temperatura_selecionada,
@@ -5410,70 +5536,171 @@ with aba_chat:
                     max_tokens=4096,
                 )
 
-                from langchain_experimental.agents.agent_toolkits import create_pandas_dataframe_agent
-                
-                agent_executor = create_pandas_dataframe_agent(
-                    llm=llm,
-                    df=[df_chat, df_tec_chat, df_stats], 
-                    verbose=True,
-                    agent_type="openai-tools",
-                    prefix=prefix_dinamico,
-                    allow_dangerous_code=True,
-                    max_iterations=10, 
-                    handle_parsing_errors=True,
-                    number_of_head_rows=1,
+                # ─────────────────────────────────
+                # AGENTE PANDAS
+                # ─────────────────────────────────
+
+                agent_executor = (
+                    create_pandas_dataframe_agent(
+                        llm=llm,
+                        df=[
+                            df_chat,
+                            df_tec_chat,
+                            df_stats
+                        ],
+                        verbose=True,
+                        agent_type="openai-tools",
+                        prefix=prefix_dinamico,
+                        allow_dangerous_code=True,
+                        max_iterations=10,
+                        handle_parsing_errors=True,
+                        number_of_head_rows=1,
+                    )
                 )
 
-                resultado = agent_executor.invoke({"input": input_enriquecido})
-                resposta = resultado.get("output", "Não consegui processar a resposta.")
-                registrar_interacao(pergunta, tipo_query, modelo_selecionado, len(resposta))
+                # ─────────────────────────────────
+                # EXECUÇÃO
+                # ─────────────────────────────────
+
+                resultado = agent_executor.invoke(
+                    {
+                        "input": input_enriquecido
+                    }
+                )
+
+                resposta = resultado.get(
+                    "output",
+                    "Não consegui processar a resposta."
+                )
+
+                registrar_interacao(
+                    pergunta,
+                    tipo_query,
+                    modelo_selecionado,
+                    len(resposta)
+                )
 
             except Exception as e:
-                resposta = f"⚠️ **Erro na execução:** {str(e)}"
-        
+
+                resposta = (
+                    f"⚠️ **Erro na execução:** {str(e)}"
+                )
+
+        # ─────────────────────────────────────────
+        # RESPOSTA DO ASSISTENTE
+        # ─────────────────────────────────────────
+
         with st.chat_message("assistant"):
+
             st.markdown(resposta)
-        st.session_state.mensagens_chat.append({"role": "assistant", "content": resposta})
 
-    # ── RODAPÉ INFORMATIVO ──────────────────────────────
-    
-        st.markdown("""
-    <div style='margin-top:20px; margin-bottom:100px; padding:15px; background-color:#111; border-radius:8px;'>
-    <p style="color:#bbb; font-size:13px; line-height:1.7; text-align:left;">
+        st.session_state.mensagens_chat.append(
+            {
+                "role": "assistant",
+                "content": resposta
+            }
+        )
 
-    <span style="color:#ffae42; font-weight:700; font-size:14px; letter-spacing:1px;">
-    DELTA-NEGOCIAÇÃO — GATE/PMESP
-    </span>
+    # ─────────────────────────────────────────────
+    # RODAPÉ
+    # ─────────────────────────────────────────────
 
+    st.markdown(
+        """
+        <div style='margin-top:20px;
+                    margin-bottom:100px;
+                    padding:15px;
+                    background-color:#111;
+                    border-radius:8px;'>
 
-    "O maior inimigo do conhecimento não é a ignorância, mas a ilusão do conhecimento."
-    — Stephen Hawking.
+        <p style="
+            color:#bbb;
+            font-size:13px;
+            line-height:1.7;
+            text-align:left;
+        ">
 
+        <span style="
+            color:#ffae42;
+            font-weight:700;
+            font-size:14px;
+            letter-spacing:1px;
+        ">
+        DELTA-NEGOCIAÇÃO — GATE/PMESP
+        </span>
 
-    “Sem dados, você é apenas mais uma pessoa com opinião.”
-    — W. Edwards Deming.
+        <br><br>
 
+        "O maior inimigo do conhecimento não é a ignorância,
+        mas a ilusão do conhecimento."
+        — Stephen Hawking.
 
-    Empenhados no desenvolvimento de treinamentos e na avaliação dos Negociadores, alicerçados no pensamento técnico-científico e no valor humano, guiados por dados.
+        <br><br>
 
-    <br>
+        “Sem dados, você é apenas mais uma pessoa com opinião.”
+        — W. Edwards Deming.
 
-    <span style="color:#ffae42; font-weight:600;">
-    NEGOCIAÇÃO!
-    </span>
+        <br><br>
 
-    <br>
+        Empenhados no desenvolvimento de treinamentos
+        e na avaliação dos Negociadores,
+        alicerçados no pensamento técnico-científico
+        e no valor humano, guiados por dados.
 
-    <span style="color:#777; font-size:11px;">
-    Dados confidenciais, de uso exclusivo da equipe de Negociação do Grupo de Ações Táticas Especiais.
-    </span>
+        <br><br>
 
-    </p>
+        <span style="
+            color:#ffae42;
+            font-weight:600;
+        ">
+        NEGOCIAÇÃO!
+        </span>
 
-    <hr style="border:none; height:1px; background:linear-gradient(to right, transparent, rgba(255,174,66,0.6), transparent); margin-top:18px; margin-bottom:12px;">
+        <br><br>
 
-    <div style="text-align:center; font-size:11px; color:#666; line-height:1.5;">
-    © 2026 AXIOM - Strategic Intelligence Ltda — Todos os direitos reservados.<br>
-    Este sistema é protegido por direitos autorais e legislação aplicável. Reprodução, distribuição, engenharia reversa, modificação ou utilização não autorizada são proibidas.
-    </div>
-    """, unsafe_allow_html=True)
+        <span style="
+            color:#777;
+            font-size:11px;
+        ">
+        Dados confidenciais,
+        de uso exclusivo da equipe de Negociação
+        do Grupo de Ações Táticas Especiais.
+        </span>
+
+        </p>
+
+        <hr style="
+            border:none;
+            height:1px;
+            background:linear-gradient(
+                to right,
+                transparent,
+                rgba(255,174,66,0.6),
+                transparent
+            );
+            margin-top:18px;
+            margin-bottom:12px;
+        ">
+
+        <div style="
+            text-align:center;
+            font-size:11px;
+            color:#666;
+            line-height:1.5;
+        ">
+        © 2026 AXIOM - Strategic Intelligence Ltda —
+        Todos os direitos reservados.<br>
+
+        Este sistema é protegido por direitos autorais
+        e legislação aplicável.
+
+        Reprodução, distribuição,
+        engenharia reversa,
+        modificação ou utilização não autorizada
+        são proibidas.
+        </div>
+
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
