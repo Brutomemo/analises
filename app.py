@@ -5363,11 +5363,15 @@ with aba_chat:
             }
         ]
 
+    # ── Renderizar histórico de chat ───────────────────────
     for msg in st.session_state.mensagens_chat:
         with st.chat_message(msg["role"]):
             st.markdown(msg["content"])
 
-        
+    # ✅ CHAT INPUT - AQUI FORA DE QUALQUER CONTAINER
+    pergunta = st.chat_input("Ex: Quais técnicas o negociador X mais usou?")
+
+    # ── Processar pergunta ───────────────────────
     if pergunta:
         with st.chat_message("user"):
             st.markdown(pergunta)
@@ -5402,7 +5406,7 @@ with aba_chat:
                 llm = ChatOpenAI(
                     model=modelo_selecionado,
                     temperature=temperatura_selecionada,
-                    api_key=openai_api_key,  # ✅ MUDOU AQUI
+                    api_key=openai_api_key,
                     max_tokens=4096,
                 )
 
@@ -5432,12 +5436,44 @@ with aba_chat:
         st.session_state.mensagens_chat.append({"role": "assistant", "content": resposta})
 
     # ── RODAPÉ INFORMATIVO ──────────────────────────────
-    st.markdown("""
-    <div style='margin-top:30px; margin-bottom:100px; padding:15px; 
-                background-color:#111; border-radius:8px;'>
-        <p style='color:#bbb; font-size:13px;'>
-        <b>Sobre o DELTA — Assistente Analítico GATE/PMESP:</b><br><br>
-        ...resto do conteúdo...
-        </p>
+    
+        st.markdown("""
+    <div style='margin-top:20px; margin-bottom:100px; padding:15px; background-color:#111; border-radius:8px;'>
+    <p style="color:#bbb; font-size:13px; line-height:1.7; text-align:left;">
+
+    <span style="color:#ffae42; font-weight:700; font-size:14px; letter-spacing:1px;">
+    DELTA-NEGOCIAÇÃO — GATE/PMESP
+    </span>
+
+
+    "O maior inimigo do conhecimento não é a ignorância, mas a ilusão do conhecimento."
+    — Stephen Hawking.
+
+
+    “Sem dados, você é apenas mais uma pessoa com opinião.”
+    — W. Edwards Deming.
+
+
+    Empenhados no desenvolvimento de treinamentos e na avaliação dos Negociadores, alicerçados no pensamento técnico-científico e no valor humano, guiados por dados.
+
+    <br>
+
+    <span style="color:#ffae42; font-weight:600;">
+    NEGOCIAÇÃO!
+    </span>
+
+    <br>
+
+    <span style="color:#777; font-size:11px;">
+    Dados confidenciais, de uso exclusivo da equipe de Negociação do Grupo de Ações Táticas Especiais.
+    </span>
+
+    </p>
+
+    <hr style="border:none; height:1px; background:linear-gradient(to right, transparent, rgba(255,174,66,0.6), transparent); margin-top:18px; margin-bottom:12px;">
+
+    <div style="text-align:center; font-size:11px; color:#666; line-height:1.5;">
+    © 2026 AXIOM - Strategic Intelligence Ltda — Todos os direitos reservados.<br>
+    Este sistema é protegido por direitos autorais e legislação aplicável. Reprodução, distribuição, engenharia reversa, modificação ou utilização não autorizada são proibidas.
     </div>
     """, unsafe_allow_html=True)
