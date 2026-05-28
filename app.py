@@ -5367,9 +5367,7 @@ with aba_chat:
         with st.chat_message(msg["role"]):
             st.markdown(msg["content"])
 
-    # ✅ CORRETO: chat_input FORA do expander
-    pergunta = st.chat_input("Ex: Quais técnicas o negociador X mais usou?")
-
+        
     if pergunta:
         with st.chat_message("user"):
             st.markdown(pergunta)
