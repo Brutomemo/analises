@@ -2541,7 +2541,7 @@ else:
 
                                 # ── CLASSIFICAÇÃO ───────────────────────────
                                 st.markdown("---")
-                                st.markdown(f"### 🚨 Classificação: `{classificacao}`")
+                                
                                 st.info(leitura)
 
                                 # ── RADAR ───────────────────────────────────
