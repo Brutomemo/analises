@@ -2938,7 +2938,7 @@ def testar_anova(df_tecnicas):
     
     ✅ RESULTADO: Negociadores SÃO significativamente diferentes (p={p_value:.4f})
     
-    📊 RANKING DE EFETIVIDADE (do MELHOR para o PIOR):
+    RANKING DE EFETIVIDADE POR TÉCNICAS APLICADAS:
     """
     
     for i, (neg, dados) in enumerate(ranking, 1):
