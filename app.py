@@ -1272,6 +1272,9 @@ else:
                     l_agr_c_num, l_rec_c_num = converter_escala(l_agr_c_txt), converter_escala(l_rec_c_txt)
                     l_agr_e_num, l_rec_e_num = converter_escala(l_agr_e_txt), converter_escala(l_rec_e_txt)
 
+                    st.session_state.p_agr_c_num = p_agr_c_num
+                    st.write(f"DEBUG: p_agr_c_num salvo como {st.session_state.p_agr_c_num}")
+
                     p_escolhida = st.selectbox(
                         "Visualizar evolução sob a perspectiva do:", 
                         ["Negociador Principal", "Negociador Secundário", "Negociador Líder"],
@@ -2872,6 +2875,8 @@ else:
                         def calcular_media_equipe(*valores):
                             validos = [v for v in valores if v and v > 0]
                             return sum(validos) / len(validos) if validos else None
+                        
+                        st.write(f"DEBUG: tentando recuperar p_agr_c_num = {st.session_state.get('p_agr_c_num', 'NÃO ENCONTRADO')}")
 
                         likert_inicio = {
                             'agressividade_media': calcular_media_equipe(p_agr_c_num, s_agr_c_num, l_agr_c_num),
