@@ -3046,9 +3046,9 @@ else:
     </span>
 
     </p>
-    
+    style="color:#777; font-size:11px;">
     © 2026 AXIOM - Strategic Intelligence Ltda — Todos os direitos reservados.
-                
+    style="color:#777; font-size:11px;">            
     Este sistema é protegido por direitos autorais e legislação aplicável. Reprodução, distribuição, engenharia reversa, modificação ou utilização não autorizada são proibidas.
     </div>
     """, unsafe_allow_html=True)
