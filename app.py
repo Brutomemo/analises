@@ -1726,10 +1726,9 @@ else:
                             </div>
                             """, unsafe_allow_html=True)
 
-                        if not df_resumo.empty:
-                            # Encontra técnica com MAIS validações negativas
-                            max_negativas = df_resumo["🔴 Negativa"].max()
-                            tecnicas_minimas = df_resumo[df_resumo["🔴 Negativa"] == max_negativas]
+                        if not df_com_score.empty:
+                            score_minimo = df_com_score["Score (%)"].min()
+                            tecnicas_minimas = df_com_score[df_com_score["Score (%)"] == score_minimo]
                         
                             if len(tecnicas_minimas) == 1:
                                 pior = tecnicas_minimas.iloc[0]
@@ -1745,6 +1744,7 @@ else:
                                     f"⚠️ <strong>Técnicas menos efetivas (empate):</strong> {tecnicas_nomes} "
                                     f"— {int(max_negativas)} validações negativas | Score médio {score_medio_piores:+.1f}%"
                                 )
+                        
                             st.markdown(f"""
                             <div style='background:rgba(239,68,68,0.08);padding:12px;border-radius:8px;border-left:3px solid #ef4444;margin-bottom:10px;'>
                             <p style='color:#ddd;font-size:0.9rem;margin:0;'>
