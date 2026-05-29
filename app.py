@@ -3043,13 +3043,14 @@ else:
 
     <span style="color:#777; font-size:11px;">
     Dados confidenciais, de uso exclusivo da equipe de Negociação do Grupo de Ações Táticas Especiais.
+                        
+    © 2026 AXIOM - Strategic Intelligence Ltda — Todos os direitos reservados.
+    
+             
+    Este sistema é protegido por direitos autorais e legislação aplicável. Reprodução, distribuição, engenharia reversa, modificação ou utilização não autorizada são proibidas.
     </span>
 
-    </p>
-    style="color:#777; font-size:11px;">
-    © 2026 AXIOM - Strategic Intelligence Ltda — Todos os direitos reservados.
-    style="color:#777; font-size:11px;">            
-    Este sistema é protegido por direitos autorais e legislação aplicável. Reprodução, distribuição, engenharia reversa, modificação ou utilização não autorizada são proibidas.
+    </p> 
     </div>
     """, unsafe_allow_html=True)
 
