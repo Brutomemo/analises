@@ -55,7 +55,7 @@ ATENUADORES = {
 }
 
 # ============================================================
-# 2. DICIONÁRIO OPERACIONAL (MANTIDO IDÊNTICO)
+# 2. DICIONÁRIO OPERACIONAL 
 # ============================================================
 
 DICIONARIO_OPERACIONAL = {
@@ -751,7 +751,7 @@ def analise_sentimento_transformer(texto, nlp_model):
         st.warning("⚠️ Nenhuma sentença encontrada para análise")
         return None
     
-    st.info(f"📊 Analisando {len(sentencas)} sentenças...")
+    st.info(f"Analisando {len(sentencas)} sentenças...")
     
     resultados = []
     
@@ -1594,7 +1594,7 @@ def extrair_topicos_ngrams(texto, resolucao_tipo="desconhecida"):
 
             resultado.append(
                 f"**Tema {i}:** {item['categoria']} "
-                f"*(score: {item['score']:.2f} | evidências: {item['evidencias']} | polaridade: {polaridade}{texto_neg})*"
+                f"*(evidências: {item['evidencias']} | polaridade: {polaridade}{texto_neg})*"
             )
     else:
         if resumo["classificacao"] == "DADOS INSUFICIENTES":

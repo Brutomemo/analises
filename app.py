@@ -1830,7 +1830,7 @@ else:
 
             st.markdown("---")
 
-            # PRÓXIMA SEÇÃO (ANÁLISE SEMÂNTICA, etc)
+            #  (ANÁLISE SEMÂNTICA, etc)
         
                
             st.markdown("""
@@ -2032,13 +2032,13 @@ else:
                     <div class='info-card'>
                     <h5 style='color:#FFD700;margin-top:0;'>Limitações — O que o sistema NÃO consegue ver</h5>
                     <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
-                    Esta é uma <strong>ferramenta de leitura</strong>, não bola de cristal. Os números descrevem o que foi DITO, 
+                    Esta é uma <strong>ferramenta de leitura</strong>. Os números descrevem o que foi DITO, 
                     não o que vai acontecer.
                     </p>
                     <hr style='border-color:#444;margin:12px 0;'>
                     <p style='font-size:0.92rem;color:#ddd;line-height:1.6;'>
-                    ❌ <strong>Não vê o histórico do sujeito:</strong> Esse é o 1º suicida ou o 5º? Faz diferença.<br>
-                    ❌ <strong>Não vê o contexto real:</strong> Há reféns? Há arma de verdade? O sistema não sabe.<br>
+                    ❌ <strong>Não vê o histórico do sujeito:</strong> Quantas tentativas de suicidio.<br>
+                    ❌ <strong>Não vê o contexto real:</strong> Há reféns? O sistema não sabe.<br>
                     ❌ <strong>Não vê gírias/ironia:</strong> <em>"Vou me matar de rir"</em> aparece como risco, mas é brincadeira.<br>
                     ❌ <strong>Não vê o tom de voz:</strong> <em>"vou sair"</em> dito com calma é diferente de grito.<br>
                     ❌ <strong>Não vê interrupções:</strong> Se o transcrição está quebrada, a análise fica incompleta.
@@ -2791,11 +2791,7 @@ else:
                         # - n-grams / modelagem de tópicos
                         # - convergência
                         # - qualquer outro dado já existente em stats_calculados
-                        meta_dict["analises_calculadas"] = {
-                            "similitude_lexical": stats_calculados.get(
-                                "similitude_lexical",
-                                stats_calculados.get("similitude", "Não executada")
-                            ),
+                        meta_dict["analises_calculadas"] = {                            
                             "ngrams": stats_calculados.get(
                                 "ngrams",
                                 stats_calculados.get("n_grams", "Não executada")
