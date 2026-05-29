@@ -645,7 +645,7 @@ div.stButton > button[key*="btn_"]:disabled {
 
 
 if 'stats_calculados' not in st.session_state: st.session_state['stats_calculados'] = None
-#if 'dados_n8n' not in st.session_state: st.session_state['dados_n8n'] = None
+
 
 # ====
 # 2. CABEÇALHO VISUAL E FUNDO DO CABEÇALHO
@@ -2619,7 +2619,7 @@ else:
                     col_left, col_center, col_right = st.columns([1, 1, 1])
                     with col_center:
                         is_analise_rapida = render_toggle_button(
-                            label="✔️ Análise Rápida (Padrões Léxicos)",
+                            label="✔️ Análise dos Padrões Léxicos)",
                             session_key="tab8_analise_rapida",
                             button_key="btn_tab8_analise_rapida"
                         )
@@ -3015,45 +3015,45 @@ else:
 
             st.markdown("<div style='margin-bottom: 20px;'></div>", unsafe_allow_html=True)
             st.markdown("""
-    <div style='margin-top:20px; margin-bottom:100px; padding:15px; background-color:#111; border-radius:8px;'>
-        <p style="color:#bbb; font-size:13px; line-height:1.7; text-align:left;">
+            <div style='margin-top:20px; margin-bottom:100px; padding:15px; background-color:#111; border-radius:8px;'>
+            <p style="color:#bbb; font-size:13px; line-height:1.7; text-align:left;">
 
-        <span style="color:#ffae42; font-weight:700; font-size:14px; letter-spacing:1px;">
-        DELTA-NEGOCIAÇÃO — GATE/PMESP
-        </span>
-
-
-        "O maior inimigo do conhecimento não é a ignorância, mas a ilusão do conhecimento."
-        — Stephen Hawking.
+            <span style="color:#ffae42; font-weight:700; font-size:14px; letter-spacing:1px;">
+            DELTA-NEGOCIAÇÃO — GATE/PMESP
+            </span>
 
 
-        “Sem dados, você é apenas mais uma pessoa com opinião.”
-        — W. Edwards Deming.
+            "O maior inimigo do conhecimento não é a ignorância, mas a ilusão do conhecimento."
+            — Stephen Hawking.
 
 
-        Empenhados no desenvolvimento de treinamentos e na avaliação dos Negociadores, alicerçados no pensamento técnico-científico e no valor humano, guiados por dados.
+            “Sem dados, você é apenas mais uma pessoa com opinião.”
+            — W. Edwards Deming.
 
-        <br>
 
-        <span style="color:#ffae42; font-weight:600;">
-        NEGOCIAÇÃO!
-        </span>
+            Empenhados no desenvolvimento de treinamentos e na avaliação dos Negociadores, alicerçados no pensamento técnico-científico e no valor humano, guiados por dados.
 
-        <br>
+            <br>
 
-        <span style="color:#777; font-size:11px;">
-        Dados confidenciais, de uso exclusivo da equipe de Negociação do Grupo de Ações Táticas Especiais.
-        </span>
+            <span style="color:#ffae42; font-weight:600;">
+            NEGOCIAÇÃO!
+            </span>
 
-        </p>
+            <br>
 
-        <hr style="border:none; height:1px; background:linear-gradient(to right, transparent, rgba(255,174,66,0.6), transparent); margin-top:18px; margin-bottom:12px;">
+            <span style="color:#777; font-size:11px;">
+            Dados confidenciais, de uso exclusivo da equipe de Negociação do Grupo de Ações Táticas Especiais.
+            </span>
 
-        <div style="text-align:center; font-size:11px; color:#666; line-height:1.5;">
-        © 2026 AXIOM - Strategic Intelligence Ltda — Todos os direitos reservados.<br>
-        Este sistema é protegido por direitos autorais e legislação aplicável. Reprodução, distribuição, engenharia reversa, modificação ou utilização não autorizada são proibidas.
-        </div>
-        """, unsafe_allow_html=True)
+            </p>
+
+            <hr style="border:none; height:1px; background:linear-gradient(to right, transparent, rgba(255,174,66,0.6), transparent); margin-top:18px; margin-bottom:12px;">
+
+            <div style="text-align:center; font-size:11px; color:#666; line-height:1.5;">
+            © 2026 AXIOM - Strategic Intelligence Ltda — Todos os direitos reservados.<br>
+            Este sistema é protegido por direitos autorais e legislação aplicável. Reprodução, distribuição, engenharia reversa, modificação ou utilização não autorizada são proibidas.
+            </div>
+            """, unsafe_allow_html=True)
 
     # ====
     # ABA 2: PAINEL (HISTÓRICO)
