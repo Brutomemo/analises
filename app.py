@@ -5916,11 +5916,11 @@ else:
                     # ─────────────────────────────────
 
                     openai_api_key = os.getenv("OPENAI_API_KEY")
-                    if not openai_api_key:
-                        try:
-                            openai_api_key = st.secrets.get("OPENAI_API_KEY")
-                        except:
-                            pass
+                if not openai_api_key:
+                    try:
+                        openai_api_key = st.secrets.get("OPENAI_API_KEY")
+                    except:
+                        pass
 
                     # ─────────────────────────────────
                     # MODELO
@@ -5940,8 +5940,13 @@ else:
                     agent_executor = (
                         create_pandas_dataframe_agent(
                             llm=llm,
-                            df=[df_chat, df_tec_chat, df_stats],
+                            df=[
+                                df_chat,
+                                df_tec_chat,
+                                df_stats
+                            ],
                             verbose=True,
+                            agent_type="openai-tools",
                             prefix=prefix_dinamico,
                             allow_dangerous_code=True,
                             max_iterations=10,
