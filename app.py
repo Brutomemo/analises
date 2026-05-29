@@ -1834,7 +1834,7 @@ else:
         
                
             st.markdown("""
-            <h3 style='color: #FFD700;'>✔ Análise Semântica </h3>
+            <h3 style='color: #FFD700;'>Análise Semântica </h3>
             <p style='color: #aaa; font-size: 0.95rem; margin-top: -10px;'>
             <strong>O que o causador REALMENTE sente, quer e teme.</strong> 
             Enquanto Similitude conta palavras repetidas, Semântica lê entre as linhas: intenções escondidas, 
@@ -2597,7 +2597,7 @@ else:
             # Cole TUDO isso DENTRO do: with tab_ng8:
             # ============================================================
 
-            st.markdown("### ✔️ Detalhes da Transcrição")
+            st.markdown("### Detalhes da Transcrição")
 
             col_caus = "TRANSCRIÇÃO DO CAUSADOR"
             col_neg = "TRANSCRIÇÃO DO NEGOCIADOR PRINCIPAL"
