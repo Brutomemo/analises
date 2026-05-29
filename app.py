@@ -5946,7 +5946,7 @@ else:
                                 df_stats
                             ],
                             verbose=True,
-                            agent_type="tool-calling",
+                            agent_type="openai-functions",
                             prefix=prefix_dinamico,
                             allow_dangerous_code=True,
                             max_iterations=10,
