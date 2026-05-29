@@ -5940,13 +5940,8 @@ else:
                     agent_executor = (
                         create_pandas_dataframe_agent(
                             llm=llm,
-                            df=[
-                                df_chat,
-                                df_tec_chat,
-                                df_stats
-                            ],
+                            df=[df_chat, df_tec_chat, df_stats],
                             verbose=True,
-                            agent_type="openai-functions",
                             prefix=prefix_dinamico,
                             allow_dangerous_code=True,
                             max_iterations=10,
