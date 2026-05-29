@@ -1272,8 +1272,7 @@ else:
                     l_agr_c_num, l_rec_c_num = converter_escala(l_agr_c_txt), converter_escala(l_rec_c_txt)
                     l_agr_e_num, l_rec_e_num = converter_escala(l_agr_e_txt), converter_escala(l_rec_e_txt)
 
-                    st.session_state.p_agr_c_num = p_agr_c_num
-                    st.write(f"DEBUG: p_agr_c_num salvo como {st.session_state.p_agr_c_num}")
+                    
 
                     p_escolhida = st.selectbox(
                         "Visualizar evolução sob a perspectiva do:", 
@@ -1388,6 +1387,19 @@ else:
                             st.markdown(render_card("Receptividade", l_rec_e_txt, "card-green"), unsafe_allow_html=True)
 
                     st.markdown("---")
+                    # ===== SALVAR EM SESSION_STATE PARA USAR NO PDF =====
+                    st.session_state.p_agr_c_num = p_agr_c_num
+                    st.session_state.p_rec_c_num = p_rec_c_num
+                    st.session_state.s_agr_c_num = s_agr_c_num
+                    st.session_state.s_rec_c_num = s_rec_c_num
+                    st.session_state.l_agr_c_num = l_agr_c_num
+                    st.session_state.l_rec_c_num = l_rec_c_num
+                    st.session_state.p_agr_e_num = p_agr_e_num
+                    st.session_state.p_rec_e_num = p_rec_e_num
+                    st.session_state.s_agr_e_num = s_agr_e_num
+                    st.session_state.s_rec_e_num = s_rec_e_num
+                    st.session_state.l_agr_e_num = l_agr_e_num
+                    st.session_state.l_rec_e_num = l_rec_e_num
 
                 # ════════════════════════════════════════════════════════════
                 # TRANSCRIÇÕES - FORA DO IF DE STATS
@@ -2741,6 +2753,20 @@ else:
             if st.button("✔ 3. GERAR ANALYTICS E EXPORTAR ANÁLISE (PDF)"):
                 with st.spinner("Compilando dados técnicos, consultando IA e desenhando PDF..."):
                     try:
+                        # ===== RECUPERAR DO SESSION_STATE =====
+                        p_agr_c_num = st.session_state.get('p_agr_c_num', 0)
+                        p_rec_c_num = st.session_state.get('p_rec_c_num', 0)
+                        s_agr_c_num = st.session_state.get('s_agr_c_num', 0)
+                        s_rec_c_num = st.session_state.get('s_rec_c_num', 0)
+                        l_agr_c_num = st.session_state.get('l_agr_c_num', 0)
+                        l_rec_c_num = st.session_state.get('l_rec_c_num', 0)
+                        p_agr_e_num = st.session_state.get('p_agr_e_num', 0)
+                        p_rec_e_num = st.session_state.get('p_rec_e_num', 0)
+                        s_agr_e_num = st.session_state.get('s_agr_e_num', 0)
+                        s_rec_e_num = st.session_state.get('s_rec_e_num', 0)
+                        l_agr_e_num = st.session_state.get('l_agr_e_num', 0)
+                        l_rec_e_num = st.session_state.get('l_rec_e_num', 0)
+                        
                         t_causador = limpar_valor(df_apa.get('TRANSCRIÇÃO DO CAUSADOR'))
                         t_principal = limpar_valor(df_apa.get('TRANSCRIÇÃO DO NEGOCIADOR PRINCIPAL'))
                         t_secundario = limpar_valor(df_apa.get('TRANSCRIÇÃO DO NEGOCIADOR SECUNDÁRIO'))
@@ -2874,9 +2900,8 @@ else:
 
                         def calcular_media_equipe(*valores):
                             validos = [v for v in valores if v and v > 0]
-                            return sum(validos) / len(validos) if validos else None
+                            return sum(validos) / len(validos) if validos else None                        
                         
-                        st.write(f"DEBUG: tentando recuperar p_agr_c_num = {st.session_state.get('p_agr_c_num', 'NÃO ENCONTRADO')}")
 
                         likert_inicio = {
                             'agressividade_media': calcular_media_equipe(p_agr_c_num, s_agr_c_num, l_agr_c_num),
