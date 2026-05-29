@@ -1726,9 +1726,10 @@ else:
                             </div>
                             """, unsafe_allow_html=True)
 
-                        if not df_com_score.empty:
-                            score_minimo = df_com_score["Score (%)"].min()
-                            tecnicas_minimas = df_com_score[df_com_score["Score (%)"] == score_minimo]
+                        if not df_resumo.empty:
+                            # Encontra qual técnica teve MAIS validações negativas
+                            max_negativas = df_resumo["🔴 Negativa"].max()
+                            tecnicas_minimas = df_resumo[df_resumo["🔴 Negativa"] == max_negativas]
                         
                             if len(tecnicas_minimas) == 1:
                                 pior = tecnicas_minimas.iloc[0]
