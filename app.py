@@ -4541,7 +4541,9 @@ else:
 
         st.markdown("---")
 
+        # ============================================================
         # SÍNTESE INTERPRETATIVA POR IA
+        # ============================================================
         st.markdown("""
         <div class='info-card'>
         <h5 style='color: #FFD700; margin-top: 0;'>Síntese Interpretativa Assistida por Inteligência Artificial</h5>
@@ -4551,133 +4553,451 @@ else:
         </p>
         </div>
         """, unsafe_allow_html=True)
-                
-
 
         if st.button("✔ GERAR RELATÓRIO INTERPRETADO POR IA"):
-                with st.spinner("✔️ Processando análises e gerando interpretações..."):
-                    try:
-                        import ia_estatistica 
-                        
-                        # Coleta dados de todas as análises anteriores
-                        qui_data = None
-                        if 'res_chi' in locals() and isinstance(res_chi, dict) and res_chi.get('valido'):
-                            qui_data = {'p_valor_global': res_chi['p_value']}
-                        elif 'p' in locals() and isinstance(p, (int, float)):
-                            qui_data = {'p_valor_global': float(p)}
-                        
-                        ord_data = None
-                        if 'df_or' in locals() and not df_or.empty:
-                            ord_data = df_or.to_dict('records')
-                        
-                        gee_data = None
-                        if 'df_gee' in locals() and not df_gee.empty:
-                            gee_data = df_gee.to_dict('records')
+            with st.spinner("✔️ Coletando dados reais e gerando interpretações..."):
+                try:
+                    import ia_estatistica
 
-                        # Estrutura os dados para enviar para a IA
-                        payload_ia = ia_estatistica.estruturar_resultado_para_ia(
-                            amostra_total=len(df_quali_filt),
-                            resultados_chi=qui_data,
-                            resultados_ordinal=ord_data,
-                            resultados_gee=gee_data
+                    # ═══════════════════════════════════════════════════════
+                    # COLETA 1: METADADOS DA AMOSTRA
+                    # Por que: a IA precisa saber a composição da amostra
+                    #          (quantas ocorrências, tipos, modalidades, etc.)
+                    # Como:    lê diretamente do df_quali_filt com value_counts()
+                    # ═══════════════════════════════════════════════════════
+                    metadados = {"n_ocorrencias": len(df_quali_filt)}
+
+                    campos_meta = {
+                        'Resolução': 'resolucoes',
+                        'Tipologia': 'tipologias',
+                        'Modalidade do incidente': 'modalidades',
+                        'Sexo do Causador': 'sexo_causador',
+                        'Uniforme Usado': 'uniforme',
+                        'Forma de Transição': 'forma_transicao',
+                    }
+
+                    for col, chave in campos_meta.items():
+                        if col in df_quali_filt.columns:
+                            serie = df_quali_filt[col].apply(
+                                lambda x: x[0] if isinstance(x, list) and len(x) > 0 else str(x)
+                            )
+                            serie = serie[~serie.isin(["N/D", "nan", "", "None"])]
+                            if not serie.empty:
+                                metadados[chave] = serie.value_counts().to_dict()
+
+                    # ═══════════════════════════════════════════════════════
+                    # COLETA 2: RANKING DE TÉCNICAS
+                    # Por que: a IA precisa saber quais técnicas são mais usadas
+                    # Como:    recria o df_tec filtrado com os mesmos filtros
+                    #          do painel e calcula value_counts()
+                    # ═══════════════════════════════════════════════════════
+                    ranking_tecnicas = {}
+                    _df_tec_ia = pd.DataFrame()
+
+                    try:
+                        _df_tec_ia = df_tec.copy()
+
+                        # Aplicar filtros de limpeza (mesma lógica do painel)
+                        if "Negociador Principal do incidente crítico" in _df_tec_ia.columns:
+                            _df_tec_ia["_Neg"] = _df_tec_ia["Negociador Principal do incidente crítico"].apply(limpar_valor)
+                        if "Tipologia do incidente crítico" in _df_tec_ia.columns:
+                            _df_tec_ia["_Tip"] = _df_tec_ia["Tipologia do incidente crítico"].apply(limpar_valor)
+                        if "Modalidade do incidente crítico" in _df_tec_ia.columns:
+                            _df_tec_ia["_Mod"] = _df_tec_ia["Modalidade do incidente crítico"].apply(limpar_valor)
+
+                        # Aplicar mesmos filtros do painel
+                        if filtro_neg_g != "Todos" and "_Neg" in _df_tec_ia.columns:
+                            _df_tec_ia = _df_tec_ia[_df_tec_ia["_Neg"] == filtro_neg_g]
+                        if filtro_tip_g != "Todas" and "_Tip" in _df_tec_ia.columns:
+                            _df_tec_ia = _df_tec_ia[_df_tec_ia["_Tip"] == filtro_tip_g]
+                        if filtro_mod_g != "Todas" and "_Mod" in _df_tec_ia.columns:
+                            _df_tec_ia = _df_tec_ia[_df_tec_ia["_Mod"] == filtro_mod_g]
+
+                        col_t = next(
+                            (c for c in ["TÉCNICAS", "TECNICAS", "TÉCNICA", "TECNICA"]
+                             if c in _df_tec_ia.columns),
+                            None,
                         )
 
-                        relatorio_json = ia_estatistica.gerar_relatorio_com_ia(payload_ia)
+                        if col_t and not _df_tec_ia.empty:
+                            freq = _df_tec_ia[col_t].value_counts()
+                            ranking_tecnicas = {
+                                "frequencias": freq.to_dict(),
+                                "total_usos": int(freq.sum()),
+                                "n_tecnicas_distintas": int(len(freq)),
+                                "tecnica_mais_usada": str(freq.index[0]),
+                                "frequencia_mais_usada": int(freq.iloc[0]),
+                                "tecnica_menos_usada": str(freq.index[-1]),
+                                "frequencia_menos_usada": int(freq.iloc[-1]),
+                            }
+                    except Exception:
+                        pass
 
-                        if "erro" in relatorio_json:
-                            st.error(f"Erro na geração do relatório: {relatorio_json['erro']}")
-                            with st.expander("🔍 Ver dados enviados"):
-                                st.json(payload_ia)
-                        else:
-                            # Renderiza cards com as interpretações
-                            st.success("✔ Relatório gerado com sucesso!")
-                            
-                            st.markdown("### ✔️ Principais Achados")
-                            st.markdown(relatorio_json.get("resultados_principais", "N/D"))
-                            
-                            st.markdown("### ✔️ O que isso Significa para a Prática")
-                            st.markdown(relatorio_json.get("interpretacao", "N/D"))
-                            
-                            st.markdown("### ✔️ Recomendações Estratégicas")
-                            st.markdown(relatorio_json.get("conclusao", "N/D"))
-                            
-                            # ✅ COLUMNS FORA DO EXPANDER
-                            col_ia1, col_ia2 = st.columns(2)
-                            
-                            with col_ia1:
-                                st.markdown("**Objetivo Analítico**")
-                                st.markdown(relatorio_json.get("objetivo", "N/D"))
-                                
-                                st.markdown("**Premissas da Análise**")
-                                st.markdown(relatorio_json.get("premissas", "N/D"))
-                            
-                            with col_ia2:
-                                st.markdown("**Tamanho do Efeito**")
-                                st.markdown(relatorio_json.get("tamanho_efeito", "N/D"))
-                                
-                                st.markdown("**Limitações Técnicas**")
-                                st.markdown(relatorio_json.get("limitacoes", "N/D"))
-                            
-                            # ✅ EXPANDER AGORA FICA AQUI (opcional)
-                            with st.expander("✔️ Ver Análise Completa (Expandir)"):
-                                st.markdown("Conteúdo do expander aqui")
+                    # ═══════════════════════════════════════════════════════
+                    # COLETA 3: EFETIVIDADE DAS TÉCNICAS
+                    # Por que: a IA precisa saber o score de cada técnica
+                    #          (positivas vs negativas = efetiva ou não)
+                    # Como:    classifica reações (-1, 0, +1) e calcula score
+                    # ═══════════════════════════════════════════════════════
+                    efetividade = {}
 
-                            st.markdown("---")
-                            st.markdown("### 📥 Exportar Relatório em PDF")
-                            
-                            try:
-                                from fpdf import FPDF
-                                import unicodedata
-                                
-                                pdf_hist = FPDF()
-                                pdf_hist.add_page()
-                                
-                                # Cabeçalho
-                                pdf_hist.set_fill_color(249, 115, 22)
-                                pdf_hist.rect(0, 0, 210, 35, 'F')
-                                pdf_hist.set_font("Arial", "B", 14)
-                                pdf_hist.set_text_color(255, 255, 255)
-                                pdf_hist.cell(0, 12, "ANALISE ESTATISTICA - SERIE HISTORICA", ln=True, align="C")
-                                pdf_hist.set_font("Arial", "I", 10)
-                                pdf_hist.cell(0, 8, "GATE - Inteligencia de Apoio Decisorio (PMESP)", ln=True, align="C")
-                                
-                                # Conteúdo
-                                pdf_hist.ln(10)
-                                pdf_hist.set_text_color(0, 0, 0)
-                                pdf_hist.set_font("Arial", "B", 12)
-                                pdf_hist.cell(0, 8, "Resultados Principais", ln=True)
-                                
-                                pdf_hist.set_font("Arial", "", 10)
-                                texto_limpo = unicodedata.normalize('NFKD', relatorio_json.get("resultados_principais", "")).encode('ASCII', 'ignore').decode('ASCII')
-                                pdf_hist.multi_cell(0, 5, txt=texto_limpo)
-                                
-                                pdf_hist.ln(5)
-                                pdf_hist.set_font("Arial", "B", 12)
-                                pdf_hist.cell(0, 8, "Interpretacao", ln=True)
-                                
-                                pdf_hist.set_font("Arial", "", 10)
-                                texto_limpo2 = unicodedata.normalize('NFKD', relatorio_json.get("interpretacao", "")).encode('ASCII', 'ignore').decode('ASCII')
-                                pdf_hist.multi_cell(0, 5, txt=texto_limpo2)
-                                
-                                pdf_saida = pdf_hist.output(dest="S")
-                                if isinstance(pdf_saida, str):
-                                    pdf_bytes = pdf_saida.encode('latin-1', errors='replace')
-                                else:
-                                    pdf_bytes = bytes(pdf_saida)
-                                
-                                st.download_button(
-                                    label="📥 Baixar Relatório (PDF)", 
-                                    data=pdf_bytes, 
-                                    file_name="Relatorio_Analise_GATE.pdf", 
-                                    mime="application/pdf"
+                    try:
+                        if col_t and not _df_tec_ia.empty:
+                            col_reacao = next(
+                                (c for c in _df_tec_ia.columns if 'ATITUDE' in c.upper()),
+                                None,
+                            )
+
+                            if col_reacao:
+                                def _norm_reacao(val):
+                                    if val is None:
+                                        return None
+                                    s = str(val).strip()
+                                    if any(x in s for x in ["-1", "🔴", "Negativa", "negativa"]):
+                                        return -1
+                                    elif any(x in s for x in ["0", "⚪", "Neutra", "neutra"]):
+                                        return 0
+                                    elif any(x in s for x in ["1", "🟢", "Positiva", "positiva"]):
+                                        return 1
+                                    return None
+
+                                _df_ef = _df_tec_ia.copy()
+                                _df_ef['_reacao'] = _df_ef[col_reacao].apply(_norm_reacao)
+
+                                resumo_ef = []
+                                for tecnica, grupo in _df_ef.groupby(col_t):
+                                    total = len(grupo)
+                                    pos = int((grupo['_reacao'] == 1).sum())
+                                    neu = int((grupo['_reacao'] == 0).sum())
+                                    neg = int((grupo['_reacao'] == -1).sum())
+                                    obs = pos + neu + neg
+                                    score = round(((pos - neg) / obs) * 100, 1) if obs > 0 else None
+                                    resumo_ef.append({
+                                        "tecnica": str(tecnica),
+                                        "total": total,
+                                        "positivas": pos,
+                                        "neutras": neu,
+                                        "negativas": neg,
+                                        "score": score,
+                                    })
+
+                                resumo_ef.sort(
+                                    key=lambda x: x['score'] if x['score'] is not None else -999,
+                                    reverse=True
                                 )
-                            except Exception as e:
-                                st.warning(f"⚠️ Erro ao gerar PDF: {str(e)[:100]}")
 
-                    except ImportError as e:
-                        st.error(f"⚠️ Módulo 'ia_estatistica' não encontrado. Verifique a instalação.")
-                    except Exception as e:
-                        st.error(f"🚨 Erro na geração do relatório: {str(e)[:150]}")
+                                total_pos = sum(r['positivas'] for r in resumo_ef)
+                                total_neg = sum(r['negativas'] for r in resumo_ef)
+                                total_neu = sum(r['neutras'] for r in resumo_ef)
+                                total_obs = total_pos + total_neg + total_neu
+                                score_geral = round(
+                                    ((total_pos - total_neg) / max(1, total_obs)) * 100, 1
+                                )
+
+                                efetividade = {
+                                    "por_tecnica": resumo_ef,
+                                    "score_geral": score_geral,
+                                    "total_usos": sum(r['total'] for r in resumo_ef),
+                                    "total_positivas": total_pos,
+                                    "total_negativas": total_neg,
+                                    "total_neutras": total_neu,
+                                }
+
+                                if resumo_ef:
+                                    efetividade["tecnica_mais_efetiva"] = resumo_ef[0]["tecnica"]
+                                    efetividade["score_mais_efetiva"] = resumo_ef[0]["score"]
+                                    efetividade["tecnica_menos_efetiva"] = resumo_ef[-1]["tecnica"]
+                                    efetividade["score_menos_efetiva"] = resumo_ef[-1]["score"]
+                    except Exception:
+                        pass
+
+                    # ═══════════════════════════════════════════════════════
+                    # COLETA 4: CONVERGÊNCIA TEMÁTICA
+                    # Por que: mede quanto negociador e causador falam dos
+                    #          mesmos temas (sincronização de comunicação)
+                    # Como:    usa funções do módulo analise para extrair
+                    #          temas e calcular convergência por APA
+                    # ═══════════════════════════════════════════════════════
+                    convergencia_dados = {}
+
+                    try:
+                        col_texto_c = 'TRANSCRIÇÃO DO CAUSADOR'
+                        col_texto_np = 'TRANSCRIÇÃO DO NEGOCIADOR PRINCIPAL'
+
+                        if col_texto_c in df_quali_filt.columns and col_texto_np in df_quali_filt.columns:
+                            convs = []
+                            for _, row in df_quali_filt.iterrows():
+                                txt_c = str(row[col_texto_c]).strip()
+                                txt_np = str(row[col_texto_np]).strip()
+                                if len(txt_c.split()) > 5 and len(txt_np.split()) > 5:
+                                    try:
+                                        temas_c = analise.extrair_temas_unicos(txt_c, resolucao_tipo='desconhecida')
+                                        temas_np = analise.extrair_temas_unicos(txt_np, resolucao_tipo='desconhecida')
+                                        if temas_c and temas_np:
+                                            conv = analise.calcular_convergencia_tematica(temas_c, temas_np)
+                                            convs.append(conv['convergencia_geral'])
+                                    except Exception:
+                                        pass
+
+                            if convs:
+                                convergencia_dados = {
+                                    "media": round(float(np.mean(convs)), 1),
+                                    "mediana": round(float(np.median(convs)), 1),
+                                    "desvio_padrao": round(float(np.std(convs)), 1),
+                                    "minimo": round(float(min(convs)), 1),
+                                    "maximo": round(float(max(convs)), 1),
+                                    "amplitude": round(float(max(convs) - min(convs)), 1),
+                                    "n_apas_analisadas": len(convs),
+                                }
+                    except Exception:
+                        pass
+
+                    # ═══════════════════════════════════════════════════════
+                    # COLETA 5: REGRESSÃO MULTIVARIADA
+                    # Por que: identifica quais fatores predizem redução
+                    #          de agressividade (controle estatístico)
+                    # Como:    usa funções do módulo analise para calcular
+                    #          deltas, ajustar modelo e extrair diagnósticos
+                    # ═══════════════════════════════════════════════════════
+                    regressao_dados = {}
+
+                    try:
+                        col_agr_princ_ch = analise.achar_coluna(df_quali_filt, "Principal", "Agressividade", "Chegada")
+                        col_agr_princ_en = analise.achar_coluna(df_quali_filt, "Principal", "Agressividade", "Encerramento")
+                        col_agr_sec_ch = analise.achar_coluna(df_quali_filt, "Secundário", "Agressividade", "Chegada")
+                        col_agr_sec_en = analise.achar_coluna(df_quali_filt, "Secundário", "Agressividade", "Encerramento")
+                        col_agr_lider_ch = analise.achar_coluna(df_quali_filt, "Líder", "Agressividade", "Chegada")
+                        col_agr_lider_en = analise.achar_coluna(df_quali_filt, "Líder", "Agressividade", "Encerramento")
+                        col_recep_princ_ch = analise.achar_coluna(df_quali_filt, "Principal", "Receptividade", "Chegada")
+
+                        colunas_reg = [col_agr_princ_ch, col_agr_princ_en, col_agr_sec_ch,
+                                       col_agr_sec_en, col_agr_lider_ch, col_agr_lider_en]
+
+                        if all(colunas_reg):
+                            df_reg = analise.calcular_delta_agressividade_consenso(
+                                df_quali_filt,
+                                col_agr_princ_ch, col_agr_princ_en,
+                                col_agr_sec_ch, col_agr_sec_en,
+                                col_agr_lider_ch, col_agr_lider_en
+                            )
+
+                            df_modelo, erro = analise.preparar_dados_regressao(
+                                df_reg,
+                                col_tempo="Tempo de Negociação Real",
+                                col_negociador="Negociador Principal do incidente crítico",
+                                col_tipologia="Tipologia",
+                                col_modalidade="Modalidade",
+                                col_resolucao="Resolução",
+                                col_recep_chegada=col_recep_princ_ch
+                            )
+
+                            if not erro:
+                                resultado_mod, erro_mod = analise.ajustar_regressao_linear(df_modelo)
+
+                                if not erro_mod:
+                                    diags = analise.diagnosticos_qualidade(resultado_mod)
+                                    df_coef = analise.extrair_coeficientes_significativos(resultado_mod)
+
+                                    regressao_dados = {
+                                        "n": int(resultado_mod['n']),
+                                        "r2": round(float(resultado_mod['r2']), 4),
+                                        "r2_adj": round(float(resultado_mod['r2_adj']), 4),
+                                        "p_f": round(float(resultado_mod['p_f']), 6),
+                                        "modelo_significativo": bool(resultado_mod['p_f'] < 0.05),
+                                        "coeficientes": df_coef.to_dict('records'),
+                                        "diagnosticos": {
+                                            "normalidade_p": round(float(diags['normalidade']['p_value']), 4),
+                                            "normalidade_ok": bool(diags['normalidade']['p_value'] > 0.05),
+                                            "normalidade_texto": diags['normalidade']['interpretacao'],
+                                            "homocedasticidade_p": round(float(diags['homocedasticidade']['p_value']), 4),
+                                            "homocedasticidade_ok": bool(diags['homocedasticidade']['p_value'] > 0.05),
+                                            "homocedasticidade_texto": diags['homocedasticidade']['interpretacao'],
+                                            "vif_max": round(float(diags['colinearidade']['vif_max']), 2),
+                                            "vif_ok": bool(diags['colinearidade']['vif_max'] < 5),
+                                            "vif_texto": diags['colinearidade']['interpretacao'],
+                                        },
+                                        "deltas_medios": {
+                                            "principal": round(float(df_reg['delta_princ'].dropna().mean()), 2),
+                                            "secundario": round(float(df_reg['delta_sec'].dropna().mean()), 2),
+                                            "lider": round(float(df_reg['delta_lider'].dropna().mean()), 2),
+                                            "consenso": round(float(df_reg['delta_consenso'].dropna().mean()), 2),
+                                        }
+                                    }
+                    except Exception:
+                        pass
+
+                    # ═══════════════════════════════════════════════════════
+                    # COLETA 6: PERFIL DE NEGOCIADORES
+                    # Por que: compara estilos (Escuta Ativa vs Persuasão),
+                    #          testes estatísticos e agrupamento K-means
+                    # Como:    usa analisar_perfil_negociadores() do módulo
+                    # ═══════════════════════════════════════════════════════
+                    perfil_dados = {}
+
+                    try:
+                        from analise import analisar_perfil_negociadores
+
+                        _df_tec_perfil = st.session_state.get("df_tec", pd.DataFrame())
+                        if _df_tec_perfil.empty and not df_tec.empty:
+                            _df_tec_perfil = df_tec.copy()
+
+                        if not _df_tec_perfil.empty:
+                            res_perfil = analisar_perfil_negociadores(_df_tec_perfil)
+
+                            df_res = res_perfil['df_resultado']
+                            _anova = res_perfil['anova']
+                            _chi2 = res_perfil['chi2']
+
+                            perfil_por_negociador = []
+                            for _, row in df_res.iterrows():
+                                entry = {
+                                    "negociador": str(row.get('Negociador', 'N/D')),
+                                    "score_tendencia": round(float(row.get('Score Tendência', 0)), 1),
+                                    "cluster": int(row.get('Cluster', 0)),
+                                }
+                                if 'Perfil_Cluster' in row.index:
+                                    entry["perfil_cluster"] = str(row['Perfil_Cluster'])
+                                if 'Efetividade Escuta' in row.index:
+                                    entry["efetividade_escuta"] = round(float(row['Efetividade Escuta']), 1)
+                                if 'Efetividade Persuasão' in row.index:
+                                    entry["efetividade_persuasao"] = round(float(row['Efetividade Persuasão']), 1)
+                                perfil_por_negociador.append(entry)
+
+                            perfil_dados = {
+                                "negociadores": perfil_por_negociador,
+                                "n_clusters": 2,
+                            }
+
+                            if _anova:
+                                perfil_dados["anova"] = {
+                                    "f_statistic": _anova.get('f_statistic', 'N/D'),
+                                    "p_value": _anova.get('p_value', 'N/D'),
+                                    "significativo": _anova.get('significativo', False),
+                                    "interpretacao": _anova.get('interpretacao', ''),
+                                }
+
+                            if _chi2:
+                                perfil_dados["chi2"] = {
+                                    "chi2_statistic": _chi2.get('chi2_statistic', 'N/D'),
+                                    "p_value": _chi2.get('p_value', 'N/D'),
+                                    "df": _chi2.get('df', 'N/D'),
+                                    "significativo": _chi2.get('significativo', False),
+                                    "interpretacao": _chi2.get('interpretacao', ''),
+                                }
+                    except Exception:
+                        pass
+
+                    # ═══════════════════════════════════════════════════════
+                    # MONTAR PAYLOAD E CHAMAR IA
+                    # ═══════════════════════════════════════════════════════
+                    payload_ia = ia_estatistica.coletar_payload_serie_historica(
+                        n_ocorrencias=len(df_quali_filt),
+                        metadados=metadados,
+                        ranking_tecnicas=ranking_tecnicas,
+                        efetividade=efetividade,
+                        convergencia=convergencia_dados,
+                        regressao=regressao_dados,
+                        perfil_negociadores=perfil_dados,
+                    )
+
+                    relatorio = ia_estatistica.gerar_relatorio_com_ia(payload_ia)
+
+                    # ═══════════════════════════════════════════════════════
+                    # RENDERIZAR RESULTADO
+                    # ═══════════════════════════════════════════════════════
+                    if "erro" in relatorio:
+                        st.error(f"Erro na geração do relatório: {relatorio['erro']}")
+                        with st.expander("🔍 Ver dados enviados para a IA"):
+                            st.json(payload_ia)
+                    else:
+                        st.success("✔ Relatório gerado com sucesso!")
+
+                        # ── 6 SEÇÕES DA IA ────────────────────────────
+                        st.markdown(relatorio.get("panorama_amostra", "N/D"))
+                        st.markdown("---")
+
+                        st.markdown(relatorio.get("ranking_efetividade", "N/D"))
+                        st.markdown("---")
+
+                        st.markdown(relatorio.get("convergencia_tematica", "N/D"))
+                        st.markdown("---")
+
+                        st.markdown(relatorio.get("analise_multivariada", "N/D"))
+                        st.markdown("---")
+
+                        st.markdown(relatorio.get("perfil_negociadores", "N/D"))
+                        st.markdown("---")
+
+                        st.markdown(relatorio.get("sintese_limitacoes", "N/D"))
+
+                        # ── EXPANDER COM PAYLOAD (DEBUG) ──────────────
+                        with st.expander("🔍 Ver dados enviados para a IA"):
+                            st.json(payload_ia)
+
+                        # ── EXPORTAR PDF ──────────────────────────────
+                        st.markdown("---")
+                        st.markdown("### 📥 Exportar Relatório em PDF")
+
+                        try:
+                            from fpdf import FPDF
+                            import unicodedata as _ud
+
+                            pdf_hist = FPDF()
+                            pdf_hist.add_page()
+
+                            # Cabeçalho
+                            pdf_hist.set_fill_color(249, 115, 22)
+                            pdf_hist.rect(0, 0, 210, 35, 'F')
+                            pdf_hist.set_font("Arial", "B", 14)
+                            pdf_hist.set_text_color(255, 255, 255)
+                            pdf_hist.cell(0, 12, "ANALISE ESTATISTICA - SERIE HISTORICA", ln=True, align="C")
+                            pdf_hist.set_font("Arial", "I", 10)
+                            pdf_hist.cell(0, 8, "GATE - Inteligencia de Apoio Decisorio (PMESP)", ln=True, align="C")
+
+                            # Conteúdo — cada seção vira um bloco no PDF
+                            secoes_pdf = [
+                                ("Panorama da Amostra", "panorama_amostra"),
+                                ("Ranking e Efetividade", "ranking_efetividade"),
+                                ("Convergencia Tematica", "convergencia_tematica"),
+                                ("Analise Multivariada", "analise_multivariada"),
+                                ("Perfil dos Negociadores", "perfil_negociadores"),
+                                ("Sintese Final e Limitacoes", "sintese_limitacoes"),
+                            ]
+
+                            pdf_hist.ln(10)
+                            pdf_hist.set_text_color(0, 0, 0)
+
+                            for titulo_secao, chave_secao in secoes_pdf:
+                                pdf_hist.set_font("Arial", "B", 12)
+                                pdf_hist.cell(0, 8, titulo_secao, ln=True)
+                                pdf_hist.set_font("Arial", "", 9)
+
+                                texto_bruto = relatorio.get(chave_secao, "N/D")
+                                # Remove markdown e normaliza para ASCII (compatível com FPDF)
+                                texto_limpo = texto_bruto.replace("###", "").replace("**", "").replace("- ", "  * ")
+                                texto_limpo = _ud.normalize('NFKD', texto_limpo).encode('ASCII', 'ignore').decode('ASCII')
+                                pdf_hist.multi_cell(0, 5, txt=texto_limpo)
+                                pdf_hist.ln(3)
+
+                            pdf_saida = pdf_hist.output(dest="S")
+                            if isinstance(pdf_saida, str):
+                                pdf_bytes = pdf_saida.encode('latin-1', errors='replace')
+                            else:
+                                pdf_bytes = bytes(pdf_saida)
+
+                            st.download_button(
+                                label="📥 Baixar Relatório (PDF)",
+                                data=pdf_bytes,
+                                file_name="Relatorio_Serie_Historica_GATE.pdf",
+                                mime="application/pdf"
+                            )
+                        except Exception as e:
+                            st.warning(f"⚠️ Erro ao gerar PDF: {str(e)[:100]}")
+
+                except ImportError as e:
+                    st.error(f"⚠️ Módulo não encontrado: {str(e)}")
+                except Exception as e:
+                    st.error(f"🚨 Erro na geração do relatório: {str(e)[:200]}")
 
         st.markdown("<div style='margin-bottom: 20px;'></div>", unsafe_allow_html=True)
         st.markdown("""
