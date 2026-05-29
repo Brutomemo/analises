@@ -3530,7 +3530,7 @@ else:
                                 txt_pior = (
                                     f"⚠️ <strong>Técnica menos efetiva:</strong> {pior['Técnica']} "
                                     f"— Score {pior['Score']:+.1f}% "
-                                    f"— {int(pior['🔴 Negativa'])} validações negativas / {int(pior['Total'])} usos"
+                                    f"({int(pior['Negativas'])} negativas / {int(pior['Total'])} usos)"
                                 )
                             else:
                                 tecnicas_nomes = ", ".join(tecnicas_minimas['Técnica'].tolist())
