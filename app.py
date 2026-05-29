@@ -5915,17 +5915,12 @@ else:
                     # OPENAI API KEY
                     # ─────────────────────────────────
 
-                    openai_api_key = (
-                        os.getenv("OPENAI_API_KEY")
-                        or
-                        st.secrets.get("OPENAI_API_KEY")
-                    )
-
+                    openai_api_key = os.getenv("OPENAI_API_KEY")
                     if not openai_api_key:
-
-                        raise ValueError(
-                            "❌ OPENAI_API_KEY não configurada!"
-                        )
+                        try:
+                            openai_api_key = st.secrets.get("OPENAI_API_KEY")
+                        except:
+                            pass
 
                     # ─────────────────────────────────
                     # MODELO
