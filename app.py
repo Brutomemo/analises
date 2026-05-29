@@ -2766,7 +2766,7 @@ else:
                         s_rec_e_num = st.session_state.get('s_rec_e_num', 0)
                         l_agr_e_num = st.session_state.get('l_agr_e_num', 0)
                         l_rec_e_num = st.session_state.get('l_rec_e_num', 0)
-                        
+
                         t_causador = limpar_valor(df_apa.get('TRANSCRIÇÃO DO CAUSADOR'))
                         t_principal = limpar_valor(df_apa.get('TRANSCRIÇÃO DO NEGOCIADOR PRINCIPAL'))
                         t_secundario = limpar_valor(df_apa.get('TRANSCRIÇÃO DO NEGOCIADOR SECUNDÁRIO'))
@@ -3046,38 +3046,9 @@ else:
     </span>
 
     </p>
-
-    <hr style="border:none; height:1px; background:linear-gradient(to right, transparent, rgba(255,174,66,0.6), transparent); margin-top:18px; margin-bottom:12px;">
-
-    <div style="text-align:center; font-size:11px; color:#666; line-height:1.5;">
-    © 2026 AXIOM - Strategic Intelligence Ltda — Todos os direitos reservados.<br>if st.button("✔ 3. GERAR ANALYTICS E EXPORTAR ANÁLISE (PDF)"):
-                with st.spinner("Compilando dados técnicos, consultando IA e desenhando PDF..."):
-                    try:
-                        t_causador = limpar_valor(df_apa.get('TRANSCRIÇÃO DO CAUSADOR'))
-                        t_principal = limpar_valor(df_apa.get('TRANSCRIÇÃO DO NEGOCIADOR PRINCIPAL'))
-                        t_secundario = limpar_valor(df_apa.get('TRANSCRIÇÃO DO NEGOCIADOR SECUNDÁRIO'))
-
-                        df_transcricoes = pd.DataFrame([{
-                            "Causador": t_causador,
-                            "Neg_Principal": t_principal,
-                            "Neg_Secundario": t_secundario
-                        }])
-
-                        stats_calculados = st.session_state.get('stats_calculados', {}) or {}
-
-                        temas_extraidos = stats_calculados.get('topicos') if stats_calculados else ["Etapa 2 não executada"]
-                        if not isinstance(temas_extraidos, (list, tuple)):
-                            temas_extraidos = [str(temas_extraidos)]
-
-                        meta_dict = df_apa.to_dict()
-                        meta_dict["temas_dominantes_scikit_learn"] = " | ".join([str(t) for t in temas_extraidos])
-
-                        # Envia para a IA as análises textuais já calculadas:
-                        # - similitude lexical
-                        # - n-grams / modelagem de tópicos
-                        # - convergência
-                        # - qualquer outro dado já existente em stats_calculados
-                        meta_dict["analises_calculadas"
+    
+    © 2026 AXIOM - Strategic Intelligence Ltda — Todos os direitos reservados.
+                
     Este sistema é protegido por direitos autorais e legislação aplicável. Reprodução, distribuição, engenharia reversa, modificação ou utilização não autorizada são proibidas.
     </div>
     """, unsafe_allow_html=True)
