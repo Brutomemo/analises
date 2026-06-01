@@ -1098,6 +1098,7 @@ else:
     if pagina == "✔ Visão seletiva":
 
     
+
         df_quali['Neg_Limpo'] = df_quali['Negociador Principal'].apply(limpar_valor)
         df_quali['Tip_Limpa'] = df_quali['Tipologia'].apply(limpar_valor)
         df_quali['Mod_Limpa'] = df_quali['Modalidade do incidente'].apply(limpar_valor)
@@ -3056,10 +3057,13 @@ else:
             """, unsafe_allow_html=True)
 
 
+
     elif pagina == "✔ Série Histórica":
         serie_historica.render_serie_historica(df_quali)
 
     elif pagina == "✔ Chat Analítico":
         chat_delta.render_chat_delta(df_quali, df_tec)
+
+
 
     
