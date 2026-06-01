@@ -90,3 +90,47 @@ def buscar_todas_tecnicas():
     if status == "Sucesso" and not df.empty:
         st.session_state["df_tec"] = df
     return df, status
+
+    def atualizar_apa_com_validacoes(id_apa, agressividade, 
+                                  receptividade, tecnicas, 
+                                  observacoes, duplicata, validado_por):
+    """Atualiza APA com dados de validação"""
+    
+    import airtable
+    
+    api_key = os.getenv("AIRTABLE_API_KEY")
+    base_id = os.getenv("AIRTABLE_BASE_ID")
+    table_name = "APAs"
+    
+    at = airtable.Airtable(base_id, table_name, api_key)
+    
+    # Converter escala para número
+    escala_map = {
+        "Não agressivo": 1,
+        "Neutro": 2,
+        "Parc. agressivo": 3,
+        "Agressivo": 4,
+        "Muito agressivo": 5
+    }
+    
+    payload = {
+        "Agressividade Chegada": escala_map.get(agressividade, 0),
+        "Receptividade Chegada": escala_map.get(receptividade, 0),
+        "Técnicas Aplicadas": tecnicas,
+        "Observações Validador": observacoes,
+        "É Duplicata": duplicata,
+        "Validado Por": validado_por,
+        "Data Validação": datetime.now().isoformat()
+    }
+    
+    # Buscar e atualizar record
+    records = at.get_all(
+        formula=f"{{ID}} = '{id_apa}'"
+    )
+    
+    if records:
+        record_id = records[0]['id']
+        at.update(record_id, payload)
+        return True
+    
+    return False

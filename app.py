@@ -47,8 +47,9 @@ import airtable_link
 import analise
 import ia_link        # Cérebro da Aba 1 (Transcrições)
 import ia_estatistica # Cérebro da Aba 2 (Série Histórica)
-import chat_delta
 import serie_historica
+import chat_delta
+import form_apa
 
 # ====
 # 3. FUNÇÕES AUXILIARES E DADOS (A "CAIXA DE FERRAMENTAS")
@@ -1080,7 +1081,8 @@ else:
         options=[
             "✔ Visão seletiva",
             "✔ Série Histórica",
-            "✔ Chat Analítico"
+            "✔ Chat Analítico",
+            "✔ Entrada de Dados"
         ],
         horizontal=True,
         key="menu_principal_delta"
@@ -3061,5 +3063,7 @@ else:
     elif pagina == "✔ Chat Analítico":
         chat_delta.render_chat_delta(df_quali, df_tec)  
 
+    elif pagina == "✔ Entrada de Dados":
+        form_apa.render_form_apa()
 
     
