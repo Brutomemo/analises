@@ -1086,6 +1086,14 @@ else:
         key="menu_principal_delta"
     )
 
+elif pagina == "✔ Série Histórica":
+    serie_historica.render_serie_historica(df_quali)
+
+
+elif pagina == "✔ Chat Analítico":
+    chat_delta.render_chat_delta(df_quali, df_tec)
+            
+
     # ========================================================
     # ABA 1 — VISÃO SELETIVA
     # ========================================================
@@ -2790,11 +2798,10 @@ else:
                         meta_dict = df_apa.to_dict()
                         meta_dict["temas_dominantes_scikit_learn"] = " | ".join([str(t) for t in temas_extraidos])
 
-                        # Envia para a IA as análises textuais já calculadas:
-                        # - similitude lexical
+                        # Envia para a IA as análises textuais já calculadas:                        
                         # - n-grams / modelagem de tópicos
                         # - convergência
-                        # - qualquer outro dado já existente em stats_calculados
+                       
                         meta_dict["analises_calculadas"] = {                            
                             "ngrams": stats_calculados.get(
                                 "ngrams",
@@ -3057,10 +3064,4 @@ else:
 
 
 
-elif pagina == "✔ Série Histórica":
-    serie_historica.render_serie_historica(df_quali)
-
-
-elif pagina == "✔ Chat Analítico":
-    chat_delta.render_chat_delta(df_quali, df_tec)
-            
+    
