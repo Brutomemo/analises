@@ -146,7 +146,7 @@ def atualizar_apa_validacao(id_apa, payload):
         print(f"❌ Erro ao atualizar APA: {str(e)}")
         return False
 
-        # ============================================================
+       # ============================================================
 # ADICIONAR ESTA FUNÇÃO AO FINAL DO SEU airtable_link.py
 # ============================================================
 
