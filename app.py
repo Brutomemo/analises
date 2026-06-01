@@ -1096,8 +1096,7 @@ else:
     # ABA 1: VISÃO DA NEGOCIAÇÃO SOBRE O INCIDENTE EM ANÁLISE
     # ====
     if pagina == "✔ Visão seletiva":
-
-    
+        st.markdown("<h5 style='color: #FFD700;'> Seleção e Metadados da Ocorrência</h5>", unsafe_allow_html=True)        
 
         df_quali['Neg_Limpo'] = df_quali['Negociador Principal'].apply(limpar_valor)
         df_quali['Tip_Limpa'] = df_quali['Tipologia'].apply(limpar_valor)
@@ -3057,13 +3056,10 @@ else:
             """, unsafe_allow_html=True)
 
 
-
     elif pagina == "✔ Série Histórica":
         serie_historica.render_serie_historica(df_quali)
 
+
     elif pagina == "✔ Chat Analítico":
         chat_delta.render_chat_delta(df_quali, df_tec)
-
-
-
-    
+        
