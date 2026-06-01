@@ -47,6 +47,7 @@ import airtable_link
 import analise
 import ia_link        # Cérebro da Aba 1 (Transcrições)
 import ia_estatistica # Cérebro da Aba 2 (Série Histórica)
+import chat_delta
 
 # ====
 # 3. FUNÇÕES AUXILIARES E DADOS (A "CAIXA DE FERRAMENTAS")
