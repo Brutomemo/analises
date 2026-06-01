@@ -3798,7 +3798,7 @@ else:
                                 media_compartilhados = df_conv_agg['Compartilhados'].mean()
                                 
                                 # ── SCORECARD PRINCIPAL ────────────────────────────────
-                                st.markdown("### 📊 Resumo da Convergência Temática")
+                                st.markdown("### ✔️ Resumo da Convergência Temática")
                                 
                                 col_cv1, col_cv2, col_cv3, col_cv4 = st.columns(4)
                                 
@@ -3906,7 +3906,7 @@ else:
                                 with st.expander("📚 O que significam esses números? (Clique para expandir)", expanded=False):
                                     
                                     st.markdown(f"""
-                                    ### 🎯 Explicação em Linguagem Simples
+                                    ### ✔️ Explicação em Linguagem Simples
                                     
                                     ---
                                     
@@ -5894,6 +5894,644 @@ else:
         ROTULAGEM (Labeling):
           • Atribuição de identidade pode influenciar comportamento subsequente.
           • Uso: "há indício de atribuição identitária na interação"
+
+             
+
+        CLASSIFICAÇÃO DAS EMOÇÕES: 
+
+        • CONCEITO:
+        Classificar, rotular ou marcar as emoções, refere-se ao ato de a equipe de negociação identificar as emoções que o causador está sentindo e citá-las, situando o causador de como ele se encontra diante do turbilhão de emoções que o dominam.
+        ORIGEM/DESENVOLVIMENTO 
+        Os negociadores devem abordar as dimensões emocionais de uma crise, como o sujeito as vê. Classificar ou marcar a emoção permite que os negociadores atribuam um rótulo provisório aos sentimentos expressos ou implícitos pelo assunto, palavras e ações. Essa rotulação mostra que os negociadores estão atentos aos aspectos emocionais que estão sendo transmitidos. Essa técnica ajuda a identificar os problemas e sentimentos que direcionam o comportamento do sujeito, ao menos provisoriamente. Esta técnica permite ainda, estabelecer vínculo e descobrimento de emoções vivenciadas pelo causador, mas que este ainda não a reconheceu. Marcações, em síntese e na prática, são observações verbais dos sentimentos identificados. Utilizada com o auxílio da paráfrase, usado para investigar o entendimento de algo ou para pesquisar informações subjetivas de uma fonte.
+        • APLICABILIDADE NO GATE:
+        Pode ser aplicado em todas as modalidades de ocorrência, em uma situação em que o causador se encontre desorientado diante de seus sentimentos após um sentimento de raiva, frustração, medo, desesperança e outros, causando-lhe uma perturbação. Ao diagnosticar/identificar tais sentimentos, poderá o negociador dirigir-se ao causador dizendo: Parece que você está frustrado, conte-me um pouco mais sobre essa situação. Isso possibilita que o causador se situe diante de suas emoções e passe a trabalhar exclusivamente este sentimento com o negociador, e aos poucos organizar os sentimentos que o afligem. 
+        • VANTAGENS E DESVANTAGENS:
+        Vantagem: classificar a emoção devolvendo-a para o causador, pode colaborar para uma sensação de acolhimento e acesso do outro (o causador sente-se ouvido pelo negociador).
+        Possibilidade de erro: errar a classificação, marcação ou o apontamento da emoção, pode provocar no causador uma recolha no seu íntimo, fazendo com que não queira mais expressar seus sentimentos, tal desvantagem deve ser desconstruída e o negociador deverá retirar a emoção do discurso e expor sua intenção, que é a de ouvir e ajudar a resolver aquilo da melhor forma possível.
+        REFERÊNCIAS:
+        Voss, C. Never split the difference: Negotiating as if your life depended on it. New York - USA: Harper Collins, 2016 (citação adaptada). (Cap 3)
+        Jack Schafer, Marvin Karlins – Manual de Persuasão do FBI, grupo editorial Universo dos Livros, páginas 184 e seguintes - São Paulo 2019.
+        Crisis Intervention: Using Active Listening Skills In Negotiations Por Gary W. Noesner, M. Ed e Mike Webster, Ed. D., 1984.
+
+
+        PARÁFRASE:
+
+        • CONCEITO:
+        Parafrasear é um processo em que o negociador reafirma o que foi dito pelo causador com suas próprias palavras. 
+        Vale ressaltar que nesta construção devem-se retirar os pontos negativos e reconstruir um discurso com elementos positivos para a resolução da crise. 
+        ORIGEM/DESENVOLVIMENTO  
+        O termo em si é derivado do latim paraphrasis, cujo significado é “maneira adicional de se expressar”. Uma paráfrase, normalmente, explica ou esclarece o texto que está sendo parafraseado.
+        A paráfrase é usada pelo negociador para reafirmar o conteúdo de um assunto dito, para garantir que o negociador entendeu a informação a partir da perspectiva do sujeito. O objetivo é demonstrar ao causador que o negociador está tentando entender sua situação específica de uma perspectiva cognitiva ou de conteúdo. 
+        • APLICABILIDADE NO GATE:
+        Podemos aplicar em todas as modalidades de ocorrências sem prejuízos ao processo de negociação, essa técnica bem aplicada, colabora para o processo de comunicação.
+        Discurso do causador: “Senhor, estou com medo e sei que vocês vão entrar para me matar”
+        Exemplo de Paráfrase: É natural ter medo, por isso estamos aqui para te ajudar.
+        Causador: “Ela me traiu e isso não vai ficar assim”.
+        Negociador: Podemos te ajudar e a situação ficar melhor.
+        • VANTAGENS E DESVANTAGENS:
+        Vantagem: possibilita estabelecer a empatia, pois mostra que o negociador está realmente prestando atenção ao que está sendo dito pelo causador, fazendo com que ele se sinta ouvido.
+        Possibilidade de erro: quando mal utilizada, por exemplo, repetindo o discurso sem tirar o conteúdo negativo pode fortalecer a vontade e a ideia destrutiva do causador. Outro ponto refere-se quando a frase não for dita com o mesmo assunto da qual foi pronunciada, poderá o causador achar que não estão prestando atenção nele ou ainda que estão inventando frases inversas ao seu sentimento.
+                                                                        REFERÊNCIAS:
+        Vecchi, G. M., Van Hasselt, V. B., & Romano, S. J. (2005). Crisis (hostage) negotiation: Current strategies and issues in high-risk conflict resolution. Aggression and Violent Behavior: A Review Journal, 10, 533–551. 
+        Thompson, G. J., & Jenkins, J. B. (2013). Verbal judo: The gentle art of persuasion (updated ed.). NY: Harper Collins.
+        https://www.dicio.com.br/parafrase/.
+
+
+        RESUMO:
+
+        • CONCEITO:
+        Processo de registrar o discurso apresentado pelo causador e replicá-los, de modo que, fiquem evidenciados os principais pontos a serem observados no discurso. Em especial devem-se destacar os elementos que estão diretamente ligados com a motivação.
+        E pós-filtro (do negociador) combinado ao conteúdo da paráfrase, esse deverá devolver o discurso resumido para o causador, importante observar na réplica do discurso os pontos positivos que serão fundamentais para a condução do processo das negociações.
+        ORIGEM  
+        Resumo é uma exposição abreviada de um acontecimento, obra literária ou artística. Um resumo é ato de resumir alguma coisa através de uma síntese ou sumário. A elaboração de um resumo exige análise e interpretação do conteúdo para que sejam transmitidas as ideias mais importantes. 
+        • APLICABILIDADE NO GATE:
+        Pode ser aplicado em todas as modalidades de ocorrência, quando o causador se estende no diálogo, expondo seus pensamentos, sentimentos e aflições. O Negociador então faz uma reflexão sobre tudo o que foi dito, estipula pontos que pareceram de maior relevância para a resolução da ocorrência. Esta técnica pode ser útil em diversas frentes, como forma de ganhar tempo para pensar, para a equipe nas demais funções organizarem o teatro de operações, coletar maiores informações, posicionamento das demais alternativas, dentre outras.
+        Discurso do causador: “Senhor eu sempre fiz minha parte, saio todo dia pra trabalhar, sou sujeito homem, não adianta sacanear comigo, tudo que ela pediu eu comprei, agora vem de sacanagem, me desrespeitou, essa filha da puta me traiu, esse filho agora nem sei se é meu, já era, hoje vou colocar um fim nisso”.
+        Exemplo de Resumo: “Deixa ver se eu entendi: Você é um sujeito esforçado e trabalhador,  de respeito, não deixar faltar nada em casa, e gostaria de ser respeitado. O GATE está aqui e vai te respeitar.”
+        • VANTAGENS E DESVANTAGENS:
+        Vantagem: quando bem aplicada o causador percebe que o negociador está realmente atento às suas queixas, demonstrando interesse em seu problema; o negociador ganha tempo para formular ideias e o processo da negociação se torna mais assertivo.
+        Possibilidade de erro: resumir demais e perder pontos importantes para a negociação. Deve-se ter certeza das considerações do resumo, para não citar assuntos que não foram falados, e ou que prejudicariam a resolução da ocorrência assim demonstrando a falta de atenção no discurso do causador.
+                                                                    REFERÊNCIAS:
+        Ireland, C. A., & Vecchi, G. M. (2009). The behavioral influence stairway model (BISM): A framework for managing terrorist crisis situations? Behavioral Sciences of Terrorism and Political Aggression, 1(3), 203–208.
+        Vecchi, G. M., Van Hasselt, V. B., & Romano, S. J. (2005). Crisis (hostage) negotiation: Current strategies and issues in high-risk conflict resolution. Aggression and Violent Behavior: A Review Journal, 10, 533–551. 
+        Thompson, G. J., & Jenkins, J. B. (2013). Verbal judo: The gentle art of persuasion (updated ed.). NY: Harper Collins.
+        Significado de Resumo (O que é, Conceito e Definição) - Significados
+        Curso de Negociação Interno do GATE SP.
+
+
+        INTRODUÇÃO DE ASSUNTO:
+
+        • CONCEITO:
+        Utilizada com objetivo de introduzir um assunto e direcionar o causador a seguir uma linha de raciocínio, forçando-o a organizar o seu discurso e suas motivações em prol da negociação.
+        ORIGEM  
+        A técnica de introduzir um assunto a uma negociação é encontrada nos manuais de negociação do FBI, bem como é aplicada dentro do modelo da escola de negociação de Harvard.
+        • APLICABILIDADE NO GATE:
+        Introduzir um assunto promove um efeito de direcionar os esforços motivadores para um caminho mais estruturado, e essa condução pode partir de ambos os lados.
+        Segundo relatos de experiências com base em estudos de casos realizados pela equipe de negociação do GATE, a introdução de assunto dentro de uma negociação pode acontecer em duas vertentes:
+        Modo Aleatório – Apresentada por vontade e manifestação do causador;
+        Modo Sugestionado – Induzida pela equipe de negociação.
+        Conforme já diz o próprio nome da técnica, ela é utilizada após uma introdução, por exemplo:
+        Negociador: Soubemos que houve um roubo ao estabelecimento comercial na rua de trás e que você correu dos policiais que te avistaram e entrou nesta casa para se proteger, foi isso mesmo? Pode me explicar melhor? Neste caso, foi feita uma pergunta aberta, mas não qualquer pergunta, elaborou-se uma introdução contando os fatos que já se tinha posse, direcionando a resposta do envolvido. 
+        • VANTAGENS E DESVANTAGENS:
+        Vantagem: promover um direcionamento as motivações e conflitos do causador, objetivando a comunicação.
+        Possibilidade de erro: o negociador apresentar dificuldade em estruturar uma introdução em cima da problemática apresentada, em especial ele deve apresentar uma introdução filtrando os gatilhos de agressividade e conflito.
+                                                                    REFERÊNCIAS:
+        Cialdini, R. B. As Armas da persuasão, tradução de Ivo Korytowski; Rio de Janeiro: Sextante - GMT Editores Ltda, 2012.
+
+
+        ESPELHAMENTO: 
+
+        • CONCEITO:
+        Habilidade de espelhar (repetição) as últimas palavras ou a essência da pessoa em crise. A equipe de Negociação do GATE vai além da repetição e promove uma cópia do comportamento do causador baseado em significações, (base teórica da escola de Programação Neurolinguística).
+        ORIGEM/DESENVOLVIMENTO
+        Habilidades essenciais de escuta ativa serão necessárias para aplicação da técnica, de forma que o negociador consiga a empregabilidade das últimas palavras e/ou comportamento do causador espelhar se refere à repetição das últimas palavras ou da essência da pessoa em crise.  
+        • APLICABILIDADE NO GATE:
+        A aplicabilidade do espelhamento verbal fica bem mais claro que o espelhamento do comportamento, vale destacar que pode ser empregado em quase todas as modalidades de ocorrência, lembrando que na modalidade de suicida deve se tomar cuidado para não espelhar comportamentos ou verbalizações que favorecem ou induzem a consumação do suicídio.
+        Espelhamento reverso pode influenciar uma ação (verbal ou comportamental) não aceita em uma resposta induzida pelo modelo apresentado pelo negociador.
+        Ex: O causador insiste em usar o tom de voz alto e agressivo, o negociador equaliza a frequência para conter a verbalização seguida de um espelhamento de comunicação reversa (tonalidade de voz mediana/baixo e mais calma).
+        Movimentar de gestos corporais do negociador também podem influenciar um comportamento espelho por parte do causador.
+        • VANTAGENS E DESVANTAGENS:
+        Vantagens: possibilita desenvolver uma conexão com o causador fazendo que ele espelhe o negociador involuntariamente, ou seja, sem perceber fará os movimentos necessários para a resolução da crise.
+        Possibilidade de erro: movimentos não sutis podem parecer teatrais, fazendo com que o causador perceba e se irrite com a movimentação.
+                                                                    REFERÊNCIAS:
+        Ireland, C. A., & Vecchi, G. M. (2009). The behavioral influence stairway model (BISM): A framework for managing terrorist crisis situations? Behavioral Sciences of Terrorism and Political Aggression, 1(3), 203–208.
+        Vecchi, G. M., Van Hasselt, V. B., & Romano, S. J. (2005). Crisis (hostage) negotiation: Current strategies and issues in high-risk conflict resolution. Aggression and Violent Behavior: A Review Journal, 10, 533–551. 
+        Jack Schafer, Marvin Karlins – Manual de Persuasão do FBI, grupo editorial Universo dos Livros, páginas 49 e seguintes - São Paulo 2019
+
+
+
+        ENCORAJAMENTO MÍNIMO:
+
+        • CONCEITO:
+        Os encorajadores mínimos são pistas verbais e não verbais positivas, fornecidas pelo negociador em relação à interação com o causador.
+        Eficaz para coleta de informações contribui com a possibilidade de diminuir o distresse e a aflição emocional conforme o causador exterioriza seus sentimentos e fatos.
+        ORIGEM/DESENVOLVIMENTO
+        Incentivadores mínimos são usados enquanto o negociador está em comunicação com o causador.  O negociador incentiva o causador a continuar falando, o que resulta em extrair “novo” material para o negociador trabalhar que seja relevante para o causador.
+        Quando o discurso é longo e não parecer ao outro que você adormeceu, mostre por sinais que está ouvindo, como: gestos com a cabeça, insinuando que concorda com o que foi dito, erga as sobrancelhas, incline o corpo levemente, como um gesto de cumprimento. Use palavras curtas e simbólicas como “uhum”, “certo”, “ok”, “tá certo”, “sim”, “entendo”.
+        • APLICABILIDADE NO GATE:
+        Pode ser aplicado em qualquer ocorrência e em todas as situações em que houver uma interação, (causador/negociador). Esta técnica permite que o causador exteriorize todos os seus sentimentos narrando os fatos ocorridos para que tenha chegado até aquele momento. Sinais de concordância fortalecem e encorajam o causador a se sentir compreendido e consequentemente fortalece o rapport. 
+        • VANTAGENS E DESVANTAGENS:
+        Vantagem: ter como principal característica, o fato de demonstrar que está interessado no causador, demonstrar interesse, encorajar o causador para que continue no assunto do qual discorre.
+        Possibilidade de erro: ser forçado, soar falso e tem um efeito contrário (demonstrar falta de interesse).
+                                                                    REFERÊNCIAS:
+        Cialdini, R. B. As Armas da persuasão, tradução de Ivo Korytowski; Rio de Janeiro: Sextante - GMT Editores Ltda, 2012.
+        Jack Schafer, Marvin Karlins – Manual de Persuasão do FBI, grupo editorial Universo dos Livros, páginas 44 e seguintes - São Paulo 2019;
+
+
+        PERGUNTAS ABERTAS:
+
+        • CONCEITO:
+        Consiste em questionamentos que visam provocar o causador a responder de maneira elaborada e não um simples “sim” e “não”. Esta técnica busca fazer com que o causador desabafe e fale da causa que o levou a chegar naquela situação.
+        ORIGEM /DESENVOLVIMENTO
+        Descrita no Manual de Persuasão do FBI (Schafer, 2019), perguntas abertas levam o sujeito a expandir suas preocupações e perspectivas, elas não limitam as respostas para - sim ou não, mas exigem uma maior elaboração e detalhes em relação ao tema. 
+        • APLICABILIDADE NO GATE:
+        Esta técnica pode ser aplicada em todas as modalidades de ocorrência. Para nos ajudar na formulação de perguntas abertas, citaremos algumas referências para início do questionamento, as quais são: “Como”; “O que”; “Qual”, “quando” , “Descreve”; “Me conta”, “O que você acha”, “Como você se sente”, “Conta o que aconteceu”, “Fala pra mim como se sente”, “Descreve o que você está vendo”, “conte-me mais sobre …” “O que está sentindo” etc.
+        Como as perguntas abertas podem resultar em longas narrativas do causador, funciona como um dos principais meios para coleta de informações em todo o andamento da ocorrência, melhorando a possibilidade também, de direcionar a conversa para determinados assuntos que sejam de acordo com o plano estratégico orquestrado pelo Gerente da Crise e gerar melhores condição para demonstrações empáticas por parte do negociador. 
+        • VANTAGENS E DESVANTAGENS:
+        Vantagens: com sua aplicabilidade podemos ganhar tempo prolongando o discurso do causador quando esse for o objetivo, aumentar a gama de informações devido à provocação de um discurso mais completo, além de promover uma experimentação de emoções durante sua verbalização (análise do material não verbal).
+        Possibilidade de erro: falta de habilidade e aplicação das técnicas em escutar tecnicamente o discurso, em alguns casos o negociador não percebe, mas se torna uma conversa e não uma negociação.
+                                                                    REFERÊNCIAS:
+        Schafer, M. and Karlins, M. Manual de Persuasão do FBI, tradução de Felipe C. F. Vieira  - São Paulo: Universo dos livros, 2019. 
+        Ireland, C. A., & Vecchi, G. M. (2009). The behavioral influence stairway model (BISM): A framework for managing terrorist crisis situations? Behavioral Sciences of Terrorism and Political Aggression, 1(3), 203–208.
+        Vecchi, G. M., Van Hasselt, V. B., & Romano, S. J. (2005). Crisis (hostage) negotiation: Current strategies and issues in high-risk conflict resolution. Aggression and Violent Behavior: A Review Journal, 10, 533–551. 
+
+
+        PERGUNTAS FECHADAS
+
+        • CONCEITO:
+        Consiste em questionamentos que visam provocar o causador a responder de maneira mais simples como o “sim” e “não”. Esta técnica busca fazer com que o causador seja pontual na resposta e o negociador obtenha de forma rápida o que deseja saber.
+        ORIGEM /DESENVOLVIMENTO
+        Descrita no Manual de Persuasão do FBI (Schafer, 2019), podem ser utilizadas com o seu devido direcionamento.
+        • APLICABILIDADE NO GATE:
+        Esta técnica pode ser aplicada em todas as modalidades de ocorrência. 
+        As perguntas fechadas serão utilizadas para obter uma afirmação ou negação objetiva e diretas do causador, ou ainda, em situações que o causador não quer conversar, essa técnica pode ser uma maneira inicial às negociações e estimular aos poucos a verbalização do causador. 
+        Exemplos: Você está sozinho na casa? Você está com frio? Você está com sede?
+        • VANTAGENS E DESVANTAGENS:
+        Vantagens: com sua aplicabilidade podemos confirmar algumas questões em um espaço de tempo mais curto e de forma assertiva.
+        Possibilidade de erro: quando usada em demasia, pode deixar a comunicação negociador-causador um tanto como automatizada em perguntas e respostas.
+                                                                    REFERÊNCIAS:
+        Schafer, M. and Karlins, M. Manual de Persuasão do FBI, tradução de Felipe C. F. Vieira  - São Paulo: Universo dos livros, 2019. 
+        Ireland, C. A., & Vecchi, G. M. (2009). The behavioral influence stairway model (BISM): A framework for managing terrorist crisis situations? Behavioral Sciences of Terrorism and Political Aggression, 1(3), 203–208.
+        Vecchi, G. M., Van Hasselt, V. B., & Romano, S. J. (2005). Crisis (hostage) negotiation: Current strategies and issues in high-risk conflict resolution. Aggression and Violent Behavior: A Review Journal, 10, 533–551. 
+
+
+        ELEVAÇÃO DE STATUS:
+
+        • CONCEITO:
+        Enaltecer as qualidades e potencial de uma pessoa, demonstrando reconhecimento, surpresa, estima e admiração por seu feito ou conduta.
+        ORIGEM/DESENVOLVIMENTO 
+        Apresentada pelo autor Schafer e Karlins 2019, no livro Manual de Persuasão do FBI, os autores defendem que a técnica (elevação de status) é uma técnica que satisfaz o desejo de um indivíduo por reconhecimento, isso faz com que a pessoa se sinta bem e o enxergue como um amigo.
+        Vale ressaltar que ao utilizar a teoria de Maslow 1962, o ser humano apresenta uma constante necessidade de satisfação, no mesmo sentido podemos encaixar o reconhecimento como sendo uma dessas necessidades.  
+        • APLICABILIDADE NO GATE:
+        De acordo com o arcabouço de ocorrências atendidas pelo GATE, essa técnica pode ser empregada em todas as modalidades de ocorrência, em especial nas ocorrências de suicida.
+        Esta valorização busca integrar o causador de diferentes formas, e auxilia a equipe a trabalhar com as frustrações e alegrias do causador.
+        • VANTAGENS E DESVANTAGENS:
+        Vantagem: mostrar uma perspectiva diferente para o causador. Lembra-lo de suas características positivas, promovendo o reconhecimento, com isso garantindo uma via de acesso rápido.
+        Possibilidade de erro: deve-se tomar cuidado para não romper a linha dos elogios e cair na adulação. Considera-se errado em uma situação de crise a elevação de status negativos, podendo promover um aumento da agressividade/ aversão do causador em relação ao processo de negociação.
+                                                                    REFERÊNCIAS:
+        Schafer, M. and Karlins, M. Manual de Persuasão do FBI, tradução de Felipe C. F. Vieira  - São Paulo: Universo dos livros, 2019. 
+
+
+        SUCESSO ANTERIOR:
+
+        • CONCEITO:
+        Trazer à tona itens de sucesso vivenciado no passado para a realidade presente, com o objetivo de promover as mesmas emoções e comportamento.
+        ORIGEM  
+        Cialdini, 2012.
+        • APLICABILIDADE NO GATE:
+        Pode ser aplicada em qualquer modalidade, essa técnica consiste em lembrar o causador de algum sucesso anterior e mostrar que ele já conseguiu uma vez ou várias e nada o impede de conseguir novamente superar suas angústias e medos.
+        Exemplo: “meu amigo, você já foi casado outra vez correto? Como você se reergueu dessa situação? Você lembra? e conta como foi de lá pra cá...” (a equipe de negociação neste momento já deverá saber que a situação anterior foi bem sucedida).
+        • VANTAGENS E DESVANTAGENS:
+        Vantagem: “abrir os olhos” do causador, mostrar que ele tem capacidade de melhorar sua autoestima, fortalecer o rapport.
+        Desvantagem: na falha do entendimento da equipe ou informações imprecisas poderá potencializar pensamentos negativos.
+                                                                    REFERÊNCIAS:
+        Livro: Abordagem na tentativa de suicídio: Manual teórico-prático para profissionais de segurança pública (Assembleia legislativa do Ceará).
+
+
+        MEDO:  
+
+        • CONCEITO:
+        Utilizada com objetivo de explorar o medo do causador, tem o objetivo de demonstrar que ele não tem controle do ambiente nem das alterações do meio à qual está inserido.
+        ORIGEM/DESENVOLVIMENTO 
+        O medo é uma sensação que proporciona um estado de alerta demonstrado pelo receio de fazer alguma coisa, geralmente por se sentir ameaçado tanto físico como psicologicamente. Manual de negociação do FBI, essa técnica é utiliza em diversos manuais e grupos de negociações.
+        • APLICABILIDADE NO GATE:
+        É mais bem aplicada na modalidade de criminoso e nas demais modalidades exige certo cuidado, em especial, suicida e causadores mentalmente perturbados. Essa técnica pode ser explorada já na apresentação, caso haja necessidade, vale lembrar causar medo no emocionalmente e mentalmente perturbado pode ser arriscado.
+        Taticamente a técnica do medo pode ser utilizada como demonstração de força na crise, mostra ao causador uma parte do teatro de operações com o apoio de outras alternativas táticas, isto é, operadores da unidade de intervenção tática ou atiradores de precisão passam a atuar de uma forma mais ostensiva, acarretando ao causador sensação de Intimidação/Medo, concentrando assim no causador uma expectativa de que o cenário que lhe espera não é dos melhores, e pode causar a ele um maior esforço em resolver a crise dentro de uma negociação real.
+        • VANTAGENS E DESVANTAGENS:
+        Vantagem: quebrar a segurança do causador (Pirâmide de Maslow), diminuir seu conforto em relação ao meio.
+        Possibilidade de erro: quando aplicada, não pode ultrapassar um limiar de segurança, promovendo um medo intenso e promovendo o enfrentamento prematuro com o causador.
+        No entanto, o despertar do medo no causador deverá ocorrer sem aumentar a tensão do ambiente, ou que seja este aumento controlado e facilmente revertido de forma a não pressionar o causador ao ponto deste se tornar, momentaneamente, irracional.
+                                                            REFERÊNCIAS:
+        «Gallup Poll: What Frightens America's Youth». 29 de março de 2005. Consultado em 18 de novembro de 201;
+        Öhman, A. (2000). "Fear and anxiety: Evolutionary, cognitive, and clinical perspectives". In M. Lewis & J. M. Haviland-Jones (Eds.). Handbook of emotions. pp. 573–593. New York: The Guilford Press. [S.l.: s.n.];  
+        https://www.akitaonrails.com/2009/09/12/off-topic-a-argumenta--o-atrav-s-da-intimida--o;
+        wikipedia.org/wiki/Medo;
+
+
+        ESCASSEZ:
+
+        • CONCEITO:
+        De acordo com o princípio da escassez, as pessoas atribuem mais valor a oportunidades quando estas estão menos disponíveis. 
+        ORIGEM/DESENVOLVIMENTO 
+        Definida e apresentada por Cialdini (2012), no seu livro “Armas da Persuasão”, defende que o negociador que entende o princípio da escassez pode usá-lo para sua vantagem, oferecendo soluções e colocando um limite para aumentar a conformidade. 
+        Esses limites colocados sobre a disponibilidade da oferta são fortes influências de nossos padrões fixos e automáticos de comportamento.
+        • APLICABILIDADE NO GATE:
+        No caso de uma ocorrência com o suicida se torna inviável lidar com escassez, porque em sua dinâmica e conflito, várias coisas podem ter se tornado escasso. Respeitando os pontos afetados no mundo fenomenológico do causador (suicida), a equipe de negociação trabalha na contramão da escassez, oferecendo recursos e aspectos para ele se apegar, em outras palavras, é ruim tirar ou o deixar perceber que está sendo privado de algo no ápice de sua dor.
+        Já em outras modalidades podemos usar a presença e a atenção do negociador como algo a ser valorizado, em um dado momento o negociador pode deixar claro que sua presença pode ser limitada a colaboração positiva do causador. 
+        Outro campo de aplicabilidade usando esse princípio pode ser quando relacionado a um item negociável (o fornecimento deve ser em quantidade mínima para manter a vantagem para a negociação).
+        • VANTAGENS E DESVANTAGENS:
+        Vantagens: promover a necessidade no causador.
+        Possibilidade de erro: aplicar a técnica sem controle e planejamento pode favorecer a perda da vantagem em relação às necessidades do causador.
+                                                                    REFERÊNCIAS:
+        Cialdini, R. B. As Armas da persuasão, tradução de Ivo Korytowski; Rio de Janeiro: Sextante - GMT Editores Ltda, 2012.
+        Jack Schafer, Marvin Karlins – Manual de Persuasão do FBI, grupo editorial Universo dos Livros, páginas 116 e seguintes - São Paulo 2019 
+        Cialdini, Robert B. – As armas da persuasão, editora Sextante, páginas 232 e seguintes – Rio de Janeiro/ RJ 2012;
+        “Manual de persuasão do FBI”: A LEI DA DISPONIBILIDADE (ESCASSEZ).”
+        Robert B. Cialdini, autor do livro “Armas da Persuasão”;
+        Robbins, Lionel (1932). An Essay on the Nature and Significance of Economic Science 2nd ed. [S.l.]: London: Macmillan. p. 16;
+        wikipedia.org/wiki/Escassez;
+
+        AFEIÇÃO:
+
+        • CONCEITO:
+        Este é um princípio que pode ser utilizado como técnica quando é despertado, seja de forma consciente e inconsciente, provocando uma identificação do causador para com o negociador, através da semelhança e cooperação, seja na base de elogios ou consentimentos. 
+        ORIGEM  
+        A referida técnica é referenciada no livro “As Armas da Persuasão” de (Cialldini, 2012), onde o autor defende que em um processo de relacionamento interpessoal tendemos a gostar de pessoas que sejam semelhantes a nós. Seja no campo da semelhança de ideias e opiniões, traços de personalidade, antecedentes ou estilo de vida. 
+        • APLICABILIDADE NO GATE:
+        Uma boa aplicabilidade da técnica é buscar aumentar a afeição e o consentimento através de antecedentes e interesses similares ou proximidade de características.
+        Pode ser aplicada em todas as modalidades de ocorrência, a princípio pode ser empregada para quebrar uma resistência por parte do causador em aceitar a alternativa negociação GATE.
+        Outro momento em que a regra da afeição pode ser usada será: durante o desenvolvimento das negociações.
+        • VANTAGENS E DESVANTAGENS:
+        Vantagem: promover acesso ao causador, reduzir a resistência para uma interação, e promover a identificação por semelhança e cooperação.
+        Possibilidade de erro: a equipe deve neutralizar a influência de uma afeição descontrolada por parte do negociador em relação ao causador, com o objetivo de não prejudicar as decisões no âmbito de gerenciamento de crise (efeito halo).
+        Outra desvantagem seria definir o negociador principal baseado somente na afeição prematura de semelhanças de gênero, credo, raça, cor, personalidade entre outras.
+                                                                        REFERÊNCIAS:
+        Cialdini, R. B. As Armas da persuasão, tradução de Ivo Korytowski; Rio de Janeiro: Sextante - GMT Editores Ltda, 2012.
+
+
+        COMPROMISSO E COERÊNCIA:
+
+        • CONCEITO:
+        Estabelecer compromissos prévios, valendo-se da coerência para que sejam cumpridos posteriormente.
+        ORIGEM  
+        Não é de hoje que os psicólogos compreendem o poder do princípio da coerência em direcionar a ação humana e um desejo na maioria das pessoas de serem e parecerem coerentes em suas palavras, crenças, atitudes e ações. Em seu livro, “As armas da Persuasão”, Cialdini explica essa técnica se baseando na necessidade humana para honrar compromissos previamente estabelecidos.
+        • APLICABILIDADE NO GATE:
+        Pela necessidade de um mínimo de coerência, essa técnica é mais bem empregada em ocorrências onde o causador esteja com sua racionalidade preservada. Firma-se um compromisso com o causador acompanhado de uma condição que seja cobrada posteriormente utilizando-se da coerência.
+        Exemplo pode ser visto em ocorrência no qual o causador compromete-se a não agredir os reféns, caso isso ocorra o negociador poderá cobrar essa coerência dita anteriormente.
+        •   VANTAGENS E DESVANTAGENS:
+        Vantagens: permitir uma cobrança no campo da sua honra (palavra) e construção da sua imagem perante a sociedade.
+        Possibilidade de erro: quando mal aplicada e sem clareza esta técnica pode deixar margem para o causador interpretar como uma verdadeira cobrança.
+                                                                REFERÊNCIAS:
+        Cialdini, R. B. As Armas da persuasão, tradução de Ivo Korytowski; Rio de Janeiro: Sextante - GMT Editores Ltda, 2012.
+
+
+        PAUSAS ESTRATÉGICAS:
+
+        • CONCEITO:
+        Pausas estratégicas são intervalos realizados durante a negociação, elas não são aleatórias e apresentam sempre um direcionamento.
+        ORIGEM/DESENVOLVIMENTO   
+        Momento criado para a equipe de Negociação discutir e avaliar as estratégias e o desempenho da equipe, normalmente essa pausa é informada pelo Negociador Principal ao Causador, ganhando tempo para se discutir em equipe as estratégias utilizadas.
+        • APLICABILIDADE NO GATE:
+        Havendo necessidade/possibilidade, as equipes poderão solicitar a pausa estratégica para coleta de resultados e/ou organização, discussão e implementação de outras técnicas a partir dos objetivos traçados.
+        Vale destacar que a modalidade de suicida exige certo cuidado em não perder o contato visual com causador devido suas alterações de comportamento.
+        Aplicada em conjunto com a técnica do silêncio, a pausa estratégica tem sua eficiência, pois o causador tende a não suportar a angústia de controlar o silêncio e a pressão do ambiente.
+        Cabe ressaltar que essa técnica difere do silêncio (apresentado em seguida), pois nesta última, o negociador permanece no lugar, já na pausa estratégica ele se ausenta do local.
+        • VANTAGENS E DESVANTAGENS:
+        Vantagem: pode ser utilizada para mensurar o rapport, colaborar para um processo de dependência em relação à comunicação do causador/negociador e a coleta de resultados das técnicas até então implementadas, realizando o aprimoramento na negociação.
+        Possibilidade de erro: a equipe deve tomar cuidado, em especial, ao realizar a técnica com a modalidade de suicida, observar a necessidade de manter o contato visual, devido um possível quadro clínico de depressão ou embotamento.
+                                                                    REFERÊNCIAS:
+        Ireland, C. A., & Vecchi, G. M. (2009). The behavioral influence stairway model (BISM): A framework for managing terrorist crisis situations? Behavioral Sciences of Terrorism and Political Aggression, 1(3), 203–208.
+        Schafer, M. and Karlins, M. Manual de Persuasão do FBI, tradução de Felipe C. F. Vieira - São Paulo: Universo dos livros, 2019. 
+        Vecchi, G. M., Van Hasselt, V. B., & Romano, S. J. (2005). Crisis (hostage) negotiation: Current strategies and issues in high-risk conflict resolution. Aggression and Violent Behavior: A Review Journal, 10, 533–551. 
+
+
+        SILÊNCIO:
+
+        • CONCEITO:
+        Trata-se de uma ferramenta cognitiva/provocativa para levar o causador a uma reflexão de ideias, dependência do canal de comunicação, curiosidade e demais variantes psicológicas que a equipe de negociação implementará diretamente no causador. 
+        ORIGEM/DESENVOLVIMENTO
+        Diminuir os estímulos ou zerar os canais de comunicação pode apresentar suas vantagens em uma negociação policial. A psicologia e a ciência da comunicação trabalham muito bem com essa vertente, é cientificamente comprovado que o ser humano tem dificuldade em lidar com o silêncio, o homem em sua construção antropológica se constitui de um ser sociável e extremamente comunicativo, retirar isso pode criar a necessidade de reconquistar o que foi perdido.
+        • APLICABILIDADE NO GATE:
+        Dependendo do momento qual se faz a aplicação desta técnica é possível que o causador se torne introspectivo ao ponto de cometer delitos contra si ou contra outrem, por descontrole de sua curiosidade, seus medos e questionamentos internos. Portanto, a equipe de negociação deverá escolher o momento apropriado para a aplicação da técnica do silêncio, de modo a prever as reações do causador de maneira controlada no ponto crítico.
+        De modo geral pode ser aplicada em todas as modalidades de ocorrência, a ideia é fornecer o silêncio para que o causador busque por necessidade primária ou secundária ou o restabelecimento da comunicação. Nesse momento fica evidente o processo de ancoragem por parte do causador em relação à equipe de negociação.
+        Cabe ressaltar que essa técnica difere da pausa estratégica, pois nesta última, o negociador se ausenta do local, já no silencio ele permanece no mesmo lugar. 
+        • VANTAGENS E DESVANTAGENS:
+        Vantagens: o silêncio pode provocar um grande incômodo no causador, mostrando o quanto é importante o diálogo com negociador, para a resolução dessa crise.
+        Possibilidade de erro: em uma ocorrência com uma pessoa com propósito suicida ao estabelecer o silêncio pode fazer com que ele só consiga pensar na consumação do ato.
+                                                                    REFERÊNCIAS:
+        Ciência da psicologia e Ciência da comunicação, vale definir a referência.
+        1 - “O silêncio: multiplicidade de sentidos” de Vânia Maria Rocha de Oliveira; Valesca do Rosário Campista;
+        2 - WINNICOTT, D. W. O ambiente e os processos de maturação: estudos sobre a teoria do desenvolvimento emocional. Trad. de Irinéia Constantino Schuh Ortiz. 3ª edição. Porto Alegre: Artes Médicas, 1990;
+        3 - ORLANDI, E. P. As formas do silêncio: no movimento dos sentidos. 4ª edição. São Paulo: UNICAMP, 1997.
+        4 - Wikipedia.org/wiki/Silêncio;
+
+        TRANQUILIZAÇÃO: 
+
+        • CONCEITO:
+        Tranquilização é o ato de trazer alguém a calma, ou seja, usando essa técnica, o negociador tira o causador de um pico de distresse fazendo com que ele se acalme para continuar a negociação.
+        ORIGEM/DESENVOLVIMENTO  
+        Manual de negociação do FBI, essa técnica é utiliza em diversos manuais e grupos de negociações.
+        • APLICABILIDADE NO GATE:
+        Pode ser empregada e aplicada em todas as modalidades de ocorrências, porque a técnica serve para diminuir os ânimos e abrandar os conflitos e exigências, vale ressaltar que sua empregabilidade se torna muito útil nos primeiros momentos da ocorrência.
+        • VANTAGENS E DESVANTAGENS:
+        Vantagens: acalmar os envolvidos e abrandar as exigências.
+        Possibilidade de erro: exagerar na aplicabilidade da técnica e romper o campo da aceitabilidade, gerando irritabilidade no causador.
+                                                                    REFERÊNCIAS:
+        Manual de negociação do FBI.
+
+
+        PRIMAZIA POR TERCEIROS:
+
+        • CONCEITO:
+        Relativa a excelência ou categoria superior, é um rótulo positivo emanado por terceiros, uma boa fama ou sinônimo de confiabilidade bem como a sensação de importância.
+        ORIGEM  
+        Apresentada por Robert Cialdini em seu livro “As armas da Persuasão”, essa técnica tem um fácil entendimento se analisarmos que uma pessoa acreditará mais nos adjetivos descritos por uma terceira pessoa sobre nós, quando comparado estes mesmos adjetivos sendo apresentados por nos próprios.
+        • APLICABILIDADE NO GATE:
+        Pode ser aplicado em qualquer modalidade de ocorrência, seu emprego acontecerá no momento da transição do 1º interventor para com os negociadores do GATE. A equipe de negociação instruirá o interventor com a seguinte frase: 
+        Sugestão: - “Ao retornar fale para ele que somos o GATE da Polícia Militar especialistas em lidar com esse tipo de situação”. 
+        Durante esse recorte fica evidenciada a aplicabilidade da técnica de primazia por terceiro.
+        • VANTAGENS E DESVANTAGENS:
+        Vantagens: quando bem aplicada, a equipe já assume a ocorrência com uma imagem positiva perante o causador.
+        Possibilidade de erros: quando o causador apresentar uma imagem ruim ou uma aversão ao GATE devido experiências negativas anteriores, essa construção pode prejudicar a aplicação da técnica.
+                                                                    REFERÊNCIAS:
+        Jack Schafer, Marvin Karlins – Manual de Persuasão do FBI, grupo editorial Universo dos Livros, páginas 87 e seguintes - São Paulo 2019
+        https://www.dicio.com.br/primazia/
+
+
+        DESCONSTRUÇÃO:
+
+        • CONCEITO:
+        Utilizada para desconstruir uma exigência, um conflito emergente, um prazo ou um ataque. Através da técnica, o negociador utiliza da persuasão para mudar o foco e direcionar toda atenção do causador para uma nova vertente sem que ele perceba que está sendo manipulado.
+        ORIGEM /DESENVOLVIMENTO 
+        Desconstruir é desfazer a construção de; questionar os pressupostos que dão sustentação a um conceito firmemente estabelecido pela tradição: desconstruir estereótipos.
+        Retirada do Manual de Negociação do FBI, essa técnica procura colaborar para um processo redirecionador, com objetivo de mostrar para o outro lado alternativo a se apegar, afastando cada vez mais o causador da sua ideia anterior.
+        Toda vez que, sob a avaliação do negociador e sua equipe, determinado caminho da comunicação não for viável ou produtivo, o negociador principal desconstruirá os pensamentos e narrativas, levando o causador à reflexão sob outra ótica, num outro aspecto, para que sejam aplicadas as demais técnicas disponíveis e chegar a um resultado aceitável.
+        •  APLICABILIDADE NO GATE:
+        Pode ser empregada em qualquer modalidade de ocorrência, a desconstrução se faz necessária quando o causador faz uma exigência que não é possível atender, usamos essa técnica para progressão da negociação.
+        Essa ferramenta deve estar pronta para ser usada pelo negociador a todo o momento.
+        Exemplo: Causador: “Quero o colete agora! Ai eu saio”.
+                        Negociador: “Você não precisa de colete, sua segurança já está sendo feita desde o início, o GATE vai garantir sua segurança”. (Quando necessário entrar com outro assunto).
+        • VANTAGENS E DESVANTAGENS:
+        Vantagens: ganhar tempo e diminuir o risco de um ataque ou alteração de cenário/comportamento, quando bem aplicada podemos fluir na escada de mudança de comportamento. A vantagem do uso dessa técnica é que a negociação consegue retomar o controle se houver qualquer mal entendido da parte do causador, trazendo de volta o foco na negociação. 
+        Possibilidade de erro: quando não for bem aplicada pode causar uma quebra na confiança, ficando muito difícil retomar o controle das negociações.
+                                                                REFERÊNCIAS:
+        Dicio.com.br/desconstruir;      
+        Manual do FBI.                                  
+
+
+        RECIPROCIDADE:
+
+        • CONCEITO:
+        Reciprocidade significa dar e receber, por isso, é uma condição essencial para a qualidade das relações entre as pessoas. De modo geral quando um favor é feito para nós, nos sentimos obrigados a retribuir o favor, o ser humano desenvolve uma sensação de dívida.
+        ORIGEM/DESENVOLVIMENTO  
+        A Reciprocidade origina-se nos primórdios da sociedade humana, surge quando o homem sustenta qualquer tipo de relação interpessoal. O surgimento da sociedade humana, a fim de viver solidariamente, tem suas bases fundamentais sustentadas pela relação positiva entre os indivíduos, sendo estas relações permeadas de reciprocidade. O termo tem origem no latim reciprocitas, que significa “responder da mesma maneira” e “mutualidade”.
+        Definida e apresentada por Cialdini no seu livro “Armas da Persuasão”, defende o princípio como sendo uma potente arma de influência possibilitando acessar e/ou mudar o comportamento do outro. Segundo Cialdini 2012, a regra diz que devemos tentar retribuir, na mesma moeda, o que outra pessoa nos concedeu. Em virtude da regra da reciprocidade, somos obrigados a retribuir no futuro os favores, presentes, convites e itens semelhantes. A própria expressão de agradecimento “muito obrigado” reflete o dever decorrente do recebimento dessas coisas.
+        • APLICABILIDADE NO GATE:
+        Pode ser empregado em todas as modalidades de ocorrências atendidas pelo GATE, momento em que entregamos uma informação do interesse do causador, em contrapartida deixamos nele a sensação de dívida para com os negociadores (vale lembrar que essa informação deve ser positiva para o contexto da crise).
+        Quando se é ofertado algo para uma pessoa, além dos demais fatores benéficos atrelados às tratativas têm o princípio da reciprocidade sendo aplicado, onde esse tende a colaborar, mesmo sem perceber, devido à sensação de dívida.
+        Outra maneira de aplicabilidade seria fornecer pequenas concessões. 
+        Exemplo: Causador: “Senhor tem alguém da minha família aí fora?”
+        O negociador não deve simplesmente confirmar essa informação, deve valorizar e quando informar ou oferecer a resposta deixa claro que foi mais um voto de colaboração feito por meio da equipe de negociação.
+                        Negociador: “Vamos levantar essa informação, olha o quanto estamos colaborando, o nosso objetivo é colaborar para que todos saiam daí seguros.
+        • VANTAGENS E DESVANTAGENS:
+        Vantagens: influenciar o causador, para desenvolver a sensação de dívida em relação à ação da força policial, em especial à equipe de negociação.
+        Possibilidade de erros: a técnica é muito positiva, só poderá apresentar desvantagem se aplicada de modo errado (efeito contrário), cito a equipe de negociação se perder e sentir uma sensação de dívida em relação ao causador podendo comprometer o gerenciamento da crise.
+
+        Exemplo: Negociadores envolvidos pela sensação de dívida lutam contra o emprego de outras táticas e técnicas, por se sentirem no dever de retribuir o comportamento transmitido pelo causador, nesse momento, podemos nos confundir numa relação de envolvimento perdendo a capacidade de análise e condução da crise. Nesse contexto fica claro que a reciprocidade foi instaurada pelo causador e não pela equipe de negociação, fato esse evidenciado como negativo (Cialdini, 2012).
+        Ainda, uma clara e possível desvantagem dessa técnica seria se causador percebesse a real intenção do negociador, tentando fazer com que ele se prenda a esse sentimento de reciprocidade, percebendo a falsidade na implementação da técnica.
+                                                                        REFERÊNCIAS:
+        Jack Schafer, Marvin Karlins – Manual de Persuasão do FBI, grupo editorial Universo dos Livros, páginas 108 e seguintes e 153 - São Paulo 2019;
+        Cialdini, Robert B. – As armas da persuasão, editora Sextante, páginas 30 e seguintes – Rio de Janeiro/ RJ 2012;
+        O Princípio de Reciprocidade: Conceitos, Exemplos, Princípios e Como Evitá-lo (webartigos.com)
+
+
+        APROVAÇÃO SOCIAL:
+
+        •  CONCEITO:
+        É a tendência que temos de considerar adequado um comportamento que seja aprovado por outros.
+        ORIGEM /DESENVOLVIMENTO
+        Segundo Robert B. Cialdini, 2012: “O princípio da aprovação social afirma que um meio importante que as pessoas usam para decidir em que acreditar ou como agir numa situação é observar em que as outras pessoas estão acreditando ou o que estão fazendo. ”
+        • APLICABILIDADE NO GATE:
+        Essa técnica incide em persuadir o causador a fazer ou deixar de fazer alguma coisa em virtude da influência de atitudes de outras pessoas, ele pode ser influenciado ao ver repórteres no local da crise e desistir de um suicídio, por saber que várias pessoas estão assistindo aquela cena e que reprovariam sua ação. 
+        Outro exemplo é citar ocorrências análogas e/ou com repercussões em meios de comunicação, na qual o causador daquela situação cometeu certa atitude que vislumbrou um desfecho positivo para as partes envolvidas. 
+        Outra hipótese é analisar o grau de afetividade que este causador possui com algum membro da família, e citar que essa pessoa está de acordo com a proposta feita pelo negociador, para assim, influencia-lo a tomar certa atitude, com base na aprovação daquele amigo ou familiar.  
+        • VANTAGENS E DESVANTAGENS:
+        Vantagens: se utilizada de maneira assertiva, trará ao causador o pensamento reflexivo e a sugestão de mudança de comportamento, apoiada na aprovação social de quem este tiver grande apreço. 
+        Possibilidade de erro: ocorre quando a aprovação social do grupo ou pessoa não fizer diferença para o causador, ou ainda, ser um estímulo para que ele faça ao contrário do que é citado como aprovado. 
+        REFERÊNCIAS:
+        Cialdini, R. B. As armas da persuasão; [tradução de Ivo Korytowski]; Rio de Janeiro: Sextante, 2012.
+
+
+        REJEIÇÃO SEGUIDA DE RECUO:
+
+        • CONCEITO:
+        Técnica de persuasão na qual estrategicamente você supervaloriza um pedido sabendo que será rejeitado, recuando em seguida a uma proposta mais branda esperando positivá-la (comparando-a com a proposta inicial).
+        ORIGEM /DESENVOLVIMENTO
+        Não há uma base teórica fundamentada, porém foi feito um experimento com universitários por Cialdini, Vincent, Lewis, Catalan, Wheeler e Darby em 1975 que comprovou o funcionamento da técnica.
+        Os benefícios desse tipo de técnica de negociação é que o outro não se sente enganado ou lesado, muito pelo contrário, ele se sente satisfeito por ter obtido um ganho.
+        • APLICABILIDADE NO GATE:
+        Essa ferramenta pode ser utilizada pela equipe de negociação em todas as modalidades. O emprego da técnica acontece quando por exemplo pedimos para o causador liberar todos os reféns, ocorrendo à negativa (rejeição), recuamos para que ele libere pelo menos um (recuo).
+        Outro exemplo seria pedir para ele sair e se entregar (ocorrerá à rejeição), no recuo solicitaremos que ele abra a porta ou uma das janelas.
+        • VANTAGENS E DESVANTAGENS:
+        Vantagens: fazer com que o causador aceite algo sem perceber que está sendo persuadido, com sensação de que está na vantagem.
+        Possibilidade de erro: a desvantagem está em não se aplicar a técnica corretamente e no momento oportuno, gerando tamanha artificialidade que o causador, percebendo, estará completamente avesso à figura do negociador, deixando então de colaborar com a negociação.
+                                                                    REFERÊNCIAS:
+        Cialdini, R. B. As armas da persuasão; [tradução de Ivo Korytowski]; Rio de Janeiro: Sextante, 2012.
+
+
+        ESCOLHA CONDICIONADA:
+
+        • CONCEITO:
+        Compreende oferecer duas alternativas para o causador, forçando-o escolher uma delas, sabendo que independente da escolha dele será positivo para a equipe de negociação.
+        ORIGEM  
+        O ser humano, em sua naturalidade social, apresenta o desejo de satisfazer suas necessidades, atrelado a essa condição, está sua maneira de realizar suas escolhas.  Logo, a equipe de negociação explorando essa condição do ser humano, visa trabalhar a condição de oferecer duas ou mais alternativas de escolha, para que o causador se apegue a uma delas.  
+        • APLICABILIDADE NO GATE:
+        A princípio não foram identificadas restrições quanto ao emprego dessa técnica, em detrimento as modalidades de ocorrências atendidas pelo GATE.
+        Podemos utilizar essa técnica, com objetivo de criar escolhas, durante a negociação, como por exemplo: No momento da rendição, o causador apresenta uma resistência em sair (medo de sofrer represálias), com a aplicação da técnica, podemos oferecer duas alternativas (escolhas), primeira opção seria deixar a arma dentro do ponto crítico (afastada dele), permanecendo com as mãos para cima, momento em que a equipe adentrará para completar sua rendição ou a segunda opção seria deixar a arma dentro o ambiente e sair, independente da escolha será positivo para o GATE.
+        Outro exemplo pode ser atrelado ao local que será depositado o armamento durante a rendição, a escolha do local será feita por nós e com a aplicação da técnica, ofereceremos as escolhas que independentemente da escolha favoreçam nossa intenção.
+        • VANTAGENS E DESVANTAGENS:
+        Vantagem: diminuir as incertezas do causador referentes à sua escolha.
+        Possibilidade de erro: fornecer uma escolha que não esteja acordada com as demais alternativas, como prega a doutrina de gerenciamento de crise e que esta tenha um desdobramento negativo para o processo.
+        REFERÊNCIAS:
+        Equipe de Negociação GATE.
+
+
+
+        DESPERTAR DA CURIOSIDADE:
+
+        • CONCEITO:
+        Técnica de jogar um elemento novo na comunicação verbal e não verbal, que possibilite prender a atenção do causador, baseando-se no elemento da curiosidade.
+        ORIGEM  
+        Com origem experimental no próprio GATE, durante o processo de negociação, tornou-se funcional apresentar um elemento novo na verbalização do negociador, que possa ser do interesse do causador.
+        Durante a crise, existe uma gangorra de emoções (Santos, 2020), e nesse momento, por vezes, o causador busca uma orientação para suprir seus medos e conflitos. Apresentar algo novo vai ao encontro com essa necessidade de preenchimento, bem como aguça uma expectativa no que estaria por vir. 
+        • APLICABILIDADE NO GATE:
+        Muito bem empregada para reduzir indicadores de agressividade e ou retraimento, essa técnica pode ser empregada na modalidade de ocorrência com refém, momento que através do novo (princípio da curiosidade) é ofertado um elemento atrativo para o causador, forçando-o a direcionar sua atenção para a equipe de negociação e não mais para ao refém. 
+        No caso de suicida, essa pode colaborar para evitar o fechamento e isolamento deste, quando apresentamos algo de novo (elemento ou ideia), aplicamos a técnica na intenção de resgatar e direcionar a atenção do causador novamente para a negociação.
+        Deve-se atentar que esse algo novo, deve ser positivo e verdadeiro, como por exemplo, olha! Chegou uma nova informação aqui pra mim.... (Aguarda a reação), sua mãe está no local!! (caso ela realmente esteja)
+        • VANTAGENS E DESVANTAGENS:
+        Vantagem: possibilita despertar e prender a atenção do causador, utilizando como princípio a curiosidade intrínseca do ser humano, favorecendo uma saída para novos assuntos.
+        Possibilidade de erro: utilizar o emprego da técnica atrelado a uma mentira. Sabe-se que no universo da negociação uma mentira pode custar uma vida. (denunciar o posicionamento da equipe movimento dos olhos). 
+        REFERÊNCIAS:
+        Equipe de Negociação GATE.
+
+        INQUIETAÇÃO:
+
+        • CONCEITO:
+        É o ato de provocar uma agitação verbal e/ou não verbal no causador, no intuito de que esse responda as provocações direcionando a atenção dele para a equipe de negociação.
+        ORIGEM  
+        Equipe de negociação do GATE. 
+        • APLICABILIDADE NO GATE:
+        Utilizada em qualquer modalidade de ocorrência e nas diferentes tipologias de causadores, quando a equipe objetiva estimular o causador a falar ou a se movimentar, ou seja, para que o causador pare de fazer o que está cometendo (seja um embotamento, uma agressão, ou outro que não corrobore com a intenção das equipes dos GATE) 
+        Pode ser utilizada como distrativo.
+        •  VANTAGENS E DESVANTAGENS:
+        Vantagens: consiste em ganhar a atenção do causador para que este volte as negociações.
+        Possibilidade de erro: aplicada a técnica de maneira errônea, sem avaliar os riscos, o causador poderá tomar atitudes inesperadas difíceis de serem contornadas. O aumento do nível de distresse poderá ser prejudicial para o desfecho do incidente crítico.
+        REFERÊNCIAS:
+        Curso Interno de Negociação GATE SP
+        Inquietação - Dicio, Dicionário Online de Português
+
+
+
+        DISTRAÇÃO:
+
+        • CONCEITO:
+        É o ato de produzir uma comunicação verbal e/ou não verbal, com o intuito de chamar a atenção do causador para um determinado ponto.
+        ORIGEM  
+        Equipe de negociação do GATE. 
+        • APLICABILIDADE NO GATE:
+        Utilizada em qualquer modalidade de ocorrência nas diferentes tipologias de causador, a equipe visa direcionar a atenção do causador, diminuindo com isso sua percepção em relação aos outros estímulos do meio.
+        O emprego da técnica pode promover um suporte tático para o emprego de outras alternativas, cabendo a equipe negociação a função de prender o máximo da atenção do causador e/ou reféns quando necessário.
+        Pode ser utilizado como um distrativo verbal: aumento do tom de voz, ou distrativo não verbal: o negociador faz uso da sua de uma movimentação ou utiliza-se de uma mudança de posicionamento durante as negociações.
+        • VANTAGENS E DESVANTAGENS:
+        Vantagens: possibilita o desenvolvimento do papel tático do negociador no momento que ele pode colaborar para o implemento de uma intervenção tática. 
+        Possibilidade de erro: tentar aplicar a técnica sem o estabelecimento do rapport e/ou deixar de observar o degrau da influência, podendo comprometer a aceitação do causador em relação  intervenção do negociador. 
+        REFERÊNCIAS:
+        Curso Interno de Negociação GATE SP
+
+
+
+        BOM E MAL:
+
+        • CONCEITO:
+        É a técnica de apresentar e oscilar a condução de uma negociação por meio de negociadores que hora assumiram o papel de um negociador mais tranquilo, receptivo e pacificador ora mais enérgico, impositivo e agressivo.
+        ORIGEM  
+        FBI
+        • APLICABILIDADE NO GATE:
+        Durante o processo de negociação, pode ser empregado um negociador fazendo o papel de bom (colaborativo, solícito e empático) e outro de mal (desinteressado, aversivo e coercitivo), com isso podemos supervalorizar o bom em comparação com as intervenções do negociador mal, ou até alcançar uma mudança de comportamento com o emprego do negociador mal.
+        • VANTAGENS E DESVANTAGENS:
+        Vantagens: possibilidade de trocar os negociadores e experimentar duas linhas de interação.
+        Possibilidade de erro: possibilidade de quebra de rapport com os negociadores, vale lembrar que durante essa troca e apresentação do mal, possivelmente poderá ocorrer o aumento do nível de estresse do causador.
+        REFERÊNCIAS:
+        Curso Interno de Negociação GATE SP
+        Inquietação - Dicio, Dicionário Online de Português
+
+
+        REFORÇO POSITIVO:
+
+        • CONCEITO:
+        Consiste em aumentar a frequência de um comportamento pelo acréscimo de alguma coisa (verbalização positiva do negociador) como consequência desse comportamento. Vale Lembrar que antes do comportamento essa coisa não está presente, mas depois da ocorrência do comportamento, essa coisa é apresentada ou adicionada à situação.
+        ORIGEM  
+        Conhecido como um dos conceitos da psicologia comportamental, o reforço positivo foi apropriado pelo senso comum de maneira equivocada, ganhando significados diferentes do seu original dentro da ciência do comportamento. O que levou as pessoas pensarem em positivo como algo sempre “bom”. Contudo, esse conceito é outro do ponto de vista científico, ele deve ser entendido como um tipo de aprendizado que é baseado na associação de um comportamento, com consequências derivadas dele. O que pode diminuir ou aumentar as chances de a ação ser executada novamente.
+                    O reforçamento é positivo quando esse estímulo é acrescentado para o indivíduo e o reforçamento é negativo quando o estímulo é retirado. Por exemplo, se uma criança pede educadamente um brinquedo ao seu coleguinha e esse brinquedo é entregue a ele, o brinquedo está reforçando positivamente o ato de pedir com educação. 
+        • APLICABILIDADE NO GATE:
+        Utilizada em qualquer modalidade de ocorrência nas diferentes tipologias de causador, essa técnica será utilizada para externar o reforço positivo das ações colaborativas realizadas pelo causador, isso trará benefícios para a resolução da crise, tais como: favorecimento do rapport, diminuição da agressividade, colaboração para o degrau da empatia e aceitação das ideias e condições proposta pela equipe e negociação. 
+        São exemplos de reforços positivo: 
+        Fala do negociador: 1º Exemplo: “Marcos muito bom! Obrigado por ter aberto a janela”.
+                                        2º Exemplo: “Está vendo, a senhora veio aqui e não aconteceu nada”. 
+        • VANTAGENS E DESVANTAGENS:
+        Vantagens: essa técnica pode ser utilizada em grande parte das negociações e o seu maior benefício gira em torno do fato de tornar possível mostrar para o causador que ele está colaborando para a resolução e que essa colaboração está sendo positivo. 
+        Possibilidade de erro: não deixar que o reforço positivo seja percebido pelo causador como um comportamento de submissão e/ou fraqueza do negociador.
+        REFERÊNCIAS:
+        BAUM. W. M. Compreender o Behaviorismo: comportamento, cultura e evolução. 2ª ed. Porto Alegre: Artmed, 2006.
+        Curso Interno de Negociação GATE SP
+        SKINNER, B. F. Ciência e Comportamento Humano. 11º Ed. São Paulo: Martins Fontes, 2003.
+
+        METAFORA COMO RECONEXÃO:
+
+        • CONCEITO:
+        É o ato de provocar uma reflexão ao causador por meio de uma metáfora/analogia, sobre o fato que ele passa naquele momento, ou seja, fazer com o causador pense naquilo que está cometendo, analisando o fato de uma outra perspectiva.
+        ORIGEM  
+        Logoterapia 
+        • APLICABILIDADE NO GATE:
+        Utilizada em qualquer modalidade de ocorrência nas diferentes tipologias de causador, quando a equipe objetiva a reflexão do causador estimulando-o a pensar sobre uma nova ótica, ou um novo ponto de vista.
+        Exemplo: negociador sugere a pessoa com propósito suicida, se naquele momento ele fosse realizar uma viagem sem dia para voltar, quem ele avisaria? De acordo com a resposta, caberá à reflexão sobre as pessoas que ele tem certo apresso.
+        Ainda em ocorrência com refém, o negociador poderia sugerir ao causador uma situação em que alguns de seus familiares estivessem severamente feridos por motivo de acidente de trânsito, quais ele socorreria primeiro? Sugerindo assim de acordo com sua resposta, qual refém poderia liberar primeiramente. 
+        Essas metáforas devem ser previamente treinadas e testadas pela negociação, para que se evitem analogias destoantes ao fato.
+        • VANTAGENS E DESVANTAGENS:
+        Vantagem: O causador poderá refletir, com uma nova visão e mudar sua maneira de agir. 
+        Possibilidade de erro: quando aplicada erroneamente, ou seja, quando a analogia não fazer muito sentido, o causador pode achar que o negociador está divagando ou misturando assuntos.
+        REFERÊNCIAS:
+        Palestra Logoterapia e Suicídio ministrada pela Profª Maria Lorena Bandeira no GATE SP
+
+
+        EXPLORAÇÃO DA AMBIVALENCIA:
+
+        •  CONCEITO:
+        Explorar a ambivalência que permeiam as decisões ambíguas de execução da ação do causador, com objetivo de explorar os fatores de proteção e elementos positivos para a desistência do ato.
+        ORIGEM  
+        LANCELEY, Frederick J. On-Scene Guide for Crisis Negotiators. 2 ed. CRC Press, Boca Raton: 2003. (p. 31-72). Traduzido por Onivan Elias de Oliveira – Cap PMPB e Onierbeth Elias de Oliveira – 2º Ten PMPB.
+        • APLICABILIDADE NO GATE:
+        Utilizada em qualquer modalidade de ocorrência, nas diferentes tipologias de causador, essa técnica será utilizada no campo de atuação onde causador apresentar certa ambivalência em produzir o resultado. 
+        Em se tratando de pessoas com propósito suicida, algumas frentes de estudo demonstram que o sítio do suicídio revela muita ambivalência durante a execução, exemplo: As mãos enroscadas na corda no intuito de desfazer o nó, ou as unas ou arranhões na marquise do prédio na tentativa de se agarrar em algo após o salto e por último o redirecionamento do cano após o disparo realizado. 
+        Na atuação do GATE, podemos atuar conforme exemplo:
+        Causador armado: “Pode sair daqui que hoje eu vou me matar”
+        Negociador utilizando a técnica: “João, você esperou que chegasse alguém aqui, então me parece que você quer ser ouvido, estamos aqui para te ouvir e ajudar”.
+        Quando se trata de ocorrência com refém, destaca-se o fato do causador, que pretende tirar a vida da vítima e por vezes tenta protegê-la, inclusive de alguma atuação externa, comprovando a ambivalência do dano que pode ser causado a ela.
+        Na atuação do GATE nessas ocorrências, utilizaremos a percepção como referencial norteador para interpretar essa ambivalência. 
+        • VANTAGENS E DESVANTAGENS:
+        Vantagem: possibilidade de trabalhar os elementos que estão subjetivos em relação ao cometimento ou não do ato.
+        Possibilidade de erro: a má condução da técnica pode soar como descrença e quebra da empatia do momento apresentado pelo causador.
+        REFERÊNCIAS:
+        LANCELEY, Frederick J. On-Scene Guide for Crisis Negotiators. 2 ed. CRC Press, Boca Raton: 2003. (p. 31-72). Traduzido por Onivan Elias de Oliveira – Cap PMPB e Onierbeth Elias de Oliveira – 2º Ten PMPB. Cap 5.
+
+
+
+        ORIENTAÇÃO PSIQUICA:
+
+        • CONCEITO:
+        É o processo de diagnosticar e identificar as alterações no curso do pensamento e comportamento humano, com objetivo de subsidiar a identificação da modalidade de ocorrência envolvendo a tipologia mentalmente perturbado.
+        ORIGEM  
+        DSM – V: Manual diagnóstico de doenças mentais 
+        • APLICABILIDADE NO GATE:
+        Utilizada em ocorrência com mentalmente perturbado e visa investigar o grau de orientação do causador.
+        A desorganização do pensamento (transtorno do pensamento formal) costuma ser inferida a partir do discurso do indivíduo. Este pode mudar de um tópico a outro (descarrilamento ou afrouxamento das associações).
+        Comportamento motor: grosseiro, desorganizado ou anormal (incluindo catatonia). Os problemas podem ser observados em qualquer forma de comportamento dirigido a um objetivo, levando a dificuldades na realização das atividades cotidianas.
+        Além de inferir em sua orientação de tempo e espaço, na qual o indivíduo não consegue dizer em qual lugar ou qual momento se encontra.
+        • VANTAGENS E DESVANTAGENS:
+        Vantagem: possibilitar um melhor diagnóstico para definir a modalidade que haverá a atuação. 
+        Possibilidade de erro: não identificar as alterações apresentadas e errar no diagnóstico da modalidade de ocorrência.
+        REFERÊNCIAS:
+        DSM –V, 2013.
+
+
+        CHOQUE DE REALIDADE:
+
+        •  CONCEITO:
+        É definida exatamente como o título, deixando claro ao causador como será trágico o desfecho caso seja concluído o seu objetivo, forçando nele uma reflexão ao vislumbrar o desdobramento dos resultados, desta forma, buscando a solução aceitável para a resolução da crise.
+        ORIGEM/DESENVOLVIMENTO  
+                    O choque de realidade foi desenvolvido a partir de ocorrências reais, e observado de forma funcional na década de 80 por forças policiais americanas, como sendo efetiva no objetivo de demover o propósito de morte em pessoas com propósito suicida. No entanto, verificamos que pode ser empre-ga nas demais modalidades de ocorrência em que há uma visão romantizada sobre resultados decorren-tes de certas atitudes do causador da crise, trazendo-o à realidade e o fazendo repensar seu comporta-mento.
+                    Origem da palavra Choque: do francês Choc, surpresa, coisa brusca e inesperada; substanti-vo masculino; encontro violento de um corpo com outro; colisão; situação de conflito; oposição, luta: o choque das ideias. Violenta perturbação física ou psíquica: sofrer um choque. 
+                    Significado de Realidade: substantivo feminino; característica ou particularidade do que é real (tem existência verdadeira). Aquilo que existe verdadeiramente; circunstância ou situação real; verdade, realidade.
+        Estruturalmente composta pela junção das palavras “choque” e “realidade”, sua origem é algo que deve causar violento impacto da verdade para quem ouve, de maneira que o faça refletir e repensar sobre o contexto que está pensando em se inserir. 
+        • APLICABILIDADE NO GATE:
+        Pode ser utilizada em situações especificas, e deve ser bem avaliada pela equipe de negociação devido seus desdobramentos (mudança de comportamento do causador). Técnica esta que, pela sua natureza, é mais voltada para ocorrências com PPS, porém não se limita a essa modalidade de ocorrência, expondo alguns exemplos ou situações comparativas, para que assim o causador possa vislumbrar o quanto o ato pode ser drástico e doloroso.
+        Exemplo: “Você tem ideia do que lhe pode causar um tiro de espingarda 12 GA na cabeça? Vai ser muito doloroso e seu rosto vai ficar desconfigurado”.
+        Importante explorar esse choque de maneira clara e objetiva, sem receio, pois a ideia é causar impacto, desmistificando, dessa forma, a visão romantizada sobre a morte ou sobre algum outro ato que possa trazer um risco não desejado ao causador da crise, e com isso desmotivá-lo a cometer o ato. Além disso, deve ser utilizado com anuência do Gerente da Crise e conhecimento de todas as alternativas empregadas no teatro de operações.
+        • VANTAGENS E DESVANTAGENS:
+        Vantagem: Deixar claro para o causador que ele não será capaz de controlar as consequências e os resultados da sua ação, bem como poderá sofrer demasiadamente com eles, fazendo com que ele desista do ato.
+        Possibilidade de erro: O causador aceitar o que foi narrado pelo negociador, cometendo, mesmo assim ato. Por isso, a equipe deve cercar-se de alternativas para que, após o uso da técnica, as demais possam atuar sem prejuízo.
+        REFERÊNCIAS:
+        Livro On-Scene Guide for Crisis Negotiation Frederick Lanceley_Cap 5_INTERVENÇÃO EM SUICÍDIO.
+
+
+
+        DECLARAÇÕES EMPÁTICAS: 
+
+        • CONCEITO:
+        Ação de se colocar no lugar de outra pessoa, buscando agir ou pensar da forma como ela pensaria ou agiria nas mesmas circunstâncias.
+        São declarações que demonstram a empatia do negociador para com o causador
+        ORIGEM  
+        A palavra empatia deriva do grego "empátheia, as", com sentido de paixão; pelo inglês "empathy".
+        • APLICABILIDADE NO GATE:
+        Declaração empática: “Parece que essa situação é desconfortante para você” ajuda a pessoa a perceber como que o negociador está realmente ouvindo o que ela está falando e se preocupa com o que ela está sentindo.
+        Para formular uma declaração empática exige que você ouça cuidadosamente quem fala.
+        Procedimento:
+        Basicamente, o padrão para se construir declarações empáticas é utilizar o “então você...” ao invés de usar o “entendo como você se sente...” pois quando se trata do sentimento de outra pessoa, dificilmente se saberá exatamente o que é de fato.
+
+        •  VANTAGENS E DESVANTAGENS:
+        Ajudam a manter o foco da conversa com o causador, fazendo com que o outro se sinta bem consigo mesmo, permite que não sejamos egocêntricos buscando entender o que está se passando naquele momento com ele.
+        Temos que evitar repetir palavra por palavra do que a pessoa disse, para não parecer artificial ou mecânico, tentar ser o mais natural possível para que a negociação flua de maneira a buscar a confiança do causador.
+
+
+
+                                                                    REFERÊNCIAS:
+        Jack Schafer, Marvin Karlins – Manual de Persuasão do FBI, grupo editorial Universo dos Livros, páginas 82 e seguintes - São Paulo 2019
+
+        https://www.dicio.com.br/empatia/
+
+
+        Elaborador: Equipe de negociação 
+            
 
         ─────────────────────────────────────────────
         [MODELO FBI / BCSMM] — Princípios e Aplicação Analítica
