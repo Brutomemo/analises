@@ -3058,7 +3058,7 @@ else:
 
 
             elif pagina == "✔ Série Histórica":
-            serie_historica.render_serie_historica(df_quali)
+                serie_historica.render_serie_historica(df_quali)
 
 
             elif pagina == "✔ Chat Analítico":
