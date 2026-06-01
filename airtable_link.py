@@ -91,46 +91,57 @@ def buscar_todas_tecnicas():
         st.session_state["df_tec"] = df
     return df, status
 
-    def atualizar_apa_com_validacoes(id_apa, agressividade, 
-                                  receptividade, tecnicas, 
-                                  observacoes, duplicata, validado_por):
-    """Atualiza APA com dados de validação"""
+
+def atualizar_apa_validacao(id_apa, payload):
+    """
+    Atualiza um registro de APA com dados de validação
     
-    import airtable
+    Args:
+        id_apa: ID da APA (ex: "APA 001")
+        payload: Dict com campos a atualizar
     
-    api_key = os.getenv("AIRTABLE_API_KEY")
-    base_id = os.getenv("AIRTABLE_BASE_ID")
-    table_name = "APAs"
+    Returns:
+        bool: True se sucesso, False se erro
+    """
+    import os
+    from pyairtable import Api
     
-    at = airtable.Airtable(base_id, table_name, api_key)
-    
-    # Converter escala para número
-    escala_map = {
-        "Não agressivo": 1,
-        "Neutro": 2,
-        "Parc. agressivo": 3,
-        "Agressivo": 4,
-        "Muito agressivo": 5
-    }
-    
-    payload = {
-        "Agressividade Chegada": escala_map.get(agressividade, 0),
-        "Receptividade Chegada": escala_map.get(receptividade, 0),
-        "Técnicas Aplicadas": tecnicas,
-        "Observações Validador": observacoes,
-        "É Duplicata": duplicata,
-        "Validado Por": validado_por,
-        "Data Validação": datetime.now().isoformat()
-    }
-    
-    # Buscar e atualizar record
-    records = at.get_all(
-        formula=f"{{ID}} = '{id_apa}'"
-    )
-    
-    if records:
-        record_id = records[0]['id']
-        at.update(record_id, payload)
+    try:
+        api_key = os.getenv("AIRTABLE_TOKEN")
+        base_id = os.getenv("AIRTABLE_BASE_ID")
+        
+        if not api_key or not base_id:
+            print("❌ Credenciais não configuradas")
+            return False
+        
+        # Conectar ao Airtable
+        api = Api(api_key)
+        base = api.base(base_id)
+        table = base.table("PARA ANALISE QUALITATIVA DA APA")
+        
+        # Buscar registro pela ID
+        id_limpo = str(id_apa).strip().upper()
+        todos_records = table.all()
+        record_encontrado = None
+        
+        for record in todos_records:
+            id_no_airtable = str(record['fields'].get('ID', '')).strip().upper()
+            if id_no_airtable == id_limpo:
+                record_encontrado = record
+                break
+        
+        # Validar se encontrou
+        if not record_encontrado:
+            print(f"❌ APA {id_apa} não encontrada")
+            return False
+        
+        # Atualizar o registro
+        record_id = record_encontrado['id']
+        table.update(record_id, payload)
+        
+        print(f"✅ APA {id_apa} atualizada com sucesso")
         return True
     
-    return False
+    except Exception as e:
+        print(f"❌ Erro ao atualizar APA: {str(e)}")
+        return False
