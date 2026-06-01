@@ -585,7 +585,7 @@ def render_serie_historica(df_quali):
         erro_padrao = dp / np.sqrt(n)
         
         # t-crítico para 95% (depende do N)
-        t_critico = stats.t.ppf(0.975, df=n-1)
+        t_critico = sp_stats.t.ppf(0.975, df=n-1)
         
         # Margem de erro
         margem = t_critico * erro_padrao
@@ -608,7 +608,7 @@ def render_serie_historica(df_quali):
         p-value > 0.05 = Sim, é aproximadamente normal
         p-value < 0.05 = Não, se desvia de uma distribuição normal
         """
-        statistica, p_value = stats.shapiro(dados)
+        statistica, p_value = sp_stats.shapiro(dados)
         
         return {
             'p_value': p_value,
@@ -2425,7 +2425,7 @@ def render_serie_historica(df_quali):
                         pdf_hist.set_text_color(255, 255, 255)
                         pdf_hist.cell(0, 12, "ANALISE ESTATISTICA - SERIE HISTORICA", ln=True, align="C")
                         pdf_hist.set_font("Arial", "I", 10)
-                        pdf_hist.cell(0, 8, "GATE - Inteligencia de Apoio Decisorio (PMESP)", ln=True, align="C")
+                        pdf_hist.cell(0, 8, "Relatório Assistido por Inteligencia Artificial para Apoio Decisorio", ln=True, align="C")
 
                         # Conteúdo — cada seção vira um bloco no PDF
                         secoes_pdf = [

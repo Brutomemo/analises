@@ -2963,7 +2963,7 @@ else:
                         pdf.rect(0, 0, 210, 40, 'F')
                         pdf.set_font("Arial", "B", 18)
                         pdf.set_text_color(255, 255, 255)
-                        pdf.cell(0, 15, "LAUDO DE ANALISE POS-ACAO (APA)", ln=True, align="C")
+                        pdf.cell(0, 15, "RELATÓRIO DE ANALISE POS-ACAO (APA), ASSISTIDO POR INTELIGENCIA ARTIFICIAL PARA APOIO DECISORIO", ln=True, align="C")
                         pdf.set_font("Arial", "I", 12)
                         pdf.cell(0, 5, f"Unidade: GATE | ID: {apa_selecionada}", ln=True, align="C")
 
@@ -3059,7 +3059,7 @@ else:
         serie_historica.render_serie_historica(df_quali)
 
     elif pagina == "✔ Chat Analítico":
-        chat_delta.render_chat_delta(df_quali, df_tec)
+        chat_delta.render_chat_delta(df_quali, df_tec)  
 
 
     
