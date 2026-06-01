@@ -5951,7 +5951,7 @@ else:
                                 df_stats
                             ],
                             verbose=True,
-                            agent_type="openai-tools",
+                            agent_type="zero-shot-react-description",
                             prefix=prefix_dinamico,
                             allow_dangerous_code=True,
                             max_iterations=10,
