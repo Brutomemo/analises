@@ -3057,10 +3057,10 @@ else:
 
 
 
-    elif pagina == "✔ Série Histórica":
-    serie_historica.render_serie_historica(df_quali)
+            elif pagina == "✔ Série Histórica":
+            serie_historica.render_serie_historica(df_quali)
 
 
-    elif pagina == "✔ Chat Analítico":
-        chat_delta.render_chat_delta(df_quali, df_tec)
-       
+            elif pagina == "✔ Chat Analítico":
+                chat_delta.render_chat_delta(df_quali, df_tec)
+            
