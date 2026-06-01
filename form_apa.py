@@ -520,7 +520,7 @@ def render_form_apa(df_quali, df_tec):
     col_save, col_preview, col_clear = st.columns(3)
     
     with col_save:
-        if st.button("✅ CRIAR APA", use_container_width=True, type="secondary", key="btn_criar_final"):
+        if st.button("✅ REGISTRAR APA", use_container_width=True, type="secondary", key="btn_criar_final"):
             
             # Validações obrigatórias
             erros = []
@@ -669,7 +669,7 @@ def render_form_apa(df_quali, df_tec):
                         st.error(f"❌ Erro: {str(e)[:200]}")
     
     with col_preview:
-        if st.button("✔️Pré-visualizar", use_container_width=True, key="btn_preview_final"):
+        if st.button("✔️Pré-visualizar dados inseridos", use_container_width=True, key="btn_preview_final"):
             st.info("**Pré-visualização dos dados principais:**")
             st.json({
                 "Data": str(data_oca),
