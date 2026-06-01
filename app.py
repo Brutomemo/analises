@@ -6894,18 +6894,21 @@ else:
                         "🟢 **DELTA operacional.** "
                         "Base de ocorrências e banco de técnicas conectados.\n\n"
 
-                        "Posso responder a consultas descritivas, "
+                        "Posso responder a consultas descritivas dos dados, "
                         "cruzar dados entre ocorrências e técnicas, "
-                        "interpretar modelos estatísticos "
-                        "(Spearman, χ², GEE), "
-                        "traçar perfis de negociadores "
-                        "e sugerir treinos com base nos dados.\n\n"
+                        "interpretar e explicar modelos estatísticos, "
+                        "explicar as técnicas de negociação utilizadas, "                        
+                        "traçar perfis de negociadores e sugerir treinos com base nos dados.\n\n"
 
                         "**Exemplos de perguntas:**\n"
-
                         "- Perguntas descritivas\n"
                         "- Quais as 5 técnicas mais usadas em ocorrências com resolução X?\n"
-                        "- Trace o perfil operacional completo do negociador X."
+                        "- Trace o perfil operacional completo do negociador X.\n"
+                        "- Explique o modelo estatístico X.\n"
+                        "- Explique a técnica de negociação Y.\n"
+                        "- Trace o perfil operacional completo do negociador X.\n"
+                        "- Explique o modelo estatístico X.\n"
+                        "- Explique a técnica de negociação Y.\n"
                     )
                 }
 
