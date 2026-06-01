@@ -3064,6 +3064,6 @@ else:
         chat_delta.render_chat_delta(df_quali, df_tec)  
 
     elif pagina == "✔ Entrada de Dados":
-        form_apa.render_form_apa()
+        form_apa.render_form_apa(df_quali, df_tec)  
 
     
