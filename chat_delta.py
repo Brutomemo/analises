@@ -1,6 +1,6 @@
 # ============================================================
 # chat_delta.py
-# ABA 3: CHAT ANALÍTICO — AGENTE DELTA / GATE v3.0
+# ABA 3: CHAT ANALÍTICO — AGENTE DELTA / GATE
 # Extraído integralmente de app.py
 # ============================================================
 
@@ -1500,7 +1500,7 @@ def render_chat_delta(df_quali, df_tec, stats_calculados=None):
     # (SUBSTITUI st.chat_input)
     # ─────────────────────────────────────────────
 
-    st.markdown("### 📥 Consulta Operacional")
+    st.markdown("### Consulta Operacional")
 
     col1, col2 = st.columns([8, 1])
 
