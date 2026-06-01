@@ -3560,701 +3560,694 @@ else:
             st.markdown("---")
 
             
-            # ============================================================
-            # ANÁLISE: CONVERGÊNCIA TEMÁTICA (COM AUDITORIA ESTATÍSTICA)
-            # ============================================================
-            # Versão Auditada: Inclui validação estatística + linguagem leiga
+        # ============================================================
+        # ANÁLISE: CONVERGÊNCIA TEMÁTICA (COM AUDITORIA ESTATÍSTICA)
+        # ============================================================
+        
+        # ============================================================
+        # FUNÇÕES AUXILIARES DE AUDITORIA ESTATÍSTICA
+        # ============================================================
 
-            import streamlit as st
-            import pandas as pd
-            import numpy as np
-            import plotly.express as px
-            from scipy import stats
+        def calcular_intervalo_confianca_95(dados):
+            """
+            Calcula o Intervalo de Confiança 95% (IC 95%)
+            
+            Em linguagem leiga: "Se repetíssemos essa análise 100 vezes,
+            em 95 delas a média verdadeira estaria dentro deste intervalo"
+            """
+            n = len(dados)
+            media = np.mean(dados)
+            dp = np.std(dados, ddof=1)  # Desvio padrão amostral
+            
+            # Erro padrão (quanto a média varia)
+            erro_padrao = dp / np.sqrt(n)
+            
+            # t-crítico para 95% (depende do N)
+            t_critico = stats.t.ppf(0.975, df=n-1)
+            
+            # Margem de erro
+            margem = t_critico * erro_padrao
+            
+            return {
+                'media': media,
+                'limite_inferior': media - margem,
+                'limite_superior': media + margem,
+                'margem_erro': margem,
+                'erro_padrao': erro_padrao
+            }
 
-            # ============================================================
-            # FUNÇÕES AUXILIARES DE AUDITORIA ESTATÍSTICA
-            # ============================================================
-
-            def calcular_intervalo_confianca_95(dados):
-                """
-                Calcula o Intervalo de Confiança 95% (IC 95%)
-                
-                Em linguagem leiga: "Se repetíssemos essa análise 100 vezes,
-                em 95 delas a média verdadeira estaria dentro deste intervalo"
-                """
-                n = len(dados)
-                media = np.mean(dados)
-                dp = np.std(dados, ddof=1)  # Desvio padrão amostral
-                
-                # Erro padrão (quanto a média varia)
-                erro_padrao = dp / np.sqrt(n)
-                
-                # t-crítico para 95% (depende do N)
-                t_critico = stats.t.ppf(0.975, df=n-1)
-                
-                # Margem de erro
-                margem = t_critico * erro_padrao
-                
-                return {
-                    'media': media,
-                    'limite_inferior': media - margem,
-                    'limite_superior': media + margem,
-                    'margem_erro': margem,
-                    'erro_padrao': erro_padrao
-                }
-
-            def testar_normalidade_shapiro(dados):
-                """
-                Teste de Normalidade (Shapiro-Wilk)
-                
-                Em linguagem leiga: "Os dados seguem uma distribuição normal 
-                (em forma de sino)?"
-                
-                p-value > 0.05 = Sim, é aproximadamente normal
-                p-value < 0.05 = Não, se desvia de uma distribuição normal
-                """
-                statistica, p_value = stats.shapiro(dados)
-                
-                return {
-                    'p_value': p_value,
-                    'eh_normal': p_value > 0.05,  # Verdadeiro se p > 0.05
-                    'interpretacao': (
-                        '✅ Aproximadamente normal (dados bem distribuídos)' 
-                        if p_value > 0.05 
-                        else '⚠️ Não é normal (dados concentrados em alguns valores)'
-                    )
-                }
-
-            def calcular_coeficiente_variacao(dados):
-                """
-                Coeficiente de Variação (CV)
-                
-                Em linguagem leiga: "Qual é o tamanho da variabilidade 
-                em relação à média?"
-                
-                CV < 15% = Baixa variabilidade (dados consistentes) ✅
-                CV 15-30% = Moderada variabilidade ⚠️
-                CV > 30% = Alta variabilidade (dados muito diferentes) 🔴
-                """
-                media = np.mean(dados)
-                dp = np.std(dados, ddof=1)
-                
-                cv = (dp / media) * 100 if media != 0 else 0
-                
-                if cv < 15:
-                    status = '✅ Baixa variabilidade (dados consistentes)'
-                elif cv < 30:
-                    status = '⚠️ Moderada variabilidade'
-                else:
-                    status = '🔴 Alta variabilidade (dados muito diferentes entre si)'
-                
-                return {
-                    'valor': cv,
-                    'status': status,
-                    'interpretacao': f'Para cada 100% da média, há ±{cv:.1f}% de dispersão'
-                }
-
-            def detectar_outliers_iqr(dados):
-                """
-                Detecção de Outliers usando Intervalo Interquartil (IQR)
-                
-                Em linguagem leiga: "Existem valores muito diferentes dos outros?
-                (aqueles pontinhos isolados no gráfico)"
-                """
-                Q1 = np.percentile(dados, 25)
-                Q3 = np.percentile(dados, 75)
-                IQR = Q3 - Q1
-                
-                limite_inferior = Q1 - 1.5 * IQR
-                limite_superior = Q3 + 1.5 * IQR
-                
-                outliers = [x for x in dados if x < limite_inferior or x > limite_superior]
-                
-                return {
-                    'tem_outliers': len(outliers) > 0,
-                    'quantidade': len(outliers),
-                    'valores': outliers,
-                    'limite_inferior': limite_inferior,
-                    'limite_superior': limite_superior
-                }
-
-            def validar_robustez_amostral(n):
-                """
-                Valida se o tamanho da amostra é suficiente para análises robustas
-                
-                Em linguagem leiga: "Temos dados suficientes para confiar nessa análise?"
-                """
-                recomendacao_minima = 30
-                
-                if n < 10:
-                    nivel = '🔴 EXPLORATÓRIA'
-                    descricao = 'Use apenas para identificar padrões iniciais. NÃO recomendado para decisões críticas.'
-                    confianca = 'Muito baixa'
-                elif n < 20:
-                    nivel = '🟡 PRELIMINAR'
-                    descricao = 'Útil para direções iniciais, mas colete mais dados para conclusões sólidas.'
-                    confianca = 'Baixa a média'
-                elif n < 30:
-                    nivel = '🟡 ACEITÁVEL'
-                    descricao = 'Moderadamente confiável. Idealmente, chegue a 30+ observações.'
-                    confianca = 'Média'
-                else:
-                    nivel = '✅ ROBUSTA'
-                    descricao = 'Altamente confiável para decisões operacionais.'
-                    confianca = 'Alta'
-                
-                return {
-                    'nivel': nivel,
-                    'descricao': descricao,
-                    'confianca': confianca,
-                    'percentual_recomendacao': (n / recomendacao_minima) * 100,
-                    'deficit': max(0, recomendacao_minima - n)
-                }
-
-            # ============================================================
-            # BLOCO PRINCIPAL: CONVERGÊNCIA TEMÁTICA COM AUDITORIA
-            # ============================================================
-
-            st.markdown("""
-                <div class='info-card'>
-                <h5 style='color: #FFD700; margin-top: 0;'>
-                Convergência Temática: Quanto de sincronização temática existe entre negociador e causador
-                </h5>
-                <p style='font-size:1.2rem;color:#ddd;'>
-                Análise descritiva da média de convergência temática com validação estatística
-                </p>
-                </div>
-                """, unsafe_allow_html=True)
-
-            # ── BOTÃO TOGGLE ───────────────────────────────────────────
-            col_left, col_center, col_right = st.columns([1, 1, 1])
-            with col_center:
-                is_convergencia = render_toggle_button(
-                    label="✔️ Abrir Convergência Temática",
-                    session_key="analise5_convergencia_tematica",
-                    button_key="btn_analise5_convergencia_tematica"
+        def testar_normalidade_shapiro(dados):
+            """
+            Teste de Normalidade (Shapiro-Wilk)
+            
+            Em linguagem leiga: "Os dados seguem uma distribuição normal 
+            (em forma de sino)?"
+            
+            p-value > 0.05 = Sim, é aproximadamente normal
+            p-value < 0.05 = Não, se desvia de uma distribuição normal
+            """
+            statistica, p_value = stats.shapiro(dados)
+            
+            return {
+                'p_value': p_value,
+                'eh_normal': p_value > 0.05,  # Verdadeiro se p > 0.05
+                'interpretacao': (
+                    '✅ Aproximadamente normal (dados bem distribuídos)' 
+                    if p_value > 0.05 
+                    else '⚠️ Não é normal (dados concentrados em alguns valores)'
                 )
+            }
 
-            st.markdown("---")
+        def calcular_coeficiente_variacao(dados):
+            """
+            Coeficiente de Variação (CV)
+            
+            Em linguagem leiga: "Qual é o tamanho da variabilidade 
+            em relação à média?"
+            
+            CV < 15% = Baixa variabilidade (dados consistentes) ✅
+            CV 15-30% = Moderada variabilidade ⚠️
+            CV > 30% = Alta variabilidade (dados muito diferentes) 🔴
+            """
+            media = np.mean(dados)
+            dp = np.std(dados, ddof=1)
+            
+            cv = (dp / media) * 100 if media != 0 else 0
+            
+            if cv < 15:
+                status = '✅ Baixa variabilidade (dados consistentes)'
+            elif cv < 30:
+                status = '⚠️ Moderada variabilidade'
+            else:
+                status = '🔴 Alta variabilidade (dados muito diferentes entre si)'
+            
+            return {
+                'valor': cv,
+                'status': status,
+                'interpretacao': f'Para cada 100% da média, há ±{cv:.1f}% de dispersão'
+            }
 
-            if is_convergencia:
+        def detectar_outliers_iqr(dados):
+            """
+            Detecção de Outliers usando Intervalo Interquartil (IQR)
+            
+            Em linguagem leiga: "Existem valores muito diferentes dos outros?
+            (aqueles pontinhos isolados no gráfico)"
+            """
+            Q1 = np.percentile(dados, 25)
+            Q3 = np.percentile(dados, 75)
+            IQR = Q3 - Q1
+            
+            limite_inferior = Q1 - 1.5 * IQR
+            limite_superior = Q3 + 1.5 * IQR
+            
+            outliers = [x for x in dados if x < limite_inferior or x > limite_superior]
+            
+            return {
+                'tem_outliers': len(outliers) > 0,
+                'quantidade': len(outliers),
+                'valores': outliers,
+                'limite_inferior': limite_inferior,
+                'limite_superior': limite_superior
+            }
 
-                if not df_quali_filt.empty:
-                    col_texto_c = 'TRANSCRIÇÃO DO CAUSADOR'
-                    col_texto_np = 'TRANSCRIÇÃO DO NEGOCIADOR PRINCIPAL'
-                    
-                    if col_texto_c in df_quali_filt.columns and col_texto_np in df_quali_filt.columns:
-                        try:
-                            # Calcular convergência para CADA APA
-                            convergencias_apas = []
+        def validar_robustez_amostral(n):
+            """
+            Valida se o tamanho da amostra é suficiente para análises robustas
+            
+            Em linguagem leiga: "Temos dados suficientes para confiar nessa análise?"
+            """
+            recomendacao_minima = 30
+            
+            if n < 10:
+                nivel = '🔴 EXPLORATÓRIA'
+                descricao = 'Use apenas para identificar padrões iniciais. NÃO recomendado para decisões críticas.'
+                confianca = 'Muito baixa'
+            elif n < 20:
+                nivel = '🟡 PRELIMINAR'
+                descricao = 'Útil para direções iniciais, mas colete mais dados para conclusões sólidas.'
+                confianca = 'Baixa a média'
+            elif n < 30:
+                nivel = '🟡 ACEITÁVEL'
+                descricao = 'Moderadamente confiável. Idealmente, chegue a 30+ observações.'
+                confianca = 'Média'
+            else:
+                nivel = '✅ ROBUSTA'
+                descricao = 'Altamente confiável para decisões operacionais.'
+                confianca = 'Alta'
+            
+            return {
+                'nivel': nivel,
+                'descricao': descricao,
+                'confianca': confianca,
+                'percentual_recomendacao': (n / recomendacao_minima) * 100,
+                'deficit': max(0, recomendacao_minima - n)
+            }
+
+        # ============================================================
+        # BLOCO PRINCIPAL: CONVERGÊNCIA TEMÁTICA COM AUDITORIA
+        # ============================================================
+
+        st.markdown("""
+            <div class='info-card'>
+            <h5 style='color: #FFD700; margin-top: 0;'>
+            Convergência Temática: Quanto de sincronização temática existe entre negociador e causador
+            </h5>
+            <p style='font-size:1.2rem;color:#ddd;'>
+            Análise descritiva da média de convergência temática com validação estatística
+            </p>
+            </div>
+            """, unsafe_allow_html=True)
+
+        # ── BOTÃO TOGGLE ───────────────────────────────────────────
+        col_left, col_center, col_right = st.columns([1, 1, 1])
+        with col_center:
+            is_convergencia = render_toggle_button(
+                label="✔️ Abrir Convergência Temática",
+                session_key="analise5_convergencia_tematica",
+                button_key="btn_analise5_convergencia_tematica"
+            )
+
+        st.markdown("---")
+
+        if is_convergencia:
+
+            if not df_quali_filt.empty:
+                col_texto_c = 'TRANSCRIÇÃO DO CAUSADOR'
+                col_texto_np = 'TRANSCRIÇÃO DO NEGOCIADOR PRINCIPAL'
+                
+                if col_texto_c in df_quali_filt.columns and col_texto_np in df_quali_filt.columns:
+                    try:
+                        # Calcular convergência para CADA APA
+                        convergencias_apas = []
+                        
+                        for idx, row in df_quali_filt.iterrows():
+                            txt_c = str(row[col_texto_c]).strip()
+                            txt_np = str(row[col_texto_np]).strip()
                             
-                            for idx, row in df_quali_filt.iterrows():
-                                txt_c = str(row[col_texto_c]).strip()
-                                txt_np = str(row[col_texto_np]).strip()
-                                
-                                if len(txt_c.split()) > 5 and len(txt_np.split()) > 5:
-                                    try:
-                                        temas_c = analise.extrair_temas_unicos(txt_c, resolucao_tipo='desconhecida')
-                                        temas_np = analise.extrair_temas_unicos(txt_np, resolucao_tipo='desconhecida')
-                                        
-                                        if temas_c and temas_np:
-                                            conv = analise.calcular_convergencia_tematica(temas_c, temas_np)
-                                            convergencias_apas.append({
-                                                'APA': idx,
-                                                'Convergencia': conv['convergencia_geral'],
-                                                'Compartilhados': len(conv['temas_compartilhados']),
-                                                'So_Causador': len(conv['temas_exclusivos_causador']),
-                                                'So_Negociador': len(conv['temas_exclusivos_negociador'])
-                                            })
-                                    except:
-                                        pass
+                            if len(txt_c.split()) > 5 and len(txt_np.split()) > 5:
+                                try:
+                                    temas_c = analise.extrair_temas_unicos(txt_c, resolucao_tipo='desconhecida')
+                                    temas_np = analise.extrair_temas_unicos(txt_np, resolucao_tipo='desconhecida')
+                                    
+                                    if temas_c and temas_np:
+                                        conv = analise.calcular_convergencia_tematica(temas_c, temas_np)
+                                        convergencias_apas.append({
+                                            'APA': idx,
+                                            'Convergencia': conv['convergencia_geral'],
+                                            'Compartilhados': len(conv['temas_compartilhados']),
+                                            'So_Causador': len(conv['temas_exclusivos_causador']),
+                                            'So_Negociador': len(conv['temas_exclusivos_negociador'])
+                                        })
+                                except:
+                                    pass
+                        
+                        if convergencias_apas:
+                            df_conv_agg = pd.DataFrame(convergencias_apas)
                             
-                            if convergencias_apas:
-                                df_conv_agg = pd.DataFrame(convergencias_apas)
+                            # ════════════════════════════════════════════
+                            # CÁLCULOS ESTATÍSTICOS
+                            # ════════════════════════════════════════════
+                            
+                            dados_convergencia = df_conv_agg['Convergencia'].values
+                            n_amostras = len(dados_convergencia)
+                            
+                            # Estatísticas básicas
+                            media_conv = df_conv_agg['Convergencia'].mean()
+                            mediana_conv = df_conv_agg['Convergencia'].median()
+                            dp_conv = df_conv_agg['Convergencia'].std()
+                            min_conv = df_conv_agg['Convergencia'].min()
+                            max_conv = df_conv_agg['Convergencia'].max()
+                            amplitude = max_conv - min_conv
+                            
+                            # Testes estatísticos
+                            ic_95 = calcular_intervalo_confianca_95(dados_convergencia)
+                            normalidade = testar_normalidade_shapiro(dados_convergencia)
+                            cv = calcular_coeficiente_variacao(dados_convergencia)
+                            outliers = detectar_outliers_iqr(dados_convergencia)
+                            robustez = validar_robustez_amostral(n_amostras)
+                            
+                            # Média de temas compartilhados
+                            media_compartilhados = df_conv_agg['Compartilhados'].mean()
+                            
+                            # ── SCORECARD PRINCIPAL ────────────────────────────────
+                            st.markdown("### ✔️ Resumo da Convergência Temática")
+                            
+                            col_cv1, col_cv2, col_cv3, col_cv4 = st.columns(4)
+                            
+                            with col_cv1:
+                                st.metric('Convergência Média', f'{media_conv:.1f}%')
+                                st.caption(f'DP: ±{dp_conv:.1f}%')
+                            
+                            with col_cv2:
+                                st.metric('Mediana', f'{mediana_conv:.1f}%')
+                                st.caption(f'N = {n_amostras} APAs')
+                            
+                            with col_cv3:
+                                st.metric('Temas Compartilhados (Média)', f'{media_compartilhados:.1f}')
+                                st.caption('Média por APA')
+                            
+                            with col_cv4:
+                                st.metric('Range', f'{min_conv:.1f}% - {max_conv:.1f}%')
+                                st.caption(f'Amplitude: {amplitude:.1f}%')
+                            
+                            # ════════════════════════════════════════════
+                            # 🔍 AUDITORIA ESTATÍSTICA (NOVO!)
+                            # ════════════════════════════════════════════
+                            
+                            st.markdown("---")
+                            st.markdown("### 🔍 Validação Estatística (Qualidade dos Dados)")
+                            
+                            # AVISO PRINCIPAL SOBRE ROBUSTEZ
+                            st.markdown(f"""
+                            <div style='
+                                background-color: rgba(255, 174, 66, 0.1);
+                                border-left: 4px solid #FFB84D;
+                                padding: 15px;
+                                border-radius: 5px;
+                                margin-bottom: 20px;
+                            '>
+                            <h5 style='color: #FFB84D; margin-top: 0;'>
+                            ⚠️ {robustez['nivel']} — Nível de Confiabilidade
+                            </h5>
+                            <p style='color: #ddd; margin-bottom: 10px;'>
+                            <strong>Status:</strong> {robustez['descricao']}<br>
+                            <strong>Confiança nos resultados:</strong> {robustez['confianca']}<br>
+                            <strong>Progresso:</strong> {robustez['percentual_recomendacao']:.0f}% do recomendado ({n_amostras}/30 APAs)
+                            </p>
+                            </div>
+                            """, unsafe_allow_html=True)
+                            
+                            # TABELA DE VALIDAÇÃO
+                            col_audit1, col_audit2 = st.columns(2)
+                            
+                            with col_audit1:
+                                st.markdown("**📐 Distribuição dos Dados**")
                                 
-                                # ════════════════════════════════════════════
-                                # CÁLCULOS ESTATÍSTICOS
-                                # ════════════════════════════════════════════
+                                audit_data_1 = {
+                                    'Métrica': [
+                                        'Intervalo de Confiança 95%',
+                                        'Coeficiente de Variação',
+                                        'Normalidade dos Dados'
+                                    ],
+                                    'Valor': [
+                                        f"[{ic_95['limite_inferior']:.1f}% - {ic_95['limite_superior']:.1f}%]",
+                                        f"{cv['valor']:.1f}% {cv['status'].split()[0]}",
+                                        normalidade['interpretacao']
+                                    ]
+                                }
                                 
-                                dados_convergencia = df_conv_agg['Convergencia'].values
-                                n_amostras = len(dados_convergencia)
+                                df_audit_1 = pd.DataFrame(audit_data_1)
+                                st.dataframe(df_audit_1, use_container_width=True, hide_index=True)
+                            
+                            with col_audit2:
+                                st.markdown("**🔎 Detecção de Anomalias**")
                                 
-                                # Estatísticas básicas
-                                media_conv = df_conv_agg['Convergencia'].mean()
-                                mediana_conv = df_conv_agg['Convergencia'].median()
-                                dp_conv = df_conv_agg['Convergencia'].std()
-                                min_conv = df_conv_agg['Convergencia'].min()
-                                max_conv = df_conv_agg['Convergencia'].max()
-                                amplitude = max_conv - min_conv
-                                
-                                # Testes estatísticos
-                                ic_95 = calcular_intervalo_confianca_95(dados_convergencia)
-                                normalidade = testar_normalidade_shapiro(dados_convergencia)
-                                cv = calcular_coeficiente_variacao(dados_convergencia)
-                                outliers = detectar_outliers_iqr(dados_convergencia)
-                                robustez = validar_robustez_amostral(n_amostras)
-                                
-                                # Média de temas compartilhados
-                                media_compartilhados = df_conv_agg['Compartilhados'].mean()
-                                
-                                # ── SCORECARD PRINCIPAL ────────────────────────────────
-                                st.markdown("### ✔️ Resumo da Convergência Temática")
-                                
-                                col_cv1, col_cv2, col_cv3, col_cv4 = st.columns(4)
-                                
-                                with col_cv1:
-                                    st.metric('Convergência Média', f'{media_conv:.1f}%')
-                                    st.caption(f'DP: ±{dp_conv:.1f}%')
-                                
-                                with col_cv2:
-                                    st.metric('Mediana', f'{mediana_conv:.1f}%')
-                                    st.caption(f'N = {n_amostras} APAs')
-                                
-                                with col_cv3:
-                                    st.metric('Temas Compartilhados (Média)', f'{media_compartilhados:.1f}')
-                                    st.caption('Média por APA')
-                                
-                                with col_cv4:
-                                    st.metric('Range', f'{min_conv:.1f}% - {max_conv:.1f}%')
-                                    st.caption(f'Amplitude: {amplitude:.1f}%')
-                                
-                                # ════════════════════════════════════════════
-                                # 🔍 AUDITORIA ESTATÍSTICA (NOVO!)
-                                # ════════════════════════════════════════════
-                                
-                                st.markdown("---")
-                                st.markdown("### 🔍 Validação Estatística (Qualidade dos Dados)")
-                                
-                                # AVISO PRINCIPAL SOBRE ROBUSTEZ
-                                st.markdown(f"""
-                                <div style='
-                                    background-color: rgba(255, 174, 66, 0.1);
-                                    border-left: 4px solid #FFB84D;
-                                    padding: 15px;
-                                    border-radius: 5px;
-                                    margin-bottom: 20px;
-                                '>
-                                <h5 style='color: #FFB84D; margin-top: 0;'>
-                                ⚠️ {robustez['nivel']} — Nível de Confiabilidade
-                                </h5>
-                                <p style='color: #ddd; margin-bottom: 10px;'>
-                                <strong>Status:</strong> {robustez['descricao']}<br>
-                                <strong>Confiança nos resultados:</strong> {robustez['confianca']}<br>
-                                <strong>Progresso:</strong> {robustez['percentual_recomendacao']:.0f}% do recomendado ({n_amostras}/30 APAs)
-                                </p>
-                                </div>
-                                """, unsafe_allow_html=True)
-                                
-                                # TABELA DE VALIDAÇÃO
-                                col_audit1, col_audit2 = st.columns(2)
-                                
-                                with col_audit1:
-                                    st.markdown("**📐 Distribuição dos Dados**")
-                                    
-                                    audit_data_1 = {
-                                        'Métrica': [
-                                            'Intervalo de Confiança 95%',
-                                            'Coeficiente de Variação',
-                                            'Normalidade dos Dados'
-                                        ],
-                                        'Valor': [
-                                            f"[{ic_95['limite_inferior']:.1f}% - {ic_95['limite_superior']:.1f}%]",
-                                            f"{cv['valor']:.1f}% {cv['status'].split()[0]}",
-                                            normalidade['interpretacao']
-                                        ]
-                                    }
-                                    
-                                    df_audit_1 = pd.DataFrame(audit_data_1)
-                                    st.dataframe(df_audit_1, use_container_width=True, hide_index=True)
-                                
-                                with col_audit2:
-                                    st.markdown("**🔎 Detecção de Anomalias**")
-                                    
-                                    outlier_status = (
-                                        f"🟢 Nenhum outlier" 
-                                        if not outliers['tem_outliers'] 
-                                        else f"🟡 {outliers['quantidade']} outlier(s) detectado(s)"
-                                    )
-                                    
-                                    audit_data_2 = {
-                                        'Métrica': [
-                                            'Outliers (Valores Anômalos)',
-                                            'Tamanho da Amostra',
-                                            'Variabilidade'
-                                        ],
-                                        'Valor': [
-                                            outlier_status,
-                                            f"{n_amostras} APAs",
-                                            cv['status']
-                                        ]
-                                    }
-                                    
-                                    df_audit_2 = pd.DataFrame(audit_data_2)
-                                    st.dataframe(df_audit_2, use_container_width=True, hide_index=True)
-                                
-                                # ════════════════════════════════════════════
-                                # 📚 EXPLICAÇÕES EM LINGUAGEM LEIGA
-                                # ════════════════════════════════════════════
-                                
-                                # Preparar interpretação do p-value
-                                p_value_interpretation = (
-                                    f"✅ p = {normalidade['p_value']:.4f} - Dados aproximadamente normais"
-                                    if normalidade['eh_normal']
-                                    else f"⚠️ p = {normalidade['p_value']:.4f} - Dados não são normais"
+                                outlier_status = (
+                                    f"🟢 Nenhum outlier" 
+                                    if not outliers['tem_outliers'] 
+                                    else f"🟡 {outliers['quantidade']} outlier(s) detectado(s)"
                                 )
                                 
-                                with st.expander("📚 O que significam esses números? (Clique para expandir)", expanded=False):
-                                    
-                                    st.markdown(f"""
-                                    ### ✔️ Explicação em Linguagem Simples
-                                    
-                                    ---
-                                    
-                                    **1️⃣ Intervalo de Confiança 95% (IC 95%)**
-                                    
-                                    <div style='background-color: rgba(100, 150, 255, 0.1); padding: 10px; border-radius: 5px; margin: 10px 0;'>
-                                    
-                                    **O que é:** Um "intervalo de segurança" onde a verdadeira média provavelmente está.
-                                    
-                                    **Analogia:** Imagine que você está tentando acertar o alvo de uma negociação. 
-                                    A média ({media_conv:.1f}%) é seu melhor palpite, mas o IC 95% é a "zona de segurança" onde você 
-                                    espera que o alvo realmente esteja em 95 de cada 100 tentativas.
-                                    
-                                    **Seu IC 95%:** [{ic_95['limite_inferior']:.1f}% - {ic_95['limite_superior']:.1f}%]
-                                    
-                                    **Interpretação:**
-                                    - Intervalo é MUITO AMPLO 🔴
-                                    - Significa: "Não temos certeza onde a verdadeira média está"
-                                    - Ação: Colete mais dados para diminuir esse intervalo
-                                    
-                                    **Analogia numérica:**
-                                    - Se N = 5 (seu caso): IC = [{ic_95['limite_inferior']:.1f}% - {ic_95['limite_superior']:.1f}%] (intervalo ENORME de ±{ic_95['margem_erro']:.1f}%)
-                                    - Se N = 100: IC seria [38% - 47.6%] (intervalo pequeno de ±5%)
-                                    → Mais dados = mais certeza
-                                    
-                                    </div>
-                                    
-                                    ---
-                                    
-                                    **2️⃣ Coeficiente de Variação (CV)**
-                                    
-                                    <div style='background-color: rgba(255, 150, 100, 0.1); padding: 10px; border-radius: 5px; margin: 10px 0;'>
-                                    
-                                    **O que é:** Uma medida de "quanto os dados variam em relação à média".
-                                    
-                                    **Analogia:** Imagine dois negociadores:
-                                    - Negociador A: Sempre consegue 40-45% de convergência (consistente)
-                                    - Negociador B: Às vezes 20%, às vezes 60% (imprevisível)
-                                    
-                                    O CV mostra qual é mais consistente.
-                                    
-                                    **Seu CV:** {cv['valor']:.1f}% → {cv['status']}
-                                    
-                                    **Interpretação:**
-                                    - CV < 15%: Dados muito consistentes ✅ (negociador confiável)
-                                    - CV 15-30%: Dados moderadamente variáveis ⚠️
-                                    - CV > 30%: Dados muito diferentes entre si 🔴 (imprevisível)
-                                    
-                                    **O que isso significa:**
-                                    Para cada 100% de convergência média, há ±{cv['valor']:.1f}% de "oscilação"
-                                    → Cada negociação é diferente da outra
-                                    
-                                    </div>
-                                    
-                                    ---
-                                    
-                                    **3️⃣ Teste de Normalidade (Shapiro-Wilk)**
-                                    
-                                    <div style='background-color: rgba(150, 255, 150, 0.1); padding: 10px; border-radius: 5px; margin: 10px 0;'>
-                                    
-                                    **O que é:** Um teste que verifica se os dados estão "bem distribuídos" 
-                                    (em forma de sino/normal).
-                                    
-                                    **Analogia:** Imagine a altura das pessoas em uma população:
-                                    - Normal: Poucas pessoas muito altas, poucas muito baixas, maioria no meio (sino)
-                                    - Não-normal: Todas com mesma altura (não há variação)
-                                    
-                                    **Seu resultado:** {p_value_interpretation}
-                                    
-                                    **Interpretação:**
-                                    - p-value > 0.05: Dados são aproximadamente normais ✅
-                                    - p-value < 0.05: Dados NÃO são normais ⚠️
-                                    
-                                    **Por que isso importa?**
-                                    Alguns testes estatísticos funcionam melhor com dados normais.
-                                    Se seus dados NÃO são normais, use testes "não-paramétricos" (mais seguros).
-                                    
-                                    </div>
-                                    
-                                    ---
-                                    
-                                    **4️⃣ Outliers (Valores Anômalos)**
-                                    
-                                    <div style='background-color: rgba(255, 100, 100, 0.1); padding: 10px; border-radius: 5px; margin: 10px 0;'>
-                                    
-                                    **O que é:** Valores que estão MUITO diferentes dos outros 
-                                    (aqueles pontinhos isolados no gráfico).
-                                    
-                                    **Analogia:** Imagine notas de uma turma:
-                                    - Normal: Maioria com notas entre 5-8
-                                    - Outlier: Um aluno com nota 2 (muito diferente)
-                                    
-                                    **Seu caso:** {'🟢 Nenhum outlier detectado' if not outliers['tem_outliers'] else f'🟡 {outliers["quantidade"]} outlier(s)'}
-                                    
-                                    **Ação recomendada:**
-                                    Se houver outliers, investigue:
-                                    - É um erro de coleta de dados?
-                                    - É uma negociação realmente diferente das outras?
-                                    - Deve ser mantida ou removida da análise?
-                                    
-                                    </div>
-                                    
-                                    ---
-                                    
-                                    **5️⃣ Tamanho da Amostra (N)**
-                                    
-                                    <div style='background-color: rgba(200, 100, 255, 0.1); padding: 10px; border-radius: 5px; margin: 10px 0;'>
-                                    
-                                    **O que é:** Quantas negociações você está analisando.
-                                    
-                                    **Recomendação:** N ≥ 30 para análises ROBUSTAS (confiáveis).
-                                    
-                                    **Seu N:** {n_amostras} → {robustez['nivel']}
-                                    
-                                    **Interpretação:**
-                                    - N < 10: 🔴 Exploratória (apenas para ideias iniciais)
-                                    - N 10-30: 🟡 Aceitável (colete mais para segurança)
-                                    - N > 30: ✅ Robusta (confiável para decisões)
-                                    
-                                    **Como melhorar?** Colete {robustez['deficit']:.0f} mais APAs para atingir N = 30
-                                    
-                                    </div>
-                                    
-                                    """, 
-                                    unsafe_allow_html=True
-                                )
+                                audit_data_2 = {
+                                    'Métrica': [
+                                        'Outliers (Valores Anômalos)',
+                                        'Tamanho da Amostra',
+                                        'Variabilidade'
+                                    ],
+                                    'Valor': [
+                                        outlier_status,
+                                        f"{n_amostras} APAs",
+                                        cv['status']
+                                    ]
+                                }
                                 
-                                # ── DISTRIBUIÇÃO ─────────────────────────────
-                                st.markdown("---")
-                                st.markdown("### ✔️ Distribuição da Convergência")
-                                
-                                st.markdown("""
-                                **O que são esses gráficos?**
-                                
-                                Imagine 6 negociações diferentes. Em cada uma, calculamos quanto o negociador e o causador falam dos **mesmos temas** (convergência).
-                                
-                                - **Negociação 1:** 45% de sintonia temática
-                                - **Negociação 2:** 52% de sintonia temática
-                                - **Negociação 3:** 38% de sintonia temática
-                                - ... e assim por diante
-                                
-                                Esses dois gráficos mostram como essas porcentagens se distribuem:
-                                
-                                **Gráfico da Esquerda (Histograma):** "Em quantas negociações tivemos cada nível de sintonia?"
-                                - Se há uma barra alta em 45%, significa que muitas negociações tiveram ~45% de convergência
-                                - Se a distribuição é espalhada, significa que a sintonia varia muito de ocorrência para ocorrência
-                                
-                                **Gráfico da Direita (Box Plot):** "Qual é a faixa típica de sintonia?"
-                                - **A linha do meio (mediana):** 50% das negociações tiveram sintonia até esse valor
-                                - **A caixa:** Mostra onde estão a maioria dos valores (do 25º ao 75º percentil)
-                                - **Os pontinhos:** Ocorrências com sintonia muito diferente das outras (outliers)
-                                """)
-                                
-                                col_cv_hist1, col_cv_hist2 = st.columns(2)
-                                
-                                with col_cv_hist1:
-                                    fig_conv_hist = px.histogram(
-                                        df_conv_agg,
-                                        x='Convergencia',
-                                        nbins=8,
-                                        title='Distribuição da Convergência Temática'
-                                    )
-                                    fig_conv_hist.update_traces(marker_color='#FF8C00')
-                                    fig_conv_hist.update_layout(
-                                        paper_bgcolor='rgba(0,0,0,0)',
-                                        plot_bgcolor='rgba(0,0,0,0)',
-                                        font_color='#FFF',
-                                        height=300,
-                                        xaxis_title='Convergência (%)',
-                                        yaxis_title='Número de Negociações'
-                                    )
-                                    st.plotly_chart(fig_conv_hist, use_container_width=True)
-                                
-                                with col_cv_hist2:
-                                    fig_box_conv = px.box(
-                                        df_conv_agg,
-                                        y='Convergencia',
-                                        title='Faixa Típica de Convergência'
-                                    )
-                                    fig_box_conv.update_traces(marker_color='#FF8C00')
-                                    fig_box_conv.update_layout(
-                                        paper_bgcolor='rgba(0,0,0,0)',
-                                        plot_bgcolor='rgba(0,0,0,0)',
-                                        font_color='#FFF',
-                                        height=300,
-                                        yaxis_title='Convergência (%)'
-                                    )
-                                    st.plotly_chart(fig_box_conv, use_container_width=True)
-                                
-                                # ── NOVO: GRÁFICO DE DISPERSÃO ─────────────────
-                                st.markdown("---")
-                                st.markdown("### 📍 Dispersão Individual (Cada APA)")
-                                
-                                st.markdown("""
-                                **O que é esse gráfico?**
-                                
-                                Mostra **cada negociação individualmente** (cada ponto é uma APA).
-                                
-                                - **Eixo X (horizontal):** Número da APA (1ª, 2ª, 3ª... negociação)
-                                - **Eixo Y (vertical):** Convergência dessa APA
-                                - **Linha vermelha:** Média (42.8%)
-                                - **Faixa cinzenta:** Intervalo de Confiança (esperado estar aqui em 95% dos casos)
-                                
-                                **Como ler:**
-                                - Ponto ACIMA da faixa cinzenta = Convergência ACIMA da média (bom!)
-                                - Ponto DENTRO da faixa = Convergência normal
-                                - Ponto ABAIXO da faixa = Convergência ABAIXO da média (investigar)
-                                
-                                **Padrões a observar:**
-                                - Todos os pontos espalhados? → Variabilidade alta (como é seu caso)
-                                - Pontos juntos em uma linha? → Variabilidade baixa (consistência)
-                                - Pontos isolados? → Outliers (anomalias)
-                                """)
-                                
-                                # Preparar dados para scatter plot
-                                df_scatter = df_conv_agg.copy()
-                                df_scatter['APA_Num'] = range(1, len(df_scatter) + 1)
-                                
-                                fig_scatter = px.scatter(
-                                    df_scatter,
-                                    x='APA_Num',
-                                    y='Convergencia',
-                                    title='Convergência por Negociação (Scatter Plot)',
-                                    labels={'APA_Num': 'Número da APA', 'Convergencia': 'Convergência (%)'},
-                                    size='Compartilhados',  # Tamanho do ponto = número de temas compartilhados
-                                    hover_data={'APA': True, 'Convergencia': ':.1f', 'Compartilhados': True}
-                                )
-                                
-                                # Adicionar linha de média
-                                fig_scatter.add_hline(
-                                    y=media_conv,
-                                    line_dash="dash",
-                                    line_color="#FF0000",
-                                    annotation_text=f"Média: {media_conv:.1f}%",
-                                    annotation_position="right"
-                                )
-                                
-                                # Adicionar faixa de IC 95%
-                                fig_scatter.add_hrect(
-                                    y0=ic_95['limite_inferior'],
-                                    y1=ic_95['limite_superior'],
-                                    fillcolor="gray",
-                                    opacity=0.2,
-                                    layer="below",
-                                    annotation_text="IC 95%",
-                                    annotation_position="left"
-                                )
-                                
-                                fig_scatter.update_traces(marker_color='#FF8C00', marker_size=10)
-                                fig_scatter.update_layout(
-                                    paper_bgcolor='rgba(0,0,0,0)',
-                                    plot_bgcolor='rgba(0,0,0,0)',
-                                    font_color='#FFF',
-                                    height=400,
-                                    xaxis_title='Número da APA',
-                                    yaxis_title='Convergência (%)',
-                                    hovermode='closest'
-                                )
-                                
-                                st.plotly_chart(fig_scatter, use_container_width=True)
-                                
-                                st.markdown("""
-                                **Dica de Interpretação:**
-                                
-                                - **Pontos maiores:** Mais temas compartilhados entre negociador e causador
-                                - **Pontos menores:** Menos temas compartilhados
-                                - **Padrão nos pontos maiores?** Se os maiores têm maior convergência, há correlação positiva
-                                """)
-                                
-                                st.markdown("""
-                                **Como interpretar os números na prática:**
-                                
-                                - **Convergência 40-60%:** Normal — há sempre alguma diferença de perspectiva entre negociador e causador
-                                - **Convergência > 60%:** Excelente — o negociador está na "mesma frequência" que o causador
-                                - **Convergência < 40%:** Alerta — há risco de desencontro de comunicação
-                                
-                                **Dica:** Se a maioria das suas negociações tem convergência > 50%, sua equipe está fazendo escuta ativa de forma consistente! 🎯
-                                """)
-                                
-                                # ── ANÁLISE POR NEGOCIADOR (SE FILTRADO) ──────
-                                if filtro_neg_g != "Todos":
-                                    st.markdown("---")
-                                    st.markdown("#### ✔️ Análise Específica do Negociador")
-                                    
-                                    conv_neg = df_conv_agg['Convergencia'].mean()
-                                    
-                                    if conv_neg >= 60:
-                                        status = "✅ Excelente — Alta sintonia temática com causadores"
-                                        cor = "🟢"
-                                    elif conv_neg >= 40:
-                                        status = "⚠️ Moderado — Alguns temas divergentes"
-                                        cor = "🟡"
-                                    else:
-                                        status = "❌ Fraco — Muita divergência temática. Recomendado reforço em escuta ativa"
-                                        cor = "🔴"
-                                    
-                                    st.markdown(f"""
-                                    **Negociador:** {filtro_neg_g}
-                                    
-                                    **Convergência média:** {conv_neg:.1f}%
-                                    
-                                    **Status:** {status}
-                                    
-                                    **Recomendação:**
-                                    - Se convergência < 40%: Investir em treinamento de escuta ativa
-                                    - Se convergência 40-60%: Consolidar técnicas de rapport
-                                    - Se convergência > 60%: Excelente! Usar como referência para equipe
-                                    """)
-                                
-                                # ── LEITURA OPERACIONAL ──────────────────────
-                                st.markdown("---")
-                                st.markdown("### ✔️ Leitura Operacional")
+                                df_audit_2 = pd.DataFrame(audit_data_2)
+                                st.dataframe(df_audit_2, use_container_width=True, hide_index=True)
+                            
+                            # ════════════════════════════════════════════
+                            # 📚 EXPLICAÇÕES EM LINGUAGEM LEIGA
+                            # ════════════════════════════════════════════
+                            
+                            # Preparar interpretação do p-value
+                            p_value_interpretation = (
+                                f"✅ p = {normalidade['p_value']:.4f} - Dados aproximadamente normais"
+                                if normalidade['eh_normal']
+                                else f"⚠️ p = {normalidade['p_value']:.4f} - Dados não são normais"
+                            )
+                            
+                            with st.expander("📚 O que significam esses números? (Clique para expandir)", expanded=False):
                                 
                                 st.markdown(f"""
-                                **O que os dados mostram:**
-                                
-                                - **Convergência média de {media_conv:.1f}%:** Em média, há {media_conv:.0f}% de sincronização temática
-                                - **Variação (DP ±{dp_conv:.1f}%):** Há oscilação significativa entre ocorrências
-                                - **Temas compartilhados (média {media_compartilhados:.1f}):** Cada negociador-causador compartilha ~{media_compartilhados:.0f} temas em comum
-                                
-                                **Interpretação:**
-                                - Convergência alta (> 60%) = Negociador e causador falam dos mesmos assuntos
-                                - Convergência baixa (< 40%) = Universos temáticos diferentes = risco de desencontro
-                                
-                                **Ação Recomendada:**
-                                Se convergência < 40%, implementar treinamento focado em:
-                                1. **Escuta Ativa** — Entender os temas do causador antes de impor a agenda
-                                2. **Validação Emocional** — Reconhecer as preocupações mesmo que diferentes
-                                3. **Ponte Temática** — Conectar temas do causador aos temas da resolução
+                                ### ✔️ Explicação em Linguagem Simples
                                 
                                 ---
                                 
-                                **🔍 Qualidade Estatística desta Análise:**
+                                **1️⃣ Intervalo de Confiança 95% (IC 95%)**
                                 
-                                Nível de Robustez: **{robustez['nivel']}**
+                                <div style='background-color: rgba(100, 150, 255, 0.1); padding: 10px; border-radius: 5px; margin: 10px 0;'>
                                 
-                                {robustez['descricao']}
+                                **O que é:** Um "intervalo de segurança" onde a verdadeira média provavelmente está.
                                 
-                                **Recomendação final:** Colete {robustez['deficit']:.0f} mais APAs para atingir N = 30 e ter análise ROBUSTA.
+                                **Analogia:** Imagine que você está tentando acertar o alvo de uma negociação. 
+                                A média ({media_conv:.1f}%) é seu melhor palpite, mas o IC 95% é a "zona de segurança" onde você 
+                                espera que o alvo realmente esteja em 95 de cada 100 tentativas.
+                                
+                                **Seu IC 95%:** [{ic_95['limite_inferior']:.1f}% - {ic_95['limite_superior']:.1f}%]
+                                
+                                **Interpretação:**
+                                - Intervalo é MUITO AMPLO 🔴
+                                - Significa: "Não temos certeza onde a verdadeira média está"
+                                - Ação: Colete mais dados para diminuir esse intervalo
+                                
+                                **Analogia numérica:**
+                                - Se N = 5 (seu caso): IC = [{ic_95['limite_inferior']:.1f}% - {ic_95['limite_superior']:.1f}%] (intervalo ENORME de ±{ic_95['margem_erro']:.1f}%)
+                                - Se N = 100: IC seria [38% - 47.6%] (intervalo pequeno de ±5%)
+                                → Mais dados = mais certeza
+                                
+                                </div>
+                                
+                                ---
+                                
+                                **2️⃣ Coeficiente de Variação (CV)**
+                                
+                                <div style='background-color: rgba(255, 150, 100, 0.1); padding: 10px; border-radius: 5px; margin: 10px 0;'>
+                                
+                                **O que é:** Uma medida de "quanto os dados variam em relação à média".
+                                
+                                **Analogia:** Imagine dois negociadores:
+                                - Negociador A: Sempre consegue 40-45% de convergência (consistente)
+                                - Negociador B: Às vezes 20%, às vezes 60% (imprevisível)
+                                
+                                O CV mostra qual é mais consistente.
+                                
+                                **Seu CV:** {cv['valor']:.1f}% → {cv['status']}
+                                
+                                **Interpretação:**
+                                - CV < 15%: Dados muito consistentes ✅ (negociador confiável)
+                                - CV 15-30%: Dados moderadamente variáveis ⚠️
+                                - CV > 30%: Dados muito diferentes entre si 🔴 (imprevisível)
+                                
+                                **O que isso significa:**
+                                Para cada 100% de convergência média, há ±{cv['valor']:.1f}% de "oscilação"
+                                → Cada negociação é diferente da outra
+                                
+                                </div>
+                                
+                                ---
+                                
+                                **3️⃣ Teste de Normalidade (Shapiro-Wilk)**
+                                
+                                <div style='background-color: rgba(150, 255, 150, 0.1); padding: 10px; border-radius: 5px; margin: 10px 0;'>
+                                
+                                **O que é:** Um teste que verifica se os dados estão "bem distribuídos" 
+                                (em forma de sino/normal).
+                                
+                                **Analogia:** Imagine a altura das pessoas em uma população:
+                                - Normal: Poucas pessoas muito altas, poucas muito baixas, maioria no meio (sino)
+                                - Não-normal: Todas com mesma altura (não há variação)
+                                
+                                **Seu resultado:** {p_value_interpretation}
+                                
+                                **Interpretação:**
+                                - p-value > 0.05: Dados são aproximadamente normais ✅
+                                - p-value < 0.05: Dados NÃO são normais ⚠️
+                                
+                                **Por que isso importa?**
+                                Alguns testes estatísticos funcionam melhor com dados normais.
+                                Se seus dados NÃO são normais, use testes "não-paramétricos" (mais seguros).
+                                
+                                </div>
+                                
+                                ---
+                                
+                                **4️⃣ Outliers (Valores Anômalos)**
+                                
+                                <div style='background-color: rgba(255, 100, 100, 0.1); padding: 10px; border-radius: 5px; margin: 10px 0;'>
+                                
+                                **O que é:** Valores que estão MUITO diferentes dos outros 
+                                (aqueles pontinhos isolados no gráfico).
+                                
+                                **Analogia:** Imagine notas de uma turma:
+                                - Normal: Maioria com notas entre 5-8
+                                - Outlier: Um aluno com nota 2 (muito diferente)
+                                
+                                **Seu caso:** {'🟢 Nenhum outlier detectado' if not outliers['tem_outliers'] else f'🟡 {outliers["quantidade"]} outlier(s)'}
+                                
+                                **Ação recomendada:**
+                                Se houver outliers, investigue:
+                                - É um erro de coleta de dados?
+                                - É uma negociação realmente diferente das outras?
+                                - Deve ser mantida ou removida da análise?
+                                
+                                </div>
+                                
+                                ---
+                                
+                                **5️⃣ Tamanho da Amostra (N)**
+                                
+                                <div style='background-color: rgba(200, 100, 255, 0.1); padding: 10px; border-radius: 5px; margin: 10px 0;'>
+                                
+                                **O que é:** Quantas negociações você está analisando.
+                                
+                                **Recomendação:** N ≥ 30 para análises ROBUSTAS (confiáveis).
+                                
+                                **Seu N:** {n_amostras} → {robustez['nivel']}
+                                
+                                **Interpretação:**
+                                - N < 10: 🔴 Exploratória (apenas para ideias iniciais)
+                                - N 10-30: 🟡 Aceitável (colete mais para segurança)
+                                - N > 30: ✅ Robusta (confiável para decisões)
+                                
+                                **Como melhorar?** Colete {robustez['deficit']:.0f} mais APAs para atingir N = 30
+                                
+                                </div>
+                                
+                                """, 
+                                unsafe_allow_html=True
+                            )
+                            
+                            # ── DISTRIBUIÇÃO ─────────────────────────────
+                            st.markdown("---")
+                            st.markdown("### ✔️ Distribuição da Convergência")
+                            
+                            st.markdown("""
+                            **O que são esses gráficos?**
+                            
+                            Imagine 6 negociações diferentes. Em cada uma, calculamos quanto o negociador e o causador falam dos **mesmos temas** (convergência).
+                            
+                            - **Negociação 1:** 45% de sintonia temática
+                            - **Negociação 2:** 52% de sintonia temática
+                            - **Negociação 3:** 38% de sintonia temática
+                            - ... e assim por diante
+                            
+                            Esses dois gráficos mostram como essas porcentagens se distribuem:
+                            
+                            **Gráfico da Esquerda (Histograma):** "Em quantas negociações tivemos cada nível de sintonia?"
+                            - Se há uma barra alta em 45%, significa que muitas negociações tiveram ~45% de convergência
+                            - Se a distribuição é espalhada, significa que a sintonia varia muito de ocorrência para ocorrência
+                            
+                            **Gráfico da Direita (Box Plot):** "Qual é a faixa típica de sintonia?"
+                            - **A linha do meio (mediana):** 50% das negociações tiveram sintonia até esse valor
+                            - **A caixa:** Mostra onde estão a maioria dos valores (do 25º ao 75º percentil)
+                            - **Os pontinhos:** Ocorrências com sintonia muito diferente das outras (outliers)
+                            """)
+                            
+                            col_cv_hist1, col_cv_hist2 = st.columns(2)
+                            
+                            with col_cv_hist1:
+                                fig_conv_hist = px.histogram(
+                                    df_conv_agg,
+                                    x='Convergencia',
+                                    nbins=8,
+                                    title='Distribuição da Convergência Temática'
+                                )
+                                fig_conv_hist.update_traces(marker_color='#FF8C00')
+                                fig_conv_hist.update_layout(
+                                    paper_bgcolor='rgba(0,0,0,0)',
+                                    plot_bgcolor='rgba(0,0,0,0)',
+                                    font_color='#FFF',
+                                    height=300,
+                                    xaxis_title='Convergência (%)',
+                                    yaxis_title='Número de Negociações'
+                                )
+                                st.plotly_chart(fig_conv_hist, use_container_width=True)
+                            
+                            with col_cv_hist2:
+                                fig_box_conv = px.box(
+                                    df_conv_agg,
+                                    y='Convergencia',
+                                    title='Faixa Típica de Convergência'
+                                )
+                                fig_box_conv.update_traces(marker_color='#FF8C00')
+                                fig_box_conv.update_layout(
+                                    paper_bgcolor='rgba(0,0,0,0)',
+                                    plot_bgcolor='rgba(0,0,0,0)',
+                                    font_color='#FFF',
+                                    height=300,
+                                    yaxis_title='Convergência (%)'
+                                )
+                                st.plotly_chart(fig_box_conv, use_container_width=True)
+                            
+                            # ── NOVO: GRÁFICO DE DISPERSÃO ─────────────────
+                            st.markdown("---")
+                            st.markdown("### 📍 Dispersão Individual (Cada APA)")
+                            
+                            st.markdown("""
+                            **O que é esse gráfico?**
+                            
+                            Mostra **cada negociação individualmente** (cada ponto é uma APA).
+                            
+                            - **Eixo X (horizontal):** Número da APA (1ª, 2ª, 3ª... negociação)
+                            - **Eixo Y (vertical):** Convergência dessa APA
+                            - **Linha vermelha:** Média (42.8%)
+                            - **Faixa cinzenta:** Intervalo de Confiança (esperado estar aqui em 95% dos casos)
+                            
+                            **Como ler:**
+                            - Ponto ACIMA da faixa cinzenta = Convergência ACIMA da média (bom!)
+                            - Ponto DENTRO da faixa = Convergência normal
+                            - Ponto ABAIXO da faixa = Convergência ABAIXO da média (investigar)
+                            
+                            **Padrões a observar:**
+                            - Todos os pontos espalhados? → Variabilidade alta (como é seu caso)
+                            - Pontos juntos em uma linha? → Variabilidade baixa (consistência)
+                            - Pontos isolados? → Outliers (anomalias)
+                            """)
+                            
+                            # Preparar dados para scatter plot
+                            df_scatter = df_conv_agg.copy()
+                            df_scatter['APA_Num'] = range(1, len(df_scatter) + 1)
+                            
+                            fig_scatter = px.scatter(
+                                df_scatter,
+                                x='APA_Num',
+                                y='Convergencia',
+                                title='Convergência por Negociação (Scatter Plot)',
+                                labels={'APA_Num': 'Número da APA', 'Convergencia': 'Convergência (%)'},
+                                size='Compartilhados',  # Tamanho do ponto = número de temas compartilhados
+                                hover_data={'APA': True, 'Convergencia': ':.1f', 'Compartilhados': True}
+                            )
+                            
+                            # Adicionar linha de média
+                            fig_scatter.add_hline(
+                                y=media_conv,
+                                line_dash="dash",
+                                line_color="#FF0000",
+                                annotation_text=f"Média: {media_conv:.1f}%",
+                                annotation_position="right"
+                            )
+                            
+                            # Adicionar faixa de IC 95%
+                            fig_scatter.add_hrect(
+                                y0=ic_95['limite_inferior'],
+                                y1=ic_95['limite_superior'],
+                                fillcolor="gray",
+                                opacity=0.2,
+                                layer="below",
+                                annotation_text="IC 95%",
+                                annotation_position="left"
+                            )
+                            
+                            fig_scatter.update_traces(marker_color='#FF8C00', marker_size=10)
+                            fig_scatter.update_layout(
+                                paper_bgcolor='rgba(0,0,0,0)',
+                                plot_bgcolor='rgba(0,0,0,0)',
+                                font_color='#FFF',
+                                height=400,
+                                xaxis_title='Número da APA',
+                                yaxis_title='Convergência (%)',
+                                hovermode='closest'
+                            )
+                            
+                            st.plotly_chart(fig_scatter, use_container_width=True)
+                            
+                            st.markdown("""
+                            **Dica de Interpretação:**
+                            
+                            - **Pontos maiores:** Mais temas compartilhados entre negociador e causador
+                            - **Pontos menores:** Menos temas compartilhados
+                            - **Padrão nos pontos maiores?** Se os maiores têm maior convergência, há correlação positiva
+                            """)
+                            
+                            st.markdown("""
+                            **Como interpretar os números na prática:**
+                            
+                            - **Convergência 40-60%:** Normal — há sempre alguma diferença de perspectiva entre negociador e causador
+                            - **Convergência > 60%:** Excelente — o negociador está na "mesma frequência" que o causador
+                            - **Convergência < 40%:** Alerta — há risco de desencontro de comunicação
+                            
+                            **Dica:** Se a maioria das suas negociações tem convergência > 50%, sua equipe está fazendo escuta ativa de forma consistente! 🎯
+                            """)
+                            
+                            # ── ANÁLISE POR NEGOCIADOR (SE FILTRADO) ──────
+                            if filtro_neg_g != "Todos":
+                                st.markdown("---")
+                                st.markdown("#### ✔️ Análise Específica do Negociador")
+                                
+                                conv_neg = df_conv_agg['Convergencia'].mean()
+                                
+                                if conv_neg >= 60:
+                                    status = "✅ Excelente — Alta sintonia temática com causadores"
+                                    cor = "🟢"
+                                elif conv_neg >= 40:
+                                    status = "⚠️ Moderado — Alguns temas divergentes"
+                                    cor = "🟡"
+                                else:
+                                    status = "❌ Fraco — Muita divergência temática. Recomendado reforço em escuta ativa"
+                                    cor = "🔴"
+                                
+                                st.markdown(f"""
+                                **Negociador:** {filtro_neg_g}
+                                
+                                **Convergência média:** {conv_neg:.1f}%
+                                
+                                **Status:** {status}
+                                
+                                **Recomendação:**
+                                - Se convergência < 40%: Investir em treinamento de escuta ativa
+                                - Se convergência 40-60%: Consolidar técnicas de rapport
+                                - Se convergência > 60%: Excelente! Usar como referência para equipe
                                 """)
                             
-                            else:
-                                st.info('⚠️ Sem dados suficientes para calcular convergência temática nos filtros atuais.')
+                            # ── LEITURA OPERACIONAL ──────────────────────
+                            st.markdown("---")
+                            st.markdown("### ✔️ Leitura Operacional")
+                            
+                            st.markdown(f"""
+                            **O que os dados mostram:**
+                            
+                            - **Convergência média de {media_conv:.1f}%:** Em média, há {media_conv:.0f}% de sincronização temática
+                            - **Variação (DP ±{dp_conv:.1f}%):** Há oscilação significativa entre ocorrências
+                            - **Temas compartilhados (média {media_compartilhados:.1f}):** Cada negociador-causador compartilha ~{media_compartilhados:.0f} temas em comum
+                            
+                            **Interpretação:**
+                            - Convergência alta (> 60%) = Negociador e causador falam dos mesmos assuntos
+                            - Convergência baixa (< 40%) = Universos temáticos diferentes = risco de desencontro
+                            
+                            **Ação Recomendada:**
+                            Se convergência < 40%, implementar treinamento focado em:
+                            1. **Escuta Ativa** — Entender os temas do causador antes de impor a agenda
+                            2. **Validação Emocional** — Reconhecer as preocupações mesmo que diferentes
+                            3. **Ponte Temática** — Conectar temas do causador aos temas da resolução
+                            
+                            ---
+                            
+                            **🔍 Qualidade Estatística desta Análise:**
+                            
+                            Nível de Robustez: **{robustez['nivel']}**
+                            
+                            {robustez['descricao']}
+                            
+                            **Recomendação final:** Colete {robustez['deficit']:.0f} mais APAs para atingir N = 30 e ter análise ROBUSTA.
+                            """)
                         
-                        except Exception as e:
-                            st.warning(f'⚠️ Erro ao processar convergência: {str(e)[:80]}')
-                    else:
-                        st.warning('⚠️ Colunas de transcrição não encontradas.')
+                        else:
+                            st.info('⚠️ Sem dados suficientes para calcular convergência temática nos filtros atuais.')
+                    
+                    except Exception as e:
+                        st.warning(f'⚠️ Erro ao processar convergência: {str(e)[:80]}')
+                else:
+                    st.warning('⚠️ Colunas de transcrição não encontradas.')
         # ──────────────────────────────────────────────────────────
         # ANÁLISE: REGRESSÃO LINEAR MULTIVARIADA
         # O que prediz queda de agressividade? Análise robusta e validada
