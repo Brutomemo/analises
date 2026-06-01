@@ -1,7 +1,7 @@
 # ============================================================
-# form_apa.py
-# ABA 3: FORMULÁRIO DE ENTRADA & VALIDAÇÃO DE APA
-# Entrada de dados + Enriquecimento + Validações
+# form_apa.py (V2)
+# ABA: ENTRADA DE DADOS — MODO HÍBRIDO
+# Criar novos registros OU enriquecer existentes
 # ============================================================
 
 import streamlit as st
@@ -38,438 +38,521 @@ def converter_escala_texto_numero(texto):
     return escala_map.get(v, 0)
 
 
-def validar_apa(registro):
-    """
-    Valida um registro de APA
-    Retorna: dict com status e mensagens
-    """
-    validacoes = {
-        "erros": [],
-        "avisos": [],
-        "ok": True
-    }
-    
-    # --- VALIDAÇÕES OBRIGATÓRIAS ---
-    
-    # Transcrição do causador
-    trans_c = limpar_valor(registro.get('TRANSCRIÇÃO DO CAUSADOR', ''))
-    if trans_c == 'N/D' or len(str(trans_c).split()) < 10:
-        validacoes["erros"].append("❌ Transcrição do Causador: muito curta ou vazia (mín. 10 palavras)")
-    
-    # Transcrição do negociador principal
-    trans_np = limpar_valor(registro.get('TRANSCRIÇÃO DO NEGOCIADOR PRINCIPAL', ''))
-    if trans_np == 'N/D' or len(str(trans_np).split()) < 10:
-        validacoes["erros"].append("❌ Transcrição do Negociador: muito curta ou vazia (mín. 10 palavras)")
-    
-    # Tipologia
-    tip = limpar_valor(registro.get('Tipologia', ''))
-    if tip == 'N/D':
-        validacoes["erros"].append("❌ Tipologia: não preenchida")
-    
-    # Modalidade
-    mod = limpar_valor(registro.get('Modalidade do incidente', ''))
-    if mod == 'N/D':
-        validacoes["erros"].append("❌ Modalidade: não preenchida")
-    
-    # Data
-    data = limpar_valor(registro.get('Data da ocorrência', ''))
-    if data == 'N/D':
-        validacoes["erros"].append("❌ Data da ocorrência: não preenchida")
-    
-    # --- VALIDAÇÕES DE AVISO ---
-    
-    # Agressividade/Receptividade na chegada
-    agr_c = converter_escala_texto_numero(
-        limpar_valor(registro.get('Percepção Principal Agressividade Chegada', ''))
-    )
-    rec_c = converter_escala_texto_numero(
-        limpar_valor(registro.get('Percepção Principal Receptividade Chegada', ''))
-    )
-    
-    if agr_c == 0 and rec_c == 0:
-        validacoes["avisos"].append("⚠️ Percepção de Agressividade/Receptividade não preenchida")
-    
-    # Resolução
-    res = limpar_valor(registro.get('Resolução', ''))
-    if res == 'N/D':
-        validacoes["avisos"].append("⚠️ Resolução não preenchida")
-    
-    # Atualizar status
-    validacoes["ok"] = len(validacoes["erros"]) == 0
-    
-    return validacoes
-
-
 def render_form_apa(df_quali, df_tec):
     """
-    Página de Formulário: Entrada + Validação de APAs
+    Página de Entrada de Dados com 2 modos:
+    MODO 1: Criar nova APA
+    MODO 2: Enriquecer APA existente
     """
     
-    st.markdown("### Validação & Enriquecimento de APA")
+    st.markdown("### 📋 Entrada de Dados — Nova APA ou Enriquecimento")
     st.markdown("""
     <p style='color: #aaa; font-size: 0.9rem; margin-bottom: 1rem;'>
-    <strong>Fluxo:</strong> Busque uma APA bruta do Airtable, valide os dados, enriqueça com observações, e salve as validações.
+    <strong>Escolha:</strong> Criar uma nova ocorrência OU enriquecer dados já existentes na base.
     </p>
     """, unsafe_allow_html=True)
     
     st.markdown("---")
     
     # ════════════════════════════════════════════════════════════════
-    # SEÇÃO 1: BUSCAR REGISTRO
+    # SELETOR DE MODO
     # ════════════════════════════════════════════════════════════════
     
-    st.markdown("#### 🔍 Etapa 1: Buscar APA")
+    modo = st.radio(
+        "Escolha o modo de operação:",
+        ["➕ Criar Nova APA", "✏️ Enriquecer APA Existente"],
+        horizontal=True,
+        key="modo_entrada"
+    )
     
-    col_search_1, col_search_2, col_search_3 = st.columns([2, 1, 1])
+    st.markdown("---")
     
-    with col_search_1:
-        id_apa_busca = st.text_input(
-            "ID da APA para validar",
-            placeholder="Ex: APA 001, APA 042, etc",
-            key="form_id_apa"
+    # ════════════════════════════════════════════════════════════════
+    # MODO 1: CRIAR NOVA APA
+    # ════════════════════════════════════════════════════════════════
+    
+    if modo == "➕ Criar Nova APA":
+        render_modo_criar_nova(df_quali, df_tec)
+    
+    # ════════════════════════════════════════════════════════════════
+    # MODO 2: ENRIQUECER EXISTENTE
+    # ════════════════════════════════════════════════════════════════
+    
+    else:
+        render_modo_enriquecer(df_quali, df_tec)
+
+
+def render_modo_criar_nova(df_quali, df_tec):
+    """
+    MODO 1: Formulário completo para criar nova APA
+    Todos os campos necessários para um registro completo
+    """
+    
+    st.markdown("#### ➕ CRIAR NOVA APA")
+    st.markdown("""
+    <p style='font-size: 0.9rem; color: #aaa;'>
+    Preencha todos os campos para criar um novo registro na base.
+    </p>
+    """, unsafe_allow_html=True)
+    
+    st.markdown("---")
+    
+    # Dividir em abas por tema
+    tab_metadata, tab_transcricoes, tab_percepcao, tab_observacoes = st.tabs([
+        "📊 Metadados",
+        "📝 Transcrições",
+        "👁️ Percepção",
+        "📋 Observações"
+    ])
+    
+    # ─────────────────────────────────────────────────────────────
+    # TAB 1: METADADOS
+    # ─────────────────────────────────────────────────────────────
+    
+    with tab_metadata:
+        st.markdown("**Data & Identificação**")
+        
+        col_dt, col_tip = st.columns(2)
+        with col_dt:
+            data_oca = st.date_input(
+                "Data da Ocorrência",
+                key="criar_data"
+            )
+        with col_tip:
+            tipologia = st.selectbox(
+                "Tipologia",
+                ["Ameaça de Suicídio", "Reféns", "Perturbado Psíquico",
+                 "Agressão", "Outros"],
+                key="criar_tipologia"
+            )
+        
+        st.markdown("**Incidente**")
+        
+        col_mod, col_mot = st.columns(2)
+        with col_mod:
+            modalidade = st.selectbox(
+                "Modalidade do Incidente",
+                ["Pessoa armada com propósito suicida",
+                 "Pessoa armada com propósito de agressão",
+                 "Pessoa desarmada",
+                 "Outros"],
+                key="criar_modalidade"
+            )
+        with col_mot:
+            motivacao = st.text_input(
+                "Motivação (breve)",
+                placeholder="Ex: Desemprego, desentendimento familiar",
+                key="criar_motivacao"
+            )
+        
+        st.markdown("**Responsáveis**")
+        
+        col_neg, col_sec = st.columns(2)
+        with col_neg:
+            negociador_principal = st.text_input(
+                "Negociador Principal",
+                placeholder="Nome ou Identificação",
+                key="criar_neg_principal"
+            )
+        with col_sec:
+            negociador_secundario = st.text_input(
+                "Negociador Secundário (opcional)",
+                placeholder="Nome ou Identificação",
+                key="criar_neg_secundario"
+            )
+    
+    # ─────────────────────────────────────────────────────────────
+    # TAB 2: TRANSCRIÇÕES
+    # ─────────────────────────────────────────────────────────────
+    
+    with tab_transcricoes:
+        st.markdown("**Causador**")
+        trans_causador = st.text_area(
+            "Transcrição do Causador",
+            placeholder="Digite ou cole a transcrição completa...",
+            height=120,
+            key="criar_trans_causador"
+        )
+        
+        st.markdown("**Negociador Principal**")
+        trans_neg_principal = st.text_area(
+            "Transcrição do Negociador Principal",
+            placeholder="Digite ou cole a transcrição completa...",
+            height=120,
+            key="criar_trans_neg_principal"
+        )
+        
+        st.markdown("**Negociador Secundário (opcional)**")
+        trans_neg_secundario = st.text_area(
+            "Transcrição do Negociador Secundário",
+            placeholder="Digite ou cole a transcrição (deixe em branco se não houver)",
+            height=100,
+            key="criar_trans_neg_secundario"
         )
     
-    with col_search_2:
-        btn_buscar = st.button("🔍 Buscar", use_container_width=True, key="btn_buscar_apa")
+    # ─────────────────────────────────────────────────────────────
+    # TAB 3: PERCEPÇÃO
+    # ─────────────────────────────────────────────────────────────
     
-    with col_search_3:
-        st.markdown("")  # Espaçamento
-    
-    # Buscar e mostrar registro
-    apa_encontrada = None
-    if btn_buscar and id_apa_busca:
+    with tab_percepcao:
+        st.markdown("**Percepção na Chegada**")
         
-        with st.spinner("Buscando APA no Airtable..."):
-            try:
-                # Limpar ID
-                id_busca_limpo = str(id_apa_busca).strip().upper()
-                
-                # Buscar no df_quali
-                if 'ID_Busca' not in df_quali.columns:
-                    df_quali['ID_Busca'] = df_quali['ID'].apply(
-                        lambda x: str(x).strip().upper() if pd.notna(x) else "N/D"
-                    )
-                
-                registros = df_quali[
-                    df_quali['ID_Busca'].str.contains(id_busca_limpo, case=False, na=False)
-                ]
-                
-                if registros.empty:
-                    st.error(f"❌ Nenhuma APA encontrada com ID: {id_apa_busca}")
-                elif len(registros) > 1:
-                    st.warning(f"⚠️ Múltiplas APAs encontradas. Usando a primeira.")
-                    apa_encontrada = registros.iloc[0]
-                else:
-                    apa_encontrada = registros.iloc[0]
-                    st.success(f"✅ APA encontrada!")
+        col_agr_c, col_rec_c = st.columns(2)
+        with col_agr_c:
+            agr_chegada = st.selectbox(
+                "Agressividade",
+                ["❓ Não observado", "Não agressivo", "Neutro",
+                 "Parcialmente agressivo", "Agressivo", "Muito agressivo"],
+                key="criar_agr_chegada"
+            )
+        with col_rec_c:
+            rec_chegada = st.selectbox(
+                "Receptividade",
+                ["❓ Não observado", "Não receptivo", "Neutro",
+                 "Parcialmente receptivo", "Receptivo", "Muito receptivo"],
+                key="criar_rec_chegada"
+            )
+        
+        st.markdown("**Percepção no Encerramento**")
+        
+        col_agr_e, col_rec_e = st.columns(2)
+        with col_agr_e:
+            agr_encerramento = st.selectbox(
+                "Agressividade",
+                ["❓ Não observado", "Não agressivo", "Neutro",
+                 "Parcialmente agressivo", "Agressivo", "Muito agressivo"],
+                key="criar_agr_enc"
+            )
+        with col_rec_e:
+            rec_encerramento = st.selectbox(
+                "Receptividade",
+                ["❓ Não observado", "Não receptivo", "Neutro",
+                 "Parcialmente receptivo", "Receptivo", "Muito receptivo"],
+                key="criar_rec_enc"
+            )
+        
+        st.markdown("**Resultado**")
+        
+        col_res, col_uni = st.columns(2)
+        with col_res:
+            resolucao = st.selectbox(
+                "Forma de Resolução",
+                ["Negociação Real", "Negociação Tática", "Intervenção", "Outros"],
+                key="criar_resolucao"
+            )
+        with col_uni:
+            uniforme = st.selectbox(
+                "Uniforme Usado",
+                ["Farda", "Encoberto", "Traje Civil", "N/A"],
+                key="criar_uniforme"
+            )
+    
+    # ─────────────────────────────────────────────────────────────
+    # TAB 4: OBSERVAÇÕES
+    # ─────────────────────────────────────────────────────────────
+    
+    with tab_observacoes:
+        st.markdown("**Tempos**")
+        
+        col_tr, col_tt = st.columns(2)
+        with col_tr:
+            tempo_real = st.number_input(
+                "Tempo de Negociação Real (segundos)",
+                min_value=0,
+                value=0,
+                key="criar_tempo_real"
+            )
+        with col_tt:
+            tempo_tatica = st.number_input(
+                "Tempo de Negociação Tática (segundos)",
+                min_value=0,
+                value=0,
+                key="criar_tempo_tatica"
+            )
+        
+        st.markdown("**Qualidade & Flags**")
+        
+        col_q1, col_q2, col_q3 = st.columns(3)
+        with col_q1:
+            transcrição_completa = st.checkbox(
+                "Transcrição Completa?",
+                value=True,
+                key="criar_trans_completa"
+            )
+        with col_q2:
+            tem_anomalia = st.checkbox(
+                "Tem Anomalia/Flag?",
+                value=False,
+                key="criar_anomalia"
+            )
+        with col_q3:
+            sexo_causador = st.selectbox(
+                "Sexo do Causador",
+                ["Masculino", "Feminino", "N/D"],
+                key="criar_sexo"
+            )
+        
+        st.markdown("**Observações do Criador**")
+        
+        observacoes = st.text_area(
+            "Notas Adicionais",
+            placeholder="Contexto, pontos de atenção, recomendações...",
+            height=100,
+            key="criar_observacoes"
+        )
+        
+        validador_nome = st.text_input(
+            "Seu Nome/ID",
+            placeholder="Ex: Cap PM Pavão",
+            key="criar_validador"
+        )
+    
+    # ─────────────────────────────────────────────────────────────
+    # BOTÕES
+    # ─────────────────────────────────────────────────────────────
+    
+    st.markdown("---")
+    
+    col_save, col_preview, col_cancel = st.columns(3)
+    
+    with col_save:
+        if st.button("✅ Criar APA", use_container_width=True, type="primary", key="btn_criar_apa"):
             
-            except Exception as e:
-                st.error(f"Erro ao buscar: {str(e)[:100]}")
+            # Validações obrigatórias
+            erros = []
+            if not negociador_principal:
+                erros.append("Negociador Principal obrigatório")
+            if len(str(trans_causador).split()) < 10:
+                erros.append("Transcrição do Causador muito curta (mín. 10 palavras)")
+            if len(str(trans_neg_principal).split()) < 10:
+                erros.append("Transcrição do Negociador muito curta (mín. 10 palavras)")
+            if not validador_nome:
+                erros.append("Seu Nome/ID obrigatório")
+            
+            if erros:
+                for erro in erros:
+                    st.error(f"❌ {erro}")
+            else:
+                with st.spinner("💾 Criando novo registro no Airtable..."):
+                    try:
+                        # Preparar payload
+                        payload = {
+                            "Data da ocorrência": data_oca.isoformat(),
+                            "Tipologia": tipologia,
+                            "Modalidade do incidente": modalidade,
+                            "Motivação": motivacao,
+                            "Negociador Principal": negociador_principal,
+                            "Negociador Secundário": negociador_secundario,
+                            "TRANSCRIÇÃO DO CAUSADOR": trans_causador,
+                            "TRANSCRIÇÃO DO NEGOCIADOR PRINCIPAL": trans_neg_principal,
+                            "TRANSCRIÇÃO DO NEGOCIADOR SECUNDÁRIO": trans_neg_secundario,
+                            "Percepção Principal Agressividade Chegada": agr_chegada,
+                            "Percepção Principal Receptividade Chegada": rec_chegada,
+                            "Percepção Principal Agressividade Encerramento": agr_encerramento,
+                            "Percepção Principal Receptividade Encerramento": rec_encerramento,
+                            "Resolução": resolucao,
+                            "Uniforme Usado": uniforme,
+                            "Tempo de Negociação Real": int(tempo_real),
+                            "Tempo de Negociação Tática": int(tempo_tatica),
+                            "Transcrição Completa": "Sim" if transcrição_completa else "Não",
+                            "Tem Anomalia": "Sim" if tem_anomalia else "Não",
+                            "Sexo do Causador": sexo_causador,
+                            "Observações": observacoes,
+                            "Criado Por": validador_nome,
+                            "Data Criação": datetime.now().isoformat(),
+                            "Status": "Novo"
+                        }
+                        
+                        # Criar novo registro
+                        sucesso = airtable_link.criar_nova_apa(payload)
+                        
+                        if sucesso:
+                            st.success(f"""
+                            ✅ **NOVA APA CRIADA COM SUCESSO!**
+                            
+                            - Negociador: {negociador_principal}
+                            - Data: {data_oca}
+                            - Tipologia: {tipologia}
+                            - Criado por: {validador_nome}
+                            """)
+                            st.balloons()
+                            
+                            # Limpar formulário
+                            for key in list(st.session_state.keys()):
+                                if key.startswith("criar_"):
+                                    del st.session_state[key]
+                        else:
+                            st.error("❌ Erro ao criar APA no Airtable")
+                    
+                    except Exception as e:
+                        st.error(f"❌ Erro: {str(e)[:150]}")
     
-    # ════════════════════════════════════════════════════════════════
-    # SEÇÃO 2: EXIBIR METADADOS DA APA
-    # ════════════════════════════════════════════════════════════════
+    with col_preview:
+        if st.button("👁️ Pré-visualizar", use_container_width=True, key="btn_preview_criar"):
+            st.json({
+                "Negociador": negociador_principal,
+                "Data": str(data_oca),
+                "Tipologia": tipologia,
+                "Transcrição Causador": trans_causador[:100] + "...",
+                "Transcrição Negociador": trans_neg_principal[:100] + "...",
+                "Agressividade (Chegada)": agr_chegada,
+                "Receptividade (Chegada)": rec_chegada,
+                "Resolução": resolucao,
+                "Criado Por": validador_nome,
+                "Data/Hora": datetime.now().isoformat()
+            })
     
+    with col_cancel:
+        if st.button("❌ Limpar", use_container_width=True, key="btn_limpar_criar"):
+            for key in list(st.session_state.keys()):
+                if key.startswith("criar_"):
+                    del st.session_state[key]
+            st.info("Formulário limpo")
+
+
+def render_modo_enriquecer(df_quali, df_tec):
+    """
+    MODO 2: Buscar APA existente e enriquecer dados
+    """
+    
+    st.markdown("#### ✏️ ENRIQUECER APA EXISTENTE")
+    st.markdown("""
+    <p style='font-size: 0.9rem; color: #aaa;'>
+    Busque uma APA já criada, complete campos faltantes e adicione observações.
+    </p>
+    """, unsafe_allow_html=True)
+    
+    st.markdown("---")
+    
+    # Buscar APA
+    st.markdown("**Etapa 1: Buscar APA**")
+    
+    col_id, col_btn = st.columns([3, 1])
+    with col_id:
+        id_busca = st.text_input(
+            "ID da APA",
+            placeholder="Ex: APA 001, APA 015",
+            key="enriq_id_busca"
+        )
+    with col_btn:
+        btn_buscar = st.button("🔍 Buscar", key="btn_buscar_enriq")
+    
+    apa_encontrada = None
+    if btn_buscar and id_busca:
+        try:
+            id_limpo = str(id_busca).strip().upper()
+            if 'ID_Busca' not in df_quali.columns:
+                df_quali['ID_Busca'] = df_quali['ID'].apply(
+                    lambda x: str(x).strip().upper() if pd.notna(x) else "N/D"
+                )
+            
+            registros = df_quali[df_quali['ID_Busca'].str.contains(id_limpo, case=False, na=False)]
+            
+            if registros.empty:
+                st.error(f"❌ APA {id_busca} não encontrada")
+            else:
+                apa_encontrada = registros.iloc[0]
+                st.success("✅ APA encontrada!")
+        except Exception as e:
+            st.error(f"Erro: {str(e)}")
+    
+    # Mostrar dados encontrados
     if apa_encontrada is not None:
         
         st.markdown("---")
-        st.markdown("#### Etapa 2: Revisar Metadados")
+        st.markdown("**Etapa 2: Dados Atuais**")
         
-        # Metadados em cards
         col_m1, col_m2, col_m3, col_m4 = st.columns(4)
-        
         with col_m1:
-            st.markdown(f"""
-            <div class='info-card' style='padding: 10px;'>
-            <strong style='color: #FFD700; font-size: 0.85rem;'>DATA</strong><br>
-            <span style='font-size: 0.9rem;'>{limpar_valor(apa_encontrada.get('Data da ocorrência'))}</span>
-            </div>
-            """, unsafe_allow_html=True)
-        
+            st.metric("Data", limpar_valor(apa_encontrada.get('Data da ocorrência', 'N/D')))
         with col_m2:
-            st.markdown(f"""
-            <div class='info-card' style='padding: 10px;'>
-            <strong style='color: #FFD700; font-size: 0.85rem;'>TIPOLOGIA</strong><br>
-            <span style='font-size: 0.9rem;'>{limpar_valor(apa_encontrada.get('Tipologia'))}</span>
-            </div>
-            """, unsafe_allow_html=True)
-        
+            st.metric("Negociador", limpar_valor(apa_encontrada.get('Negociador Principal', 'N/D'))[:15])
         with col_m3:
-            st.markdown(f"""
-            <div class='info-card' style='padding: 10px;'>
-            <strong style='color: #FFD700; font-size: 0.85rem;'>NEGOCIADOR</strong><br>
-            <span style='font-size: 0.9rem;'>{limpar_valor(apa_encontrada.get('Negociador Principal'))}</span>
-            </div>
-            """, unsafe_allow_html=True)
-        
+            st.metric("Tipologia", limpar_valor(apa_encontrada.get('Tipologia', 'N/D'))[:12])
         with col_m4:
-            st.markdown(f"""
-            <div class='info-card' style='padding: 10px;'>
-            <strong style='color: #FFD700; font-size: 0.85rem;'>MODALIDADE</strong><br>
-            <span style='font-size: 0.9rem;'>{limpar_valor(apa_encontrada.get('Modalidade do incidente'))}</span>
-            </div>
-            """, unsafe_allow_html=True)
+            st.metric("Status", limpar_valor(apa_encontrada.get('Status', 'Novo')))
         
         st.markdown("---")
+        st.markdown("**Etapa 3: Enriquecer Dados**")
         
-        # ════════════════════════════════════════════════════════════════
-        # SEÇÃO 3: VALIDAÇÕES AUTOMÁTICAS
-        # ════════════════════════════════════════════════════════════════
-        
-        st.markdown("#### ✔️ Etapa 3: Validações Automáticas")
-        
-        validacoes = validar_apa(apa_encontrada)
-        
-        # Mostrar erros
-        if validacoes["erros"]:
-            for erro in validacoes["erros"]:
-                st.error(erro)
-        
-        # Mostrar avisos
-        if validacoes["avisos"]:
-            for aviso in validacoes["avisos"]:
-                st.warning(aviso)
-        
-        # Status geral
-        if validacoes["ok"]:
-            st.success("✅ Todas as validações obrigatórias passaram!")
-        else:
-            st.error("❌ Há erros que precisam ser corrigidos antes de validar.")
-        
-        st.markdown("---")
-        
-        # ════════════════════════════════════════════════════════════════
-        # SEÇÃO 4: FORMULÁRIO DE ENRIQUECIMENTO
-        # ════════════════════════════════════════════════════════════════
-        
-        st.markdown("#### Etapa 4: Enriquecimento & Observações")
-        
-        with st.form("form_validacao_apa", border=True):
+        # Formulário simples para enriquecimento
+        with st.form("form_enriquecimento"):
             
-            # --- PERCEPÇÃO (escala Likert) ---
-            st.markdown("**Percepção do Causador (Se não preenchido na ocorrência)**")
-            
-            col_per1, col_per2 = st.columns(2)
-            
-            with col_per1:
+            col_agr, col_rec = st.columns(2)
+            with col_agr:
                 agr_chegada = st.selectbox(
-                    "Agressividade na Chegada",
-                    ["❓ Não observado", "Não agressivo", "Neutro", 
-                     "Parcialmente agressivo", "Agressivo", "Muito agressivo"],
-                    key="form_agr_chegada"
-                )
-            
-            with col_per2:
-                rec_chegada = st.selectbox(
-                    "Receptividade na Chegada",
-                    ["❓ Não observado", "Não receptivo", "Neutro",
-                     "Parcialmente receptivo", "Receptivo", "Muito receptivo"],
-                    key="form_rec_chegada"
-                )
-            
-            col_per3, col_per4 = st.columns(2)
-            
-            with col_per3:
-                agr_encerramento = st.selectbox(
-                    "Agressividade no Encerramento",
+                    "Agressividade (Chegada)",
                     ["❓ Não observado", "Não agressivo", "Neutro",
                      "Parcialmente agressivo", "Agressivo", "Muito agressivo"],
-                    key="form_agr_enc"
+                    key="enriq_agr"
                 )
-            
-            with col_per4:
-                rec_encerramento = st.selectbox(
-                    "Receptividade no Encerramento",
+            with col_rec:
+                rec_chegada = st.selectbox(
+                    "Receptividade (Chegada)",
                     ["❓ Não observado", "Não receptivo", "Neutro",
                      "Parcialmente receptivo", "Receptivo", "Muito receptivo"],
-                    key="form_rec_enc"
+                    key="enriq_rec"
                 )
             
-            st.markdown("---")
-            
-            # --- QUALIDADE DA OCORRÊNCIA ---
-            st.markdown("**Qualidade & Integridade**")
-            
-            col_qual1, col_qual2, col_qual3 = st.columns(3)
-            
-            with col_qual1:
-                duplicata = st.checkbox(
-                    "Marcar como Duplicata?",
-                    value=False,
-                    key="form_duplicata"
-                )
-            
-            with col_qual2:
-                transcrição_completa = st.checkbox(
-                    "Transcrição Completa?",
-                    value=True,
-                    key="form_trans_completa"
-                )
-            
-            with col_qual3:
-                anomalia = st.checkbox(
-                    "Há Anomalia/Flag?",
-                    value=False,
-                    key="form_anomalia"
-                )
-            
-            st.markdown("---")
-            
-            # --- OBSERVAÇÕES ---
-            st.markdown("**Notas e Observações**")
-            
+            st.markdown("**Observações**")
             observacoes = st.text_area(
-                "Observações do Validador",
-                placeholder="""Escreva observações relevantes:
-- Pontos de melhoria
-- Padrões observados
-- Contexto adicional
-- Anomalias encontradas
-- Recomendações para treinamento""",
-                height=120,
-                key="form_observacoes"
+                "Adicione observações",
+                placeholder="Insights, pontos de melhoria, contexto adicional...",
+                key="enriq_obs"
             )
             
-            st.markdown("---")
+            validador = st.text_input(
+                "Seu Nome/ID",
+                key="enriq_validador"
+            )
             
-            # --- IDENTIFICAÇÃO DO VALIDADOR ---
-            col_valid1, col_valid2 = st.columns(2)
-            
-            with col_valid1:
-                validador_nome = st.text_input(
-                    "Seu Nome/Identificação",
-                    placeholder="Ex: Cap PM Pavão",
-                    key="form_validador"
-                )
-            
-            with col_valid2:
-                validador_funcao = st.selectbox(
-                    "Sua Função",
-                    ["Supervisor", "Instrutor", "Analista", "Auditor", "Outro"],
-                    key="form_funcao"
-                )
-            
-            st.markdown("---")
-            
-            # --- SUBMIT ---
-            col_btn1, col_btn2, col_btn3 = st.columns([1, 1, 1])
-            
-            with col_btn1:
-                submitted = st.form_submit_button(
-                    "✅ Salvar Validações",
-                    use_container_width=True,
-                    type="primary"
-                )
-            
-            with col_btn2:
-                preview = st.form_submit_button(
-                    "Pré-visualizar",
-                    use_container_width=True
-                )
-            
-            with col_btn3:
-                cancelar = st.form_submit_button(
-                    "❌ Cancelar",
-                    use_container_width=True
-                )
-            
-            # ─────────────────────────────────────────────
-            # PROCESSAR SUBMIT
-            # ─────────────────────────────────────────────
-            
-            if preview:
-                st.markdown("#### Pré-visualização dos Dados")
-                
-                preview_data = {
-                    "APA ID": id_apa_busca,
-                    "Agressividade (Chegada)": agr_chegada,
-                    "Receptividade (Chegada)": rec_chegada,
-                    "Agressividade (Encerramento)": agr_encerramento,
-                    "Receptividade (Encerramento)": rec_encerramento,
-                    "É Duplicata": duplicata,
-                    "Transcrição Completa": transcrição_completa,
-                    "Há Anomalia": anomalia,
-                    "Observações": observacoes[:100] + "..." if len(observacoes) > 100 else observacoes,
-                    "Validador": validador_nome,
-                    "Função": validador_funcao,
-                    "Data/Hora": datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-                }
-                
-                st.json(preview_data)
+            col_s1, col_s2 = st.columns(2)
+            with col_s1:
+                submitted = st.form_submit_button("✅ Salvar Enriquecimento", use_container_width=True)
+            with col_s2:
+                preview = st.form_submit_button("👁️ Pré-visualizar", use_container_width=True)
             
             if submitted:
-                
-                # Validar campos obrigatórios
-                if not validador_nome:
-                    st.error("❌ Nome do validador é obrigatório")
-                elif duplicata and not observacoes:
-                    st.error("❌ Se marcar como duplicata, explique o motivo nas observações")
+                if not validador:
+                    st.error("Nome/ID obrigatório")
                 else:
-                    
-                    with st.spinner("💾 Salvando validações no Airtable..."):
+                    with st.spinner("Salvando..."):
                         try:
-                            # Preparar payload
-                            payload_validacao = {
+                            payload = {
                                 "Percepção Principal Agressividade Chegada": agr_chegada,
                                 "Percepção Principal Receptividade Chegada": rec_chegada,
-                                "Percepção Principal Agressividade Encerramento": agr_encerramento,
-                                "Percepção Principal Receptividade Encerramento": rec_encerramento,
-                                "É Duplicata": "Sim" if duplicata else "Não",
-                                "Transcrição Completa": "Sim" if transcrição_completa else "Não",
-                                "Tem Anomalia": "Sim" if anomalia else "Não",
-                                "Observações Validador": observacoes,
-                                "Validado Por": validador_nome,
-                                "Função Validador": validador_funcao,
-                                "Data Validação": datetime.now().isoformat(),
-                                "Status Validação": "Validado"
+                                "Observações Enriquecimento": observacoes,
+                                "Enriquecido Por": validador,
+                                "Data Enriquecimento": datetime.now().isoformat(),
+                                "Status": "Enriquecido"
                             }
                             
-                            # Atualizar Airtable (você vai implementar isso no airtable_link)
-                            sucesso = airtable_link.atualizar_apa_validacao(
-                                id_apa=id_apa_busca,
-                                payload=payload_validacao
-                            )
+                            sucesso = airtable_link.atualizar_apa_validacao(id_busca, payload)
                             
                             if sucesso:
-                                st.success(f"""
-                                ✅ **APA {id_apa_busca} validada com sucesso!**
-                                
-                                - ✓ Percepção registrada
-                                - ✓ Observações salvas
-                                - ✓ Rastreabilidade: {validador_nome} ({validador_funcao})
-                                """)
-                                
-                                # Limpar session state
-                                for key in st.session_state:
-                                    if key.startswith("form_"):
-                                        del st.session_state[key]
-                                
+                                st.success(f"✅ APA {id_busca} enriquecida com sucesso!")
                                 st.balloons()
-                            
                             else:
-                                st.error("❌ Erro ao salvar no Airtable. Verifique a conexão.")
-                        
+                                st.error("Erro ao salvar")
                         except Exception as e:
-                            st.error(f"❌ Erro: {str(e)[:150]}")
+                            st.error(f"Erro: {str(e)[:100]}")
             
-            if cancelar:
-                st.info("❌ Operação cancelada")
+            if preview:
+                st.json({
+                    "APA ID": id_busca,
+                    "Agressividade": agr_chegada,
+                    "Receptividade": rec_chegada,
+                    "Observações": observacoes[:80] + "..." if len(observacoes) > 80 else observacoes,
+                    "Validador": validador
+                })
     
-    # ════════════════════════════════════════════════════════════════
-    # RODAPÉ
-    # ════════════════════════════════════════════════════════════════
-    
+    # Rodapé
     st.markdown("---")
     st.markdown("""
-    <div style='padding:15px; background:rgba(255,215,0,0.03); border-radius:8px; border-left:3px solid #FFD700;'>
-    <p style='font-size:0.85rem; color:#aaa; margin:0; line-height:1.6;'>
-    <strong>ℹ️ Como usar este formulário:</strong><br>
-    1. Busque uma APA recém-capturada pelo Airtable Form<br>
-    2. Revise os metadados automaticamente extraídos<br>
-    3. Valide os dados contra regras de negócio<br>
-    4. Enriqueça com percepção, observações e flags<br>
-    5. Salve para que a IA possa gerar análises<br><br>
-    <strong>Resultado:</strong> Dados validados, rastreáveis e prontos para análise estatística.
+    <div style='padding:12px; background:rgba(255,215,0,0.03); border-radius:8px;'>
+    <p style='font-size:0.85rem; color:#aaa; margin:0;'>
+    💡 Use este modo para completar dados de APAs já criadas. 
+    Campos já preenchidos serão mantidos.
     </p>
     </div>
     """, unsafe_allow_html=True)

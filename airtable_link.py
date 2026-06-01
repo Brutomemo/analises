@@ -145,3 +145,64 @@ def atualizar_apa_validacao(id_apa, payload):
     except Exception as e:
         print(f"❌ Erro ao atualizar APA: {str(e)}")
         return False
+
+        # ============================================================
+# ADICIONAR ESTA FUNÇÃO AO FINAL DO SEU airtable_link.py
+# ============================================================
+
+def criar_nova_apa(payload):
+    """
+    Cria um novo registro de APA no Airtable
+    
+    Args:
+        payload: Dict com os campos da nova APA
+    
+    Returns:
+        bool: True se sucesso, False se erro
+    """
+    import os
+    from pyairtable import Api
+    
+    try:
+        api_key = os.getenv("AIRTABLE_TOKEN")
+        base_id = os.getenv("AIRTABLE_BASE_ID")
+        
+        if not api_key or not base_id:
+            print("❌ Credenciais não configuradas")
+            return False
+        
+        # Conectar ao Airtable
+        api = Api(api_key)
+        base = api.base(base_id)
+        table = base.table("PARA ANALISE QUALITATIVA DA APA")
+        
+        # Gerar ID automático baseado na data + sequencial
+        from datetime import datetime
+        timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+        
+        # Se não tiver ID no payload, gerar automaticamente
+        if "ID" not in payload:
+            # Buscar o próximo número sequencial
+            todos_records = table.all()
+            ids_existentes = []
+            for r in todos_records:
+                id_str = str(r['fields'].get('ID', ''))
+                if id_str.startswith('APA'):
+                    try:
+                        num = int(id_str.replace('APA', '').strip())
+                        ids_existentes.append(num)
+                    except:
+                        pass
+            
+            proximo_numero = max(ids_existentes) + 1 if ids_existentes else 1
+            payload["ID"] = f"APA {proximo_numero:03d}"
+        
+        # Criar registro
+        novo_record = table.create(payload)
+        
+        print(f"✅ Nova APA criada: {payload.get('ID', 'N/A')}")
+        return True
+    
+    except Exception as e:
+        print(f"❌ Erro ao criar APA: {str(e)}")
+        return False
