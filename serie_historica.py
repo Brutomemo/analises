@@ -1259,7 +1259,7 @@ def render_serie_historica(df_quali):
     <div class='info-card'>
     <h5 style='color: #FFD700; margin-top: 0;'>O que Prediz Queda de Agressividade?</h5>
     <p style='font-size:1.1rem;color:#ddd;'>
-    Análise multivariada rigorosa com validação estatística.
+    Análise multivariada com validação estatística.
     Identifica quais fatores realmente influenciam a redução de agressividade,
     controlando confundidores (viés de negociador, tipo de ocorrência, etc).
     </p>

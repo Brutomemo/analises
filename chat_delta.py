@@ -1425,7 +1425,7 @@ def render_chat_delta(df_quali, df_tec, stats_calculados=None):
     # BLOCO F — INTERFACE DO CHAT
     # ============================================================
 
-    st.markdown("### 💬 DELTA-NEGOCIAÇÃO — Assistente Analítico Operacional | GATE")
+    st.markdown("###DELTA-NEGOCIAÇÃO — Assistente Analítico Operacional")
 
     st.markdown(
         """
@@ -1463,15 +1463,9 @@ def render_chat_delta(df_quali, df_tec, stats_calculados=None):
             {
                 "role": "assistant",
                 "content": (
-                    "🟢 **DELTA operacional.** "
-                    "Base de ocorrências e banco de técnicas conectados.\n\n"
-
-                    "Posso responder a consultas descritivas dos dados, "
-                    "cruzar dados entre ocorrências e técnicas, "
-                    "interpretar e explicar modelos estatísticos, "
-                    "explicar as técnicas de negociação utilizadas, "                        
-                    "traçar perfis de negociadores e sugerir treinos com base nos dados.\n\n"
-
+                    "🟢 **CHAT PARA ASSISTÊNCIA VIRTUAL.** "
+                    "Tire suas dúvidas com o Chat Delta, treinado para responder perguntas sobre os registros e análises desenvolvidas.\n\n"
+                    
                     "**Exemplos de perguntas:**\n"                        
                     "- Quais as 5 técnicas mais usadas em ocorrências com resolução X?\n"
                     "- Trace o perfil operacional completo do negociador X.\n"
