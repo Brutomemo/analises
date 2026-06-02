@@ -179,7 +179,7 @@ def render_form_apa(df_quali, df_tec):
     # ─────────────────────────────────────────────────────────────
     
     with tab2:
-        st.markdown("#### Negociadores e Profissionais")
+        st.markdown("## Negociadores")
         
         col1, col2 = st.columns(2)
         with col1:
