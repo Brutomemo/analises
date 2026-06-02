@@ -103,7 +103,7 @@ def render_form_apa(df_quali, df_tec):
     7 Abas principais com todos os 40+ campos mapeados
     """
     
-    st.markdown("#### ✔️Entrada de Dados APA — Delta-Negociação")
+    st.markdown("### ✔️Entrada de Dados-APA")
     st.markdown("""
     <p style='color: #aaa; font-size: 0.9rem; margin-bottom: 1rem;'>
     Preencha todos os campos com os dados da ocorrência. Campos com * são obrigatórios.
@@ -131,7 +131,7 @@ def render_form_apa(df_quali, df_tec):
     # ─────────────────────────────────────────────────────────────
     
     with tab1:
-        st.markdown("#### Informações Básicas da Ocorrência")
+        st.markdown("### Informações Básicas da Ocorrência")
         
         col1, col2 = st.columns(2)
         with col1:
@@ -234,7 +234,7 @@ def render_form_apa(df_quali, df_tec):
     # ─────────────────────────────────────────────────────────────
     
     with tab3:
-        st.markdown("#### Percepções do Negociador Principal")
+        st.markdown("## Percepções do Negociador Principal")
         col1, col2 = st.columns(2)
         with col1:
             agr_principal_chegada = st.selectbox(
@@ -249,7 +249,7 @@ def render_form_apa(df_quali, df_tec):
                 key="f_rec_principal_chegada"
             )
         
-        st.markdown("#### Percepções do Negociador Secundário")
+        st.markdown("## Percepções do Negociador Secundário")
         col3, col4 = st.columns(2)
         with col3:
             agr_secundario_chegada = st.selectbox(
@@ -264,7 +264,7 @@ def render_form_apa(df_quali, df_tec):
                 key="f_rec_secundario_chegada"
             )
         
-        st.markdown("#### Percepções do Negociador Líder")
+        st.markdown("## Percepções do Negociador Líder")
         col5, col6 = st.columns(2)
         with col5:
             agr_lider_chegada = st.selectbox(
@@ -284,7 +284,7 @@ def render_form_apa(df_quali, df_tec):
     # ─────────────────────────────────────────────────────────────
     
     with tab4:
-        st.markdown("#### Percepções do Negociador Principal")
+        st.markdown("## Percepções do Negociador Principal")
         col1, col2 = st.columns(2)
         with col1:
             agr_principal_enc = st.selectbox(
@@ -299,7 +299,7 @@ def render_form_apa(df_quali, df_tec):
                 key="f_rec_principal_enc"
             )
         
-        st.markdown("#### Percepções do Negociador Secundário")
+        st.markdown("## Percepções do Negociador Secundário")
         col3, col4 = st.columns(2)
         with col3:
             agr_secundario_enc = st.selectbox(
@@ -314,7 +314,7 @@ def render_form_apa(df_quali, df_tec):
                 key="f_rec_secundario_enc"
             )
         
-        st.markdown("#### Percepções do Negociador Líder")
+        st.markdown("## Percepções do Negociador Líder")
         col5, col6 = st.columns(2)
         with col5:
             agr_lider_enc = st.selectbox(
@@ -334,7 +334,7 @@ def render_form_apa(df_quali, df_tec):
     # ─────────────────────────────────────────────────────────────
     
     with tab5:
-        st.markdown("#### Transcrições da Ocorrência")
+        st.markdown("## Transcrições da Ocorrência")
         
         st.markdown("**TRANSCRIÇÃO DO CAUSADOR**")
         trans_causador = st.text_area(
@@ -373,7 +373,7 @@ def render_form_apa(df_quali, df_tec):
     # ─────────────────────────────────────────────────────────────
     
     with tab6:
-        st.markdown("#### FUNÇÕES: NEGOCIADOR PRINCIPAL")
+        st.markdown("## FUNÇÕES: NEGOCIADOR PRINCIPAL")
         col1, col2 = st.columns(2)
         with col1:
             func_np = st.text_area("Funções", placeholder="...", height=60, key="f_func_np")
@@ -387,7 +387,7 @@ def render_form_apa(df_quali, df_tec):
             func_np_praticas = st.text_area("Práticas Promissoras", placeholder="...", height=60, key="f_func_np_praticas")
         
         st.markdown("---")
-        st.markdown("#### FUNÇÕES: NEGOCIADOR SECUNDÁRIO")
+        st.markdown("## FUNÇÕES: NEGOCIADOR SECUNDÁRIO")
         col5, col6 = st.columns(2)
         with col5:
             func_ns = st.text_area("Funções", placeholder="...", height=60, key="f_func_ns")
@@ -401,7 +401,7 @@ def render_form_apa(df_quali, df_tec):
             func_ns_praticas = st.text_area("Práticas Promissoras", placeholder="...", height=60, key="f_func_ns_praticas")
         
         st.markdown("---")
-        st.markdown("#### FUNÇÕES: NEGOCIADOR ANOTADOR")
+        st.markdown("## FUNÇÕES: NEGOCIADOR ANOTADOR")
         col9, col10 = st.columns(2)
         with col9:
             func_na = st.text_area("Funções", placeholder="...", height=60, key="f_func_na")
@@ -415,7 +415,7 @@ def render_form_apa(df_quali, df_tec):
             func_na_praticas = st.text_area("Práticas Promissoras", placeholder="...", height=60, key="f_func_na_praticas")
         
         st.markdown("---")
-        st.markdown("#### FUNÇÕES: NEGOCIADOR LÍDER")
+        st.markdown("## FUNÇÕES: NEGOCIADOR LÍDER")
         col13, col14 = st.columns(2)
         with col13:
             func_nl = st.text_area("Funções", placeholder="...", height=60, key="f_func_nl")
@@ -429,7 +429,7 @@ def render_form_apa(df_quali, df_tec):
             func_nl_praticas = st.text_area("Práticas Promissoras", placeholder="...", height=60, key="f_func_nl_praticas")
         
         st.markdown("---")
-        st.markdown("#### FUNÇÕES: AUXILIAR DE LOGÍSTICA")
+        st.markdown("## FUNÇÕES: AUXILIAR DE LOGÍSTICA")
         col17, col18 = st.columns(2)
         with col17:
             func_al = st.text_area("Funções", placeholder="...", height=60, key="f_func_al")
@@ -443,7 +443,7 @@ def render_form_apa(df_quali, df_tec):
             func_al_praticas = st.text_area("Práticas Promissoras", placeholder="...", height=60, key="f_func_al_praticas")
         
         st.markdown("---")
-        st.markdown("#### FUNÇÕES: AUXILIAR DE INFORMAÇÕES")
+        st.markdown("## FUNÇÕES: AUXILIAR DE INFORMAÇÕES")
         col21, col22 = st.columns(2)
         with col21:
             func_ai = st.text_area("Funções", placeholder="...", height=60, key="f_func_ai")
@@ -457,7 +457,7 @@ def render_form_apa(df_quali, df_tec):
             func_ai_praticas = st.text_area("Práticas Promissoras", placeholder="...", height=60, key="f_func_ai_praticas")
         
         st.markdown("---")
-        st.markdown("#### FUNÇÕES: PROFISSIONAL DE SAÚDE MENTAL")
+        st.markdown("## FUNÇÕES: PROFISSIONAL DE SAÚDE MENTAL")
         col25, col26 = st.columns(2)
         with col25:
             func_psm = st.text_area("Funções", placeholder="...", height=60, key="f_func_psm")
@@ -475,7 +475,7 @@ def render_form_apa(df_quali, df_tec):
     # ─────────────────────────────────────────────────────────────
     
     with tab7:
-        st.markdown("#### Tempos")
+        st.markdown("## Tempos")
         col1, col2 = st.columns(2)
         with col1:
             tempo_real = st.text_input(
@@ -490,7 +490,7 @@ def render_form_apa(df_quali, df_tec):
                 key="f_tempo_tatica"
             )
         
-        st.markdown("#### Características")
+        st.markdown("## Características")
         col3, col4 = st.columns(2)
         with col3:
             uniforme = st.selectbox(
@@ -505,7 +505,7 @@ def render_form_apa(df_quali, df_tec):
                 key="f_sexo"
             )
         
-        st.markdown("#### Validação")
+        st.markdown("## Validação")
         validador_nome = st.text_input(
             "Seu Nome/Identificação *",
             placeholder="Ex: Cap PM Pavão",
