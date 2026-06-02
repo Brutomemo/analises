@@ -103,7 +103,7 @@ def render_form_apa(df_quali, df_tec):
     7 Abas principais com todos os 40+ campos mapeados
     """
     
-    st.markdown("### ✔️Entrada de Dados APA — Delta-Negociação")
+    st.markdown("#### ✔️Entrada de Dados APA — Delta-Negociação")
     st.markdown("""
     <p style='color: #aaa; font-size: 0.9rem; margin-bottom: 1rem;'>
     Preencha todos os campos com os dados da ocorrência. Campos com * são obrigatórios.
