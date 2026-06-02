@@ -1425,7 +1425,7 @@ def render_chat_delta(df_quali, df_tec, stats_calculados=None):
     # BLOCO F — INTERFACE DO CHAT
     # ============================================================
 
-    st.markdown("###DELTA-NEGOCIAÇÃO — Assistente Analítico Operacional")
+    st.markdown("### DELTA-NEGOCIAÇÃO — Assistente Analítico Operacional")
 
     st.markdown(
         """
