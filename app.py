@@ -958,11 +958,11 @@ window.addEventListener("load", () => {
     }
 });
 
-setTimeout(() => {
+window.addEventListener("load", () => {
     if (window.UnicornStudio) {
         UnicornStudio.init();
     }
-}, 800);
+});
 
 </script>
 
