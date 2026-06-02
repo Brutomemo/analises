@@ -165,17 +165,17 @@ def render(df_quali, df_tec):
         container_form = st.container()
         
         with container_form:
-            st.markdown("#### 📝 Preencha os Dados da Nova APA")
+            st.markdown("### Preencha os Dados da Nova APA")
             
             # 7 ABAS DO FORMULÁRIO
             tab_meta, tab_equipe, tab_chegada, tab_enc, tab_trans, tab_func, tab_obs = st.tabs([
-                "📊 Metadados",
-                "👥 Equipe",
-                "👁️ Chegada",
-                "👁️ Encerramento",
-                "📝 Transcrições",
-                "📋 Funções",
-                "⏱️ Info Adicionais"
+                "✔️ Metadados",
+                "✔️ Equipe",
+                "✔️ Chegada",
+                "✔️ Encerramento",
+                "✔️ Transcrições",
+                "✔️ Funções",
+                "✔️ Info Adicionais"
             ])
             
             # ─── METADADOS ───
@@ -399,7 +399,7 @@ def render(df_quali, df_tec):
         id_apa_gerado = None
         
         with col_save:
-            if st.button("✅ CRIAR APA", use_container_width=True, type="primary", key="btn_criar_aba1"):
+            if st.button("✅ CRIAR APA", use_container_width=True, type="secondary", key="btn_criar_aba1"):
                 
                 erros = []
                 if not data_oca:
@@ -519,7 +519,7 @@ def render(df_quali, df_tec):
                             st.error(f"❌ Erro: {str(e)[:200]}")
         
         with col_preview:
-            if st.button("👁️ Pré-visualizar", use_container_width=True, key="btn_prev_aba1"):
+            if st.button("Pré-visualizar", use_container_width=True, key="btn_prev_aba1"):
                 st.json({
                     "Data": str(data_oca),
                     "Negociador": neg_principal,
@@ -540,7 +540,7 @@ def render(df_quali, df_tec):
         
         if "id_apa_criado" in st.session_state:
             st.markdown("---")
-            st.markdown("### 📊 Upload de Técnicas")
+            st.markdown("### Upload de Técnicas")
             
             id_apa = st.text_input(
                 "ID da APA para vincular",
@@ -617,7 +617,7 @@ def render(df_quali, df_tec):
     # ─────────────────────────────────────────────────────────────
     
     with sub_tab2:
-        st.markdown("#### 👁️ Visualizar Dados da APA")
+        st.markdown("#### Visualizar Dados da APA")
         
         col_id, col_btn = st.columns([3, 1])
         with col_id:
@@ -658,7 +658,7 @@ def render(df_quali, df_tec):
                         st.metric("Resolução", str(apa.get('Resolução', 'N/D'))[:12])
                     
                     st.markdown("---")
-                    st.markdown("### 📋 Dados Completos")
+                    st.markdown("### Dados Completos")
                     
                     # Mostrar todos os dados
                     dados_dict = apa.to_dict()
