@@ -40,6 +40,8 @@ def buscar_todas_apas():
         for record in records:
             fields = record['fields']
             fields['id'] = record['id']
+            # Alias para compatibilidade com código que usa 'Airtable_Record_ID'
+            fields['Airtable_Record_ID'] = record['id']
             data.append(fields)
 
         df = pd.DataFrame(data)
@@ -110,12 +112,16 @@ def buscar_todas_tecnicas():
         return pd.DataFrame(), f"❌ Erro: {str(e)}"
 
 
-def atualizar_apa_validacao(id_apa, payload):
+def atualizar_apa_validacao(id_apa, payload, record_id_interno=None):
     """
     Atualiza um registro de APA existente.
 
-    id_apa aceita tanto o formato "APA 001" (string) quanto o inteiro 1.
-    A comparação normaliza ambos os formatos para garantir o match.
+    Args:
+        id_apa: ID formatado "APA 001" — usado apenas como fallback de busca.
+        payload: Dict com os campos a atualizar.
+        record_id_interno: Airtable internal record ID (ex: 'recXXXXXXXXXXXXXX').
+            Quando fornecido, a atualização é feita diretamente sem varrer todos
+            os registros, eliminando falhas de comparação de ID.
     """
     try:
         api_key, base_id = get_credentials()
@@ -128,7 +134,13 @@ def atualizar_apa_validacao(id_apa, payload):
         base = api.base(base_id)
         table = base.table("PARA ANALISE QUALITATIVA DA APA")
 
-        # Normaliza o id_apa recebido para número inteiro (ex: "APA 001" → 1)
+        # Caminho rápido: ID interno fornecido diretamente (recXXXXXX)
+        if record_id_interno and str(record_id_interno).startswith("rec"):
+            table.update(record_id_interno, payload)
+            print(f"✅ APA {id_apa} atualizada com sucesso (via record_id_interno)")
+            return True
+
+        # Fallback: busca por campo ID (aceita inteiro ou "APA 001")
         try:
             id_num = int(str(id_apa).replace("APA", "").strip())
         except (ValueError, TypeError):
@@ -137,17 +149,12 @@ def atualizar_apa_validacao(id_apa, payload):
         id_apa_str = str(id_apa).strip().upper()
 
         record_encontrado = None
-        todos_records = table.all()
-
-        for r in todos_records:
+        for r in table.all():
             campo_id = r['fields'].get('ID')
             if campo_id is None:
                 continue
 
-            # Compara por número inteiro
             match_num = (id_num is not None and campo_id == id_num)
-
-            # Compara por string formatada "APA 001"
             try:
                 campo_id_fmt = f"APA {int(campo_id):03d}"
                 match_fmt = (campo_id_fmt == id_apa_str)
@@ -162,10 +169,8 @@ def atualizar_apa_validacao(id_apa, payload):
             print(f"❌ APA {id_apa} não encontrada")
             return False
 
-        record_id = record_encontrado['id']
-        table.update(record_id, payload)
-
-        print(f"✅ APA {id_apa} atualizada com sucesso")
+        table.update(record_encontrado['id'], payload)
+        print(f"✅ APA {id_apa} atualizada com sucesso (via busca de campo)")
         return True
 
     except Exception as e:
@@ -246,7 +251,7 @@ def criar_nova_apa(payload):
         return None
 
 
-def criar_tecnica(payload):
+def criar_tecnica(payload, vinculo_record_id=None):
     """
     Cria um novo registro de técnica no Airtable.
 
@@ -254,8 +259,11 @@ def criar_tecnica(payload):
         payload: Dict com:
             - TÉCNICAS: Nome da técnica (obrigatório)
             - TRECHO DA TRANSCRIÇÃO: Texto (obrigatório)
-            - Vinculo_APA: ID formatado, ex: "APA 001" (obrigatório)
+            - Vinculo_APA: ID formatado "APA 001" — usado apenas como fallback
             - ATITUDE DO CAUSADOR: -1, 0 ou 1 (opcional — vazio = Inaudível/Não Observado)
+        vinculo_record_id: Airtable internal record ID da APA (ex: 'recXXXXXXXXXXXXXX').
+            Quando fornecido, `Vinculo_APA` é enviado como lista ['recXXX'] (linked record),
+            que é o formato correto para campos do tipo "Link to another record".
 
     Returns:
         bool: True se sucesso, False se erro
@@ -279,9 +287,15 @@ def criar_tecnica(payload):
             print("❌ Campo TRECHO DA TRANSCRIÇÃO obrigatório")
             return False
 
-        if not payload.get('Vinculo_APA'):
-            print("❌ Campo Vinculo_APA obrigatório")
+        # Montar Vinculo_APA no formato correto para linked record
+        if vinculo_record_id and str(vinculo_record_id).startswith("rec"):
+            payload['Vinculo_APA'] = [vinculo_record_id]
+            print(f"🔗 Vinculo_APA como linked record: [{vinculo_record_id}]")
+        elif not payload.get('Vinculo_APA'):
+            print("❌ Campo Vinculo_APA obrigatório (nem texto nem record_id fornecido)")
             return False
+        else:
+            print(f"⚠️ Vinculo_APA como texto simples: {payload['Vinculo_APA']} (linked record não disponível)")
 
         # Validar ATITUDE — vazio é válido (Inaudível/Não Observado)
         atitude_raw = payload.get('ATITUDE DO CAUSADOR', None)
@@ -292,7 +306,6 @@ def criar_tecnica(payload):
         )
 
         if vazio:
-            # Remove o campo para não enviar string vazia ao Airtable
             payload.pop('ATITUDE DO CAUSADOR', None)
         else:
             try:

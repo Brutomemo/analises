@@ -508,6 +508,39 @@ def render(df_quali, df_tec):
 
                     st.dataframe(df_excel.head(5), use_container_width=True, hide_index=True)
 
+                    # ── Resolver o Airtable record ID interno da APA ──────────────
+                    # Vinculo_APA é um campo "Link to another record" no Airtable,
+                    # então precisa ser enviado como lista com o ID interno [recXXX].
+                    id_apa_normalizado = id_apa_upload.strip().upper()
+                    vinculo_record_id = None
+
+                    if not df_quali.empty and 'id' in df_quali.columns:
+                        # Tenta achar a APA pelo campo ID (qualquer formato)
+                        for _, row_apa in df_quali.iterrows():
+                            campo_id = row_apa.get('ID', '')
+                            campo_id_str = str(campo_id).strip().upper()
+                            # Aceita "APA 001", "1", "001" como match
+                            try:
+                                num = int(str(campo_id).replace("APA", "").strip())
+                                num_entrada = int(id_apa_normalizado.replace("APA", "").strip())
+                                if num == num_entrada:
+                                    vinculo_record_id = row_apa.get('id') or row_apa.get('Airtable_Record_ID')
+                                    break
+                            except (ValueError, TypeError):
+                                if campo_id_str == id_apa_normalizado:
+                                    vinculo_record_id = row_apa.get('id') or row_apa.get('Airtable_Record_ID')
+                                    break
+
+                    if vinculo_record_id:
+                        st.info(f"🔗 APA encontrada e vinculada: `{vinculo_record_id}`")
+                    else:
+                        st.warning(
+                            f"⚠️ APA **{id_apa_upload}** não encontrada nos dados carregados. "
+                            "O vínculo será salvo como texto simples — pode não aparecer nas análises. "
+                            "Atualize os dados ou verifique o ID."
+                        )
+                    # ─────────────────────────────────────────────────────────────
+
                     if st.button(f"✅ INSERIR {len(df_excel)} TÉCNICAS", use_container_width=True, type="primary", key="btn_insert_tech_tab2"):
                         with st.spinner(f"💾 Inserindo {len(df_excel)} técnicas..."):
                             sucesso_count = 0
@@ -532,26 +565,24 @@ def render(df_quali, df_tec):
                                     payload = {
                                         "TÉCNICAS": str(row[col_tecnicas]).strip(),
                                         "TRECHO DA TRANSCRIÇÃO": str(row[col_trecho]).strip(),
-                                        "Vinculo_APA": id_apa_upload.strip().upper()
+                                        "Vinculo_APA": id_apa_normalizado
                                     }
                                     if atitude_para_enviar is not None:
                                         payload["ATITUDE DO CAUSADOR"] = atitude_para_enviar
 
-                                    if airtable_link.criar_tecnica(payload):
+                                    if airtable_link.criar_tecnica(payload, vinculo_record_id=vinculo_record_id):
                                         sucesso_count += 1
                                     else:
                                         erro_count += 1
                                 except Exception:
                                     erro_count += 1
 
-                                # usa i (0-based) em vez de idx (índice original do DataFrame)
                                 progress_bar.progress((i + 1) / len(df_excel))
 
-                            st.success(f"""
-                            ✅ TÉCNICAS INSERIDAS!
-                            - Sucesso: {sucesso_count}
-                            - Erros: {erro_count}
-                            """)
+                            if erro_count == 0:
+                                st.success(f"✅ {sucesso_count} técnicas inseridas com sucesso!")
+                            else:
+                                st.warning(f"✅ {sucesso_count} inseridas | ⚠️ {erro_count} com erro")
                             st.balloons()
 
             except Exception as e:
@@ -797,10 +828,19 @@ def render(df_quali, df_tec):
                             # Remover vazios
                             payload_update = {k: v for k, v in payload_update.items() if v != ""}
                             
+                            # Recupera o ID interno do Airtable (recXXX) para atualização direta
+                            record_id_interno = str(apa.get('id') or apa.get('Airtable_Record_ID') or '')
+
                             # Atualizar no Airtable
                             try:
-                                if airtable_link.atualizar_apa_validacao(id_limpo, payload_update):
+                                if airtable_link.atualizar_apa_validacao(
+                                    id_limpo,
+                                    payload_update,
+                                    record_id_interno=record_id_interno or None
+                                ):
                                     st.success("✅ Dados atualizados com sucesso!")
+                                    # Invalida cache para forçar recarga na próxima navegação
+                                    st.session_state.pop("df_quali", None)
                                     st.balloons()
                                 else:
                                     st.error("❌ Falha ao atualizar. Verifique o ID.")
