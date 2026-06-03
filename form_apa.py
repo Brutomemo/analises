@@ -398,7 +398,7 @@ def render(df_quali, df_tec):
         col_save, col_preview, col_clear = st.columns(3)
 
         with col_save:
-            if st.button("✅ CRIAR APA", use_container_width=True, type="primary", key="btn_criar_aba1"):
+            if st.button("✅ CRIAR APA", use_container_width=True, type="secondary", key="btn_criar_aba1"):
                 
                 with st.spinner("💾 Criando novo registro..."):
                     try:
