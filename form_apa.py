@@ -105,7 +105,7 @@ PERCEPCOES = PERCEPCOES_AGRESSIVIDADE
 
 
 def validar_excel_tecnicas(df):
-    """Valida Excel de técnicas"""
+    """Valida Excel de técnicas - PERMITE ATITUDE vazia (será "Inaudível/Não Observado")"""
     df.columns = df.columns.str.strip()
     
     colunas_esperadas = {
@@ -131,13 +131,32 @@ def validar_excel_tecnicas(df):
     if erros:
         return False, erros, None
     
-    # Validar ATITUDE
+    # Validar ATITUDE - PERMITE VAZIO (será "Inaudível/Não Observado")
     col_atitude = colunas_encontradas['atitude']
-    atitudes_invalidas = df[~df[col_atitude].isin([-1, 0, 1])].index.tolist()
+    
+    # Marcar como inválido APENAS se:
+    # - Não é vazio (NaN/None/''/"") E
+    # - Não é um dos valores válidos (-1, 0, 1)
+    atitudes_invalidas = []
+    for idx, valor in enumerate(df[col_atitude]):
+        # Se está vazio (NaN ou ""), é válido - será "Inaudível/Não Observado"
+        if pd.isna(valor) or valor == "" or str(valor).strip() == "":
+            continue
+        
+        # Se não está vazio, deve ser -1, 0 ou 1
+        try:
+            val_num = int(valor)
+            if val_num not in [-1, 0, 1]:
+                atitudes_invalidas.append(idx)
+        except (ValueError, TypeError):
+            # Se não consegue converter para número, é inválido
+            atitudes_invalidas.append(idx)
     
     validacoes = []
     if atitudes_invalidas:
-        validacoes.append(f"⚠️ Linhas com ATITUDE inválida: {atitudes_invalidas}")
+        validacoes.append(f"⚠️ Linhas com ATITUDE inválida (não são -1, 0, 1 ou vazio): {atitudes_invalidas}")
+    else:
+        validacoes.append(f"✅ ATITUDE validada - valores vazios serão interpretados como 'Inaudível/Não Observado'")
     
     return True, validacoes, colunas_encontradas
 
@@ -150,7 +169,7 @@ def render(df_quali, df_tec):
     3. Visualizar & Editar (COM FORMULÁRIO)
     """
     
-    st.markdown("### 📋 Entrada de Dados — GATE/PMESP")
+    st.markdown("### Entrada de Dados — GATE/PMESP")
     st.markdown("""
     <p style='color: #aaa; font-size: 0.9rem;'>
     Crie novas APAs, faça upload de técnicas e edite dados existentes.
@@ -164,9 +183,9 @@ def render(df_quali, df_tec):
     # ════════════════════════════════════════════════════════════
     
     tab1, tab2, tab3 = st.tabs([
-        "➕ Criar Nova APA",
-        "📊 Upload de Técnicas",
-        "✏️ Visualizar & Editar"
+        "✔️ Criar Nova APA",
+        "✔️ Upload de Técnicas",
+        "🔎 Visualizar & Editar"
     ])
     
     # ─────────────────────────────────────────────────────────────
@@ -431,7 +450,7 @@ def render(df_quali, df_tec):
                         traceback.print_exc()
 
         with col_preview:
-            if st.button("👁️ Pré-visualizar", use_container_width=True, key="btn_prev_aba1"):
+            if st.button("Pré-visualizar", use_container_width=True, key="btn_prev_aba1"):
                 st.json({
                     "Data": str(data_oca),
                     "Negociador": neg_principal,
@@ -451,7 +470,7 @@ def render(df_quali, df_tec):
     # ─────────────────────────────────────────────────────────────
     
     with tab2:
-        st.markdown("### 📊 Upload de Técnicas")
+        st.markdown("### Upload de Técnicas")
         st.markdown("Faça upload de técnicas para qualquer APA existente, em qualquer momento.")
         
         st.markdown("---")
@@ -489,7 +508,7 @@ def render(df_quali, df_tec):
 
                     st.dataframe(df_excel.head(5), use_container_width=True, hide_index=True)
 
-                    if st.button(f"✅ INSERIR {len(df_excel)} TÉCNICAS", use_container_width=True, type="primary", key="btn_insert_tech_tab2"):
+                    if st.button(f"✅ INSERIR {len(df_excel)} TÉCNICAS", use_container_width=True, type="secondary", key="btn_insert_tech_tab2"):
                         with st.spinner(f"💾 Inserindo {len(df_excel)} técnicas..."):
                             sucesso_count = 0
                             erro_count = 0
@@ -502,9 +521,17 @@ def render(df_quali, df_tec):
 
                             for idx, row in df_excel.iterrows():
                                 try:
+                                    atitude_valor = row[col_atitude]
+                                    
+                                    # Se está vazio, deixar vazio (Airtable interpreta como "Inaudível/Não Observado")
+                                    if pd.isna(atitude_valor) or atitude_valor == "" or str(atitude_valor).strip() == "":
+                                        atitude_para_enviar = ""
+                                    else:
+                                        atitude_para_enviar = int(atitude_valor)
+                                    
                                     payload = {
                                         "TÉCNICAS": str(row[col_tecnicas]).strip(),
-                                        "ATITUDE DO CAUSADOR": int(row[col_atitude]),
+                                        "ATITUDE DO CAUSADOR": atitude_para_enviar,
                                         "TRECHO DA TRANSCRIÇÃO": str(row[col_trecho]).strip(),
                                         "Vínculo_APA": id_apa_upload.strip().upper()
                                     }
@@ -580,7 +607,7 @@ def render(df_quali, df_tec):
                     
                     with st.form(f"form_edit_{id_limpo}", clear_on_submit=False):
                         # Metadados
-                        st.markdown("#### 📋 Metadados")
+                        st.markdown("### Metadados")
                         col1, col2 = st.columns(2)
                         with col1:
                             data_edit = st.date_input("Data da Ocorrência", value=pd.to_datetime(apa.get('Data da ocorrência')) if pd.notna(apa.get('Data da ocorrência')) else None, key=f"edit_data_{id_limpo}")
@@ -596,12 +623,42 @@ def render(df_quali, df_tec):
                         motivacao_edit = st.text_area("Motivação", value=apa.get('Motivação', ''), key=f"edit_mot_{id_limpo}", height=80)
                         
                         # Equipe
-                        st.markdown("#### 👥 Equipe Principal")
+                        st.markdown("### Equipe Principal")
                         col5, col6 = st.columns(2)
                         with col5:
                             neg_principal_edit = st.selectbox("Negociador Principal", [""] + NEGOCIADORES, index=NEGOCIADORES.index(apa.get('Negociador Principal')) + 1 if apa.get('Negociador Principal') in NEGOCIADORES else 0, key=f"edit_np_{id_limpo}")
                         with col6:
                             neg_secundario_edit = st.selectbox("Negociador Secundário", [""] + NEGOCIADORES, index=NEGOCIADORES.index(apa.get('Negociador Secundário')) + 1 if apa.get('Negociador Secundário') in NEGOCIADORES else 0, key=f"edit_ns_{id_limpo}")
+                        
+                        col7, col8 = st.columns(2)
+                        with col7:
+                            neg_anotador_edit = st.selectbox("Negociador Anotador", [""] + NEGOCIADORES, index=NEGOCIADORES.index(apa.get('Negociador Anotador')) + 1 if apa.get('Negociador Anotador') in NEGOCIADORES else 0, key=f"edit_na_{id_limpo}")
+                        with col8:
+                            neg_lider_edit = st.selectbox("Negociador Líder", [""] + NEGOCIADORES, index=NEGOCIADORES.index(apa.get('Negociador Líder')) + 1 if apa.get('Negociador Líder') in NEGOCIADORES else 0, key=f"edit_nl_{id_limpo}")
+                        
+                        # Transcrições
+                        st.markdown("### Transcrições")
+                        trans_causador_edit = st.text_area("Transcrição do Causador", value=apa.get('TRANSCRIÇÃO DO CAUSADOR', ''), key=f"edit_tc_{id_limpo}", height=100)
+                        trans_principal_edit = st.text_area("Transcrição do Negociador Principal", value=apa.get('TRANSCRIÇÃO DO NEGOCIADOR PRINCIPAL', ''), key=f"edit_tp_{id_limpo}", height=100)
+                        trans_secundario_edit = st.text_area("Transcrição do Negociador Secundário", value=apa.get('TRANSCRIÇÃO DO NEGOCIADOR SECUNDÁRIO', ''), key=f"edit_ts_{id_limpo}", height=100)
+                        
+                        # Info Adicionais
+                        st.markdown("### Informações Adicionais")
+                        col9, col10 = st.columns(2)
+                        with col9:
+                            tempo_real_edit = st.text_input("Tempo de Negociação Real (HH:MM)", value=apa.get('Tempo de Negociação Real', ''), key=f"edit_tr_{id_limpo}")
+                        with col10:
+                            tempo_tatica_edit = st.text_input("Tempo de Negociação Tática (HH:MM)", value=apa.get('Tempo de Negociação Tática', ''), key=f"edit_tt_{id_limpo}")
+                        
+                        col11, col12 = st.columns(2)
+                        with col11:
+                            uniforme_edit = st.selectbox("Uniforme Usado", [""] + UNIFORMES, index=UNIFORMES.index(apa.get('Uniforme Usado')) + 1 if apa.get('Uniforme Usado') in UNIFORMES else 0, key=f"edit_unif_{id_limpo}")
+                        with col12:
+                            sexo_edit = st.selectbox("Sexo do Causador", [""] + SEXOS, index=SEXOS.index(apa.get('Sexo do Causador')) + 1 if apa.get('Sexo do Causador') in SEXOS else 0, key=f"edit_sex_{id_limpo}")
+                        
+                        # Funções (resumido - apenas descrição geral)
+                        st.markdown("#### 👔 Funções (Observações Gerais)")
+                        st.info("📌 Para editar detalhes completos de funções, acesse o Airtable diretamente ou solicite expansão do formulário.")
                         
                         # Botões
                         col_salvar, col_cancelar = st.columns(2)
@@ -620,6 +677,15 @@ def render(df_quali, df_tec):
                                 "Motivação": motivacao_edit or "",
                                 "Negociador Principal": neg_principal_edit or "",
                                 "Negociador Secundário": neg_secundario_edit or "",
+                                "Negociador Anotador": neg_anotador_edit or "",
+                                "Negociador Líder": neg_lider_edit or "",
+                                "TRANSCRIÇÃO DO CAUSADOR": trans_causador_edit or "",
+                                "TRANSCRIÇÃO DO NEGOCIADOR PRINCIPAL": trans_principal_edit or "",
+                                "TRANSCRIÇÃO DO NEGOCIADOR SECUNDÁRIO": trans_secundario_edit or "",
+                                "Tempo de Negociação Real": tempo_real_edit or "",
+                                "Tempo de Negociação Tática": tempo_tatica_edit or "",
+                                "Uniforme Usado": uniforme_edit or "",
+                                "Sexo do Causador": sexo_edit or "",
                             }
                             
                             # Remover vazios
