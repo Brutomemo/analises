@@ -103,16 +103,10 @@ def atualizar_apa_validacao(id_apa, payload):
     Returns:
         bool: True se sucesso, False se erro
     """
-    import os
     from pyairtable import Api
     
     try:
-        api_key = os.getenv("AIRTABLE_TOKEN")
-        base_id = os.getenv("AIRTABLE_BASE_ID")
-        
-        if not api_key or not base_id:
-            print("❌ Credenciais não configuradas")
-            return False
+        api_key, base_id = get_credentials()
         
         # Conectar ao Airtable
         api = Api(api_key)
@@ -153,7 +147,6 @@ def atualizar_apa_validacao(id_apa, payload):
 
 def criar_nova_apa(payload):
     """Cria um novo registro de APA no Airtable com DEBUG detalhado"""
-    import os
     from pyairtable import Api
     
     print("\n" + "="*60)
@@ -161,9 +154,8 @@ def criar_nova_apa(payload):
     print("="*60)
     
     try:
-        # 1. Verificar credenciais
-        api_key = os.getenv("AIRTABLE_TOKEN")
-        base_id = os.getenv("AIRTABLE_BASE_ID")
+        # 1. Verificar credenciais (usa get_credentials() para suportar secrets.toml local)
+        api_key, base_id = get_credentials()
         
         print(f"1️⃣ API_KEY carregada? {bool(api_key)}")
         if api_key:
@@ -172,10 +164,6 @@ def criar_nova_apa(payload):
         print(f"2️⃣ BASE_ID carregada? {bool(base_id)}")
         if base_id:
             print(f"   Value: {base_id}")
-        
-        if not api_key or not base_id:
-            print("❌ ERRO: Credenciais não configuradas!")
-            return False
         
         print("✅ Credenciais OK")
         
@@ -226,7 +214,8 @@ def criar_nova_apa(payload):
         print(f"   ID no Airtable: {novo_record.get('id')}")
         print(f"   APA ID: {payload.get('ID')}")
         print("="*60 + "\n")
-        return True
+        # Retorna o ID gerado para que o chamador possa usá-lo
+        return payload.get("ID", True)
     
     except Exception as e:
         print(f"\n❌ ERRO: {type(e).__name__}")
@@ -235,4 +224,19 @@ def criar_nova_apa(payload):
         import traceback
         traceback.print_exc()
         print("="*60 + "\n")
+        return False
+
+
+def criar_tecnica(payload):
+    """Cria um novo registro na tabela de técnicas do Airtable."""
+    from pyairtable import Api
+
+    try:
+        api_key, base_id = get_credentials()
+        api = Api(api_key)
+        table = api.base(base_id).table(TABELA_TECNICAS)
+        table.create(payload)
+        return True
+    except Exception as e:
+        print(f"❌ Erro ao criar técnica: {type(e).__name__}: {str(e)}")
         return False
