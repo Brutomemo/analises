@@ -239,7 +239,7 @@ def criar_tecnica(payload):
         payload: Dict com:
             - TÉCNICAS: Nome da técnica
             - ATITUDE DO CAUSADOR: -1, 0 ou 1
-            - DESCRIÇÃO DA ATITUDE: Texto
+            - TRECHO DA TRANSCRIÇÃO: Texto
             - Vinculo_APA: ID formatado (ex: "APA 001")
     
     Returns:
@@ -265,8 +265,8 @@ def criar_tecnica(payload):
             print("❌ Campo ATITUDE DO CAUSADOR obrigatório")
             return False
         
-        if not payload.get('DESCRIÇÃO DA ATITUDE'):
-            print("❌ Campo DESCRIÇÃO DA ATITUDE obrigatório")
+        if not payload.get('TRECHO DA TRANSCRIÇÃO'):
+            print("❌ Campo TRECHO DA TRANSCRIÇÃO obrigatório")
             return False
         
         if not payload.get('Vinculo_APA'):
@@ -542,7 +542,7 @@ def criar_tecnica(payload):
         payload: Dict com:
             - TÉCNICAS: Nome da técnica
             - ATITUDE DO CAUSADOR: -1, 0 ou 1
-            - DESCRIÇÃO DA ATITUDE: Texto
+            - TRECHO DA TRANSCRIÇÃO: Texto
             - Vinculo_APA: ID formatado (ex: "APA 001")
     
     Returns:
@@ -568,8 +568,8 @@ def criar_tecnica(payload):
             print("❌ Campo ATITUDE DO CAUSADOR obrigatório")
             return False
         
-        if not payload.get('DESCRIÇÃO DA ATITUDE'):
-            print("❌ Campo DESCRIÇÃO DA ATITUDE obrigatório")
+        if not payload.get('TRECHO DA TRANSCRIÇÃO'):
+            print("❌ Campo TRECHO DA TRANSCRIÇÃO obrigatório")
             return False
         
         if not payload.get('Vinculo_APA'):

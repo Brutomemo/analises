@@ -111,7 +111,7 @@ def validar_excel_tecnicas(df):
     colunas_esperadas = {
         'tecnicas': ['TÉCNICAS', 'A_TÉCNICAS'],
         'atitude': ['ATITUDE DO CAUSADOR'],
-        'trecho': ['DESCRIÇÃO DA ATITUDE', 'DESCRIÇÃO DA ATITUDE']
+        'trecho': ['TRECHO DA TRANSCRIÇÃO', 'TRECHO DA TRANSCRIÇÃO']
     }
     
     colunas_encontradas = {}
@@ -532,7 +532,7 @@ def render(df_quali, df_tec):
                                     payload = {
                                         "TÉCNICAS": str(row[col_tecnicas]).strip(),
                                         "ATITUDE DO CAUSADOR": atitude_para_enviar,
-                                        "DESCRIÇÃO DA ATITUDE": str(row[col_trecho]).strip(),
+                                        "TRECHO DA TRANSCRIÇÃO": str(row[col_trecho]).strip(),
                                         "Vínculo_APA": id_apa_upload.strip().upper()
                                     }
 
