@@ -151,16 +151,8 @@ def atualizar_apa_validacao(id_apa, payload):
 # ADICIONAR ESTA FUNÇÃO AO FINAL DO SEU airtable_link.py
 # ============================================================
 
-def criar_nova_apa(payload):    ← SEM INDENTAÇÃO (nível 0)
-    """
-    Cria um novo registro de APA no Airtable
-    
-    Args:
-        payload: Dict com os campos da nova APA
-    
-    Returns:
-        bool: True se sucesso, False se erro
-    """
+def criar_nova_apa(payload):
+    """Cria um novo registro de APA no Airtable"""
     import os
     from pyairtable import Api
     
@@ -197,4 +189,29 @@ def criar_nova_apa(payload):    ← SEM INDENTAÇÃO (nível 0)
     
     except Exception as e:
         print(f"❌ Erro ao criar APA: {str(e)}")
+        return False
+
+
+def criar_tecnica(payload):
+    """Cria um novo registro de técnica no Airtable"""
+    import os
+    from pyairtable import Api
+    
+    try:
+        api_key = os.getenv("AIRTABLE_TOKEN")
+        base_id = os.getenv("AIRTABLE_BASE_ID")
+        
+        if not api_key or not base_id:
+            return False
+        
+        api = Api(api_key)
+        base = api.base(base_id)
+        table = base.table("TABELA DE FREQUÊNCIAS DAS TÉCNICAS")
+        
+        novo_record = table.create(payload)
+        print(f"✅ Técnica criada!")
+        return True
+    
+    except Exception as e:
+        print(f"❌ Erro ao criar técnica: {str(e)}")
         return False
