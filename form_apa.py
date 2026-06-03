@@ -392,6 +392,7 @@ def render(df_quali, df_tec):
                 
                 validador_nome = st.text_input("Seu Nome/Identificação *", placeholder="Ex: Cap PM Pavão", key="c_validador")
         
+        
         # BOTÕES DE AÇÃO
         st.markdown("---")
         col_save, col_preview, col_clear = st.columns(3)
@@ -418,8 +419,13 @@ def render(df_quali, df_tec):
                         print(f"📥 Resultado: {sucesso}")
                         
                         if sucesso:
+                            st.session_state.id_apa_criado = f"APA {1:03d}"
                             st.success("✅ APA CRIADA COM SUCESSO!")
                             st.balloons()
+                            
+                            st.markdown("---")
+                            st.markdown("### 📊 PRÓXIMO PASSO: Upload de Técnicas")
+                            st.markdown("Você pode fazer upload das técnicas agora!")
                         else:
                             st.error("❌ Falha ao criar (verifique console)")
                     
@@ -427,167 +433,73 @@ def render(df_quali, df_tec):
                         st.error(f"❌ Erro: {str(e)}")
                         import traceback
                         traceback.print_exc()
-                else:
-                    with st.spinner("💾 Criando novo registro..."):
-                        try:
-                            payload = {
-                                "Data da ocorrência": data_oca.isoformat(),
-                                "Modalidade do incidente": modalidade,
-                                "Tipologia": tipologia,
-                                "Forma de Transição": forma_transicao,
-                                "Resolução": resolucao,
-                                "Motivação": motivacao,
-                                "Negociador Principal": neg_principal,
-                                "Negociador Secundário": neg_secundario,
-                                "Negociador Anotador": neg_anotador,
-                                "Negociador Líder": neg_lider,
-                                "Negociador Auxiliar de Informações": aux_info,
-                                "Negociador Auxiliar de Logística": aux_log,
-                                "Profissional de Saúde Mental": prof_saude,
-                                "12 - PERCEPÇÕES DO NEGOCIADOR PRINCIPAL SOBRE A AGRESSIVIDADE DO CAUSADOR NA CHEGADA À OCORRÊNCIA": agr_principal_chegada,
-                                "12 - PERCEPÇÕES DO NEGOCIADOR SECUNDÁRIO SOBRE A AGRESSIVIDADE DO CAUSADOR NA CHEGADA À OCORRÊNCIA": agr_secundario_chegada,
-                                "12 - PERCEPÇÕES DO NEGOCIADOR LÍDER SOBRE A AGRESSIVIDADE DO CAUSADOR NA CHEGADA À OCORRÊNCIA": agr_lider_chegada,
-                                "13 - PERCEPÇÕES DO NEGOCIADOR PRINCIPAL SOBRE A RECEPTIVIDADE DO CAUSADOR NA CHEGADA À OCORRÊNCIA": rec_principal_chegada,
-                                "13 - PERCEPÇÕES DO NEGOCIADOR SECUNDÁRIO SOBRE A RECEPTIVIDADE DO CAUSADOR NA CHEGADA À OCORRÊNCIA": rec_secundario_chegada,
-                                "13 - PERCEPÇÕES DO NEGOCIADOR LÍDER SOBRE A RECEPTIVIDADE DO CAUSADOR NA CHEGADA À OCORRÊNCIA": rec_lider_chegada,
-                                "24 - PERCEPÇÕES DO NEGOCIADOR PRINCIPAL SOBRE A AGRESSIVIDADE DO CAUSADOR NO ENCERRAMENTO DA OCORRÊNCIA": agr_principal_enc,
-                                "24 - PERCEPÇÕES DO NEGOCIADOR SECUNDÁRIO SOBRE A AGRESSIVIDADE DO CAUSADOR NO ENCERRAMENTO DA OCORRÊNCIA": agr_secundario_enc,
-                                "24 - PERCEPÇÕES DO NEGOCIADOR LÍDER SOBRE A AGRESSIVIDADE DO CAUSADOR NO ENCERRAMENTO DA OCORRÊNCIA": agr_lider_enc,
-                                "25 - PERCEPÇÕES DO NEGOCIADOR PRINCIPAL SOBRE A RECEPTIVIDADE DO CAUSADOR NO ENCERRAMENTO DA OCORRÊNCIA": rec_principal_enc,
-                                "25 - PERCEPÇÕES DO NEGOCIADOR SECUNDÁRIO SOBRE A RECEPTIVIDADE DO CAUSADOR NO ENCERRAMENTO DA OCORRÊNCIA": rec_secundario_enc,
-                                "25 - PERCEPÇÕES DO NEGOCIADOR LÍDER SOBRE A RECEPTIVIDADE DO CAUSADOR NO ENCERRAMENTO DA OCORRÊNCIA": rec_lider_enc,
-                                "TRANSCRIÇÃO DO CAUSADOR": trans_causador,
-                                "TRANSCRIÇÃO DO NEGOCIADOR PRINCIPAL": trans_principal,
-                                "TRANSCRIÇÃO DO NEGOCIADOR SECUNDÁRIO": trans_secundario,
-                                "FUNÇÕES: NEGOCIADOR PRINCIPAL": func_np,
-                                "FUNÇÕES: NEGOCIADOR PRINCIPAL - PROBLEMA IDENTIFICADO": func_np_problema,
-                                "FUNÇÕES: NEGOCIADOR PRINCIPAL - AÇÕES CORRETIVAS ADOTADAS": func_np_acoes,
-                                "FUNÇÕES: NEGOCIADOR PRINCIPAL - PRÁTICAS PROMISSORAS": func_np_praticas,
-                                "FUNÇÕES: NEGOCIADOR SECUNDÁRIO": func_ns,
-                                "FUNÇÕES: NEGOCIADOR SECUNDÁRIO - PROBLEMA IDENTIFICADO": func_ns_problema,
-                                "FUNÇÕES: NEGOCIADOR SECUNDÁRIO - AÇÕES CORRETIVAS ADOTADAS": func_ns_acoes,
-                                "FUNÇÕES: NEGOCIADOR SECUNDÁRIO - PRÁTICAS PROMISSORAS": func_ns_praticas,
-                                "FUNÇÕES: NEGOCIADOR ANOTADOR": func_na,
-                                "FUNÇÕES: NEGOCIADOR ANOTADOR - PROBLEMA IDENTIFICADO": func_na_problema,
-                                "FUNÇÕES: NEGOCIADOR ANOTADOR - AÇÕES CORRETIVAS ADOTADAS": func_na_acoes,
-                                "FUNÇÕES: NEGOCIADOR ANOTADOR - PRÁTICAS PROMISSORAS": func_na_praticas,
-                                "FUNÇÕES: NEGOCIADOR LÍDER": func_nl,
-                                "FUNÇÕES: NEGOCIADOR LÍDER - PROBLEMA IDENTIFICADO": func_nl_problema,
-                                "FUNÇÕES: NEGOCIADOR LÍDER - AÇÕES CORRETIVAS ADOTADAS": func_nl_acoes,
-                                "FUNÇÕES: NEGOCIADOR LÍDER - PRÁTICAS PROMISSORAS": func_nl_praticas,
-                                "FUNÇÕES: NEGOCIADOR AUXILIAR DE LOGÍSTICA": func_al,
-                                "FUNÇÕES: AUXILIAR DE LOGÍSTICA - PROBLEMA IDENTIFICADO": func_al_problema,
-                                "FUNÇÕES: AUXILIAR DE LOGÍSTICA - AÇÕES CORRETIVAS": func_al_acoes,
-                                "FUNÇÕES: AUXILIAR DE LOGÍSTICA - PRÁTICAS PROMISSORAS": func_al_praticas,
-                                "FUNÇÕES: NEGOCIADOR AUXILIAR DE INFORMAÇÕES": func_ai,
-                                "FUNÇÕES: AUXILIAR DE INFORMAÇÕES - PROBLEMA IDENTIFICADO": func_ai_problema,
-                                "FUNÇÕES: AUXILIAR DE INFORMAÇÕES - AÇÕES CORRETIVAS": func_ai_acoes,
-                                "FUNÇÕES: AUXILIAR DE INFORMAÇÕES - PRÁTICAS PROMISSORAS": func_ai_praticas,
-                                "FUNÇÕES: PROFISSIONAL DE SAÚDE MENTAL": func_psm,
-                                "FUNÇÕES: PROFISSIONAL DE SAÚDE MENTAL - PROBLEMA IDENTIFICADO": func_psm_problema,
-                                "FUNÇÕES: PROFISSIONAL DE SAÚDE MENTAL - AÇÕES CORRETIVAS ADOTADAS": func_psm_acoes,
-                                "FUNÇÕES: PROFISSIONAL DE SAÚDE MENTAL - PRÁTICAS PROMISSORAS": func_psm_praticas,
-                                "Tempo de Negociação Real": tempo_real,
-                                "Tempo de Negociação Tática": tempo_tatica,
-                                "Uniforme Usado": uniforme,
-                                "Sexo do Causador": sexo,
-                                "Criado Por": validador_nome,
-                                "Data Criação": datetime.now().isoformat(),
-                                "Status": "Novo"
-                            }
-                            
-                            sucesso = airtable_link.criar_nova_apa(payload)
-                            
-                            if sucesso:
-                                # Extrair ID gerado
-                                st.session_state.id_apa_criado = f"APA {len(df_quali)+1:03d}"
-                                
-                                st.success(f"""
-                                ✅ **APA CRIADA COM SUCESSO!**
-                                
-                                Data: {data_oca}
-                                Negociador: {neg_principal}
-                                Tipologia: {tipologia}
-                                """)
-                                st.balloons()
-                                
-                                # Scroll para upload de técnicas
-                                st.markdown("---")
-                                st.markdown("### 📊 PRÓXIMO PASSO: Upload de Técnicas")
-                                st.markdown("""
-                                Você pode fazer upload das técnicas agora!
-                                Seu Excel será vinculado automaticamente à APA criada.
-                                """)
-                        
-                        except Exception as e:
-                            st.error(f"❌ Erro: {str(e)[:200]}")
-        
+
         with col_preview:
-            if st.button("Pré-visualizar", use_container_width=True, key="btn_prev_aba1"):
+            if st.button("👁️ Pré-visualizar", use_container_width=True, key="btn_prev_aba1"):
                 st.json({
                     "Data": str(data_oca),
                     "Negociador": neg_principal,
                     "Tipologia": tipologia,
                     "Validador": validador_nome
                 })
-        
+
         with col_clear:
             if st.button("❌ Limpar Tudo", use_container_width=True, key="btn_clear_aba1"):
                 for key in list(st.session_state.keys()):
                     if key.startswith("c_"):
                         del st.session_state[key]
                 st.info("✨ Formulário limpo!")
-        
+
         # ════════════════════════════════════════════════════════════
         # UPLOAD DE TÉCNICAS (após APA criada)
         # ════════════════════════════════════════════════════════════
-        
+
         if "id_apa_criado" in st.session_state:
             st.markdown("---")
-            st.markdown("### Upload de Técnicas")
-            
+            st.markdown("### 📊 Upload de Técnicas")
+
             id_apa = st.text_input(
                 "ID da APA para vincular",
                 value=st.session_state.get("id_apa_criado", ""),
                 placeholder="Ex: APA 001",
                 key="upload_id_apa_aba1"
             )
-            
+
             uploaded_file = st.file_uploader(
                 "Selecione arquivo Excel com técnicas",
                 type=['xlsx', 'xls'],
                 key="upload_excel_aba1"
             )
-            
+
             if uploaded_file is not None and id_apa:
                 try:
                     df_excel = pd.read_excel(uploaded_file)
                     valido, mensagens, colunas = validar_excel_tecnicas(df_excel)
-                    
+
                     if not valido:
                         st.error("### ❌ Erro na Validação")
                         for msg in mensagens:
                             st.error(msg)
                     else:
                         st.success(f"✅ Excel validado! {len(df_excel)} técnicas prontas")
-                        
+
                         if mensagens:
                             for msg in mensagens:
                                 st.warning(msg)
-                        
+
                         st.dataframe(df_excel.head(5), use_container_width=True, hide_index=True)
-                        
+
                         if st.button(f"✅ INSERIR {len(df_excel)} TÉCNICAS", use_container_width=True, type="primary", key="btn_insert_tech"):
                             with st.spinner(f"💾 Inserindo {len(df_excel)} técnicas..."):
                                 sucesso_count = 0
                                 erro_count = 0
-                                
+
                                 col_tecnicas = colunas['tecnicas']
                                 col_atitude = colunas['atitude']
                                 col_trecho = colunas['trecho']
-                                
+
                                 progress_bar = st.progress(0)
-                                
+
                                 for idx, row in df_excel.iterrows():
                                     try:
                                         payload = {
@@ -596,23 +508,23 @@ def render(df_quali, df_tec):
                                             "TRECHO DA TRANSCRIÇÃO": str(row[col_trecho]).strip(),
                                             "Vínculo_APA": id_apa.strip().upper()
                                         }
-                                        
+
                                         if airtable_link.criar_tecnica(payload):
                                             sucesso_count += 1
                                         else:
                                             erro_count += 1
                                     except:
                                         erro_count += 1
-                                    
+
                                     progress_bar.progress((idx + 1) / len(df_excel))
-                                
+
                                 st.success(f"""
                                 ✅ TÉCNICAS INSERIDAS!
                                 - Sucesso: {sucesso_count}
                                 - Erros: {erro_count}
                                 """)
                                 st.balloons()
-                
+
                 except Exception as e:
                     st.error(f"❌ Erro: {str(e)}")
     
