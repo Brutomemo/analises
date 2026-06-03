@@ -100,7 +100,6 @@ PERCEPCOES_RECEPTIVIDADE = [
     "Muito receptivo"
 ]
 
-# Manter compatibilidade
 PERCEPCOES = PERCEPCOES_AGRESSIVIDADE
 
 
@@ -234,94 +233,46 @@ def render(df_quali, df_tec):
                 st.markdown("**Negociador Principal**")
                 col1, col2 = st.columns(2)
                 with col1:
-                    agr_principal_chegada = st.selectbox(
-                        "12 - Agressividade do Causador",
-                        PERCEPCOES_AGRESSIVIDADE,
-                        key="c_agr_principal_chegada"
-                    )
+                    agr_principal_chegada = st.selectbox("12 - Agressividade", PERCEPCOES_AGRESSIVIDADE, key="c_agr_principal_chegada")
                 with col2:
-                    rec_principal_chegada = st.selectbox(
-                        "13 - Receptividade do Causador",
-                        PERCEPCOES_RECEPTIVIDADE,
-                        key="c_rec_principal_chegada"
-                    )
+                    rec_principal_chegada = st.selectbox("13 - Receptividade", PERCEPCOES_RECEPTIVIDADE, key="c_rec_principal_chegada")
                 
                 st.markdown("**Negociador Secundário**")
                 col3, col4 = st.columns(2)
                 with col3:
-                    agr_secundario_chegada = st.selectbox(
-                        "12 - Agressividade do Causador",
-                        PERCEPCOES_AGRESSIVIDADE,
-                        key="c_agr_secundario_chegada"
-                    )
+                    agr_secundario_chegada = st.selectbox("12 - Agressividade", PERCEPCOES_AGRESSIVIDADE, key="c_agr_secundario_chegada")
                 with col4:
-                    rec_secundario_chegada = st.selectbox(
-                        "13 - Receptividade do Causador",
-                        PERCEPCOES_RECEPTIVIDADE,
-                        key="c_rec_secundario_chegada"
-                    )
+                    rec_secundario_chegada = st.selectbox("13 - Receptividade", PERCEPCOES_RECEPTIVIDADE, key="c_rec_secundario_chegada")
                 
                 st.markdown("**Negociador Líder**")
                 col5, col6 = st.columns(2)
                 with col5:
-                    agr_lider_chegada = st.selectbox(
-                        "12 - Agressividade do Causador",
-                        PERCEPCOES_AGRESSIVIDADE,
-                        key="c_agr_lider_chegada"
-                    )
+                    agr_lider_chegada = st.selectbox("12 - Agressividade", PERCEPCOES_AGRESSIVIDADE, key="c_agr_lider_chegada")
                 with col6:
-                    rec_lider_chegada = st.selectbox(
-                        "13 - Receptividade do Causador",
-                        PERCEPCOES_RECEPTIVIDADE,
-                        key="c_rec_lider_chegada"
-                    )
+                    rec_lider_chegada = st.selectbox("13 - Receptividade", PERCEPCOES_RECEPTIVIDADE, key="c_rec_lider_chegada")
             
             # ─── PERCEPÇÃO ENCERRAMENTO ───
             with tab_enc:
                 st.markdown("**Negociador Principal**")
                 col1, col2 = st.columns(2)
                 with col1:
-                    agr_principal_enc = st.selectbox(
-                        "24 - Agressividade do Causador",
-                        PERCEPCOES_AGRESSIVIDADE,
-                        key="c_agr_principal_enc"
-                    )
+                    agr_principal_enc = st.selectbox("24 - Agressividade", PERCEPCOES_AGRESSIVIDADE, key="c_agr_principal_enc")
                 with col2:
-                    rec_principal_enc = st.selectbox(
-                        "25 - Receptividade do Causador",
-                        PERCEPCOES_RECEPTIVIDADE,
-                        key="c_rec_principal_enc"
-                    )
+                    rec_principal_enc = st.selectbox("25 - Receptividade", PERCEPCOES_RECEPTIVIDADE, key="c_rec_principal_enc")
                 
                 st.markdown("**Negociador Secundário**")
                 col3, col4 = st.columns(2)
                 with col3:
-                    agr_secundario_enc = st.selectbox(
-                        "24 - Agressividade do Causador",
-                        PERCEPCOES_AGRESSIVIDADE,
-                        key="c_agr_secundario_enc"
-                    )
+                    agr_secundario_enc = st.selectbox("24 - Agressividade", PERCEPCOES_AGRESSIVIDADE, key="c_agr_secundario_enc")
                 with col4:
-                    rec_secundario_enc = st.selectbox(
-                        "25 - Receptividade do Causador",
-                        PERCEPCOES_RECEPTIVIDADE,
-                        key="c_rec_secundario_enc"
-                    )
+                    rec_secundario_enc = st.selectbox("25 - Receptividade", PERCEPCOES_RECEPTIVIDADE, key="c_rec_secundario_enc")
                 
                 st.markdown("**Negociador Líder**")
                 col5, col6 = st.columns(2)
                 with col5:
-                    agr_lider_enc = st.selectbox(
-                        "24 - Agressividade do Causador",
-                        PERCEPCOES_AGRESSIVIDADE,
-                        key="c_agr_lider_enc"
-                    )
+                    agr_lider_enc = st.selectbox("24 - Agressividade", PERCEPCOES_AGRESSIVIDADE, key="c_agr_lider_enc")
                 with col6:
-                    rec_lider_enc = st.selectbox(
-                        "25 - Receptividade do Causador",
-                        PERCEPCOES_RECEPTIVIDADE,
-                        key="c_rec_lider_enc"
-                    )
+                    rec_lider_enc = st.selectbox("25 - Receptividade", PERCEPCOES_RECEPTIVIDADE, key="c_rec_lider_enc")
             
             # ─── TRANSCRIÇÕES ───
             with tab_trans:
@@ -450,7 +401,7 @@ def render(df_quali, df_tec):
                 with col4:
                     sexo = st.selectbox("Sexo do Causador", SEXOS, key="c_sexo")
                 
-                validador_nome = st.text_input("Seu Nome/Identificação *", placeholder="Ex: Cap PM Pavão", key="c_validador")
+                validador_nome = st.selectbox("Seu Nome/Identificação *", [""] + NEGOCIADORES, key="c_validador")
         
         
         # BOTÕES DE AÇÃO
@@ -527,7 +478,7 @@ def render(df_quali, df_tec):
                             "VALIDADOR": validador_nome or "",
                         }
                         
-                        # Remover campos vazios para não sobrescrever dados existentes
+                        # Remover campos vazios
                         payload = {k: v for k, v in payload.items() if v != ""}
                         
                         print(f"📤 Enviando para Airtable: {payload}")
