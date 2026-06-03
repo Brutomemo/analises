@@ -533,7 +533,7 @@ def render(df_quali, df_tec):
                                         "TÉCNICAS": str(row[col_tecnicas]).strip(),
                                         "ATITUDE DO CAUSADOR": atitude_para_enviar,
                                         "TRECHO DA TRANSCRIÇÃO": str(row[col_trecho]).strip(),
-                                        "Vínculo_APA": id_apa_upload.strip().upper()
+                                        "Vinculo_APA": id_apa_upload.strip().upper()
                                     }
 
                                     if airtable_link.criar_tecnica(payload):
