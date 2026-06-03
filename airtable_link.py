@@ -60,6 +60,24 @@ def buscar_todas_apas():
         return pd.DataFrame()
 
 
+def buscar_dados_apa():
+    """
+    Alias para buscar_todas_apas() - mantém compatibilidade com código antigo
+    Retorna: (DataFrame, status_string)
+    """
+    try:
+        df = buscar_todas_apas()
+        
+        if df.empty:
+            return df, "⚠️ Nenhuma APA encontrada"
+        else:
+            return df, f"✅ {len(df)} APAs carregadas"
+    
+    except Exception as e:
+        print(f"❌ Erro: {str(e)}")
+        return pd.DataFrame(), f"❌ Erro ao carregar APAs: {str(e)}"
+
+
 def buscar_todas_tecnicas():
     """
     Busca todas as técnicas da tabela "TABELA DE FREQUÊNCIAS DAS TÉCNICAS"
