@@ -152,66 +152,87 @@ def atualizar_apa_validacao(id_apa, payload):
 # ============================================================
 
 def criar_nova_apa(payload):
-    """Cria um novo registro de APA no Airtable"""
+    """Cria um novo registro de APA no Airtable com DEBUG detalhado"""
     import os
     from pyairtable import Api
     
+    print("\n" + "="*60)
+    print("🔍 INICIANDO criar_nova_apa()")
+    print("="*60)
+    
     try:
+        # 1. Verificar credenciais
         api_key = os.getenv("AIRTABLE_TOKEN")
         base_id = os.getenv("AIRTABLE_BASE_ID")
         
+        print(f"1️⃣ API_KEY carregada? {bool(api_key)}")
+        if api_key:
+            print(f"   Primeiros 5 chars: {api_key[:5]}***")
+        
+        print(f"2️⃣ BASE_ID carregada? {bool(base_id)}")
+        if base_id:
+            print(f"   Value: {base_id}")
+        
         if not api_key or not base_id:
-            print("❌ Credenciais não configuradas")
+            print("❌ ERRO: Credenciais não configuradas!")
             return False
         
-        api = Api(api_key)
-        base = api.base(base_id)
-        table = base.table("PARA ANALISE QUALITATIVA DA APA")
+        print("✅ Credenciais OK")
         
-        if "ID" not in payload:
-            todos_records = table.all()
-            ids_existentes = []
-            for r in todos_records:
-                id_str = str(r['fields'].get('ID', ''))
-                if id_str.startswith('APA'):
-                    try:
-                        num = int(id_str.replace('APA', '').strip())
-                        ids_existentes.append(num)
-                    except:
-                        pass
-            
-            proximo_numero = max(ids_existentes) + 1 if ids_existentes else 1
-            payload["ID"] = f"APA {proximo_numero:03d}"
+        # 2. Conectar à API
+        print("\n3️⃣ Conectando à API Airtable...")
+        api = Api(api_key)
+        print("✅ API conectada")
+        
+        # 3. Conectar à base
+        print(f"\n4️⃣ Acessando base: {base_id}")
+        base = api.base(base_id)
+        print("✅ Base acessada")
+        
+        # 4. Acessar tabela
+        table_name = "PARA ANALISE QUALITATIVA DA APA"
+        print(f"\n5️⃣ Acessando tabela: {table_name}")
+        table = base.table(table_name)
+        print("✅ Tabela acessada")
+        
+        # 5. Gerar ID
+        print("\n6️⃣ Gerando ID automático...")
+        todos_records = table.all()
+        print(f"   Total de registros: {len(todos_records)}")
+        
+        ids_existentes = []
+        for r in todos_records:
+            id_str = str(r['fields'].get('ID', ''))
+            if id_str.startswith('APA'):
+                try:
+                    num = int(id_str.replace('APA', '').strip())
+                    ids_existentes.append(num)
+                except:
+                    pass
+        
+        print(f"   IDs encontrados: {ids_existentes}")
+        proximo_numero = max(ids_existentes) + 1 if ids_existentes else 1
+        payload["ID"] = f"APA {proximo_numero:03d}"
+        print(f"✅ Novo ID: {payload['ID']}")
+        
+        # 6. Criar registro
+        print("\n7️⃣ Criando registro no Airtable...")
+        print(f"   Campos: {list(payload.keys())}")
+        print(f"   Total de campos: {len(payload)}")
         
         novo_record = table.create(payload)
-        print(f"✅ Nova APA criada: {payload.get('ID', 'N/A')}")
+        
+        print(f"\n✅ SUCESSO! Registro criado")
+        print(f"   ID no Airtable: {novo_record.get('id')}")
+        print(f"   APA ID: {payload.get('ID')}")
+        print("="*60 + "\n")
         return True
     
     except Exception as e:
-        print(f"❌ Erro ao criar APA: {str(e)}")
-        return False
-
-
-def criar_tecnica(payload):
-    """Cria um novo registro de técnica no Airtable"""
-    import os
-    from pyairtable import Api
-    
-    try:
-        api_key = os.getenv("AIRTABLE_TOKEN")
-        base_id = os.getenv("AIRTABLE_BASE_ID")
-        
-        if not api_key or not base_id:
-            return False
-        
-        api = Api(api_key)
-        base = api.base(base_id)
-        table = base.table("TABELA DE FREQUÊNCIAS DAS TÉCNICAS")
-        
-        novo_record = table.create(payload)
-        print(f"✅ Técnica criada!")
-        return True
-    
-    except Exception as e:
-        print(f"❌ Erro ao criar técnica: {str(e)}")
+        print(f"\n❌ ERRO: {type(e).__name__}")
+        print(f"   Mensagem: {str(e)}")
+        print("="*60)
+        import traceback
+        traceback.print_exc()
+        print("="*60 + "\n")
         return False

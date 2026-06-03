@@ -395,34 +395,38 @@ def render(df_quali, df_tec):
         # BOTÕES DE AÇÃO
         st.markdown("---")
         col_save, col_preview, col_clear = st.columns(3)
-        
-        id_apa_gerado = None
-        
+
         with col_save:
-            if st.button("✅ CRIAR APA", use_container_width=True, type="secondary", key="btn_criar_aba1"):
+            if st.button("✅ CRIAR APA", use_container_width=True, type="primary", key="btn_criar_aba1"):
                 
-                erros = []
-                if not data_oca:
-                    erros.append("Data obrigatória")
-                if not modalidade:
-                    erros.append("Modalidade obrigatória")
-                if not tipologia:
-                    erros.append("Tipologia obrigatória")
-                if not neg_principal:
-                    erros.append("Negociador Principal obrigatório")
-                if not resolucao:
-                    erros.append("Resolução obrigatória")
-                if len(str(trans_causador).split()) < 10:
-                    erros.append("Transcrição Causador deve ter ≥10 palavras")
-                if len(str(trans_principal).split()) < 10:
-                    erros.append("Transcrição Principal deve ter ≥10 palavras")
-                if not validador_nome:
-                    erros.append("Seu Nome obrigatório")
-                
-                if erros:
-                    st.error("### ❌ Erros na validação:")
-                    for erro in erros:
-                        st.error(f"• {erro}")
+                with st.spinner("💾 Criando novo registro..."):
+                    try:
+                        # MÍNIMO NECESSÁRIO PARA TESTE
+                        payload = {
+                            "Data da ocorrência": data_oca.isoformat() if data_oca else "",
+                            "Modalidade do incidente": modalidade or "N/D",
+                            "Tipologia": tipologia or "N/D",
+                            "Negociador Principal": neg_principal or "N/D",
+                            "Resolução": resolucao or "N/D",
+                            "Criado Por": validador_nome or "Teste",
+                            "Data Criação": datetime.now().isoformat(),
+                            "Status": "Novo"
+                        }
+                        
+                        print(f"📤 Enviando para Airtable: {payload}")
+                        sucesso = airtable_link.criar_nova_apa(payload)
+                        print(f"📥 Resultado: {sucesso}")
+                        
+                        if sucesso:
+                            st.success("✅ APA CRIADA COM SUCESSO!")
+                            st.balloons()
+                        else:
+                            st.error("❌ Falha ao criar (verifique console)")
+                    
+                    except Exception as e:
+                        st.error(f"❌ Erro: {str(e)}")
+                        import traceback
+                        traceback.print_exc()
                 else:
                     with st.spinner("💾 Criando novo registro..."):
                         try:
