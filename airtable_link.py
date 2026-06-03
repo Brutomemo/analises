@@ -146,11 +146,12 @@ def atualizar_apa_validacao(id_apa, payload):
         print(f"❌ Erro ao atualizar APA: {str(e)}")
         return False
 
-       # ============================================================
+
+# ============================================================
 # ADICIONAR ESTA FUNÇÃO AO FINAL DO SEU airtable_link.py
 # ============================================================
 
-def criar_nova_apa(payload):
+def criar_nova_apa(payload):    ← SEM INDENTAÇÃO (nível 0)
     """
     Cria um novo registro de APA no Airtable
     
@@ -171,18 +172,11 @@ def criar_nova_apa(payload):
             print("❌ Credenciais não configuradas")
             return False
         
-        # Conectar ao Airtable
         api = Api(api_key)
         base = api.base(base_id)
         table = base.table("PARA ANALISE QUALITATIVA DA APA")
         
-        # Gerar ID automático baseado na data + sequencial
-        from datetime import datetime
-        timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
-        
-        # Se não tiver ID no payload, gerar automaticamente
         if "ID" not in payload:
-            # Buscar o próximo número sequencial
             todos_records = table.all()
             ids_existentes = []
             for r in todos_records:
@@ -197,9 +191,7 @@ def criar_nova_apa(payload):
             proximo_numero = max(ids_existentes) + 1 if ids_existentes else 1
             payload["ID"] = f"APA {proximo_numero:03d}"
         
-        # Criar registro
         novo_record = table.create(payload)
-        
         print(f"✅ Nova APA criada: {payload.get('ID', 'N/A')}")
         return True
     
