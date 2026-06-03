@@ -117,65 +117,77 @@ def atualizar_apa_validacao(id_apa, payload, record_id_interno=None):
     Atualiza um registro de APA existente.
 
     Args:
-        id_apa: ID formatado "APA 001" — usado apenas como fallback de busca.
+        id_apa: ID formatado "APA 001" — usado como fallback de busca.
         payload: Dict com os campos a atualizar.
         record_id_interno: Airtable internal record ID (ex: 'recXXXXXXXXXXXXXX').
-            Quando fornecido, a atualização é feita diretamente sem varrer todos
-            os registros, eliminando falhas de comparação de ID.
+            Quando fornecido, atualiza diretamente sem varrer registros.
+
+    Returns:
+        True se atualizado com sucesso.
+        False se APA não encontrada (sem record_id e busca vazia).
+
+    Raises:
+        RuntimeError: com mensagem da API do Airtable em caso de erro de escrita.
+        ValueError: se credenciais não configuradas.
     """
-    try:
-        api_key, base_id = get_credentials()
+    api_key, base_id = get_credentials()
 
-        if not api_key or not base_id:
-            print("❌ Credenciais não configuradas")
-            return False
+    if not api_key or not base_id:
+        raise ValueError("Credenciais do Airtable não configuradas (AIRTABLE_TOKEN / AIRTABLE_BASE_ID).")
 
-        api = Api(api_key)
-        base = api.base(base_id)
-        table = base.table("PARA ANALISE QUALITATIVA DA APA")
+    api = Api(api_key)
+    base = api.base(base_id)
+    table = base.table("PARA ANALISE QUALITATIVA DA APA")
 
-        # Caminho rápido: ID interno fornecido diretamente (recXXXXXX)
-        if record_id_interno and str(record_id_interno).startswith("rec"):
-            table.update(record_id_interno, payload)
-            print(f"✅ APA {id_apa} atualizada com sucesso (via record_id_interno)")
-            return True
-
-        # Fallback: busca por campo ID (aceita inteiro ou "APA 001")
+    # Caminho direto: record_id_interno fornecido (recXXXXXX)
+    if record_id_interno and str(record_id_interno).startswith("rec"):
         try:
-            id_num = int(str(id_apa).replace("APA", "").strip())
-        except (ValueError, TypeError):
-            id_num = None
+            table.update(record_id_interno, payload)
+            print(f"✅ APA {id_apa} atualizada com sucesso (via record_id_interno={record_id_interno})")
+            return True
+        except Exception as e:
+            raise RuntimeError(
+                f"Airtable rejeitou a atualização (record={record_id_interno}): {str(e)}"
+            ) from e
 
-        id_apa_str = str(id_apa).strip().upper()
+    # Fallback: busca pelo campo ID
+    try:
+        id_num = int(str(id_apa).replace("APA", "").strip())
+    except (ValueError, TypeError):
+        id_num = None
 
-        record_encontrado = None
+    id_apa_str = str(id_apa).strip().upper()
+
+    record_encontrado = None
+    try:
         for r in table.all():
             campo_id = r['fields'].get('ID')
             if campo_id is None:
                 continue
-
             match_num = (id_num is not None and campo_id == id_num)
             try:
                 campo_id_fmt = f"APA {int(campo_id):03d}"
                 match_fmt = (campo_id_fmt == id_apa_str)
             except (ValueError, TypeError):
                 match_fmt = (str(campo_id).strip().upper() == id_apa_str)
-
             if match_num or match_fmt:
                 record_encontrado = r
                 break
+    except Exception as e:
+        raise RuntimeError(f"Erro ao buscar registros no Airtable: {str(e)}") from e
 
-        if not record_encontrado:
-            print(f"❌ APA {id_apa} não encontrada")
-            return False
+    if not record_encontrado:
+        print(f"❌ APA {id_apa} não encontrada via busca de campo")
+        return False
 
+    try:
         table.update(record_encontrado['id'], payload)
         print(f"✅ APA {id_apa} atualizada com sucesso (via busca de campo)")
         return True
-
     except Exception as e:
-        print(f"❌ Erro ao atualizar APA: {str(e)}")
-        return False
+        raise RuntimeError(
+            f"Airtable rejeitou a atualização (record={record_encontrado['id']}): {str(e)}"
+        ) from e
 
 
 def criar_nova_apa(payload):

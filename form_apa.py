@@ -169,7 +169,7 @@ def render(df_quali, df_tec):
     3. Visualizar & Editar (COM FORMULÁRIO)
     """
     
-    st.markdown("### 📋 Entrada de Dados — GATE/PMESP")
+    st.markdown("### ⌛ Entrada de Dados — GATE/PMESP")
     st.markdown("""
     <p style='color: #aaa; font-size: 0.9rem;'>
     Crie novas APAs, faça upload de técnicas e edite dados existentes.
@@ -183,9 +183,9 @@ def render(df_quali, df_tec):
     # ════════════════════════════════════════════════════════════
     
     tab1, tab2, tab3 = st.tabs([
-        "➕ Criar Nova APA",
-        "📊 Upload de Técnicas",
-        "✏️ Visualizar & Editar"
+        "✔️ Criar Nova APA",
+        "✔️ Upload de Técnicas",
+        "🔎 Visualizar & Editar"
     ])
     
     # ─────────────────────────────────────────────────────────────
@@ -470,7 +470,7 @@ def render(df_quali, df_tec):
     # ─────────────────────────────────────────────────────────────
     
     with tab2:
-        st.markdown("### 📊 Upload de Técnicas")
+        st.markdown("## Upload de Técnicas")
         st.markdown("Faça upload de técnicas para qualquer APA existente, em qualquer momento.")
         
         st.markdown("---")
@@ -541,7 +541,7 @@ def render(df_quali, df_tec):
                         )
                     # ─────────────────────────────────────────────────────────────
 
-                    if st.button(f"✅ INSERIR {len(df_excel)} TÉCNICAS", use_container_width=True, type="primary", key="btn_insert_tech_tab2"):
+                    if st.button(f"✅ INSERIR {len(df_excel)} TÉCNICAS", use_container_width=True, type="secondary", key="btn_insert_tech_tab2"):
                         with st.spinner(f"💾 Inserindo {len(df_excel)} técnicas..."):
                             sucesso_count = 0
                             erro_count = 0
@@ -648,7 +648,7 @@ def render(df_quali, df_tec):
                     
                     with st.form(f"form_edit_{id_limpo}", clear_on_submit=False):
                         # Metadados
-                        st.markdown("#### 📋 Metadados")
+                        st.markdown("#### Metadados")
                         col1, col2 = st.columns(2)
                         with col1:
                             data_edit = st.date_input("Data da Ocorrência", value=pd.to_datetime(apa.get('Data da ocorrência')) if pd.notna(apa.get('Data da ocorrência')) else None, key=f"edit_data_{id_limpo}")
@@ -664,7 +664,7 @@ def render(df_quali, df_tec):
                         motivacao_edit = st.text_area("Motivação", value=apa.get('Motivação', ''), key=f"edit_mot_{id_limpo}", height=80)
                         
                         # Equipe
-                        st.markdown("#### 👥 Equipe Principal")
+                        st.markdown("#### Equipe Principal")
                         col5, col6 = st.columns(2)
                         with col5:
                             neg_principal_edit = st.selectbox("Negociador Principal", [""] + NEGOCIADORES, index=NEGOCIADORES.index(apa.get('Negociador Principal')) + 1 if apa.get('Negociador Principal') in NEGOCIADORES else 0, key=f"edit_np_{id_limpo}")
@@ -678,7 +678,7 @@ def render(df_quali, df_tec):
                             neg_lider_edit = st.selectbox("Negociador Líder", [""] + NEGOCIADORES, index=NEGOCIADORES.index(apa.get('Negociador Líder')) + 1 if apa.get('Negociador Líder') in NEGOCIADORES else 0, key=f"edit_nl_{id_limpo}")
                         
                         # Transcrições
-                        st.markdown("#### 📝 Transcrições")
+                        st.markdown("#### Transcrições")
                         trans_causador_edit = st.text_area("Transcrição do Causador", value=apa.get('TRANSCRIÇÃO DO CAUSADOR', ''), key=f"edit_tc_{id_limpo}", height=100)
                         trans_principal_edit = st.text_area("Transcrição do Negociador Principal", value=apa.get('TRANSCRIÇÃO DO NEGOCIADOR PRINCIPAL', ''), key=f"edit_tp_{id_limpo}", height=100)
                         trans_secundario_edit = st.text_area("Transcrição do Negociador Secundário", value=apa.get('TRANSCRIÇÃO DO NEGOCIADOR SECUNDÁRIO', ''), key=f"edit_ts_{id_limpo}", height=100)
@@ -765,7 +765,7 @@ def render(df_quali, df_tec):
                         # Botões
                         col_salvar, col_cancelar = st.columns(2)
                         with col_salvar:
-                            btn_salvar = st.form_submit_button("💾 SALVAR ALTERAÇÕES", use_container_width=True, type="primary")
+                            btn_salvar = st.form_submit_button("💾 SALVAR ALTERAÇÕES", use_container_width=True, type="secondary")
                         with col_cancelar:
                             btn_cancelar = st.form_submit_button("❌ CANCELAR", use_container_width=True)
                         
@@ -825,27 +825,51 @@ def render(df_quali, df_tec):
                                 "FUNÇÕES: PROFISSIONAL DE SAÚDE MENTAL - PRÁTICAS PROMISSORAS": func_psm_praticas_edit or "",
                             }
                             
-                            # Remover vazios
-                            payload_update = {k: v for k, v in payload_update.items() if v != ""}
-                            
-                            # Recupera o ID interno do Airtable (recXXX) para atualização direta
-                            record_id_interno = str(apa.get('id') or apa.get('Airtable_Record_ID') or '')
+                            # Remover vazios e None (campos não preenchidos não devem sobrescrever dados)
+                            payload_update = {
+                                k: v for k, v in payload_update.items()
+                                if v is not None and v != "" and not (isinstance(v, float) and pd.isna(v))
+                            }
 
-                            # Atualizar no Airtable
-                            try:
-                                if airtable_link.atualizar_apa_validacao(
-                                    id_limpo,
-                                    payload_update,
-                                    record_id_interno=record_id_interno or None
-                                ):
-                                    st.success("✅ Dados atualizados com sucesso!")
-                                    # Invalida cache para forçar recarga na próxima navegação
-                                    st.session_state.pop("df_quali", None)
-                                    st.balloons()
-                                else:
-                                    st.error("❌ Falha ao atualizar. Verifique o ID.")
-                            except Exception as e:
-                                st.error(f"❌ Erro: {str(e)}")
+                            # Recupera o ID interno do Airtable (recXXXXXX) para atualização direta.
+                            # pd.isna() evita que NaN do pandas vire a string "nan".
+                            _id_raw = apa.get('id') or apa.get('Airtable_Record_ID')
+                            record_id_interno = (
+                                str(_id_raw)
+                                if _id_raw is not None and not (isinstance(_id_raw, float) and pd.isna(_id_raw))
+                                else None
+                            )
+
+                            # Diagnóstico visível para facilitar depuração
+                            with st.expander("🔍 Diagnóstico (expandir se houver erro)", expanded=False):
+                                st.write(f"**record_id_interno:** `{record_id_interno}`")
+                                st.write(f"**id_limpo:** `{id_limpo}`")
+                                st.write(f"**Campos no payload:** {list(payload_update.keys())}")
+
+                            if not payload_update:
+                                st.warning("⚠️ Nenhum campo foi alterado. Não há dados para salvar.")
+                            else:
+                                # Atualizar no Airtable
+                                try:
+                                    resultado = airtable_link.atualizar_apa_validacao(
+                                        id_limpo,
+                                        payload_update,
+                                        record_id_interno=record_id_interno
+                                    )
+                                    if resultado:
+                                        st.success("✅ Dados atualizados com sucesso!")
+                                        # Invalida cache para forçar recarga na próxima navegação
+                                        st.session_state.pop("df_quali", None)
+                                        st.balloons()
+                                    else:
+                                        st.error(
+                                            "❌ APA não encontrada na base de dados. "
+                                            "Expanda o diagnóstico acima e verifique o record_id_interno."
+                                        )
+                                except (RuntimeError, ValueError) as e:
+                                    st.error(f"❌ Erro do Airtable: {str(e)}")
+                                except Exception as e:
+                                    st.error(f"❌ Erro inesperado: {type(e).__name__}: {str(e)}")
             
             except Exception as e:
                 st.error(f"Erro: {str(e)}")
