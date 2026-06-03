@@ -15,10 +15,7 @@ def _obter_api_key():
     
     # Se não encontrar, tentar de secrets.toml (local)
     if not api_key:
-        try:
-            api_key = st.secrets.get("OPENAI_API_KEY")
-        except:
-            pass
+    raise RuntimeError("❌ OPENAI_API_KEY não configurada! Configure em Railway → Variables")
     
     # Validação
     if not api_key:

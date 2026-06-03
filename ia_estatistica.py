@@ -26,13 +26,8 @@ CHAVES_OBRIGATORIAS = [
 # OBTENÇÃO SEGURA DA API KEY (Railway + fallback local)
 # ============================================================
 def _obter_api_key():
-    """Lê API key de variáveis de ambiente (Railway) ou secrets.toml (local)."""
+    """Lê API key de variáveis de ambiente (Railway)."""
     api_key = os.getenv("OPENAI_API_KEY")
-    if not api_key:
-        try:
-            api_key = st.secrets.get("OPENAI_API_KEY")
-        except Exception:
-            pass
     if not api_key:
         raise RuntimeError(
             "❌ OPENAI_API_KEY não configurada! Configure em Railway → Variables"
