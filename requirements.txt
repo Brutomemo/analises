@@ -36,3 +36,6 @@ requests==2.31.0
 langchain                    # ← SEM VERSÃO
 langchain-openai             # ← SEM VERSÃO
 langchain-experimental
+
+#Formulário
+pyairtable
