@@ -239,8 +239,8 @@ def criar_tecnica(payload):
         payload: Dict com:
             - TÉCNICAS: Nome da técnica
             - ATITUDE DO CAUSADOR: -1, 0 ou 1
-            - TRECHO DA TRANSCRIÇÃO: Texto
-            - Vínculo_APA: ID formatado (ex: "APA 001")
+            - DESCRIÇÃO DA ATITUDE: Texto
+            - Vinculo_APA: ID formatado (ex: "APA 001")
     
     Returns:
         bool: True se sucesso, False se erro
@@ -265,12 +265,12 @@ def criar_tecnica(payload):
             print("❌ Campo ATITUDE DO CAUSADOR obrigatório")
             return False
         
-        if not payload.get('TRECHO DA TRANSCRIÇÃO'):
-            print("❌ Campo TRECHO DA TRANSCRIÇÃO obrigatório")
+        if not payload.get('DESCRIÇÃO DA ATITUDE'):
+            print("❌ Campo DESCRIÇÃO DA ATITUDE obrigatório")
             return False
         
-        if not payload.get('Vínculo_APA'):
-            print("❌ Campo Vínculo_APA obrigatório")
+        if not payload.get('Vinculo_APA'):
+            print("❌ Campo Vinculo_APA obrigatório")
             return False
         
         # Validar ATITUDE
@@ -285,7 +285,7 @@ def criar_tecnica(payload):
         
         # Criar registro
         novo_record = table.create(payload)
-        print(f"✅ Técnica criada: {payload.get('TÉCNICAS')} → {payload.get('Vínculo_APA')}")
+        print(f"✅ Técnica criada: {payload.get('TÉCNICAS')} → {payload.get('Vinculo_APA')}")
         return True
     
     except Exception as e:
@@ -542,8 +542,8 @@ def criar_tecnica(payload):
         payload: Dict com:
             - TÉCNICAS: Nome da técnica
             - ATITUDE DO CAUSADOR: -1, 0 ou 1
-            - TRECHO DA TRANSCRIÇÃO: Texto
-            - Vínculo_APA: ID formatado (ex: "APA 001")
+            - DESCRIÇÃO DA ATITUDE: Texto
+            - Vinculo_APA: ID formatado (ex: "APA 001")
     
     Returns:
         bool: True se sucesso, False se erro
@@ -568,12 +568,12 @@ def criar_tecnica(payload):
             print("❌ Campo ATITUDE DO CAUSADOR obrigatório")
             return False
         
-        if not payload.get('TRECHO DA TRANSCRIÇÃO'):
-            print("❌ Campo TRECHO DA TRANSCRIÇÃO obrigatório")
+        if not payload.get('DESCRIÇÃO DA ATITUDE'):
+            print("❌ Campo DESCRIÇÃO DA ATITUDE obrigatório")
             return False
         
-        if not payload.get('Vínculo_APA'):
-            print("❌ Campo Vínculo_APA obrigatório")
+        if not payload.get('Vinculo_APA'):
+            print("❌ Campo Vinculo_APA obrigatório")
             return False
         
         # Validar ATITUDE
@@ -588,7 +588,7 @@ def criar_tecnica(payload):
         
         # Criar registro
         novo_record = table.create(payload)
-        print(f"✅ Técnica criada: {payload.get('TÉCNICAS')} → {payload.get('Vínculo_APA')}")
+        print(f"✅ Técnica criada: {payload.get('TÉCNICAS')} → {payload.get('Vinculo_APA')}")
         return True
     
     except Exception as e:
