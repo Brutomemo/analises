@@ -10,19 +10,12 @@ from datetime import datetime
 
 def get_credentials():
     """
-    Obtém credenciais do Airtable de variáveis de ambiente ou secrets.toml
+    Obtém credenciais do Airtable de variáveis de ambiente
     Retorna: (api_key, base_id)
     """
-    try:
-        import streamlit as st
-        
-        # Tentar do secrets.toml (Streamlit)
-        api_key = st.secrets.get("AIRTABLE_TOKEN")
-        base_id = st.secrets.get("AIRTABLE_BASE_ID") or st.secrets.get("BASE_ID")
-    except:
-        # Fallback para variáveis de ambiente
-        api_key = os.getenv("AIRTABLE_TOKEN")
-        base_id = os.getenv("AIRTABLE_BASE_ID") or os.getenv("BASE_ID")
+    # Railway usa variáveis de ambiente
+    api_key = os.getenv("AIRTABLE_TOKEN")
+    base_id = os.getenv("AIRTABLE_BASE_ID") or os.getenv("BASE_ID")
     
     return api_key, base_id
 
