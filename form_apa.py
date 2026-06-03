@@ -415,19 +415,19 @@ def render(df_quali, df_tec):
                         }
                         
                         print(f"📤 Enviando para Airtable: {payload}")
-                        sucesso = airtable_link.criar_nova_apa(payload)
-                        print(f"📥 Resultado: {sucesso}")
+                        resultado = airtable_link.criar_nova_apa(payload)
+                        print(f"📥 Resultado: {resultado}")
                         
-                        if sucesso:
-                            st.session_state.id_apa_criado = f"APA {1:03d}"
-                            st.success("✅ APA CRIADA COM SUCESSO!")
+                        if resultado:
+                            st.session_state.id_apa_criado = resultado if isinstance(resultado, str) else payload.get("ID", "APA criada")
+                            st.success(f"✅ APA CRIADA COM SUCESSO! ID: {st.session_state.id_apa_criado}")
                             st.balloons()
                             
                             st.markdown("---")
                             st.markdown("### 📊 PRÓXIMO PASSO: Upload de Técnicas")
                             st.markdown("Você pode fazer upload das técnicas agora!")
                         else:
-                            st.error("❌ Falha ao criar (verifique console)")
+                            st.error("❌ Falha ao criar APA. Verifique o console para detalhes.")
                     
                     except Exception as e:
                         st.error(f"❌ Erro: {str(e)}")
