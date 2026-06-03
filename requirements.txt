@@ -39,3 +39,4 @@ langchain-experimental
 
 #Formulário
 pyairtable
+openpyxl>=3.10.0
