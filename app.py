@@ -192,9 +192,10 @@ else:
         df_quali, status_q = airtable_link.buscar_dados_apa()
         df_tec, status_t = airtable_link.buscar_todas_tecnicas()
 
-        if df_quali.empty or df_tec.empty:
-            st.error("Falha ao carregar os dados. Verifique a conexão com o Airtable.")
+        if df_quali.empty:
+            st.error("Falha ao carregar as APAs. Verifique a conexão com o Airtable.")
             st.stop()
+        # df_tec pode ser vazio legitimamente (tabela de técnicas ainda não tem registros)
 
         # Persiste em session_state para evitar buscar de novo a cada rerun
         st.session_state["df_quali"] = df_quali

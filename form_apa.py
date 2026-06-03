@@ -519,31 +519,33 @@ def render(df_quali, df_tec):
 
                             progress_bar = st.progress(0)
 
-                            for idx, row in df_excel.iterrows():
+                            for i, (idx, row) in enumerate(df_excel.iterrows()):
                                 try:
                                     atitude_valor = row[col_atitude]
-                                    
-                                    # Se está vazio, deixar vazio (Airtable interpreta como "Inaudível/Não Observado")
+
+                                    # Vazio = Inaudível/Não Observado (criar_tecnica remove o campo)
                                     if pd.isna(atitude_valor) or atitude_valor == "" or str(atitude_valor).strip() == "":
-                                        atitude_para_enviar = ""
+                                        atitude_para_enviar = None
                                     else:
                                         atitude_para_enviar = int(atitude_valor)
-                                    
+
                                     payload = {
                                         "TÉCNICAS": str(row[col_tecnicas]).strip(),
-                                        "ATITUDE DO CAUSADOR": atitude_para_enviar,
                                         "TRECHO DA TRANSCRIÇÃO": str(row[col_trecho]).strip(),
                                         "Vinculo_APA": id_apa_upload.strip().upper()
                                     }
+                                    if atitude_para_enviar is not None:
+                                        payload["ATITUDE DO CAUSADOR"] = atitude_para_enviar
 
                                     if airtable_link.criar_tecnica(payload):
                                         sucesso_count += 1
                                     else:
                                         erro_count += 1
-                                except:
+                                except Exception:
                                     erro_count += 1
 
-                                progress_bar.progress((idx + 1) / len(df_excel))
+                                # usa i (0-based) em vez de idx (índice original do DataFrame)
+                                progress_bar.progress((i + 1) / len(df_excel))
 
                             st.success(f"""
                             ✅ TÉCNICAS INSERIDAS!
@@ -572,18 +574,26 @@ def render(df_quali, df_tec):
         with col_btn:
             btn_buscar = st.button("🔍 Buscar", key="btn_buscar_vis_tab3")
         
+        # Persiste o ID buscado no session_state para que o formulário de edição
+        # permaneça visível após o submit (no rerun, btn_buscar volta a False).
         if btn_buscar and id_busca:
+            st.session_state['_edit_id_ativo'] = str(id_busca).strip().upper()
+
+        id_ativo = st.session_state.get('_edit_id_ativo', '')
+
+        if id_ativo:
             try:
-                id_limpo = str(id_busca).strip().upper()
+                id_limpo = id_ativo
                 if 'ID_Busca' not in df_quali.columns:
                     df_quali['ID_Busca'] = df_quali['ID'].apply(
                         lambda x: str(x).strip().upper() if pd.notna(x) else "N/D"
                     )
-                
+
                 registros = df_quali[df_quali['ID_Busca'].str.contains(id_limpo, case=False, na=False)]
-                
+
                 if registros.empty:
-                    st.error(f"❌ APA {id_busca} não encontrada")
+                    st.error(f"❌ APA {id_ativo} não encontrada")
+                    st.session_state.pop('_edit_id_ativo', None)
                 else:
                     apa = registros.iloc[0]
                     
