@@ -359,10 +359,10 @@ def render(df_quali, df_tec):
         
         # BOTÕES DE AÇÃO
         st.markdown("---")
-        col_save, col_preview, col_clear = st.columns(3)
+        col_save, col_clear = st.columns(2)
 
         with col_save:
-            if st.button("✅ CRIAR APA", use_container_width=True, type="secondary", key="btn_criar_aba1"):
+            if st.button("✅ CRIAR REGISTRO DE APA", use_container_width=True, type="secondary", key="btn_criar_aba1"):
                 
                 with st.spinner("💾 Criando novo registro..."):
                     try:
@@ -448,15 +448,6 @@ def render(df_quali, df_tec):
                         st.error(f"❌ Erro: {str(e)}")
                         import traceback
                         traceback.print_exc()
-
-        with col_preview:
-            if st.button("👁️ Pré-visualizar", use_container_width=True, key="btn_prev_aba1"):
-                st.json({
-                    "Data": str(data_oca),
-                    "Negociador": neg_principal,
-                    "Tipologia": tipologia,
-                    "Validador": validador_nome
-                })
 
         with col_clear:
             if st.button("❌ Limpar Tudo", use_container_width=True, key="btn_clear_aba1"):
