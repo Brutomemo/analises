@@ -183,7 +183,7 @@ def render(df_quali, df_tec):
     # ════════════════════════════════════════════════════════════
     
     tab1, tab2, tab3 = st.tabs([
-        "✔️ Criar Nova APA",
+        "✔️ Criar Novo Registro de APA",
         "✔️ Upload de Técnicas",
         "🔎 Visualizar & Editar"
     ])
