@@ -1704,40 +1704,60 @@ else:
                         st.markdown("---")
                         st.markdown("### ✔️ Leitura Operacional")
 
-                        df_com_score = df_resumo[df_resumo["Score (%)"].notna()]
-                    
-                        if not df_com_score.empty:
-                            score_maximo = df_com_score["Score (%)"].max()
-                            tecnicas_maximas = df_com_score[df_com_score["Score (%)"] == score_maximo]
-                        
+                        # Limiar mínimo de confiança (n de observações)
+                        N_MIN_CONFIANCA = 3
+
+                        df_com_score = df_resumo[df_resumo["Score (%)"].notna()].copy()
+
+                        # Coluna de observados (positiva+neutra+negativa) por técnica
+                        df_com_score["_observados"] = (
+                            df_com_score["🟢 Positiva"]
+                            + df_com_score["⚪ Neutra"]
+                            + df_com_score["🔴 Negativa"]
+                        )
+
+                        # Subconjunto com amostra estatisticamente confiável
+                        df_confiavel = df_com_score[df_com_score["_observados"] >= N_MIN_CONFIANCA]
+                        df_baixa_confianca = df_com_score[df_com_score["_observados"] < N_MIN_CONFIANCA]
+
+                        if not df_confiavel.empty:
+                            score_maximo = df_confiavel["Score (%)"].max()
+                            tecnicas_maximas = df_confiavel[df_confiavel["Score (%)"] == score_maximo]
+
                             if len(tecnicas_maximas) == 1:
                                 melhor = tecnicas_maximas.iloc[0]
                                 txt_melhor = (
-                                    f"✅ <strong>Técnicas mais efetivas:</strong> {melhor['Técnica']} "
+                                    f"✅ <strong>Técnica mais efetiva:</strong> {melhor['Técnica']} "
                                     f"— Score {melhor['Score (%)']:+.1f}% "
-                                    f"({int(melhor['🟢 Positiva'])} positivo / {int(melhor['Total'])} usos)"
+                                    f"({int(melhor['🟢 Positiva'])} positivo / {int(melhor['_observados'])} observados)"
                                 )
                             else:
                                 tecnicas_nomes = ", ".join(tecnicas_maximas['Técnica'].tolist())
                                 txt_melhor = (
                                     f"✅ <strong>Técnicas mais efetivas (empate):</strong> {tecnicas_nomes} "
-                                    f"— Score {score_maximo:+.1f}%"
+                                    f"— Score {score_maximo:+.1f}% (n≥{N_MIN_CONFIANCA})"
                                 )
-                        
-                            st.markdown(f"""
-                            <div style='background:rgba(16,185,129,0.08);padding:12px;border-radius:8px;border-left:3px solid #10b981;margin-bottom:10px;'>
-                            <p style='color:#ddd;font-size:0.9rem;margin:0;'>
-                            {txt_melhor}
-                            </p>
-                            </div>
-                            """, unsafe_allow_html=True)
+                        else:
+                            txt_melhor = (
+                                f"⚠️ Nenhuma técnica atingiu o mínimo de {N_MIN_CONFIANCA} observações "
+                                "para análise de efetividade confiável."
+                            )
+
+                        st.markdown(f"""
+                        <div style='background:rgba(16,185,129,0.08);padding:12px;border-radius:8px;border-left:3px solid #10b981;margin-bottom:10px;'>
+                        <p style='color:#ddd;font-size:0.9rem;margin:0;'>
+                        {txt_melhor}
+                        </p>
+                        </div>
+                        """, unsafe_allow_html=True)
 
                         if not df_resumo.empty:
-                            # Encontra qual técnica teve MAIS validações negativas
                             max_negativas = df_resumo["🔴 Negativa"].max()
                             tecnicas_minimas = df_resumo[df_resumo["🔴 Negativa"] == max_negativas]
-                        
-                            if len(tecnicas_minimas) == 1:
+
+                            if max_negativas == 0:
+                                txt_pior = "ℹ️ Nenhuma técnica registrou reação negativa nesta ocorrência."
+                            elif len(tecnicas_minimas) == 1:
                                 pior = tecnicas_minimas.iloc[0]
                                 txt_pior = (
                                     f"⚠️ <strong>Técnica menos efetiva:</strong> {pior['Técnica']} "
@@ -1751,7 +1771,7 @@ else:
                                     f"⚠️ <strong>Técnicas menos efetivas (empate):</strong> {tecnicas_nomes} "
                                     f"— {int(max_negativas)} validações negativas | Score médio {score_medio_piores:+.1f}%"
                                 )
-                        
+
                             st.markdown(f"""
                             <div style='background:rgba(239,68,68,0.08);padding:12px;border-radius:8px;border-left:3px solid #ef4444;margin-bottom:10px;'>
                             <p style='color:#ddd;font-size:0.9rem;margin:0;'>
@@ -1760,10 +1780,24 @@ else:
                             </div>
                             """, unsafe_allow_html=True)
 
+                            if not df_baixa_confianca.empty:
+                                tecnicas_baixa = ", ".join(df_baixa_confianca['Técnica'].tolist())
+                                st.markdown(f"""
+                                <div style='background:rgba(255,255,255,0.04);padding:10px;border-radius:8px;border-left:3px solid #6b7280;margin-bottom:10px;'>
+                                <p style='color:#999;font-size:0.8rem;margin:0;'>
+                                ℹ️ <strong>Baixa confiança estatística (n&lt;{N_MIN_CONFIANCA}):</strong> {tecnicas_baixa} —
+                                excluídas do ranking de "mais efetiva" por amostra insuficiente.
+                                </p>
+                                </div>
+                                """, unsafe_allow_html=True)
+
                         st.markdown("---")
                         st.markdown("### ✔️ Efetividade Geral do Repertório Técnico")
 
-                        media_geral = round(df_com_score["Score (%)"].mean(), 1) if not df_com_score.empty else 0
+                        # Mediana ponderada por volume — mais robusta que média simples
+                        # como referência de dispersão (NÃO é "baseline" para o score_geral,
+                        # que é uma métrica diferente: ponderada pelo total observado)
+                        mediana_scores = round(df_com_score["Score (%)"].median(), 1) if not df_com_score.empty else 0
 
                         st.markdown(f"""
                         <div style='background:rgba(255,215,0,0.06);padding:12px;border-radius:8px;border:1px solid rgba(255,215,0,0.15);margin-bottom:15px;'>
@@ -1771,9 +1805,9 @@ else:
                         <strong>ℹ️ Como é medido:</strong>
                         </p>
                         <p style='font-size:0.85rem;color:#ddd;margin:0;line-height:1.6;'>
-                        Efetividade Geral = Média dos scores de todas as técnicas<br>
-                        Score de cada técnica = (positivas - negativas) / observadas × 100%<br>
-                        <strong>Baseline desta análise:</strong> {media_geral:+.1f}%
+                        <strong>Score Geral</strong> = (Σ positivas − Σ negativas) / Σ observadas × 100% — métrica ponderada pelo volume de uso.<br>
+                        <strong>Score por técnica</strong> = (positivas − negativas) / observadas × 100%.<br>
+                        <strong>Mediana das técnicas:</strong> {mediana_scores:+.1f}% (referência de dispersão; técnicas com n&lt;{N_MIN_CONFIANCA} têm baixa confiança estatística).
                         </p>
                         </div>
                         """, unsafe_allow_html=True)
@@ -1782,28 +1816,27 @@ else:
                             cor = "🟢"
                             status = "ÓTIMA"
                             explicacao = (
-                                f"O repertório técnico teve {score_geral:+.1f}% de efetividade geral "
-                                f"(acima do baseline de {media_geral:+.1f}%). "
-                                "Isso significa que positivas superaram negativas de forma significativa. "
-                                "Indicativo de estratégia técnica bem-sucedida nesta ocorrência."
+                                f"O repertório técnico teve {score_geral:+.1f}% de efetividade geral, "
+                                f"considerando {observados_total} reações observadas de {total_usos} usos totais. "
+                                "Positivas superaram negativas de forma significativa nesta ocorrência."
                             )
                         elif score_geral >= 0:
                             cor = "🟡"
                             status = "MODERADA"
                             explicacao = (
-                                f"O repertório técnico teve {score_geral:+.1f}% de efetividade geral "
-                                f"(próximo ao baseline de {media_geral:+.1f}%). "
-                                "Positivas e negativas estão equilibradas. "
-                                "Há oportunidade de aprimoramento — algumas técnicas funcionaram melhor que outras."
+                                f"O repertório técnico teve {score_geral:+.1f}% de efetividade geral, "
+                                f"considerando {observados_total} reações observadas de {total_usos} usos totais. "
+                                "Positivas e negativas estão relativamente equilibradas — "
+                                "há oportunidade de aprimoramento."
                             )
                         else:
                             cor = "🔴"
                             status = "FRACA"
                             explicacao = (
-                                f"O repertório técnico teve {score_geral:+.1f}% de efetividade geral "
-                                f"(abaixo do baseline de {media_geral:+.1f}%). "
-                                "Negativas superaram positivas. "
-                                "Indicativo de mismatch entre técnicas empregadas e dinâmica do causador."
+                                f"O repertório técnico teve {score_geral:+.1f}% de efetividade geral, "
+                                f"considerando {observados_total} reações observadas de {total_usos} usos totais. "
+                                "Negativas superaram positivas — possível mismatch entre técnicas "
+                                "empregadas e dinâmica do causador."
                             )
 
                         st.markdown(f"""
@@ -1817,13 +1850,21 @@ else:
 
                         st.markdown("### ✔️ Contexto Comparativo")
 
+                        n_positivas_tec = (df_com_score["Score (%)"] > 0).sum()
+                        n_negativas_tec = (df_com_score["Score (%)"] < 0).sum()
+                        n_neutras_tec   = (df_com_score["Score (%)"] == 0).sum()
+                        n_total_tec     = len(df_com_score)
+                        n_baixa_conf    = len(df_baixa_confianca)
+                        variacao        = df_com_score["Score (%)"].max() - df_com_score["Score (%)"].min()
+
                         st.markdown(f"""
                         <p style='font-size:0.9rem;color:#aaa;line-height:1.6;'>
-                        <strong>Técnicas com score positivo:</strong> {(df_com_score["Score (%)"] > 0).sum()} de {len(df_com_score)}<br>
-                        <strong>Técnicas com score negativo:</strong> {(df_com_score["Score (%)"] < 0).sum()} de {len(df_com_score)}<br>
-                        <strong>Técnicas neutras (0%):</strong> {(df_com_score["Score (%)"] == 0).sum()} de {len(df_com_score)}<br>
-                        <strong>Variação entre técnicas:</strong> {df_com_score["Score (%)"].max() - df_com_score["Score (%)"].min():.1f} pontos percentuais<br>
-                        <strong>Confiabilidade (volume de usos):</strong> {int(df_resumo["Total"].sum())} técnicas empregadas no total
+                        <strong>Técnicas com score positivo:</strong> {n_positivas_tec} de {n_total_tec}<br>
+                        <strong>Técnicas com score negativo:</strong> {n_negativas_tec} de {n_total_tec}<br>
+                        <strong>Técnicas neutras (0%):</strong> {n_neutras_tec} de {n_total_tec}<br>
+                        <strong>Técnicas com baixa confiança (n&lt;{N_MIN_CONFIANCA}):</strong> {n_baixa_conf} de {n_total_tec}<br>
+                        <strong>Variação entre técnicas:</strong> {variacao:.1f} pontos percentuais<br>
+                        <strong>Total de reações observadas:</strong> {observados_total} (de {total_usos} usos registrados)
                         </p>
                         """, unsafe_allow_html=True)
 
