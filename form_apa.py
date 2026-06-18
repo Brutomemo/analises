@@ -50,6 +50,7 @@ RESOLUCOES = [
 NEGOCIADORES = [
     "Cap PM Pavão",
     "Ten PM Cupka",
+    "Ten PM Carolina",
     "Sub Ten PM Silva",
     "Sgt PM Vanessa",
     "Sgt PM Penna",
