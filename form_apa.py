@@ -432,17 +432,15 @@ def render(df_quali, df_tec):
                         
                         # Remover campos vazios
                         payload = {k: v for k, v in payload.items() if v != ""}
-                        
-                        print(f"📤 Enviando para Airtable: {payload}")
-                        resultado = airtable_link.criar_nova_apa(payload)
-                        print(f"📥 Resultado: {resultado}")
-                        
-                        if resultado:
-                            st.session_state.id_apa_criado = resultado if isinstance(resultado, str) else payload.get("ID", "APA criada")
+
+                        id_apa, erro = airtable_link.criar_nova_apa(payload)
+
+                        if id_apa:
+                            st.session_state.id_apa_criado = id_apa
                             st.success(f"✅ APA CRIADA COM SUCESSO! ID: {st.session_state.id_apa_criado}")
                             st.balloons()
                         else:
-                            st.error("❌ Falha ao criar APA. Verifique o console para detalhes.")
+                            st.error(f"❌ Falha ao criar APA: {erro or 'Erro desconhecido.'}")
                     
                     except Exception as e:
                         st.error(f"❌ Erro: {str(e)}")
