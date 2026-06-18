@@ -72,8 +72,7 @@ NEGOCIADORES = [
 
 SAUDE_MENTAL = [
     "Sub Ten PM Silva",
-    "Cb PM Edson",
-    "Sd PM Krapp"
+    "Cb PM Edson"    
 ]
 
 UNIFORMES = [
