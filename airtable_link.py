@@ -3,9 +3,20 @@
 # ============================================================
 
 import os
+import re
 import pandas as pd
 from pyairtable import Api
 from datetime import datetime
+
+
+def _formatar_erro_airtable(exc):
+    """Extrai mensagem legível de exceções da API Airtable/pyairtable."""
+    for arg in getattr(exc, "args", ()):
+        if isinstance(arg, str) and "message" in arg:
+            match = re.search(r"""['"]message['"]\s*:\s*['"]([^'"]+)['"]""", arg)
+            if match:
+                return match.group(1)
+    return str(exc)
 
 
 def get_credentials():
@@ -195,45 +206,37 @@ def criar_nova_apa(payload):
     Cria um novo registro de APA no Airtable.
 
     O campo ID é autonumeração — não deve ser enviado no payload.
-    Retorna: str ID formatado ("APA 007") se sucesso, None se erro.
+    Retorna: dict com chaves "id" (str|None) e "erro" (str|None).
     """
-    print("\n" + "="*60)
-    print("🔍 INICIANDO criar_nova_apa()")
-    print("="*60)
+    print("[criar_nova_apa] Iniciando criacao de registro")
 
     try:
         api_key, base_id = get_credentials()
 
-        print(f"1️⃣ API_KEY carregada? {bool(api_key)}")
-        print(f"2️⃣ BASE_ID carregada? {bool(base_id)}")
+        print(f"[criar_nova_apa] API_KEY configurada: {bool(api_key)}")
+        print(f"[criar_nova_apa] BASE_ID configurada: {bool(base_id)}")
 
         if not api_key or not base_id:
-            print("❌ ERRO: Credenciais não configuradas!")
-            return None
+            erro = "Credenciais do Airtable nao configuradas (AIRTABLE_TOKEN / AIRTABLE_BASE_ID)."
+            print(f"[criar_nova_apa] ERRO: {erro}")
+            return {"id": None, "erro": erro}
 
-        print("✅ Credenciais OK")
-
-        print("\n3️⃣ Conectando à API Airtable...")
         api = Api(api_key)
         base = api.base(base_id)
         table = base.table("PARA ANALISE QUALITATIVA DA APA")
-        print("✅ Tabela acessada")
 
         if "ID" in payload:
             del payload["ID"]
 
-        print("\n4️⃣ Criando registro no Airtable...")
-        print(f"   Campos: {list(payload.keys())}")
+        print(f"[criar_nova_apa] Enviando {len(payload)} campos para o Airtable")
 
         novo_record = table.create(payload)
-
-        print("✅ Registro criado no Airtable")
 
         id_numero = novo_record.get('fields', {}).get('ID')
 
         if id_numero:
             id_formatado = f"APA {int(id_numero):03d}"
-            print(f"✅ ID gerado: {id_formatado}")
+            print(f"[criar_nova_apa] Registro criado: {id_formatado}")
         else:
             id_formatado = None
             todos = table.all()
@@ -249,18 +252,21 @@ def criar_nova_apa(payload):
 
             if max_id > 0:
                 id_formatado = f"APA {max_id:03d}"
-                print(f"✅ ID gerado (buscado): {id_formatado}")
+                print(f"[criar_nova_apa] Registro criado (ID obtido por busca): {id_formatado}")
 
-        print("="*60 + "\n")
-        return id_formatado
+        if not id_formatado:
+            erro = "Registro criado, mas o Airtable nao retornou o campo ID."
+            print(f"[criar_nova_apa] AVISO: {erro}")
+            return {"id": None, "erro": erro}
+
+        return {"id": id_formatado, "erro": None}
 
     except Exception as e:
-        print(f"\n❌ ERRO: {type(e).__name__}")
-        print(f"   Mensagem: {str(e)}")
-        print("="*60 + "\n")
+        erro = _formatar_erro_airtable(e)
+        print(f"[criar_nova_apa] ERRO {type(e).__name__}: {erro}")
         import traceback
         traceback.print_exc()
-        return None
+        return {"id": None, "erro": erro}
 
 
 def criar_tecnica(payload, vinculo_record_id=None):
