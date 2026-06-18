@@ -104,6 +104,37 @@ PERCEPCOES_RECEPTIVIDADE = [
 PERCEPCOES = PERCEPCOES_AGRESSIVIDADE
 
 
+def _formatar_id_apa(id_val):
+    """Normaliza o campo ID do Airtable para formato 'APA 001'."""
+    if id_val is None or (isinstance(id_val, float) and pd.isna(id_val)) or id_val == "":
+        return "N/D"
+    id_str = str(id_val).strip().upper()
+    try:
+        num = int(id_str.replace("APA", "").strip())
+        return f"APA {num:03d}"
+    except (ValueError, TypeError):
+        return id_str
+
+
+def _normalizar_data(val):
+    """Converte valor do Airtable/pandas para date (ou None)."""
+    if val is None or (isinstance(val, float) and pd.isna(val)) or val == "":
+        return None
+    try:
+        return pd.to_datetime(val).date()
+    except (ValueError, TypeError):
+        return None
+
+
+def _preparar_colunas_busca(df):
+    """Garante colunas auxiliares para busca por ID e por data."""
+    if 'ID_Busca' not in df.columns:
+        df['ID_Busca'] = df['ID'].apply(_formatar_id_apa)
+    if 'Data da ocorrência' in df.columns and 'Data_Busca' not in df.columns:
+        df['Data_Busca'] = df['Data da ocorrência'].apply(_normalizar_data)
+    return df
+
+
 def validar_excel_tecnicas(df):
     """Valida Excel de técnicas - PERMITE ATITUDE vazia (será "Inaudível/Não Observado")"""
     df.columns = df.columns.str.strip()
@@ -584,282 +615,326 @@ def render(df_quali, df_tec):
     
     with tab3:
         st.markdown("### ✏️ Visualizar & Editar APA")
-        
-        col_id, col_btn = st.columns([3, 1])
-        with col_id:
-            id_busca = st.text_input(
-                "ID da APA",
-                placeholder="Ex: APA 001",
-                key="vis_id_busca_tab3"
+
+        df_quali = _preparar_colunas_busca(df_quali)
+
+        col_data, col_btn = st.columns([3, 1])
+        with col_data:
+            data_default = None
+            if st.session_state.get('_edit_data_ativo'):
+                try:
+                    data_default = pd.to_datetime(st.session_state['_edit_data_ativo']).date()
+                except (ValueError, TypeError):
+                    data_default = None
+            data_busca = st.date_input(
+                "Data da Ocorrência *",
+                value=data_default,
+                key="vis_data_busca_tab3",
+                format="DD/MM/YYYY",
             )
         with col_btn:
-            btn_buscar = st.button("🔍 Buscar", key="btn_buscar_vis_tab3")
-        
-        # Persiste o ID buscado no session_state para que o formulário de edição
-        # permaneça visível após o submit (no rerun, btn_buscar volta a False).
-        if btn_buscar and id_busca:
-            st.session_state['_edit_id_ativo'] = str(id_busca).strip().upper()
+            st.markdown("#### ")
+            btn_buscar = st.button("🔍 Buscar", key="btn_buscar_vis_tab3", use_container_width=True)
 
+        # Persiste a data buscada para manter o formulário visível após submit do form de edição.
+        if btn_buscar:
+            if data_busca:
+                st.session_state['_edit_data_ativo'] = data_busca.isoformat()
+                st.session_state.pop('_edit_id_ativo', None)
+            else:
+                st.warning("⚠️ Selecione uma data da ocorrência para buscar.")
+
+        data_ativo = st.session_state.get('_edit_data_ativo')
         id_ativo = st.session_state.get('_edit_id_ativo', '')
 
-        if id_ativo:
+        if data_ativo:
             try:
-                id_limpo = id_ativo
-                if 'ID_Busca' not in df_quali.columns:
-                    df_quali['ID_Busca'] = df_quali['ID'].apply(
-                        lambda x: str(x).strip().upper() if pd.notna(x) else "N/D"
-                    )
-
-                registros = df_quali[df_quali['ID_Busca'].str.contains(id_limpo, case=False, na=False)]
+                data_filtro = pd.to_datetime(data_ativo).date()
+                registros = df_quali[df_quali['Data_Busca'] == data_filtro].copy()
 
                 if registros.empty:
-                    st.error(f"❌ APA {id_ativo} não encontrada")
+                    st.error(f"❌ Nenhuma APA encontrada em {data_filtro.strftime('%d/%m/%Y')}")
+                    st.session_state.pop('_edit_data_ativo', None)
                     st.session_state.pop('_edit_id_ativo', None)
                 else:
-                    apa = registros.iloc[0]
+                    opcoes_apa = []
+                    for _, row in registros.iterrows():
+                        id_fmt = _formatar_id_apa(row.get('ID'))
+                        neg = row.get('Negociador Principal', 'N/D')
+                        tip = row.get('Tipologia', 'N/D')
+                        opcoes_apa.append({
+                            'label': f"{id_fmt} | {neg} | {tip}",
+                            'id': id_fmt,
+                        })
+
+                    if len(opcoes_apa) > 1:
+                        st.info(
+                            f"📅 {len(opcoes_apa)} APAs encontradas em "
+                            f"{data_filtro.strftime('%d/%m/%Y')}. Selecione qual deseja editar."
+                        )
+                        indice_sel = st.selectbox(
+                            "APA na data selecionada",
+                            range(len(opcoes_apa)),
+                            format_func=lambda i: opcoes_apa[i]['label'],
+                            key="vis_apa_sel_tab3",
+                        )
+                        id_ativo = opcoes_apa[indice_sel]['id']
+                        st.session_state['_edit_id_ativo'] = id_ativo
+                    else:
+                        id_ativo = opcoes_apa[0]['id']
+                        st.session_state['_edit_id_ativo'] = id_ativo
+
+                    id_limpo = id_ativo
+                    matches = df_quali[df_quali['ID_Busca'] == id_limpo]
+
+                    if matches.empty:
+                        st.error(f"❌ APA {id_ativo} não encontrada")
+                        st.session_state.pop('_edit_id_ativo', None)
+                    else:
+                        apa = matches.iloc[0]
+
+                        st.success(f"✅ APA encontrada! ({id_limpo})")
                     
-                    st.success("✅ APA encontrada!")
-                    
-                    # Mostrar resumo em cards
-                    col1, col2, col3, col4 = st.columns(4)
-                    with col1:
-                        st.metric("Data", str(apa.get('Data da ocorrência', 'N/D'))[:12])
-                    with col2:
-                        st.metric("Negociador", str(apa.get('Negociador Principal', 'N/D'))[:15])
-                    with col3:
-                        st.metric("Tipologia", str(apa.get('Tipologia', 'N/D'))[:15])
-                    with col4:
-                        st.metric("Resolução", str(apa.get('Resolução', 'N/D'))[:12])
-                    
-                    st.markdown("---")
-                    
-                    # FORMULÁRIO DE EDIÇÃO
-                    st.markdown("### ✏️ Editar Dados")
-                    
-                    with st.form(f"form_edit_{id_limpo}", clear_on_submit=False):
-                        # Metadados
-                        st.markdown("#### Metadados")
-                        col1, col2 = st.columns(2)
+                        # Mostrar resumo em cards
+                        col1, col2, col3, col4 = st.columns(4)
                         with col1:
-                            data_edit = st.date_input("Data da Ocorrência", value=pd.to_datetime(apa.get('Data da ocorrência')) if pd.notna(apa.get('Data da ocorrência')) else None, key=f"edit_data_{id_limpo}")
+                            st.metric("Data", str(apa.get('Data da ocorrência', 'N/D'))[:12])
                         with col2:
-                            modalidade_edit = st.selectbox("Modalidade", [""] + MODALIDADES, index=MODALIDADES.index(apa.get('Modalidade do incidente')) + 1 if apa.get('Modalidade do incidente') in MODALIDADES else 0, key=f"edit_mod_{id_limpo}")
-                        
-                        col3, col4 = st.columns(2)
+                            st.metric("Negociador", str(apa.get('Negociador Principal', 'N/D'))[:15])
                         with col3:
-                            tipologia_edit = st.selectbox("Tipologia", [""] + TIPOLOGIAS, index=TIPOLOGIAS.index(apa.get('Tipologia')) + 1 if apa.get('Tipologia') in TIPOLOGIAS else 0, key=f"edit_tip_{id_limpo}")
+                            st.metric("Tipologia", str(apa.get('Tipologia', 'N/D'))[:15])
                         with col4:
-                            resolucao_edit = st.selectbox("Resolução", [""] + RESOLUCOES, index=RESOLUCOES.index(apa.get('Resolução')) + 1 if apa.get('Resolução') in RESOLUCOES else 0, key=f"edit_res_{id_limpo}")
+                            st.metric("Resolução", str(apa.get('Resolução', 'N/D'))[:12])
+                    
+                        st.markdown("---")
+                    
+                        # FORMULÁRIO DE EDIÇÃO
+                        st.markdown("### ✏️ Editar Dados")
+                    
+                        with st.form(f"form_edit_{id_limpo}", clear_on_submit=False):
+                            # Metadados
+                            st.markdown("#### Metadados")
+                            col1, col2 = st.columns(2)
+                            with col1:
+                                data_edit = st.date_input("Data da Ocorrência", value=pd.to_datetime(apa.get('Data da ocorrência')) if pd.notna(apa.get('Data da ocorrência')) else None, key=f"edit_data_{id_limpo}")
+                            with col2:
+                                modalidade_edit = st.selectbox("Modalidade", [""] + MODALIDADES, index=MODALIDADES.index(apa.get('Modalidade do incidente')) + 1 if apa.get('Modalidade do incidente') in MODALIDADES else 0, key=f"edit_mod_{id_limpo}")
                         
-                        motivacao_edit = st.text_area("Motivação", value=apa.get('Motivação', ''), key=f"edit_mot_{id_limpo}", height=80)
+                            col3, col4 = st.columns(2)
+                            with col3:
+                                tipologia_edit = st.selectbox("Tipologia", [""] + TIPOLOGIAS, index=TIPOLOGIAS.index(apa.get('Tipologia')) + 1 if apa.get('Tipologia') in TIPOLOGIAS else 0, key=f"edit_tip_{id_limpo}")
+                            with col4:
+                                resolucao_edit = st.selectbox("Resolução", [""] + RESOLUCOES, index=RESOLUCOES.index(apa.get('Resolução')) + 1 if apa.get('Resolução') in RESOLUCOES else 0, key=f"edit_res_{id_limpo}")
                         
-                        # Equipe
-                        st.markdown("#### Equipe Principal")
-                        col5, col6 = st.columns(2)
-                        with col5:
-                            neg_principal_edit = st.selectbox("Negociador Principal", [""] + NEGOCIADORES, index=NEGOCIADORES.index(apa.get('Negociador Principal')) + 1 if apa.get('Negociador Principal') in NEGOCIADORES else 0, key=f"edit_np_{id_limpo}")
-                        with col6:
-                            neg_secundario_edit = st.selectbox("Negociador Secundário", [""] + NEGOCIADORES, index=NEGOCIADORES.index(apa.get('Negociador Secundário')) + 1 if apa.get('Negociador Secundário') in NEGOCIADORES else 0, key=f"edit_ns_{id_limpo}")
+                            motivacao_edit = st.text_area("Motivação", value=apa.get('Motivação', ''), key=f"edit_mot_{id_limpo}", height=80)
                         
-                        col7, col8 = st.columns(2)
-                        with col7:
-                            neg_anotador_edit = st.selectbox("Negociador Anotador", [""] + NEGOCIADORES, index=NEGOCIADORES.index(apa.get('Negociador Anotador')) + 1 if apa.get('Negociador Anotador') in NEGOCIADORES else 0, key=f"edit_na_{id_limpo}")
-                        with col8:
-                            neg_lider_edit = st.selectbox("Negociador Líder", [""] + NEGOCIADORES, index=NEGOCIADORES.index(apa.get('Negociador Líder')) + 1 if apa.get('Negociador Líder') in NEGOCIADORES else 0, key=f"edit_nl_{id_limpo}")
+                            # Equipe
+                            st.markdown("#### Equipe Principal")
+                            col5, col6 = st.columns(2)
+                            with col5:
+                                neg_principal_edit = st.selectbox("Negociador Principal", [""] + NEGOCIADORES, index=NEGOCIADORES.index(apa.get('Negociador Principal')) + 1 if apa.get('Negociador Principal') in NEGOCIADORES else 0, key=f"edit_np_{id_limpo}")
+                            with col6:
+                                neg_secundario_edit = st.selectbox("Negociador Secundário", [""] + NEGOCIADORES, index=NEGOCIADORES.index(apa.get('Negociador Secundário')) + 1 if apa.get('Negociador Secundário') in NEGOCIADORES else 0, key=f"edit_ns_{id_limpo}")
                         
-                        # Transcrições
-                        st.markdown("#### Transcrições")
-                        trans_causador_edit = st.text_area("Transcrição do Causador", value=apa.get('TRANSCRIÇÃO DO CAUSADOR', ''), key=f"edit_tc_{id_limpo}", height=100)
-                        trans_principal_edit = st.text_area("Transcrição do Negociador Principal", value=apa.get('TRANSCRIÇÃO DO NEGOCIADOR PRINCIPAL', ''), key=f"edit_tp_{id_limpo}", height=100)
-                        trans_secundario_edit = st.text_area("Transcrição do Negociador Secundário", value=apa.get('TRANSCRIÇÃO DO NEGOCIADOR SECUNDÁRIO', ''), key=f"edit_ts_{id_limpo}", height=100)
+                            col7, col8 = st.columns(2)
+                            with col7:
+                                neg_anotador_edit = st.selectbox("Negociador Anotador", [""] + NEGOCIADORES, index=NEGOCIADORES.index(apa.get('Negociador Anotador')) + 1 if apa.get('Negociador Anotador') in NEGOCIADORES else 0, key=f"edit_na_{id_limpo}")
+                            with col8:
+                                neg_lider_edit = st.selectbox("Negociador Líder", [""] + NEGOCIADORES, index=NEGOCIADORES.index(apa.get('Negociador Líder')) + 1 if apa.get('Negociador Líder') in NEGOCIADORES else 0, key=f"edit_nl_{id_limpo}")
                         
-                        # Info Adicionais
-                        st.markdown("#### ℹ️ Informações Adicionais")
-                        col9, col10 = st.columns(2)
-                        with col9:
-                            tempo_real_edit = st.text_input("Tempo de Negociação Real (HH:MM)", value=apa.get('Tempo de Negociação Real', ''), key=f"edit_tr_{id_limpo}")
-                        with col10:
-                            tempo_tatica_edit = st.text_input("Tempo de Negociação Tática (HH:MM)", value=apa.get('Tempo de Negociação Tática', ''), key=f"edit_tt_{id_limpo}")
+                            # Transcrições
+                            st.markdown("#### Transcrições")
+                            trans_causador_edit = st.text_area("Transcrição do Causador", value=apa.get('TRANSCRIÇÃO DO CAUSADOR', ''), key=f"edit_tc_{id_limpo}", height=100)
+                            trans_principal_edit = st.text_area("Transcrição do Negociador Principal", value=apa.get('TRANSCRIÇÃO DO NEGOCIADOR PRINCIPAL', ''), key=f"edit_tp_{id_limpo}", height=100)
+                            trans_secundario_edit = st.text_area("Transcrição do Negociador Secundário", value=apa.get('TRANSCRIÇÃO DO NEGOCIADOR SECUNDÁRIO', ''), key=f"edit_ts_{id_limpo}", height=100)
                         
-                        col11, col12 = st.columns(2)
-                        with col11:
-                            uniforme_edit = st.selectbox("Uniforme Usado", [""] + UNIFORMES, index=UNIFORMES.index(apa.get('Uniforme Usado')) + 1 if apa.get('Uniforme Usado') in UNIFORMES else 0, key=f"edit_unif_{id_limpo}")
-                        with col12:
-                            sexo_edit = st.selectbox("Sexo do Causador", [""] + SEXOS, index=SEXOS.index(apa.get('Sexo do Causador')) + 1 if apa.get('Sexo do Causador') in SEXOS else 0, key=f"edit_sex_{id_limpo}")
+                            # Info Adicionais
+                            st.markdown("#### ℹ️ Informações Adicionais")
+                            col9, col10 = st.columns(2)
+                            with col9:
+                                tempo_real_edit = st.text_input("Tempo de Negociação Real (HH:MM)", value=apa.get('Tempo de Negociação Real', ''), key=f"edit_tr_{id_limpo}")
+                            with col10:
+                                tempo_tatica_edit = st.text_input("Tempo de Negociação Tática (HH:MM)", value=apa.get('Tempo de Negociação Tática', ''), key=f"edit_tt_{id_limpo}")
                         
-                        # Funções (em expander para não ficar gigante)
-                        with st.expander("👔 FUNÇÕES - Clique para Expandir", expanded=False):
-                            st.markdown("#### NEGOCIADOR PRINCIPAL")
-                            col_f1a, col_f1b = st.columns(2)
-                            with col_f1a:
-                                func_np_edit = st.text_area("Descrição", value=apa.get('FUNÇÕES: NEGOCIADOR PRINCIPAL', ''), key=f"edit_func_np_{id_limpo}", height=80)
-                                func_np_problema_edit = st.text_area("Problema Identificado", value=apa.get('FUNÇÕES: NEGOCIADOR PRINCIPAL - PROBLEMA IDENTIFICADO', ''), key=f"edit_func_np_prob_{id_limpo}", height=80)
-                            with col_f1b:
-                                func_np_acoes_edit = st.text_area("Ações Corretivas", value=apa.get('FUNÇÕES: NEGOCIADOR PRINCIPAL - AÇÕES CORRETIVAS ADOTADAS', ''), key=f"edit_func_np_acao_{id_limpo}", height=80)
-                                func_np_praticas_edit = st.text_area("Práticas Promissoras", value=apa.get('FUNÇÕES: NEGOCIADOR PRINCIPAL - PRÁTICAS PROMISSORAS', ''), key=f"edit_func_np_prat_{id_limpo}", height=80)
+                            col11, col12 = st.columns(2)
+                            with col11:
+                                uniforme_edit = st.selectbox("Uniforme Usado", [""] + UNIFORMES, index=UNIFORMES.index(apa.get('Uniforme Usado')) + 1 if apa.get('Uniforme Usado') in UNIFORMES else 0, key=f"edit_unif_{id_limpo}")
+                            with col12:
+                                sexo_edit = st.selectbox("Sexo do Causador", [""] + SEXOS, index=SEXOS.index(apa.get('Sexo do Causador')) + 1 if apa.get('Sexo do Causador') in SEXOS else 0, key=f"edit_sex_{id_limpo}")
+                        
+                            # Funções (em expander para não ficar gigante)
+                            with st.expander("👔 FUNÇÕES - Clique para Expandir", expanded=False):
+                                st.markdown("#### NEGOCIADOR PRINCIPAL")
+                                col_f1a, col_f1b = st.columns(2)
+                                with col_f1a:
+                                    func_np_edit = st.text_area("Descrição", value=apa.get('FUNÇÕES: NEGOCIADOR PRINCIPAL', ''), key=f"edit_func_np_{id_limpo}", height=80)
+                                    func_np_problema_edit = st.text_area("Problema Identificado", value=apa.get('FUNÇÕES: NEGOCIADOR PRINCIPAL - PROBLEMA IDENTIFICADO', ''), key=f"edit_func_np_prob_{id_limpo}", height=80)
+                                with col_f1b:
+                                    func_np_acoes_edit = st.text_area("Ações Corretivas", value=apa.get('FUNÇÕES: NEGOCIADOR PRINCIPAL - AÇÕES CORRETIVAS ADOTADAS', ''), key=f"edit_func_np_acao_{id_limpo}", height=80)
+                                    func_np_praticas_edit = st.text_area("Práticas Promissoras", value=apa.get('FUNÇÕES: NEGOCIADOR PRINCIPAL - PRÁTICAS PROMISSORAS', ''), key=f"edit_func_np_prat_{id_limpo}", height=80)
                             
-                            st.markdown("#### NEGOCIADOR SECUNDÁRIO")
-                            col_f2a, col_f2b = st.columns(2)
-                            with col_f2a:
-                                func_ns_edit = st.text_area("Descrição", value=apa.get('FUNÇÕES: NEGOCIADOR SECUNDÁRIO', ''), key=f"edit_func_ns_{id_limpo}", height=80)
-                                func_ns_problema_edit = st.text_area("Problema Identificado", value=apa.get('FUNÇÕES: NEGOCIADOR SECUNDÁRIO - PROBLEMA IDENTIFICADO', ''), key=f"edit_func_ns_prob_{id_limpo}", height=80)
-                            with col_f2b:
-                                func_ns_acoes_edit = st.text_area("Ações Corretivas", value=apa.get('FUNÇÕES: NEGOCIADOR SECUNDÁRIO - AÇÕES CORRETIVAS ADOTADAS', ''), key=f"edit_func_ns_acao_{id_limpo}", height=80)
-                                func_ns_praticas_edit = st.text_area("Práticas Promissoras", value=apa.get('FUNÇÕES: NEGOCIADOR SECUNDÁRIO - PRÁTICAS PROMISSORAS', ''), key=f"edit_func_ns_prat_{id_limpo}", height=80)
+                                st.markdown("#### NEGOCIADOR SECUNDÁRIO")
+                                col_f2a, col_f2b = st.columns(2)
+                                with col_f2a:
+                                    func_ns_edit = st.text_area("Descrição", value=apa.get('FUNÇÕES: NEGOCIADOR SECUNDÁRIO', ''), key=f"edit_func_ns_{id_limpo}", height=80)
+                                    func_ns_problema_edit = st.text_area("Problema Identificado", value=apa.get('FUNÇÕES: NEGOCIADOR SECUNDÁRIO - PROBLEMA IDENTIFICADO', ''), key=f"edit_func_ns_prob_{id_limpo}", height=80)
+                                with col_f2b:
+                                    func_ns_acoes_edit = st.text_area("Ações Corretivas", value=apa.get('FUNÇÕES: NEGOCIADOR SECUNDÁRIO - AÇÕES CORRETIVAS ADOTADAS', ''), key=f"edit_func_ns_acao_{id_limpo}", height=80)
+                                    func_ns_praticas_edit = st.text_area("Práticas Promissoras", value=apa.get('FUNÇÕES: NEGOCIADOR SECUNDÁRIO - PRÁTICAS PROMISSORAS', ''), key=f"edit_func_ns_prat_{id_limpo}", height=80)
                             
-                            st.markdown("#### NEGOCIADOR ANOTADOR")
-                            col_f3a, col_f3b = st.columns(2)
-                            with col_f3a:
-                                func_na_edit = st.text_area("Descrição", value=apa.get('FUNÇÕES: NEGOCIADOR ANOTADOR', ''), key=f"edit_func_na_{id_limpo}", height=80)
-                                func_na_problema_edit = st.text_area("Problema Identificado", value=apa.get('FUNÇÕES: NEGOCIADOR ANOTADOR - PROBLEMA IDENTIFICADO', ''), key=f"edit_func_na_prob_{id_limpo}", height=80)
-                            with col_f3b:
-                                func_na_acoes_edit = st.text_area("Ações Corretivas", value=apa.get('FUNÇÕES: NEGOCIADOR ANOTADOR - AÇÕES CORRETIVAS ADOTADAS', ''), key=f"edit_func_na_acao_{id_limpo}", height=80)
-                                func_na_praticas_edit = st.text_area("Práticas Promissoras", value=apa.get('FUNÇÕES: NEGOCIADOR ANOTADOR - PRÁTICAS PROMISSORAS', ''), key=f"edit_func_na_prat_{id_limpo}", height=80)
+                                st.markdown("#### NEGOCIADOR ANOTADOR")
+                                col_f3a, col_f3b = st.columns(2)
+                                with col_f3a:
+                                    func_na_edit = st.text_area("Descrição", value=apa.get('FUNÇÕES: NEGOCIADOR ANOTADOR', ''), key=f"edit_func_na_{id_limpo}", height=80)
+                                    func_na_problema_edit = st.text_area("Problema Identificado", value=apa.get('FUNÇÕES: NEGOCIADOR ANOTADOR - PROBLEMA IDENTIFICADO', ''), key=f"edit_func_na_prob_{id_limpo}", height=80)
+                                with col_f3b:
+                                    func_na_acoes_edit = st.text_area("Ações Corretivas", value=apa.get('FUNÇÕES: NEGOCIADOR ANOTADOR - AÇÕES CORRETIVAS ADOTADAS', ''), key=f"edit_func_na_acao_{id_limpo}", height=80)
+                                    func_na_praticas_edit = st.text_area("Práticas Promissoras", value=apa.get('FUNÇÕES: NEGOCIADOR ANOTADOR - PRÁTICAS PROMISSORAS', ''), key=f"edit_func_na_prat_{id_limpo}", height=80)
                             
-                            st.markdown("#### NEGOCIADOR LÍDER")
-                            col_f4a, col_f4b = st.columns(2)
-                            with col_f4a:
-                                func_nl_edit = st.text_area("Descrição", value=apa.get('FUNÇÕES: NEGOCIADOR LÍDER', ''), key=f"edit_func_nl_{id_limpo}", height=80)
-                                func_nl_problema_edit = st.text_area("Problema Identificado", value=apa.get('FUNÇÕES: NEGOCIADOR LÍDER - PROBLEMA IDENTIFICADO', ''), key=f"edit_func_nl_prob_{id_limpo}", height=80)
-                            with col_f4b:
-                                func_nl_acoes_edit = st.text_area("Ações Corretivas", value=apa.get('FUNÇÕES: NEGOCIADOR LÍDER - AÇÕES CORRETIVAS ADOTADAS', ''), key=f"edit_func_nl_acao_{id_limpo}", height=80)
-                                func_nl_praticas_edit = st.text_area("Práticas Promissoras", value=apa.get('FUNÇÕES: NEGOCIADOR LÍDER - PRÁTICAS PROMISSORAS', ''), key=f"edit_func_nl_prat_{id_limpo}", height=80)
+                                st.markdown("#### NEGOCIADOR LÍDER")
+                                col_f4a, col_f4b = st.columns(2)
+                                with col_f4a:
+                                    func_nl_edit = st.text_area("Descrição", value=apa.get('FUNÇÕES: NEGOCIADOR LÍDER', ''), key=f"edit_func_nl_{id_limpo}", height=80)
+                                    func_nl_problema_edit = st.text_area("Problema Identificado", value=apa.get('FUNÇÕES: NEGOCIADOR LÍDER - PROBLEMA IDENTIFICADO', ''), key=f"edit_func_nl_prob_{id_limpo}", height=80)
+                                with col_f4b:
+                                    func_nl_acoes_edit = st.text_area("Ações Corretivas", value=apa.get('FUNÇÕES: NEGOCIADOR LÍDER - AÇÕES CORRETIVAS ADOTADAS', ''), key=f"edit_func_nl_acao_{id_limpo}", height=80)
+                                    func_nl_praticas_edit = st.text_area("Práticas Promissoras", value=apa.get('FUNÇÕES: NEGOCIADOR LÍDER - PRÁTICAS PROMISSORAS', ''), key=f"edit_func_nl_prat_{id_limpo}", height=80)
                             
-                            st.markdown("#### AUXILIAR DE LOGÍSTICA")
-                            col_f5a, col_f5b = st.columns(2)
-                            with col_f5a:
-                                func_al_edit = st.text_area("Descrição", value=apa.get('FUNÇÕES: NEGOCIADOR AUXILIAR DE LOGÍSTICA', ''), key=f"edit_func_al_{id_limpo}", height=80)
-                                func_al_problema_edit = st.text_area("Problema Identificado", value=apa.get('FUNÇÕES: AUXILIAR DE LOGÍSTICA - PROBLEMA IDENTIFICADO', ''), key=f"edit_func_al_prob_{id_limpo}", height=80)
-                            with col_f5b:
-                                func_al_acoes_edit = st.text_area("Ações Corretivas", value=apa.get('FUNÇÕES: AUXILIAR DE LOGÍSTICA - AÇÕES CORRETIVAS', ''), key=f"edit_func_al_acao_{id_limpo}", height=80)
-                                func_al_praticas_edit = st.text_area("Práticas Promissoras", value=apa.get('FUNÇÕES: AUXILIAR DE LOGÍSTICA - PRÁTICAS PROMISSORAS', ''), key=f"edit_func_al_prat_{id_limpo}", height=80)
+                                st.markdown("#### AUXILIAR DE LOGÍSTICA")
+                                col_f5a, col_f5b = st.columns(2)
+                                with col_f5a:
+                                    func_al_edit = st.text_area("Descrição", value=apa.get('FUNÇÕES: NEGOCIADOR AUXILIAR DE LOGÍSTICA', ''), key=f"edit_func_al_{id_limpo}", height=80)
+                                    func_al_problema_edit = st.text_area("Problema Identificado", value=apa.get('FUNÇÕES: AUXILIAR DE LOGÍSTICA - PROBLEMA IDENTIFICADO', ''), key=f"edit_func_al_prob_{id_limpo}", height=80)
+                                with col_f5b:
+                                    func_al_acoes_edit = st.text_area("Ações Corretivas", value=apa.get('FUNÇÕES: AUXILIAR DE LOGÍSTICA - AÇÕES CORRETIVAS', ''), key=f"edit_func_al_acao_{id_limpo}", height=80)
+                                    func_al_praticas_edit = st.text_area("Práticas Promissoras", value=apa.get('FUNÇÕES: AUXILIAR DE LOGÍSTICA - PRÁTICAS PROMISSORAS', ''), key=f"edit_func_al_prat_{id_limpo}", height=80)
                             
-                            st.markdown("#### AUXILIAR DE INFORMAÇÕES")
-                            col_f6a, col_f6b = st.columns(2)
-                            with col_f6a:
-                                func_ai_edit = st.text_area("Descrição", value=apa.get('FUNÇÕES: NEGOCIADOR AUXILIAR DE INFORMAÇÕES', ''), key=f"edit_func_ai_{id_limpo}", height=80)
-                                func_ai_problema_edit = st.text_area("Problema Identificado", value=apa.get('FUNÇÕES: AUXILIAR DE INFORMAÇÕES - PROBLEMA IDENTIFICADO', ''), key=f"edit_func_ai_prob_{id_limpo}", height=80)
-                            with col_f6b:
-                                func_ai_acoes_edit = st.text_area("Ações Corretivas", value=apa.get('FUNÇÕES: AUXILIAR DE INFORMAÇÕES - AÇÕES CORRETIVAS', ''), key=f"edit_func_ai_acao_{id_limpo}", height=80)
-                                func_ai_praticas_edit = st.text_area("Práticas Promissoras", value=apa.get('FUNÇÕES: AUXILIAR DE INFORMAÇÕES - PRÁTICAS PROMISSORAS', ''), key=f"edit_func_ai_prat_{id_limpo}", height=80)
+                                st.markdown("#### AUXILIAR DE INFORMAÇÕES")
+                                col_f6a, col_f6b = st.columns(2)
+                                with col_f6a:
+                                    func_ai_edit = st.text_area("Descrição", value=apa.get('FUNÇÕES: NEGOCIADOR AUXILIAR DE INFORMAÇÕES', ''), key=f"edit_func_ai_{id_limpo}", height=80)
+                                    func_ai_problema_edit = st.text_area("Problema Identificado", value=apa.get('FUNÇÕES: AUXILIAR DE INFORMAÇÕES - PROBLEMA IDENTIFICADO', ''), key=f"edit_func_ai_prob_{id_limpo}", height=80)
+                                with col_f6b:
+                                    func_ai_acoes_edit = st.text_area("Ações Corretivas", value=apa.get('FUNÇÕES: AUXILIAR DE INFORMAÇÕES - AÇÕES CORRETIVAS', ''), key=f"edit_func_ai_acao_{id_limpo}", height=80)
+                                    func_ai_praticas_edit = st.text_area("Práticas Promissoras", value=apa.get('FUNÇÕES: AUXILIAR DE INFORMAÇÕES - PRÁTICAS PROMISSORAS', ''), key=f"edit_func_ai_prat_{id_limpo}", height=80)
                             
-                            st.markdown("#### PROFISSIONAL DE SAÚDE MENTAL")
-                            col_f7a, col_f7b = st.columns(2)
-                            with col_f7a:
-                                func_psm_edit = st.text_area("Descrição", value=apa.get('FUNÇÕES: PROFISSIONAL DE SAÚDE MENTAL', ''), key=f"edit_func_psm_{id_limpo}", height=80)
-                                func_psm_problema_edit = st.text_area("Problema Identificado", value=apa.get('FUNÇÕES: PROFISSIONAL DE SAÚDE MENTAL - PROBLEMA IDENTIFICADO', ''), key=f"edit_func_psm_prob_{id_limpo}", height=80)
-                            with col_f7b:
-                                func_psm_acoes_edit = st.text_area("Ações Corretivas", value=apa.get('FUNÇÕES: PROFISSIONAL DE SAÚDE MENTAL - AÇÕES CORRETIVAS ADOTADAS', ''), key=f"edit_func_psm_acao_{id_limpo}", height=80)
-                                func_psm_praticas_edit = st.text_area("Práticas Promissoras", value=apa.get('FUNÇÕES: PROFISSIONAL DE SAÚDE MENTAL - PRÁTICAS PROMISSORAS', ''), key=f"edit_func_psm_prat_{id_limpo}", height=80)
+                                st.markdown("#### PROFISSIONAL DE SAÚDE MENTAL")
+                                col_f7a, col_f7b = st.columns(2)
+                                with col_f7a:
+                                    func_psm_edit = st.text_area("Descrição", value=apa.get('FUNÇÕES: PROFISSIONAL DE SAÚDE MENTAL', ''), key=f"edit_func_psm_{id_limpo}", height=80)
+                                    func_psm_problema_edit = st.text_area("Problema Identificado", value=apa.get('FUNÇÕES: PROFISSIONAL DE SAÚDE MENTAL - PROBLEMA IDENTIFICADO', ''), key=f"edit_func_psm_prob_{id_limpo}", height=80)
+                                with col_f7b:
+                                    func_psm_acoes_edit = st.text_area("Ações Corretivas", value=apa.get('FUNÇÕES: PROFISSIONAL DE SAÚDE MENTAL - AÇÕES CORRETIVAS ADOTADAS', ''), key=f"edit_func_psm_acao_{id_limpo}", height=80)
+                                    func_psm_praticas_edit = st.text_area("Práticas Promissoras", value=apa.get('FUNÇÕES: PROFISSIONAL DE SAÚDE MENTAL - PRÁTICAS PROMISSORAS', ''), key=f"edit_func_psm_prat_{id_limpo}", height=80)
                         
-                        # Botões
-                        col_salvar, col_cancelar = st.columns(2)
-                        with col_salvar:
-                            btn_salvar = st.form_submit_button("💾 SALVAR ALTERAÇÕES", use_container_width=True, type="secondary")
-                        with col_cancelar:
-                            btn_cancelar = st.form_submit_button("❌ CANCELAR", use_container_width=True)
+                            # Botões
+                            col_salvar, col_cancelar = st.columns(2)
+                            with col_salvar:
+                                btn_salvar = st.form_submit_button("💾 SALVAR ALTERAÇÕES", use_container_width=True, type="secondary")
+                            with col_cancelar:
+                                btn_cancelar = st.form_submit_button("❌ CANCELAR", use_container_width=True)
                         
-                        if btn_salvar:
-                            # Preparar payload de atualização
-                            payload_update = {
-                                "Data da ocorrência": data_edit.isoformat() if data_edit else "",
-                                "Modalidade do incidente": modalidade_edit or "",
-                                "Tipologia": tipologia_edit or "",
-                                "Resolução": resolucao_edit or "",
-                                "Motivação": motivacao_edit or "",
-                                "Negociador Principal": neg_principal_edit or "",
-                                "Negociador Secundário": neg_secundario_edit or "",
-                                "Negociador Anotador": neg_anotador_edit or "",
-                                "Negociador Líder": neg_lider_edit or "",
-                                "TRANSCRIÇÃO DO CAUSADOR": trans_causador_edit or "",
-                                "TRANSCRIÇÃO DO NEGOCIADOR PRINCIPAL": trans_principal_edit or "",
-                                "TRANSCRIÇÃO DO NEGOCIADOR SECUNDÁRIO": trans_secundario_edit or "",
-                                "Tempo de Negociação Real": tempo_real_edit or "",
-                                "Tempo de Negociação Tática": tempo_tatica_edit or "",
-                                "Uniforme Usado": uniforme_edit or "",
-                                "Sexo do Causador": sexo_edit or "",
-                                # Funções - Negociador Principal
-                                "FUNÇÕES: NEGOCIADOR PRINCIPAL": func_np_edit or "",
-                                "FUNÇÕES: NEGOCIADOR PRINCIPAL - PROBLEMA IDENTIFICADO": func_np_problema_edit or "",
-                                "FUNÇÕES: NEGOCIADOR PRINCIPAL - AÇÕES CORRETIVAS ADOTADAS": func_np_acoes_edit or "",
-                                "FUNÇÕES: NEGOCIADOR PRINCIPAL - PRÁTICAS PROMISSORAS": func_np_praticas_edit or "",
-                                # Funções - Negociador Secundário
-                                "FUNÇÕES: NEGOCIADOR SECUNDÁRIO": func_ns_edit or "",
-                                "FUNÇÕES: NEGOCIADOR SECUNDÁRIO - PROBLEMA IDENTIFICADO": func_ns_problema_edit or "",
-                                "FUNÇÕES: NEGOCIADOR SECUNDÁRIO - AÇÕES CORRETIVAS ADOTADAS": func_ns_acoes_edit or "",
-                                "FUNÇÕES: NEGOCIADOR SECUNDÁRIO - PRÁTICAS PROMISSORAS": func_ns_praticas_edit or "",
-                                # Funções - Negociador Anotador
-                                "FUNÇÕES: NEGOCIADOR ANOTADOR": func_na_edit or "",
-                                "FUNÇÕES: NEGOCIADOR ANOTADOR - PROBLEMA IDENTIFICADO": func_na_problema_edit or "",
-                                "FUNÇÕES: NEGOCIADOR ANOTADOR - AÇÕES CORRETIVAS ADOTADAS": func_na_acoes_edit or "",
-                                "FUNÇÕES: NEGOCIADOR ANOTADOR - PRÁTICAS PROMISSORAS": func_na_praticas_edit or "",
-                                # Funções - Negociador Líder
-                                "FUNÇÕES: NEGOCIADOR LÍDER": func_nl_edit or "",
-                                "FUNÇÕES: NEGOCIADOR LÍDER - PROBLEMA IDENTIFICADO": func_nl_problema_edit or "",
-                                "FUNÇÕES: NEGOCIADOR LÍDER - AÇÕES CORRETIVAS ADOTADAS": func_nl_acoes_edit or "",
-                                "FUNÇÕES: NEGOCIADOR LÍDER - PRÁTICAS PROMISSORAS": func_nl_praticas_edit or "",
-                                # Funções - Auxiliar de Logística
-                                "FUNÇÕES: NEGOCIADOR AUXILIAR DE LOGÍSTICA": func_al_edit or "",
-                                "FUNÇÕES: AUXILIAR DE LOGÍSTICA - PROBLEMA IDENTIFICADO": func_al_problema_edit or "",
-                                "FUNÇÕES: AUXILIAR DE LOGÍSTICA - AÇÕES CORRETIVAS": func_al_acoes_edit or "",
-                                "FUNÇÕES: AUXILIAR DE LOGÍSTICA - PRÁTICAS PROMISSORAS": func_al_praticas_edit or "",
-                                # Funções - Auxiliar de Informações
-                                "FUNÇÕES: NEGOCIADOR AUXILIAR DE INFORMAÇÕES": func_ai_edit or "",
-                                "FUNÇÕES: AUXILIAR DE INFORMAÇÕES - PROBLEMA IDENTIFICADO": func_ai_problema_edit or "",
-                                "FUNÇÕES: AUXILIAR DE INFORMAÇÕES - AÇÕES CORRETIVAS": func_ai_acoes_edit or "",
-                                "FUNÇÕES: AUXILIAR DE INFORMAÇÕES - PRÁTICAS PROMISSORAS": func_ai_praticas_edit or "",
-                                # Funções - Profissional de Saúde Mental
-                                "FUNÇÕES: PROFISSIONAL DE SAÚDE MENTAL": func_psm_edit or "",
-                                "FUNÇÕES: PROFISSIONAL DE SAÚDE MENTAL - PROBLEMA IDENTIFICADO": func_psm_problema_edit or "",
-                                "FUNÇÕES: PROFISSIONAL DE SAÚDE MENTAL - AÇÕES CORRETIVAS ADOTADAS": func_psm_acoes_edit or "",
-                                "FUNÇÕES: PROFISSIONAL DE SAÚDE MENTAL - PRÁTICAS PROMISSORAS": func_psm_praticas_edit or "",
-                            }
+                            if btn_salvar:
+                                # Preparar payload de atualização
+                                payload_update = {
+                                    "Data da ocorrência": data_edit.isoformat() if data_edit else "",
+                                    "Modalidade do incidente": modalidade_edit or "",
+                                    "Tipologia": tipologia_edit or "",
+                                    "Resolução": resolucao_edit or "",
+                                    "Motivação": motivacao_edit or "",
+                                    "Negociador Principal": neg_principal_edit or "",
+                                    "Negociador Secundário": neg_secundario_edit or "",
+                                    "Negociador Anotador": neg_anotador_edit or "",
+                                    "Negociador Líder": neg_lider_edit or "",
+                                    "TRANSCRIÇÃO DO CAUSADOR": trans_causador_edit or "",
+                                    "TRANSCRIÇÃO DO NEGOCIADOR PRINCIPAL": trans_principal_edit or "",
+                                    "TRANSCRIÇÃO DO NEGOCIADOR SECUNDÁRIO": trans_secundario_edit or "",
+                                    "Tempo de Negociação Real": tempo_real_edit or "",
+                                    "Tempo de Negociação Tática": tempo_tatica_edit or "",
+                                    "Uniforme Usado": uniforme_edit or "",
+                                    "Sexo do Causador": sexo_edit or "",
+                                    # Funções - Negociador Principal
+                                    "FUNÇÕES: NEGOCIADOR PRINCIPAL": func_np_edit or "",
+                                    "FUNÇÕES: NEGOCIADOR PRINCIPAL - PROBLEMA IDENTIFICADO": func_np_problema_edit or "",
+                                    "FUNÇÕES: NEGOCIADOR PRINCIPAL - AÇÕES CORRETIVAS ADOTADAS": func_np_acoes_edit or "",
+                                    "FUNÇÕES: NEGOCIADOR PRINCIPAL - PRÁTICAS PROMISSORAS": func_np_praticas_edit or "",
+                                    # Funções - Negociador Secundário
+                                    "FUNÇÕES: NEGOCIADOR SECUNDÁRIO": func_ns_edit or "",
+                                    "FUNÇÕES: NEGOCIADOR SECUNDÁRIO - PROBLEMA IDENTIFICADO": func_ns_problema_edit or "",
+                                    "FUNÇÕES: NEGOCIADOR SECUNDÁRIO - AÇÕES CORRETIVAS ADOTADAS": func_ns_acoes_edit or "",
+                                    "FUNÇÕES: NEGOCIADOR SECUNDÁRIO - PRÁTICAS PROMISSORAS": func_ns_praticas_edit or "",
+                                    # Funções - Negociador Anotador
+                                    "FUNÇÕES: NEGOCIADOR ANOTADOR": func_na_edit or "",
+                                    "FUNÇÕES: NEGOCIADOR ANOTADOR - PROBLEMA IDENTIFICADO": func_na_problema_edit or "",
+                                    "FUNÇÕES: NEGOCIADOR ANOTADOR - AÇÕES CORRETIVAS ADOTADAS": func_na_acoes_edit or "",
+                                    "FUNÇÕES: NEGOCIADOR ANOTADOR - PRÁTICAS PROMISSORAS": func_na_praticas_edit or "",
+                                    # Funções - Negociador Líder
+                                    "FUNÇÕES: NEGOCIADOR LÍDER": func_nl_edit or "",
+                                    "FUNÇÕES: NEGOCIADOR LÍDER - PROBLEMA IDENTIFICADO": func_nl_problema_edit or "",
+                                    "FUNÇÕES: NEGOCIADOR LÍDER - AÇÕES CORRETIVAS ADOTADAS": func_nl_acoes_edit or "",
+                                    "FUNÇÕES: NEGOCIADOR LÍDER - PRÁTICAS PROMISSORAS": func_nl_praticas_edit or "",
+                                    # Funções - Auxiliar de Logística
+                                    "FUNÇÕES: NEGOCIADOR AUXILIAR DE LOGÍSTICA": func_al_edit or "",
+                                    "FUNÇÕES: AUXILIAR DE LOGÍSTICA - PROBLEMA IDENTIFICADO": func_al_problema_edit or "",
+                                    "FUNÇÕES: AUXILIAR DE LOGÍSTICA - AÇÕES CORRETIVAS": func_al_acoes_edit or "",
+                                    "FUNÇÕES: AUXILIAR DE LOGÍSTICA - PRÁTICAS PROMISSORAS": func_al_praticas_edit or "",
+                                    # Funções - Auxiliar de Informações
+                                    "FUNÇÕES: NEGOCIADOR AUXILIAR DE INFORMAÇÕES": func_ai_edit or "",
+                                    "FUNÇÕES: AUXILIAR DE INFORMAÇÕES - PROBLEMA IDENTIFICADO": func_ai_problema_edit or "",
+                                    "FUNÇÕES: AUXILIAR DE INFORMAÇÕES - AÇÕES CORRETIVAS": func_ai_acoes_edit or "",
+                                    "FUNÇÕES: AUXILIAR DE INFORMAÇÕES - PRÁTICAS PROMISSORAS": func_ai_praticas_edit or "",
+                                    # Funções - Profissional de Saúde Mental
+                                    "FUNÇÕES: PROFISSIONAL DE SAÚDE MENTAL": func_psm_edit or "",
+                                    "FUNÇÕES: PROFISSIONAL DE SAÚDE MENTAL - PROBLEMA IDENTIFICADO": func_psm_problema_edit or "",
+                                    "FUNÇÕES: PROFISSIONAL DE SAÚDE MENTAL - AÇÕES CORRETIVAS ADOTADAS": func_psm_acoes_edit or "",
+                                    "FUNÇÕES: PROFISSIONAL DE SAÚDE MENTAL - PRÁTICAS PROMISSORAS": func_psm_praticas_edit or "",
+                                }
                             
-                            # Remover vazios e None (campos não preenchidos não devem sobrescrever dados)
-                            payload_update = {
-                                k: v for k, v in payload_update.items()
-                                if v is not None and v != "" and not (isinstance(v, float) and pd.isna(v))
-                            }
+                                # Remover vazios e None (campos não preenchidos não devem sobrescrever dados)
+                                payload_update = {
+                                    k: v for k, v in payload_update.items()
+                                    if v is not None and v != "" and not (isinstance(v, float) and pd.isna(v))
+                                }
 
-                            # Recupera o ID interno do Airtable (recXXXXXX) para atualização direta.
-                            # pd.isna() evita que NaN do pandas vire a string "nan".
-                            _id_raw = apa.get('id') or apa.get('Airtable_Record_ID')
-                            record_id_interno = (
-                                str(_id_raw)
-                                if _id_raw is not None and not (isinstance(_id_raw, float) and pd.isna(_id_raw))
-                                else None
-                            )
+                                # Recupera o ID interno do Airtable (recXXXXXX) para atualização direta.
+                                # pd.isna() evita que NaN do pandas vire a string "nan".
+                                _id_raw = apa.get('id') or apa.get('Airtable_Record_ID')
+                                record_id_interno = (
+                                    str(_id_raw)
+                                    if _id_raw is not None and not (isinstance(_id_raw, float) and pd.isna(_id_raw))
+                                    else None
+                                )
 
-                            # Diagnóstico visível para facilitar depuração
-                            with st.expander("🔍 Diagnóstico (expandir se houver erro)", expanded=False):
-                                st.write(f"**record_id_interno:** `{record_id_interno}`")
-                                st.write(f"**id_limpo:** `{id_limpo}`")
-                                st.write(f"**Campos no payload:** {list(payload_update.keys())}")
+                                # Diagnóstico visível para facilitar depuração
+                                with st.expander("🔍 Diagnóstico (expandir se houver erro)", expanded=False):
+                                    st.write(f"**record_id_interno:** `{record_id_interno}`")
+                                    st.write(f"**id_limpo:** `{id_limpo}`")
+                                    st.write(f"**Campos no payload:** {list(payload_update.keys())}")
 
-                            if not payload_update:
-                                st.warning("⚠️ Nenhum campo foi alterado. Não há dados para salvar.")
-                            else:
-                                # Atualizar no Airtable
-                                try:
-                                    resultado = airtable_link.atualizar_apa_validacao(
-                                        id_limpo,
-                                        payload_update,
-                                        record_id_interno=record_id_interno
-                                    )
-                                    if resultado:
-                                        st.success("✅ Dados atualizados com sucesso!")
-                                        # Invalida cache para forçar recarga na próxima navegação
-                                        st.session_state.pop("df_quali", None)
-                                        st.balloons()
-                                    else:
-                                        st.error(
-                                            "❌ APA não encontrada na base de dados. "
-                                            "Expanda o diagnóstico acima e verifique o record_id_interno."
+                                if not payload_update:
+                                    st.warning("⚠️ Nenhum campo foi alterado. Não há dados para salvar.")
+                                else:
+                                    # Atualizar no Airtable
+                                    try:
+                                        resultado = airtable_link.atualizar_apa_validacao(
+                                            id_limpo,
+                                            payload_update,
+                                            record_id_interno=record_id_interno
                                         )
-                                except (RuntimeError, ValueError) as e:
-                                    st.error(f"❌ Erro do Airtable: {str(e)}")
-                                except Exception as e:
-                                    st.error(f"❌ Erro inesperado: {type(e).__name__}: {str(e)}")
+                                        if resultado:
+                                            st.success("✅ Dados atualizados com sucesso!")
+                                            # Invalida cache para forçar recarga na próxima navegação
+                                            st.session_state.pop("df_quali", None)
+                                            st.balloons()
+                                        else:
+                                            st.error(
+                                                "❌ APA não encontrada na base de dados. "
+                                                "Expanda o diagnóstico acima e verifique o record_id_interno."
+                                            )
+                                    except (RuntimeError, ValueError) as e:
+                                        st.error(f"❌ Erro do Airtable: {str(e)}")
+                                    except Exception as e:
+                                        st.error(f"❌ Erro inesperado: {type(e).__name__}: {str(e)}")
             
             except Exception as e:
                 st.error(f"Erro: {str(e)}")
