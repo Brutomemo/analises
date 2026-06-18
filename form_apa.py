@@ -433,12 +433,13 @@ def render(df_quali, df_tec):
                         # Remover campos vazios
                         payload = {k: v for k, v in payload.items() if v != ""}
 
-                        id_apa, erro = airtable_link.criar_nova_apa(payload)
+                        resultado = airtable_link.criar_nova_apa(payload)
+                        id_apa = resultado.get("id") if isinstance(resultado, dict) else resultado
+                        erro = resultado.get("erro") if isinstance(resultado, dict) else None
 
                         if id_apa:
                             st.session_state.id_apa_criado = id_apa
                             st.success(f"✅ APA CRIADA COM SUCESSO! ID: {st.session_state.id_apa_criado}")
-                            st.balloons()
                         else:
                             st.error(f"❌ Falha ao criar APA: {erro or 'Erro desconhecido.'}")
                     
