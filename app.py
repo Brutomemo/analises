@@ -17,6 +17,8 @@ import sys
 import os
 
 st.set_page_config(page_title="Analise Qualitativa - Negociação", layout="wide", initial_sidebar_state="collapsed")
+
+import css_loader
 css_loader.load_css()
 
 # 2. IMPORTS ORIGINAIS
