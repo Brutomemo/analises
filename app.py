@@ -294,182 +294,68 @@ with col_logo:
         pass
 
 # =========================================================
-# EFEITO UNICORN
+# CABEÇALHO IMAGEM
 # =========================================================
 
-header = """
-<!DOCTYPE html>
-<html>
+script_dir = os.path.dirname(os.path.abspath(__file__))
+path_cab = os.path.join(script_dir, "Assets", "image cab.jpg")
 
-<head>
+try:
+    with open(path_cab, "rb") as f:
+        cab_b64 = base64.b64encode(f.read()).decode()
 
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-
-<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-
-<style>
-
-body {
-    margin: 0;
-    overflow: hidden;
-    font-family: 'Orbitron', sans-serif;
-}
-
-h1, h2, h3, h4, h5, h6,
-p, span, div, strong {
-    font-family: 'Orbitron', sans-serif !important;
-}
-
-.header {
-    position: relative;
-    width: 100%;
-    height: 520px;
-    border-radius: 20px;
-    overflow: hidden;
-    background: #0f172a;
-}
-
-.unicorn {
-    position: absolute;
-    inset: 0;
-    z-index: 1;
-}
-
-.overlay {
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(
-        180deg,
-        rgba(5,5,5,0.1) 0%,
-        rgba(249,115,22,0.4) 100%
-    );
-    z-index: 2;
-}
-
-.card-container {
-    position: absolute;
-    bottom: 20px;
-    left: 20px;
-    right: 20px;
-    z-index: 100;
-}
-
-.info-card {
-    background: rgba(10,10,10,0.72);
-    backdrop-filter: blur(16px) saturate(180%);
-    -webkit-backdrop-filter: blur(16px) saturate(180%);
-
-    border-top: 1px solid rgba(255,255,255,0.15);
-    border-left: 1px solid rgba(255,255,255,0.08);
-    border-right: 1px solid rgba(255,255,255,0.08);
-    border-bottom: 1px solid rgba(255,255,255,0.05);
-
-    box-shadow: 0 8px 32px rgba(0,0,0,0.5);
-
-    border-radius: 12px;
-    padding: 15px 20px;
-
-    color: white;
-}
-
-.info-card p {
-    margin: 5px 0;
-}
-
-</style>
-</head>
-
-<body>
-
-<div class="header">
-
-    <div class="unicorn"
-         data-us-project="XPl2w0YzOvf5kT7pPLLc"
-         data-us-scale="1"
-         data-us-dpi="1.5">
-    </div>
-
-    <div class="overlay"></div>
-
-    <div class="card-container">
-
-    <div class="info-card">
-
-                
-        <!-- TITULO PRINCIPAL -->
-        <h2 style="
-            text-align:center;
-            font-size:1,3rem;
-            font-weight:600;
-            margin-bottom:10px;
-            color:white;
-            letter-spacing:0.05em;
-            font-family:'Orbitron', sans-serif;
+    st.markdown(f"""
+        <div style="
+            position: relative;
+            width: 100%;
+            height: 520px;
+            border-radius: 20px;
+            overflow: hidden;
+            background-image: url('data:image/jpeg;base64,{cab_b64}');
+            background-size: cover;
+            background-position: center;
         ">
-            Sistema de Análise Qualitativa das Negociações
-        </h2>
+            <div style="
+                position: absolute;
+                inset: 0;
+                background: linear-gradient(180deg, rgba(5,5,5,0.1) 0%, rgba(249,115,22,0.4) 100%);
+            "></div>
+            <div style="
+                position: absolute;
+                bottom: 20px; left: 20px; right: 20px;
+            ">
+                <div style="
+                    background: rgba(10,10,10,0.72);
+                    backdrop-filter: blur(16px) saturate(180%);
+                    -webkit-backdrop-filter: blur(16px) saturate(180%);
+                    border-top: 1px solid rgba(255,255,255,0.15);
+                    border-left: 1px solid rgba(255,255,255,0.08);
+                    border-right: 1px solid rgba(255,255,255,0.08);
+                    border-bottom: 1px solid rgba(255,255,255,0.05);
+                    box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+                    border-radius: 12px;
+                    padding: 15px 20px;
+                    color: white;
+                ">
+                    <h2 style="text-align:center; font-size:1.3rem; font-weight:600; margin-bottom:10px; color:white; letter-spacing:0.05em; font-family:'Orbitron', sans-serif;">
+                        Sistema de Análise Qualitativa das Negociações
+                    </h2>
+                    <p style="text-align:center; font-size:1rem; color:#d1d5db; margin-bottom:24px; letter-spacing:0.04em; font-family:'Orbitron', sans-serif;">
+                        Estudo das Técnicas Aplicadas
+                    </p>
+                    <p style="text-align:center; font-size:0.8rem; font-weight:500; color:white; line-height:1.6;">
+                        Negociações em Incidentes Críticos atendidos pelo Grupo de Ações Táticas Especiais.
+                    </p>
+                    <p style="font-size:0.9rem; color:#bbb; line-height:1.7; margin-top:18px;">
+                        Os dados são geridos de forma automatizada em nuvem via <strong>Airtable</strong>, integrando um motor estatístico multifatorial.
+                    </p>
+                </div>
+            </div>
+        </div>
+    """, unsafe_allow_html=True)
 
-        <!-- SUBTITULO -->
-        <p style="
-            text-align:center;
-            font-size:1rem;
-            color:#d1d5db;
-            margin-bottom:24px;
-            letter-spacing:0.04em;
-            font-family:'Orbitron', sans-serif;
-        ">
-            Estudo das Técnicas Aplicadas
-        </p>
-
-        <!-- TEXTO DESCRITIVO -->
-        <p style="
-            text-align:center;
-            font-size:0,8rem;
-            font-weight:500;
-            color:white;
-            line-height:1.6;
-        ">
-            Negociações em Incidentes Críticos atendidos pelo Grupo de Ações Táticas Especiais.
-        </p>
-
-        <p style="
-            font-size:0.9rem;
-            color:#bbb;
-            line-height:1.7;
-            margin-top:18px;
-        ">
-            Os dados são geridos de forma automatizada em nuvem via <strong>Airtable</strong>,
-            integrando um motor estatístico multifatorial.
-        </p>
-
-    </div>
-
-</div>
-
-<script src="https://cdn.jsdelivr.net/gh/hiunicornstudio/unicornstudio.js@v2.1.6/dist/unicornStudio.umd.js"></script>
-
-<script>
-
-window.addEventListener("load", () => {
-    if (window.UnicornStudio) {
-        UnicornStudio.init();
-    }
-});
-
-window.addEventListener("load", () => {
-    if (window.UnicornStudio) {
-        UnicornStudio.init();
-    }
-});
-
-</script>
-
-</body>
-</html>
-"""
-
-components.html(header, height=520, scrolling=False)
+except Exception:
+    pass
 
 # =========================================================
 # RODAPÉ
