@@ -1451,11 +1451,11 @@ else:
                 if cache_key_sumario not in st.session_state:
                     with st.spinner("Gerando sumários das transcrições com IA..."):
                         st.session_state[cache_key_sumario] = {
-                            "causador": _sumarizar_transcricao_ia(
+                            "causador": ia_link.sumarizar_transcricao(
                                 texto_causador_sum,
                                 papel="causador"
                             ),
-                            "negociador_principal": _sumarizar_transcricao_ia(
+                            "negociador_principal": ia_link.sumarizar_transcricao(
                                 texto_neg_principal_sum,
                                 papel="negociador_principal"
                             ),
