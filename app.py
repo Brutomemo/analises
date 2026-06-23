@@ -38,6 +38,7 @@ import numpy as np
 from scipy import stats as sp_stats
 from sklearn.preprocessing import StandardScaler
 import warnings
+import importlib
 warnings.filterwarnings('ignore')
 
 # ====
@@ -50,6 +51,21 @@ import ia_estatistica # Cérebro da Aba 2 (Série Histórica)
 import serie_historica
 import chat_delta
 import form_apa
+
+
+def _sumarizar_transcricao_ia(texto, papel="causador"):
+    """Chama ia_link.sumarizar_transcricao com reload seguro do módulo."""
+    if not hasattr(ia_link, "sumarizar_transcricao"):
+        importlib.reload(ia_link)
+
+    if hasattr(ia_link, "sumarizar_transcricao"):
+        return ia_link.sumarizar_transcricao(texto, papel=papel)
+
+    return (
+        "Função de sumarização indisponível: o arquivo `ia_link.py` em execução "
+        "está desatualizado. Atualize o deploy com a versão mais recente de `ia_link.py` "
+        "e reinicie a aplicação."
+    )
 
 # ====
 # 3. FUNÇÕES AUXILIARES E DADOS (A "CAIXA DE FERRAMENTAS")
@@ -1435,11 +1451,11 @@ else:
                 if cache_key_sumario not in st.session_state:
                     with st.spinner("Gerando sumários das transcrições com IA..."):
                         st.session_state[cache_key_sumario] = {
-                            "causador": ia_link.sumarizar_transcricao(
+                            "causador": _sumarizar_transcricao_ia(
                                 texto_causador_sum,
                                 papel="causador"
                             ),
-                            "negociador_principal": ia_link.sumarizar_transcricao(
+                            "negociador_principal": _sumarizar_transcricao_ia(
                                 texto_neg_principal_sum,
                                 papel="negociador_principal"
                             ),
