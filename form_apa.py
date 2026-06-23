@@ -657,7 +657,6 @@ def render(df_quali, df_tec):
                                 st.success(f"✅ {sucesso_count} técnicas inseridas com sucesso!")
                             else:
                                 st.warning(f"✅ {sucesso_count} inseridas | ⚠️ {erro_count} com erro")
-                            st.balloons()
 
             except Exception as e:
                 st.error(f"❌ Erro: {str(e)}")
