@@ -530,7 +530,7 @@ else:
     # ABA 1: VISÃO DA NEGOCIAÇÃO SOBRE O INCIDENTE EM ANÁLISE
     # ====
     if pagina == "✔ Visão seletiva":
-    apa.render_apa(df_quali, df_tec)            
+        apa.render_apa(df_quali, df_tec)            
 
     elif pagina == "✔ Série Histórica":
         serie_historica.render_serie_historica(df_quali)
