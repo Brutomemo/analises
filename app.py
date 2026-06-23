@@ -2170,7 +2170,7 @@ else:
                 
                     col_left, col_center, col_right = st.columns([1, 1, 1])
                     with col_center:
-                        is_analise_rapida = render_toggle_button(
+                        is_analise_rapida = utils.render_toggle_button(
                             label="✔️ Análise dos Padrões Léxicos",
                             session_key="tab8_analise_rapida",
                             button_key="btn_tab8_analise_rapida"
