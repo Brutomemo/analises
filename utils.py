@@ -130,10 +130,10 @@ def render_toggle_button(
     return st.session_state[session_key]
 
 def render_card(label, valor, cor_classe):
-"""Renderiza um card HTML com label, valor e classe de cor."""
-return (
-    f"<div class='info-card {cor_classe}' style='padding: 12px; margin-top: 5px; margin-bottom: 5px;'>"
-    f"<strong style='color: #bbb;'>{label}:</strong>"
-    f"<br><span style='font-size: 1.1rem; font-weight: bold;'>{valor}</span>"
-    f"</div>"
-)
+    """Renderiza um card HTML com label, valor e classe de cor."""
+    return (
+        f"<div class='info-card {cor_classe}' style='padding: 12px; margin-top: 5px; margin-bottom: 5px;'>"
+        f"<strong style='color: #bbb;'>{label}:</strong>"
+        f"<br><span style='font-size: 1.1rem; font-weight: bold;'>{valor}</span>"
+        f"</div>"
+    )
