@@ -1477,7 +1477,9 @@ else:
                     </p>
                     </div>
                     """, unsafe_allow_html=True)
-                    st.markdown(resumos_transcricoes.get("causador", "Sem conteúdo."))
+                    st.markdown(f"""<div style='font-size:0.9rem; line-height:1.6'>
+                    {resumos_transcricoes.get("causador", "Sem conteúdo.")}
+                    </div>""", unsafe_allow_html=True)
 
                 with tab_sum_neg_principal:
                     st.markdown("""
@@ -1488,7 +1490,9 @@ else:
                     </p>
                     </div>
                     """, unsafe_allow_html=True)
-                    st.markdown(resumos_transcricoes.get("negociador_principal", "Sem conteúdo."))
+                    st.markdown(f"""<div style='font-size:0.9rem; line-height:1.6'>
+                    {resumos_transcricoes.get("negociador_principal", "Sem conteúdo.")}
+                    </div>""", unsafe_allow_html=True)
 
                 st.markdown("---")
 
