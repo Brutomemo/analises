@@ -588,7 +588,7 @@ def render(df_quali, df_tec):
                         "mas sem ID interno do Airtable. O vínculo será salvo como texto simples."
                     )
 
-        if uploaded_file is not None and not apa_upload:
+        if uploaded_file is not None and apa_upload is None:
             st.warning("⚠️ Selecione a data da ocorrência e clique em **Buscar APA** antes de inserir as técnicas.")
 
         if uploaded_file is not None and apa_upload is not None:
