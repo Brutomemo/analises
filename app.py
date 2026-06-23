@@ -261,11 +261,9 @@ if img_topo_b64:
             <div style="
                 position: absolute;
                 inset: 0;
-                background: linear-gradient(
-                    180deg,
-                    rgba(5,5,5,0.1) 0%,
-                    rgba(249,115,22,0.6) 100%
-                );
+                background: linear-gradient(180deg, rgba(5,5,5,0.6) 0%, 
+                rgba(5,5,5,0.0) 40%, 
+                rgba(249,115,22,0.4) 100%);
             "></div>
         </div>
     """, unsafe_allow_html=True)
