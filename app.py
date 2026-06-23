@@ -1485,7 +1485,7 @@ else:
                     st.markdown("""
                     <div class='info-card'>
                     <h5 style='color: #FFD700; margin-top: 0;'>Síntese da condução do Negociador Principal</h5>
-                    <p style='font-size:0.95rem;color:#bbb;margin-bottom:0;'>
+                    <p style='font-size:0.9rem;color:#bbb;margin-bottom:0;'>
                     Estratégia verbal, postura e elementos relevantes da intervenção.
                     </p>
                     </div>
