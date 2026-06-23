@@ -1,0 +1,429 @@
+/* =========================================================
+   DELTA-NEGOCIAÇÃO — GATE/PMESP
+   Design System Global
+   Extraído do app.py — Fase 1 da reestruturação
+   ========================================================= */
+
+/* =========================================================
+   FONTES
+   ========================================================= */
+
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600&display=swap');
+
+/* =========================================================
+   TEMA TIPOGRÁFICO GLOBAL
+   ========================================================= */
+
+html, body, .stApp {
+    font-family: 'Orbitron', sans-serif !important;
+}
+
+h1, h2, h3, h4, h5, h6,
+[data-testid="stMarkdownContainer"] h1,
+[data-testid="stMarkdownContainer"] h2,
+[data-testid="stMarkdownContainer"] h3,
+[data-testid="stMarkdownContainer"] h4,
+[data-testid="stMarkdownContainer"] h5,
+[data-testid="stMarkdownContainer"] h6,
+.main-title {
+    font-family: 'Orbitron', sans-serif !important;
+    letter-spacing: 0.03em;
+}
+
+p, span, div, label, strong {
+    font-family: 'Orbitron', sans-serif !important;
+}
+
+p, span, li, label, small,
+[data-testid="stMarkdownContainer"] p,
+[data-testid="stMarkdownContainer"] li,
+[data-testid="stCaptionContainer"],
+[data-testid="stSidebar"] *,
+[data-testid="stExpander"] *,
+.sub-title {
+    font-family: 'Inter', sans-serif !important;
+}
+
+strong {
+    font-weight: 700;
+}
+
+/* Tabs -> Orbitron */
+div[data-testid="stTabs"] button,
+div[data-testid="stTabs"] [role="tab"] {
+    font-family: 'Orbitron', sans-serif !important;
+    letter-spacing: 0.04em;
+}
+
+/* Botões -> Orbitron */
+div.stButton > button,
+button[kind="primary"], button[kind="secondary"] {
+    font-family: 'Orbitron', sans-serif !important;
+    letter-spacing: 0.03em;
+}
+
+/* Selectbox / inputs -> Inter */
+div[data-baseweb="select"] *, input, div[data-baseweb="textarea"] textarea {
+    font-family: 'Inter', sans-serif !important;
+}
+
+/* Métricas -> Share Tech Mono */
+div[data-testid="stMetricValue"],
+div[data-testid="stMetricValue"] *,
+code, pre, kbd {
+    font-family: 'Share Tech Mono', monospace !important;
+    letter-spacing: 0.02em;
+}
+
+div[data-testid="stMetricLabel"] * {
+    font-family: 'Inter', sans-serif !important;
+}
+
+/* DataFrame */
+[data-testid="stDataFrame"] thead * {
+    font-family: 'Orbitron', sans-serif !important;
+}
+[data-testid="stDataFrame"] tbody * {
+    font-family: 'Inter', sans-serif !important;
+}
+
+/* Subtítulo */
+.sub-title {
+    font-family: 'Orbitron', sans-serif !important;
+    letter-spacing: 0.04em;
+    color: #FFD700;
+    font-weight: 600;
+    font-size: 1.1rem;
+    margin-top: 5px;
+    margin-bottom: 0;
+}
+
+/* Main title */
+.main-title {
+    font-family: 'Orbitron', sans-serif !important;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    font-size: 2.2rem;
+    font-weight: 500;
+    background: linear-gradient(180deg, #FFFF 0%, #BBBB 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin: 0;
+    line-height: 1.1;
+}
+
+/* =========================================================
+   CONFIGURAÇÕES GLOBAIS
+   ========================================================= */
+
+.block-container {
+    padding-top: 0rem !important;
+    padding-bottom: 1rem !important;
+    z-index: 8;
+    position: relative;
+}
+
+header { visibility: hidden; }
+#MainMenu { visibility: hidden; }
+footer { visibility: hidden; }
+
+body { background-color: #050505 !important; }
+
+.stApp,
+[data-testid="stAppViewContainer"],
+[data-testid="stHeader"] {
+    background: transparent !important;
+    background-color: transparent !important;
+    color: #FFFF;
+    overflow-x: hidden;
+}
+
+/* =========================================================
+   FUNDO ESTRELADO
+   ========================================================= */
+
+.stars-bg {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-image:
+        radial-gradient(1.5px 1.5px at 20px 30px, #fff, rgba(0,0,0,0)),
+        radial-gradient(1.5px 1.5px at 40px 70px, #ffff, rgba(0,0,0,0)),
+        radial-gradient(1.5px 1.5px at 50px 160px, #ffff, rgba(0,0,0,0)),
+        radial-gradient(2px 2px at 90px 40px, #ffff, rgba(0,0,0,0)),
+        radial-gradient(1.5px 1.5px at 130px 80px, #ffff, rgba(0,0,0,0));
+    background-size: 200px 200px;
+    opacity: 0.45;
+    z-index: 1;
+    pointer-events: none;
+}
+
+/* =========================================================
+   CAIXA DE CABEÇALHO
+   ========================================================= */
+
+.header-box {
+    margin: 0 auto !important;
+    padding: 20px 30px !important;
+    width: 100%;
+    text-align: center;
+}
+
+.header-box .main-title { margin-bottom: 5px !important; }
+.header-box .sub-title { margin-top: 0 !important; }
+
+/* =========================================================
+   ANIMAÇÃO DE ENTRADA
+   ========================================================= */
+
+@keyframes fadeInUpBlur {
+    0%   { opacity: 0; transform: translateY(30px); filter: blur(8px); }
+    100% { opacity: 1; transform: translateY(0);    filter: blur(0px); }
+}
+
+.info-card, .stMarkdown, div[data-testid="stMetric"], .stDataFrame, .stPlotlyChart {
+    animation: fadeInUpBlur 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+    position: relative;
+    z-index: 10;
+}
+
+/* =========================================================
+   INFO-CARD — GLASSMORPHISM
+   ========================================================= */
+
+.info-card {
+    background: rgba(30, 30, 30, 0.85);
+    backdrop-filter: blur(16px) saturate(180%);
+    -webkit-backdrop-filter: blur(15px) saturate(180%);
+    border-top:    1px solid rgba(255, 255, 255, 0.15);
+    border-left:   1px solid rgba(255, 255, 255, 0.08);
+    border-right:  1px solid rgba(255, 255, 255, 0.08);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+    border-radius: 12px;
+    padding: 10px;
+    margin-top: 20px;
+    margin-bottom: 10px;
+    position: relative;
+    transform: translateY(60px);
+    z-index: 9999 !important;
+    overflow: hidden;
+    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.info-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: -100%;
+    width: 100%; height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(249, 115, 22, 0.15), transparent);
+    transition: 0.5s;
+    pointer-events: none;
+    z-index: 20;
+}
+
+.info-card:hover {
+    background: rgba(249, 115, 22, 0.08);
+    border-color: rgba(249, 115, 22, 0.3);
+    transform: translateY(-5px);
+    box-shadow: 0 15px 40px rgba(249, 115, 22, 0.15);
+}
+
+.info-card:hover::before {
+    left: 100%;
+    transition: 0.7s ease-in-out;
+}
+
+/* Variantes de cor */
+.card-red  { border-left: 4px solid #DDD !important; }
+.card-red:hover  { box-shadow: 0 15px 40px rgba(239, 68, 68, 0.25) !important; border-color: rgba(239, 68, 68, 0.6) !important; }
+.card-red::before { background: linear-gradient(90deg, transparent, rgba(239, 68, 68, 0.15), transparent) !important; }
+
+.card-green { border-left: 4px solid #22c55e !important; }
+.card-green:hover { box-shadow: 0 15px 40px rgba(34, 197, 94, 0.25) !important; border-color: rgba(34, 197, 94, 0.6) !important; }
+.card-green::before { background: linear-gradient(90deg, transparent, rgba(34, 197, 94, 0.15), transparent) !important; }
+
+/* =========================================================
+   BOTÕES TOGGLE — GLASSMORPHISM
+   ========================================================= */
+
+div.stButton > button[key*="btn_"] {
+    background: rgba(0, 0, 0, 0.7) !important;
+    backdrop-filter: blur(16px) saturate(180%) !important;
+    -webkit-backdrop-filter: blur(16px) saturate(180%) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    border-radius: 0px !important;
+    padding: 0.875rem 1.5rem !important;
+    min-height: 48px !important;
+    color: rgba(255, 255, 255, 0.7) !important;
+    font-family: 'Orbitron', monospace !important;
+    font-weight: 600 !important;
+    font-size: 0.9rem !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.1em !important;
+    box-shadow:
+        0 0 20px rgba(0, 0, 0, 0.5),
+        inset 0 1px 1px rgba(255, 255, 255, 0.05) !important;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    position: relative;
+    overflow: hidden;
+    width: 100% !important;
+}
+
+div.stButton > button[key*="btn_"]::before {
+    content: '';
+    position: absolute;
+    top: 0; left: -100%;
+    width: 100%; height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(0, 200, 255, 0.1), transparent);
+    transition: left 0.5s ease-in-out;
+    pointer-events: none;
+    z-index: 20;
+}
+
+div.stButton > button[key*="btn_"]:hover {
+    background: rgba(0, 0, 0, 0.85) !important;
+    border-color: rgba(0, 200, 255, 0.4) !important;
+    color: #00c8ff !important;
+    box-shadow:
+        0 0 30px rgba(0, 200, 255, 0.2),
+        0 0 60px rgba(0, 200, 255, 0.05),
+        inset 0 1px 1px rgba(255, 255, 255, 0.1) !important;
+    transform: translateY(-2px) !important;
+    filter: brightness(1.1);
+}
+
+div.stButton > button[key*="btn_"]:hover::before {
+    left: 100%;
+    transition: left 0.7s ease-in-out;
+}
+
+div.stButton > button[key*="btn_"]:active {
+    background: rgba(0, 0, 0, 0.95) !important;
+    border-color: rgba(0, 200, 255, 0.3) !important;
+    box-shadow:
+        0 0 15px rgba(0, 200, 255, 0.1),
+        inset 0 2px 4px rgba(0, 0, 0, 0.3) !important;
+    transform: translateY(0) !important;
+    filter: brightness(0.95);
+}
+
+div.stButton > button[key*="btn_"]:focus {
+    outline: none !important;
+    border-color: rgba(0, 200, 255, 0.5) !important;
+    box-shadow:
+        0 0 40px rgba(0, 200, 255, 0.25),
+        inset 0 1px 1px rgba(255, 255, 255, 0.1) !important;
+}
+
+div.stButton > button[key*="btn_"]:disabled {
+    opacity: 0.5 !important;
+    cursor: not-allowed !important;
+    background: rgba(0, 0, 0, 0.4) !important;
+    border-color: rgba(255, 255, 255, 0.05) !important;
+}
+
+/* =========================================================
+   TABELAS E MENUS
+   ========================================================= */
+
+[data-testid="stDataFrame"] {
+    background-color: rgba(255, 255, 255, 0.03);
+    border-radius: 8px;
+}
+
+div[data-testid="stTabs"] button {
+    font-size: 1.2rem;
+    font-weight: bold;
+    transition: color 0.3s;
+}
+
+div[data-testid="stTabs"] button[data-baseweb="tab"]:hover {
+    color: #FFD700;
+}
+
+/* =========================================================
+   MENU HORIZONTAL (RADIO)
+   ========================================================= */
+
+div[role="radiogroup"] {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+    border-bottom: 1.5px solid #2a2d35;
+    padding-bottom: 8px;
+}
+
+div[role="radiogroup"] label {
+    background: transparent !important;
+    border: none !important;
+    padding: 10px 18px !important;
+    border-radius: 6px;
+    color: #8b8fa8 !important;
+    font-size: 14px !important;
+    transition: all 0.2s ease;
+}
+
+div[role="radiogroup"] label:hover {
+    background: rgba(255,255,255,0.03) !important;
+    color: #d4d6e0 !important;
+}
+
+div[role="radiogroup"] label[data-checked="true"] {
+    color: #d4a017 !important;
+    border-bottom: 2px solid #d4a017 !important;
+    font-weight: 600 !important;
+}
+
+div[role="radiogroup"] input {
+    display: none;
+}
+
+/* =========================================================
+   TÍTULOS H2 / H3 (override de tamanho)
+   ========================================================= */
+
+h3 {
+    font-size: 20px !important;
+    font-weight: 500 !important;
+}
+
+h2 {
+    font-size: 22px !important;
+    font-weight: 500 !important;
+}
+
+/* =========================================================
+   EFEITO UNICORN (iframe)
+   ========================================================= */
+
+div[data-testid="stHtml"] {
+    position: relative;
+    margin-top: -150px !important;
+    z-index: 1 !important;
+}
+
+/* =========================================================
+   RESPONSIVIDADE MOBILE
+   ========================================================= */
+
+@media (max-width: 768px) {
+    .main-title { font-size: 2rem !important; }
+    .sub-title  { font-size: 0.95rem !important; }
+    div.stButton > button { padding: 0.6rem 1.2rem !important; font-size: 0.95rem !important; }
+    .block-container { padding-left: 1rem !important; padding-right: 1rem !important; }
+    .info-card { padding: 12px; margin-top: 10px; margin-bottom: 10px; }
+    div.stButton > button[key*="btn_"] {
+        padding: 0.75rem 1.2rem !important;
+        font-size: 0.85rem !important;
+        letter-spacing: 0.08em !important;
+        min-height: 44px !important;
+    }
+}
+
+@media (max-width: 480px) {
+    div.stButton > button[key*="btn_"] {
+        padding: 0.65rem 1rem !important;
+        font-size: 0.8rem !important;
+        min-height: 40px !important;
+    }
+}
