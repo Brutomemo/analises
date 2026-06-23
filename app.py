@@ -60,16 +60,6 @@ import utils
 
 
 # ====
-# 3. FUNÇÕES AUXILIARES E DADOS (A "CAIXA DE FERRAMENTAS")
-# ====
-
-def utils.limpar_id(v):
-    if isinstance(v, list) and len(v) > 0: v = v[0]
-    v_str = str(v).strip()
-    if v_str.endswith('.0'): v_str = v_str[:-2]
-    return v_str
-
-# ====
 # 4. SISTEMA DE SEGURANÇA
 # ====
 import os
@@ -138,42 +128,8 @@ else:
         st.session_state["status_q"] = status_q
         st.session_state["status_t"] = status_t
 # =====================================================================
-#st.title("Série Histórica - Negociações GATE")
-
-# ====
-# 4. FUNÇÕES AUXILIARES (TRATAMENTO DE DADOS DO AIRTABLE)
-# ====
 
 
-def utils.formatar_tempo_airtable(val):
-    try:
-        if isinstance(val, list): val = val[0]
-        if pd.isna(val) or val == "N/D" or val == "": return "N/D"
-        s = int(float(val))
-        h = s // 3600
-        m = (s % 3600) // 60
-        return f"{h:02d}h {m:02d}m"
-    except:
-        return str(val)
-
-def utils.somar_tempos_segundos(serie):
-    total_s = 0
-    for val in serie:
-        try:
-            if isinstance(val, list): val = val[0]
-            if pd.notna(val) and val != "N/D" and val != "":
-                total_s += int(float(val))
-        except: pass
-    h = total_s // 3600
-    m = (total_s % 3600) // 60
-    return f"{h:02d}h {m:02d}m"
-
-
-def utils.converter_escala(val):
-    if not val: return 0
-    # Limpa emojis e espaços para garantir o "match"
-    v = str(val).lower().strip()
-    return utils.escala_likert.get(v, 0)
         
 # ====
 # 1. CONFIGURAÇÃO DA PÁGINA E CSS (UX e Design System)
@@ -656,21 +612,21 @@ else:
 
             # ── METADADOS ───────────────────────────────────────────────────
             c1, c2, c3, c4 = st.columns(4)
-            with c1: st.markdown(f"<div class='info-card'><strong>Data:</strong><br>{limpar_valor(df_apa.get('Data da ocorrência'))}</div>", unsafe_allow_html=True)
-            with c2: st.markdown(f"<div class='info-card'><strong>Modalidade:</strong><br>{limpar_valor(df_apa.get('Modalidade do incidente'))}</div>", unsafe_allow_html=True)
-            with c3: st.markdown(f"<div class='info-card'><strong>Tipologia:</strong><br>{limpar_valor(df_apa.get('Tipologia'))}</div>", unsafe_allow_html=True)
-            with c4: st.markdown(f"<div class='info-card'><strong>Motivação:</strong><br>{limpar_valor(df_apa.get('Motivação'))}</div>", unsafe_allow_html=True)
+            with c1: st.markdown(f"<div class='info-card'><strong>Data:</strong><br>{utils.limpar_valor(df_apa.get('Data da ocorrência'))}</div>", unsafe_allow_html=True)
+            with c2: st.markdown(f"<div class='info-card'><strong>Modalidade:</strong><br>{utils.limpar_valor(df_apa.get('Modalidade do incidente'))}</div>", unsafe_allow_html=True)
+            with c3: st.markdown(f"<div class='info-card'><strong>Tipologia:</strong><br>{utils.limpar_valor(df_apa.get('Tipologia'))}</div>", unsafe_allow_html=True)
+            with c4: st.markdown(f"<div class='info-card'><strong>Motivação:</strong><br>{utils.limpar_valor(df_apa.get('Motivação'))}</div>", unsafe_allow_html=True)
 
             c5, c6, c7, c8 = st.columns(4)
-            with c5: st.markdown(f"<div class='info-card'><strong>Negociador Principal:</strong><br>{limpar_valor(df_apa.get('Negociador Principal'))}</div>", unsafe_allow_html=True)
-            with c6: st.markdown(f"<div class='info-card'><strong>Forma de Transição:</strong><br>{limpar_valor(df_apa.get('Forma de Transição'))}</div>", unsafe_allow_html=True)
+            with c5: st.markdown(f"<div class='info-card'><strong>Negociador Principal:</strong><br>{utils.limpar_valor(df_apa.get('Negociador Principal'))}</div>", unsafe_allow_html=True)
+            with c6: st.markdown(f"<div class='info-card'><strong>Forma de Transição:</strong><br>{utils.limpar_valor(df_apa.get('Forma de Transição'))}</div>", unsafe_allow_html=True)
             with c7: st.markdown(f"<div class='info-card'><strong>Tempo de Negociação Real:</strong><br>{utils.formatar_tempo_airtable(df_apa.get('Tempo de Negociação Real'))}</div>", unsafe_allow_html=True)
             with c8: st.markdown(f"<div class='info-card'><strong>Tempo de Negociação Tática:</strong><br>{utils.formatar_tempo_airtable(df_apa.get('Tempo de Negociação Tática'))}</div>", unsafe_allow_html=True)
 
             c9, c10, c11, _ = st.columns(4)
-            with c9: st.markdown(f"<div class='info-card'><strong>Resolução:</strong><br>{limpar_valor(df_apa.get('Resolução'))}</div>", unsafe_allow_html=True)
-            with c10: st.markdown(f"<div class='info-card'><strong>Uniforme Usado:</strong><br>{limpar_valor(df_apa.get('Uniforme Usado'))}</div>", unsafe_allow_html=True)
-            with c11: st.markdown(f"<div class='info-card'><strong>Sexo do Causador:</strong><br>{limpar_valor(df_apa.get('Sexo do Causador'))}</div>", unsafe_allow_html=True)
+            with c9: st.markdown(f"<div class='info-card'><strong>Resolução:</strong><br>{utils.limpar_valor(df_apa.get('Resolução'))}</div>", unsafe_allow_html=True)
+            with c10: st.markdown(f"<div class='info-card'><strong>Uniforme Usado:</strong><br>{utils.limpar_valor(df_apa.get('Uniforme Usado'))}</div>", unsafe_allow_html=True)
+            with c11: st.markdown(f"<div class='info-card'><strong>Sexo do Causador:</strong><br>{utils.limpar_valor(df_apa.get('Sexo do Causador'))}</div>", unsafe_allow_html=True)
 
             st.markdown("---")
 
