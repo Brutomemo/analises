@@ -1409,9 +1409,72 @@ else:
 
             st.markdown("---")
 
+            # ════════════════════════════════════════════════════════════
+            # SUMÁRIO DAS TRANSCRIÇÕES
+            # ════════════════════════════════════════════════════════════
+            st.markdown(
+                "<h5 style='color: #FFD700;'>Sumário das Transcrições (Nesta APA)</h5>",
+                unsafe_allow_html=True
+            )
 
+            col_sum_left, col_sum_center, col_sum_right = st.columns([1, 1, 1])
+            with col_sum_center:
+                is_sumario_transcricoes = render_toggle_button(
+                    label="✔️ Abrir Sumário das Transcrições",
+                    session_key="sumario_transcricoes",
+                    button_key="btn_sumario_transcricoes"
+                )
 
+            st.markdown("---")
 
+            if is_sumario_transcricoes:
+                texto_causador_sum = limpar_valor(df_apa.get('TRANSCRIÇÃO DO CAUSADOR', ''))
+                texto_neg_principal_sum = limpar_valor(df_apa.get('TRANSCRIÇÃO DO NEGOCIADOR PRINCIPAL', ''))
+                cache_key_sumario = f"sumario_transcricoes_{apa_selecionada}"
+
+                if cache_key_sumario not in st.session_state:
+                    with st.spinner("Gerando sumários das transcrições com IA..."):
+                        st.session_state[cache_key_sumario] = {
+                            "causador": ia_link.sumarizar_transcricao(
+                                texto_causador_sum,
+                                papel="causador"
+                            ),
+                            "negociador_principal": ia_link.sumarizar_transcricao(
+                                texto_neg_principal_sum,
+                                papel="negociador_principal"
+                            ),
+                        }
+
+                resumos_transcricoes = st.session_state[cache_key_sumario]
+
+                tab_sum_causador, tab_sum_neg_principal = st.tabs([
+                    "✔️ Causador do Incidente",
+                    "✔️ Negociador Principal"
+                ])
+
+                with tab_sum_causador:
+                    st.markdown("""
+                    <div class='info-card'>
+                    <h5 style='color: #FFD700; margin-top: 0;'>Síntese do discurso do Causador</h5>
+                    <p style='font-size:0.95rem;color:#bbb;margin-bottom:0;'>
+                    Pontos centrais, motivações e demandas observáveis na transcrição.
+                    </p>
+                    </div>
+                    """, unsafe_allow_html=True)
+                    st.markdown(resumos_transcricoes.get("causador", "Sem conteúdo."))
+
+                with tab_sum_neg_principal:
+                    st.markdown("""
+                    <div class='info-card'>
+                    <h5 style='color: #FFD700; margin-top: 0;'>Síntese da condução do Negociador Principal</h5>
+                    <p style='font-size:0.95rem;color:#bbb;margin-bottom:0;'>
+                    Estratégia verbal, postura e elementos relevantes da intervenção.
+                    </p>
+                    </div>
+                    """, unsafe_allow_html=True)
+                    st.markdown(resumos_transcricoes.get("negociador_principal", "Sem conteúdo."))
+
+                st.markdown("---")
 
             # ════════════════════════════════════════════════════════════
             # TRANSCRIÇÕES - FORA DO IF DE STATS
