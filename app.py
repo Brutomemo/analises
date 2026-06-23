@@ -677,7 +677,7 @@ else:
                     
                         for col_orig, col_n in colunas_norm.items():
                             if p_n in col_n and m_n in col_n and mo_n in col_n:
-                                return limpar_valor(df_apa[col_orig])
+                                return utils.limpar_valor(df_apa[col_orig])
                         return "N/D"
                 
                     # Principal
@@ -796,31 +796,31 @@ else:
                         col_p_c, col_s_c, col_l_c = st.columns(3)
                         with col_p_c:
                             st.markdown("**Negociador Principal**")
-                            st.markdown(render_card("Agressividade", p_agr_c_txt, "card-red"), unsafe_allow_html=True)
-                            st.markdown(render_card("Receptividade", p_rec_c_txt, "card-green"), unsafe_allow_html=True)
+                            st.markdown(utils.render_card("Agressividade", p_agr_c_txt, "card-red"), unsafe_allow_html=True)
+                            st.markdown(utils.render_card("Receptividade", p_rec_c_txt, "card-green"), unsafe_allow_html=True)
                         with col_s_c:
                             st.markdown("**Negociador Secundário**")
-                            st.markdown(render_card("Agressividade", s_agr_c_txt, "card-red"), unsafe_allow_html=True)
-                            st.markdown(render_card("Receptividade", s_rec_c_txt, "card-green"), unsafe_allow_html=True)
+                            st.markdown(utils.render_card("Agressividade", s_agr_c_txt, "card-red"), unsafe_allow_html=True)
+                            st.markdown(utils.render_card("Receptividade", s_rec_c_txt, "card-green"), unsafe_allow_html=True)
                         with col_l_c:
                             st.markdown("**Negociador Líder**")
-                            st.markdown(render_card("Agressividade", l_agr_c_txt, "card-red"), unsafe_allow_html=True)
-                            st.markdown(render_card("Receptividade", l_rec_c_txt, "card-green"), unsafe_allow_html=True)
+                            st.markdown(utils.render_card("Agressividade", l_agr_c_txt, "card-red"), unsafe_allow_html=True)
+                            st.markdown(utils.render_card("Receptividade", l_rec_c_txt, "card-green"), unsafe_allow_html=True)
 
                     with tab_encerramento:
                         col_p_e, col_s_e, col_l_e = st.columns(3)
                         with col_p_e:
                             st.markdown("**Negociador Principal**")
-                            st.markdown(render_card("Agressividade", p_agr_e_txt, "card-red"), unsafe_allow_html=True)
-                            st.markdown(render_card("Receptividade", p_rec_e_txt, "card-green"), unsafe_allow_html=True)
+                            st.markdown(utils.render_card("Agressividade", p_agr_e_txt, "card-red"), unsafe_allow_html=True)
+                            st.markdown(utils.render_card("Receptividade", p_rec_e_txt, "card-green"), unsafe_allow_html=True)
                         with col_s_e:
                             st.markdown("**Negociador Secundário**")
-                            st.markdown(render_card("Agressividade", s_agr_e_txt, "card-red"), unsafe_allow_html=True)
-                            st.markdown(render_card("Receptividade", s_rec_e_txt, "card-green"), unsafe_allow_html=True)
+                            st.markdown(utils.render_card("Agressividade", s_agr_e_txt, "card-red"), unsafe_allow_html=True)
+                            st.markdown(utils.render_card("Receptividade", s_rec_e_txt, "card-green"), unsafe_allow_html=True)
                         with col_l_e:
                             st.markdown("**Negociador Líder**")
-                            st.markdown(render_card("Agressividade", l_agr_e_txt, "card-red"), unsafe_allow_html=True)
-                            st.markdown(render_card("Receptividade", l_rec_e_txt, "card-green"), unsafe_allow_html=True)
+                            st.markdown(utils.render_card("Agressividade", l_agr_e_txt, "card-red"), unsafe_allow_html=True)
+                            st.markdown(utils.render_card("Receptividade", l_rec_e_txt, "card-green"), unsafe_allow_html=True)
 
                     st.markdown("---")
                     # ===== SALVAR EM SESSION_STATE PARA USAR NO PDF =====
@@ -924,11 +924,11 @@ else:
 
             if st.session_state["show_transcricoes"]:
                 st.markdown("**Causador do Incidente:**")
-                st.write(limpar_valor(df_apa.get('TRANSCRIÇÃO DO CAUSADOR')))
+                st.write(utils.limpar_valor(df_apa.get('TRANSCRIÇÃO DO CAUSADOR')))
                 st.markdown("**Negociador Principal:**")
-                st.write(limpar_valor(df_apa.get('TRANSCRIÇÃO DO NEGOCIADOR PRINCIPAL')))
+                st.write(utils.limpar_valor(df_apa.get('TRANSCRIÇÃO DO NEGOCIADOR PRINCIPAL')))
                 st.markdown("**Negociador Secundário:**")
-                st.write(limpar_valor(df_apa.get('TRANSCRIÇÃO DO NEGOCIADOR SECUNDÁRIO')))
+                st.write(utils.limpar_valor(df_apa.get('TRANSCRIÇÃO DO NEGOCIADOR SECUNDÁRIO')))
 
             st.markdown("---")
 
