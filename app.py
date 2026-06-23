@@ -789,7 +789,7 @@ else:
             
                     tab_chegada, tab_encerramento = st.tabs(["🏳 Na Chegada à Ocorrência", "🏴 No Encerramento"])
                 
-                    def render_card(label, valor, cor_classe):
+                    def utils.render_card(label, valor, cor_classe):
                         return f"<div class='info-card {cor_classe}' style='padding: 12px; margin-top: 5px; margin-bottom: 5px;'><strong style='color: #bbb;'>{label}:</strong><br><span style='font-size: 1.1rem; font-weight: bold;'>{valor}</span></div>"
 
                     with tab_chegada:
