@@ -9,7 +9,7 @@
 import streamlit as st
 import pandas as pd
 import io
-from datetime import datetime
+from datetime import datetime, date
 import airtable_link
 
 
@@ -583,47 +583,95 @@ def render(df_quali, df_tec):
     # ─────────────────────────────────────────────────────────────
     
     with tab3:
-        st.markdown("### ✏️ Visualizar & Editar APA")
-        
-        col_id, col_btn = st.columns([3, 1])
-        with col_id:
-            id_busca = st.text_input(
-                "ID da APA",
-                placeholder="Ex: APA 001",
-                key="vis_id_busca_tab3"
+        st.markdown("### Visualizar & Editar APA")
+
+        def _normalizar_data_ocorrencia(valor):
+            if valor is None or (isinstance(valor, float) and pd.isna(valor)) or valor == "":
+                return None
+            try:
+                return pd.to_datetime(valor).date()
+            except (ValueError, TypeError):
+                return None
+
+        def _chave_registro(row):
+            return str(row.get('id') or row.get('Airtable_Record_ID') or row.get('ID') or "")
+
+        def _rotulo_ocorrencia(row):
+            partes = []
+            if pd.notna(row.get('ID')):
+                partes.append(str(row.get('ID')))
+            if pd.notna(row.get('Negociador Principal')):
+                partes.append(str(row.get('Negociador Principal')))
+            if pd.notna(row.get('Tipologia')):
+                partes.append(str(row.get('Tipologia')))
+            if pd.notna(row.get('Modalidade do incidente')):
+                partes.append(str(row.get('Modalidade do incidente'))[:30])
+            return " — ".join(partes) if partes else "Ocorrência sem identificação"
+
+        col_data_busca, col_btn = st.columns([3, 1])
+        with col_data_busca:
+            data_busca = st.date_input(
+                "Data da Ocorrência",
+                value=st.session_state.get('_edit_data_ativo', date.today()),
+                key="vis_data_busca_tab3"
             )
         with col_btn:
+            st.write("")
+            st.write("")
             btn_buscar = st.button("🔍 Buscar", key="btn_buscar_vis_tab3")
-        
-        # Persiste o ID buscado no session_state para que o formulário de edição
+
+        # Persiste a data buscada no session_state para que o formulário de edição
         # permaneça visível após o submit (no rerun, btn_buscar volta a False).
-        if btn_buscar and id_busca:
-            st.session_state['_edit_id_ativo'] = str(id_busca).strip().upper()
+        if btn_buscar and data_busca:
+            st.session_state['_edit_data_ativo'] = data_busca
+            st.session_state.pop('_edit_registro_key', None)
 
-        id_ativo = st.session_state.get('_edit_id_ativo', '')
+        data_ativa = st.session_state.get('_edit_data_ativo')
 
-        if id_ativo:
+        if data_ativa:
             try:
-                id_limpo = id_ativo
-                if 'ID_Busca' not in df_quali.columns:
-                    df_quali['ID_Busca'] = df_quali['ID'].apply(
-                        lambda x: str(x).strip().upper() if pd.notna(x) else "N/D"
-                    )
+                if 'Data_Busca' not in df_quali.columns:
+                    df_quali['Data_Busca'] = df_quali['Data da ocorrência'].apply(_normalizar_data_ocorrencia)
 
-                registros = df_quali[df_quali['ID_Busca'].str.contains(id_limpo, case=False, na=False)]
+                data_filtro = data_ativa if isinstance(data_ativa, date) else pd.to_datetime(data_ativa).date()
+                registros = df_quali[df_quali['Data_Busca'] == data_filtro].copy()
 
                 if registros.empty:
-                    st.error(f"❌ APA {id_ativo} não encontrada")
-                    st.session_state.pop('_edit_id_ativo', None)
+                    st.error(f"❌ Nenhuma APA encontrada para {data_filtro.strftime('%d/%m/%Y')}")
+                    st.session_state.pop('_edit_data_ativo', None)
+                    st.session_state.pop('_edit_registro_key', None)
                 else:
-                    apa = registros.iloc[0]
-                    
-                    st.success("✅ APA encontrada!")
-                    
+                    registros = registros.reset_index(drop=True)
+                    chaves_registros = [_chave_registro(registros.iloc[i]) for i in range(len(registros))]
+
+                    if len(registros) > 1:
+                        indice_atual = 0
+                        registro_ativo = st.session_state.get('_edit_registro_key')
+                        if registro_ativo in chaves_registros:
+                            indice_atual = chaves_registros.index(registro_ativo)
+
+                        indice_selecionado = st.selectbox(
+                            f"📋 {len(registros)} ocorrências nesta data — selecione qual editar",
+                            options=list(range(len(registros))),
+                            format_func=lambda i: _rotulo_ocorrencia(registros.iloc[i]),
+                            index=indice_atual,
+                            key="vis_sel_ocorrencia_tab3"
+                        )
+                        apa = registros.iloc[indice_selecionado]
+                        st.session_state['_edit_registro_key'] = chaves_registros[indice_selecionado]
+                    else:
+                        apa = registros.iloc[0]
+                        st.session_state['_edit_registro_key'] = chaves_registros[0]
+
+                    id_limpo = st.session_state.get('_edit_registro_key', 'edit')
+                    id_apa = str(apa.get('ID', 'N/D')).strip()
+
+                    st.success(f"✅ APA encontrada! ({id_apa})")
+
                     # Mostrar resumo em cards
                     col1, col2, col3, col4 = st.columns(4)
                     with col1:
-                        st.metric("Data", str(apa.get('Data da ocorrência', 'N/D'))[:12])
+                        st.metric("ID", id_apa[:15])
                     with col2:
                         st.metric("Negociador", str(apa.get('Negociador Principal', 'N/D'))[:15])
                     with col3:
@@ -634,7 +682,7 @@ def render(df_quali, df_tec):
                     st.markdown("---")
                     
                     # FORMULÁRIO DE EDIÇÃO
-                    st.markdown("### ✏️ Editar Dados")
+                    st.markdown("### Editar Dados")
                     
                     with st.form(f"form_edit_{id_limpo}", clear_on_submit=False):
                         # Metadados
@@ -833,7 +881,8 @@ def render(df_quali, df_tec):
                             # Diagnóstico visível para facilitar depuração
                             with st.expander("🔍 Diagnóstico (expandir se houver erro)", expanded=False):
                                 st.write(f"**record_id_interno:** `{record_id_interno}`")
-                                st.write(f"**id_limpo:** `{id_limpo}`")
+                                st.write(f"**id_apa:** `{id_apa}`")
+                                st.write(f"**data_busca:** `{data_filtro.strftime('%d/%m/%Y')}`")
                                 st.write(f"**Campos no payload:** {list(payload_update.keys())}")
 
                             if not payload_update:
@@ -842,7 +891,7 @@ def render(df_quali, df_tec):
                                 # Atualizar no Airtable
                                 try:
                                     resultado = airtable_link.atualizar_apa_validacao(
-                                        id_limpo,
+                                        id_apa,
                                         payload_update,
                                         record_id_interno=record_id_interno
                                     )
