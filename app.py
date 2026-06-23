@@ -3094,7 +3094,7 @@ else:
             <hr style="border:none; height:1px; background:linear-gradient(to right, transparent, rgba(255,174,66,0.6), transparent); margin-top:18px; margin-bottom:12px;">
 
             <div style="text-align:center; font-size:11px; color:#666; line-height:1.5;">
-            © 2026 AXIOM - Strategic Intelligence Ltda — Todos os direitos reservados.<br>
+            © 2026 Delta-Negociação — Todos os direitos reservados.<br>
             Este sistema é protegido por direitos autorais e legislação aplicável. Reprodução, distribuição, engenharia reversa, modificação ou utilização não autorizada são proibidas.
             </div>
             """, unsafe_allow_html=True)
