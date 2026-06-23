@@ -1407,31 +1407,31 @@ else:
                     st.session_state.l_agr_e_num = l_agr_e_num
                     st.session_state.l_rec_e_num = l_rec_e_num
 
-                st.markdown("---")
+            st.markdown("---")
 
 
 
 
 
-                # ════════════════════════════════════════════════════════════
-                # TRANSCRIÇÕES - FORA DO IF DE STATS
-                # ════════════════════════════════════════════════════════════
-                st.markdown("### ✔ Transcrições")
+            # ════════════════════════════════════════════════════════════
+            # TRANSCRIÇÕES - FORA DO IF DE STATS
+            # ════════════════════════════════════════════════════════════
+            st.markdown("### ✔ Transcrições")
 
-                if "show_transcricoes" not in st.session_state:
-                    st.session_state["show_transcricoes"] = False
+            if "show_transcricoes" not in st.session_state:
+                st.session_state["show_transcricoes"] = False
 
-                label = "▲ Ocultar transcrições" if st.session_state["show_transcricoes"] else "▼ Ver transcrições completas da ocorrência"
-                if st.button(label, key="btn_transcricoes"):
-                    st.session_state["show_transcricoes"] = not st.session_state["show_transcricoes"]
+            label = "▲ Ocultar transcrições" if st.session_state["show_transcricoes"] else "▼ Ver transcrições completas da ocorrência"
+            if st.button(label, key="btn_transcricoes"):
+                st.session_state["show_transcricoes"] = not st.session_state["show_transcricoes"]
 
-                if st.session_state["show_transcricoes"]:
-                    st.markdown("**Causador do Incidente:**")
-                    st.write(limpar_valor(df_apa.get('TRANSCRIÇÃO DO CAUSADOR')))
-                    st.markdown("**Negociador Principal:**")
-                    st.write(limpar_valor(df_apa.get('TRANSCRIÇÃO DO NEGOCIADOR PRINCIPAL')))
-                    st.markdown("**Negociador Secundário:**")
-                    st.write(limpar_valor(df_apa.get('TRANSCRIÇÃO DO NEGOCIADOR SECUNDÁRIO')))
+            if st.session_state["show_transcricoes"]:
+                st.markdown("**Causador do Incidente:**")
+                st.write(limpar_valor(df_apa.get('TRANSCRIÇÃO DO CAUSADOR')))
+                st.markdown("**Negociador Principal:**")
+                st.write(limpar_valor(df_apa.get('TRANSCRIÇÃO DO NEGOCIADOR PRINCIPAL')))
+                st.markdown("**Negociador Secundário:**")
+                st.write(limpar_valor(df_apa.get('TRANSCRIÇÃO DO NEGOCIADOR SECUNDÁRIO')))
 
             st.markdown("---")
 
