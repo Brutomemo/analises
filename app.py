@@ -849,7 +849,7 @@ else:
 
             col_sum_left, col_sum_center, col_sum_right = st.columns([1, 1, 1])
             with col_sum_center:
-                is_sumario_transcricoes = render_toggle_button(
+                is_sumario_transcricoes = utils.render_toggle_button(
                     label="✔️ Abrir Sumário das Transcrições",
                     session_key="sumario_transcricoes",
                     button_key="btn_sumario_transcricoes"
