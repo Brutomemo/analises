@@ -1615,7 +1615,7 @@ else:
             col_left, col_center, col_right = st.columns([1, 1, 1])
 
             with col_center:
-                is_analise_tematica = render_toggle_button(
+                is_analise_tematica = utils.render_toggle_button(
                     label="✔️ Abrir Análise Temática",
                     session_key="analise_tematica",
                     button_key="btn_analise_tematica"
