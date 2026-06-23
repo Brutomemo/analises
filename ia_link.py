@@ -1356,3 +1356,78 @@ O valor de **Delta (Δ)** representa a variação entre o estado final e o inici
     laudo.append(nota_metodologica)
 
     return "\n\n".join(laudo)
+
+
+def sumarizar_transcricao(texto, papel="causador"):
+    """
+    Gera sumário analítico de uma transcrição de negociação GATE/PMESP.
+
+    Args:
+        texto: Transcrição literal.
+        papel: 'causador' ou 'negociador_principal'.
+
+    Returns:
+        str: Sumário em markdown ou mensagem de indisponibilidade/erro.
+    """
+    texto = str(texto or "").strip()
+    if not texto or texto.upper() in ("N/D", "NAN", "NONE"):
+        return "Transcrição indisponível ou não registrada para esta ocorrência."
+
+    if len(texto) < 30:
+        return "Texto insuficiente para gerar sumário confiável."
+
+    papel_label = {
+        "causador": "Causador do Incidente",
+        "negociador_principal": "Negociador Principal",
+    }.get(papel, str(papel))
+
+    try:
+        api_key = _obter_api_key()
+    except RuntimeError as e:
+        return str(e)
+
+    developer_prompt = f"""Você é um analista do GATE/PMESP especializado em negociação em crises.
+Gere um SUMÁRIO objetivo da transcrição do {papel_label}.
+
+Regras obrigatórias:
+- Sintetize pontos centrais, motivações, demandas e mudanças de tom observáveis no texto.
+- Não invente fatos, técnicas ou falas ausentes na transcrição.
+- Se o texto for confuso, incompleto ou inaudível em trechos, declare essa limitação.
+- Use markdown com parágrafos curtos e bullets quando útil.
+- Linguagem técnica e operacional, em português do Brasil.
+- Máximo de 250 palavras."""
+
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {api_key}",
+    }
+
+    data = {
+        "model": "gpt-4o-mini",
+        "temperature": 0.0,
+        "messages": [
+            {"role": "developer", "content": developer_prompt},
+            {
+                "role": "user",
+                "content": _safe_json_dumps({
+                    "papel": papel_label,
+                    "transcricao": texto[:12000],
+                }),
+            },
+        ],
+    }
+
+    try:
+        response = requests.post(OPENAI_ENDPOINT, headers=headers, json=data, timeout=60)
+        response.raise_for_status()
+        conteudo = response.json()["choices"][0]["message"]["content"]
+        return conteudo.strip() if conteudo else "A IA não retornou conteúdo para o sumário."
+    except requests.exceptions.HTTPError as err:
+        detalhe = ""
+        try:
+            detalhe = err.response.text
+        except Exception:
+            detalhe = str(err)
+        return f"Erro de comunicação com a OpenAI. Detalhe: {detalhe}"
+    except Exception as e:
+        return f"Falha ao gerar sumário: {str(e)}"
