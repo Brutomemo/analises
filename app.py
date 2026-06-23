@@ -1407,6 +1407,8 @@ else:
                     st.session_state.l_agr_e_num = l_agr_e_num
                     st.session_state.l_rec_e_num = l_rec_e_num
 
+            st.markdown("---")
+
                 # ════════════════════════════════════════════════════════════
                 # TRANSCRIÇÕES - FORA DO IF DE STATS
                 # ════════════════════════════════════════════════════════════
