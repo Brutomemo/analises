@@ -55,104 +55,19 @@ import serie_historica
 import chat_delta
 import form_apa
 import css_loader
+import utils
 
 
-def _sumarizar_transcricao_ia(texto, papel="causador"):
-    """Chama ia_link.sumarizar_transcricao com reload seguro do módulo."""
-    if not hasattr(ia_link, "sumarizar_transcricao"):
-        importlib.reload(ia_link)
-
-    if hasattr(ia_link, "sumarizar_transcricao"):
-        return ia_link.sumarizar_transcricao(texto, papel=papel)
-
-    return (
-        "Função de sumarização indisponível: o arquivo `ia_link.py` em execução "
-        "está desatualizado. Atualize o deploy com a versão mais recente de `ia_link.py` "
-        "e reinicie a aplicação."
-    )
 
 # ====
 # 3. FUNÇÕES AUXILIARES E DADOS (A "CAIXA DE FERRAMENTAS")
 # ====
-def render_toggle_button(
-    label: str,
-    session_key: str,
-    button_key: str,
-    width_ratio: float = 0.6
-) -> bool:
-    """Renderiza um botão toggle padronizado."""
-    if session_key not in st.session_state:
-        st.session_state[session_key] = False
-    
-    col_btn, col_spacer = st.columns([width_ratio, 1 - width_ratio])
-    with col_btn:
-        if st.button(label, key=button_key, use_container_width=True):
-            st.session_state[session_key] = not st.session_state[session_key]
-    
-    return st.session_state[session_key]
 
-def limpar_valor(val):
-    if isinstance(val, list): return val[0] if len(val) > 0 else "N/D"
-    return str(val) if pd.notna(val) else "N/D"
-
-
-def limpar_id(v):
+def utils.limpar_id(v):
     if isinstance(v, list) and len(v) > 0: v = v[0]
     v_str = str(v).strip()
     if v_str.endswith('.0'): v_str = v_str[:-2]
     return v_str
-
-def formatar_tempo_airtable(val):
-    try:
-        if isinstance(val, list): val = val[0]
-        if pd.isna(val) or val == "N/D" or val == "": return "N/D"
-        s = int(float(val))
-        h = s // 3600
-        m = (s % 3600) // 60
-        return f"{h:02d}h {m:02d}m"
-    except:
-        return str(val)
-
-def somar_tempos_segundos(serie):
-    total_s = 0
-    for val in serie:
-        try:
-            if isinstance(val, list): val = val[0]
-            if pd.notna(val) and val != "N/D" and val != "":
-                total_s += int(float(val))
-        except: pass
-    h = total_s // 3600
-    m = (total_s % 3600) // 60
-    return f"{h:02d}h {m:02d}m"
-
-# --- MOTOR GRÁFICO (MAPA EMOCIONAL COMPLETO & BLINDADO) ---
-escala_likert = {
-    "❓ inaudível / não observado": 0, "inaudível": 0, "não observado": 0, "n/d": 0, "nao observado": 0,
-    
-    # Nível 1
-    "não agressivo": 1, "nao agressivo": 1, "não agresssivo": 1, "nao agresssivo": 1, 
-    "não receptivo": 1, "nao receptivo": 1,
-    
-    # Nível 2
-    "neutro": 2, 
-    
-    # Nível 3
-    "parcialmente agressivo": 3, "parcialmente receptivo": 3,
-    
-    # Nível 4
-    "agressivo": 4, "receptivo": 4,
-    
-    # Nível 5
-    "muito agressivo": 5, "muito receptivo": 5,
-    
-    "🔴 reação negativa": 1, "⚪ reação neutra": 2, "🟢 reação positiva": 5
-}
-
-def converter_escala(val):
-    if not val: return 0
-    # Limpa emojis e espaços para garantir o "match"
-    v = str(val).lower().strip()
-    return escala_likert.get(v, 0)
 
 # ====
 # 4. SISTEMA DE SEGURANÇA
@@ -228,17 +143,9 @@ else:
 # ====
 # 4. FUNÇÕES AUXILIARES (TRATAMENTO DE DADOS DO AIRTABLE)
 # ====
-def limpar_valor(val):
-    if isinstance(val, list): return val[0] if len(val) > 0 else "N/D"
-    return str(val) if pd.notna(val) else "N/D"
 
-def limpar_id(v):
-    if isinstance(v, list) and len(v) > 0: v = v[0]
-    v_str = str(v).strip()
-    if v_str.endswith('.0'): v_str = v_str[:-2]
-    return v_str
 
-def formatar_tempo_airtable(val):
+def utils.formatar_tempo_airtable(val):
     try:
         if isinstance(val, list): val = val[0]
         if pd.isna(val) or val == "N/D" or val == "": return "N/D"
@@ -249,7 +156,7 @@ def formatar_tempo_airtable(val):
     except:
         return str(val)
 
-def somar_tempos_segundos(serie):
+def utils.somar_tempos_segundos(serie):
     total_s = 0
     for val in serie:
         try:
@@ -262,11 +169,11 @@ def somar_tempos_segundos(serie):
     return f"{h:02d}h {m:02d}m"
 
 
-def converter_escala(val):
+def utils.converter_escala(val):
     if not val: return 0
     # Limpa emojis e espaços para garantir o "match"
     v = str(val).lower().strip()
-    return escala_likert.get(v, 0)
+    return utils.escala_likert.get(v, 0)
         
 # ====
 # 1. CONFIGURAÇÃO DA PÁGINA E CSS (UX e Design System)
@@ -757,8 +664,8 @@ else:
             c5, c6, c7, c8 = st.columns(4)
             with c5: st.markdown(f"<div class='info-card'><strong>Negociador Principal:</strong><br>{limpar_valor(df_apa.get('Negociador Principal'))}</div>", unsafe_allow_html=True)
             with c6: st.markdown(f"<div class='info-card'><strong>Forma de Transição:</strong><br>{limpar_valor(df_apa.get('Forma de Transição'))}</div>", unsafe_allow_html=True)
-            with c7: st.markdown(f"<div class='info-card'><strong>Tempo de Negociação Real:</strong><br>{formatar_tempo_airtable(df_apa.get('Tempo de Negociação Real'))}</div>", unsafe_allow_html=True)
-            with c8: st.markdown(f"<div class='info-card'><strong>Tempo de Negociação Tática:</strong><br>{formatar_tempo_airtable(df_apa.get('Tempo de Negociação Tática'))}</div>", unsafe_allow_html=True)
+            with c7: st.markdown(f"<div class='info-card'><strong>Tempo de Negociação Real:</strong><br>{utils.formatar_tempo_airtable(df_apa.get('Tempo de Negociação Real'))}</div>", unsafe_allow_html=True)
+            with c8: st.markdown(f"<div class='info-card'><strong>Tempo de Negociação Tática:</strong><br>{utils.formatar_tempo_airtable(df_apa.get('Tempo de Negociação Tática'))}</div>", unsafe_allow_html=True)
 
             c9, c10, c11, _ = st.columns(4)
             with c9: st.markdown(f"<div class='info-card'><strong>Resolução:</strong><br>{limpar_valor(df_apa.get('Resolução'))}</div>", unsafe_allow_html=True)
@@ -774,7 +681,7 @@ else:
 
             col_left, col_center, col_right = st.columns([1, 1, 1])  
             with col_center:
-                is_percep_neg = render_toggle_button(
+                is_percep_neg = utils.render_toggle_button(
                     label="✔️ Abrir Percepção dos Negociadores",
                     session_key="percep_neg",
                     button_key="btn_percep_neg"
@@ -836,14 +743,14 @@ else:
                     l_rec_e_txt = buscar_percepcao('Lider', 'Receptividade', 'Encerramento')
 
                     # Numéricos
-                    p_agr_c_num, p_rec_c_num = converter_escala(p_agr_c_txt), converter_escala(p_rec_c_txt)
-                    p_agr_e_num, p_rec_e_num = converter_escala(p_agr_e_txt), converter_escala(p_rec_e_txt)
+                    p_agr_c_num, p_rec_c_num = utils.converter_escala(p_agr_c_txt), utils.converter_escala(p_rec_c_txt)
+                    p_agr_e_num, p_rec_e_num = utils.converter_escala(p_agr_e_txt), utils.converter_escala(p_rec_e_txt)
                 
-                    s_agr_c_num, s_rec_c_num = converter_escala(s_agr_c_txt), converter_escala(s_rec_c_txt)
-                    s_agr_e_num, s_rec_e_num = converter_escala(s_agr_e_txt), converter_escala(s_rec_e_txt)
+                    s_agr_c_num, s_rec_c_num = utils.converter_escala(s_agr_c_txt), utils.converter_escala(s_rec_c_txt)
+                    s_agr_e_num, s_rec_e_num = utils.converter_escala(s_agr_e_txt), utils.converter_escala(s_rec_e_txt)
                 
-                    l_agr_c_num, l_rec_c_num = converter_escala(l_agr_c_txt), converter_escala(l_rec_c_txt)
-                    l_agr_e_num, l_rec_e_num = converter_escala(l_agr_e_txt), converter_escala(l_rec_e_txt)
+                    l_agr_c_num, l_rec_c_num = utils.converter_escala(l_agr_c_txt), utils.converter_escala(l_rec_c_txt)
+                    l_agr_e_num, l_rec_e_num = utils.converter_escala(l_agr_e_txt), utils.converter_escala(l_rec_e_txt)
 
                     
 
@@ -995,8 +902,8 @@ else:
             st.markdown("---")
 
             if is_sumario_transcricoes:
-                texto_causador_sum = limpar_valor(df_apa.get('TRANSCRIÇÃO DO CAUSADOR', ''))
-                texto_neg_principal_sum = limpar_valor(df_apa.get('TRANSCRIÇÃO DO NEGOCIADOR PRINCIPAL', ''))
+                texto_causador_sum = utils.limpar_valor(df_apa.get('TRANSCRIÇÃO DO CAUSADOR', ''))
+                texto_neg_principal_sum = utils.limpar_valor(df_apa.get('TRANSCRIÇÃO DO NEGOCIADOR PRINCIPAL', ''))
                 cache_key_sumario = f"sumario_transcricoes_{apa_selecionada}"
 
                 if cache_key_sumario not in st.session_state:
