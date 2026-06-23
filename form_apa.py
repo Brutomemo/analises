@@ -161,6 +161,56 @@ def validar_excel_tecnicas(df):
     return True, validacoes, colunas_encontradas
 
 
+def _normalizar_data_ocorrencia(valor):
+    if valor is None or (isinstance(valor, float) and pd.isna(valor)) or valor == "":
+        return None
+    try:
+        return pd.to_datetime(valor).date()
+    except (ValueError, TypeError):
+        return None
+
+
+def _chave_registro_apa(row):
+    return str(row.get('id') or row.get('Airtable_Record_ID') or row.get('ID') or "")
+
+
+def _rotulo_ocorrencia_apa(row):
+    partes = []
+    if pd.notna(row.get('ID')):
+        partes.append(str(row.get('ID')))
+    if pd.notna(row.get('Negociador Principal')):
+        partes.append(str(row.get('Negociador Principal')))
+    if pd.notna(row.get('Tipologia')):
+        partes.append(str(row.get('Tipologia')))
+    if pd.notna(row.get('Modalidade do incidente')):
+        partes.append(str(row.get('Modalidade do incidente'))[:30])
+    return " — ".join(partes) if partes else "Ocorrência sem identificação"
+
+
+def _normalizar_id_apa(valor_id):
+    if valor_id is None or (isinstance(valor_id, float) and pd.isna(valor_id)):
+        return None
+    campo_id = str(valor_id).strip()
+    try:
+        num = int(campo_id.replace("APA", "").strip())
+        return f"APA {num:03d}"
+    except (ValueError, TypeError):
+        return campo_id.upper()
+
+
+def _garantir_coluna_data_busca(df_quali):
+    if 'Data_Busca' not in df_quali.columns:
+        df_quali['Data_Busca'] = df_quali['Data da ocorrência'].apply(_normalizar_data_ocorrencia)
+    return df_quali
+
+
+def _buscar_registros_por_data(df_quali, data_filtro):
+    df_quali = _garantir_coluna_data_busca(df_quali)
+    if not isinstance(data_filtro, date):
+        data_filtro = pd.to_datetime(data_filtro).date()
+    return df_quali[df_quali['Data_Busca'] == data_filtro].copy().reset_index(drop=True)
+
+
 def render(df_quali, df_tec):
     """
     Interface principal de Entrada de Dados com 3 abas:
@@ -462,25 +512,86 @@ def render(df_quali, df_tec):
     with tab2:
         st.markdown("## Upload de Técnicas")
         st.markdown("Faça upload de técnicas para qualquer APA existente, em qualquer momento.")
-        
+
         st.markdown("---")
-        
+
         col1, col2 = st.columns(2)
         with col1:
-            id_apa_upload = st.text_input(
-                "ID da APA *",
-                placeholder="Ex: APA 001",
-                key="upload_id_apa_tab2"
+            data_apa_upload = st.date_input(
+                "Data da Ocorrência *",
+                value=st.session_state.get('_upload_data_ativo', date.today()),
+                key="upload_data_apa_tab2"
             )
+            btn_buscar_apa_upload = st.button("🔍 Buscar APA", key="btn_buscar_apa_upload_tab2")
         with col2:
-            st.markdown("#### ")  # Espaço vazio
+            st.markdown("#### ")
             uploaded_file = st.file_uploader(
                 "Selecione arquivo Excel",
                 type=['xlsx', 'xls'],
                 key="upload_excel_tab2"
             )
-        
-        if uploaded_file is not None and id_apa_upload:
+
+        if btn_buscar_apa_upload and data_apa_upload:
+            st.session_state['_upload_data_ativo'] = data_apa_upload
+            st.session_state.pop('_upload_registro_key', None)
+
+        data_ativa_upload = st.session_state.get('_upload_data_ativo')
+        apa_upload = None
+        vinculo_record_id = None
+        id_apa_normalizado = None
+
+        if data_ativa_upload:
+            registros_upload = _buscar_registros_por_data(df_quali, data_ativa_upload)
+
+            if registros_upload.empty:
+                data_fmt = (
+                    data_ativa_upload.strftime('%d/%m/%Y')
+                    if isinstance(data_ativa_upload, date)
+                    else pd.to_datetime(data_ativa_upload).strftime('%d/%m/%Y')
+                )
+                st.error(f"❌ Nenhuma APA encontrada para {data_fmt}")
+                st.session_state.pop('_upload_data_ativo', None)
+                st.session_state.pop('_upload_registro_key', None)
+            else:
+                chaves_upload = [_chave_registro_apa(registros_upload.iloc[i]) for i in range(len(registros_upload))]
+
+                if len(registros_upload) > 1:
+                    indice_atual_upload = 0
+                    registro_ativo_upload = st.session_state.get('_upload_registro_key')
+                    if registro_ativo_upload in chaves_upload:
+                        indice_atual_upload = chaves_upload.index(registro_ativo_upload)
+
+                    indice_selecionado_upload = st.selectbox(
+                        f"📋 {len(registros_upload)} ocorrências nesta data — selecione a APA",
+                        options=list(range(len(registros_upload))),
+                        format_func=lambda i: _rotulo_ocorrencia_apa(registros_upload.iloc[i]),
+                        index=indice_atual_upload,
+                        key="upload_sel_ocorrencia_tab2"
+                    )
+                    apa_upload = registros_upload.iloc[indice_selecionado_upload]
+                    st.session_state['_upload_registro_key'] = chaves_upload[indice_selecionado_upload]
+                else:
+                    apa_upload = registros_upload.iloc[0]
+                    st.session_state['_upload_registro_key'] = chaves_upload[0]
+
+                vinculo_record_id = apa_upload.get('id') or apa_upload.get('Airtable_Record_ID')
+                id_apa_normalizado = _normalizar_id_apa(apa_upload.get('ID'))
+
+                if vinculo_record_id:
+                    st.info(
+                        f"🔗 APA **{id_apa_normalizado or apa_upload.get('ID', 'N/D')}** "
+                        f"encontrada e vinculada: `{vinculo_record_id}`"
+                    )
+                else:
+                    st.warning(
+                        f"⚠️ APA **{id_apa_normalizado or apa_upload.get('ID', 'N/D')}** encontrada, "
+                        "mas sem ID interno do Airtable. O vínculo será salvo como texto simples."
+                    )
+
+        if uploaded_file is not None and not apa_upload:
+            st.warning("⚠️ Selecione a data da ocorrência e clique em **Buscar APA** antes de inserir as técnicas.")
+
+        if uploaded_file is not None and apa_upload is not None:
             try:
                 df_excel = pd.read_excel(uploaded_file)
                 valido, mensagens, colunas = validar_excel_tecnicas(df_excel)
@@ -498,38 +609,11 @@ def render(df_quali, df_tec):
 
                     st.dataframe(df_excel.head(5), use_container_width=True, hide_index=True)
 
-                    # ── Resolver o Airtable record ID interno da APA ──────────────
-                    # Vinculo_APA é um campo "Link to another record" no Airtable,
-                    # então precisa ser enviado como lista com o ID interno [recXXX].
-                    id_apa_normalizado = id_apa_upload.strip().upper()
-                    vinculo_record_id = None
-
-                    if not df_quali.empty and 'id' in df_quali.columns:
-                        # Tenta achar a APA pelo campo ID (qualquer formato)
-                        for _, row_apa in df_quali.iterrows():
-                            campo_id = row_apa.get('ID', '')
-                            campo_id_str = str(campo_id).strip().upper()
-                            # Aceita "APA 001", "1", "001" como match
-                            try:
-                                num = int(str(campo_id).replace("APA", "").strip())
-                                num_entrada = int(id_apa_normalizado.replace("APA", "").strip())
-                                if num == num_entrada:
-                                    vinculo_record_id = row_apa.get('id') or row_apa.get('Airtable_Record_ID')
-                                    break
-                            except (ValueError, TypeError):
-                                if campo_id_str == id_apa_normalizado:
-                                    vinculo_record_id = row_apa.get('id') or row_apa.get('Airtable_Record_ID')
-                                    break
-
-                    if vinculo_record_id:
-                        st.info(f"🔗 APA encontrada e vinculada: `{vinculo_record_id}`")
-                    else:
+                    if not id_apa_normalizado:
                         st.warning(
-                            f"⚠️ APA **{id_apa_upload}** não encontrada nos dados carregados. "
-                            "O vínculo será salvo como texto simples — pode não aparecer nas análises. "
-                            "Atualize os dados ou verifique o ID."
+                            "⚠️ Não foi possível identificar o ID da APA selecionada. "
+                            "O vínculo será salvo como texto simples — pode não aparecer nas análises."
                         )
-                    # ─────────────────────────────────────────────────────────────
 
                     if st.button(f"✅ INSERIR {len(df_excel)} TÉCNICAS", use_container_width=True, type="secondary", key="btn_insert_tech_tab2"):
                         with st.spinner(f"💾 Inserindo {len(df_excel)} técnicas..."):
@@ -555,7 +639,7 @@ def render(df_quali, df_tec):
                                     payload = {
                                         "TÉCNICAS": str(row[col_tecnicas]).strip(),
                                         "TRECHO DA TRANSCRIÇÃO": str(row[col_trecho]).strip(),
-                                        "Vinculo_APA": id_apa_normalizado
+                                        "Vinculo_APA": id_apa_normalizado or str(apa_upload.get('ID', '')).strip()
                                     }
                                     if atitude_para_enviar is not None:
                                         payload["ATITUDE DO CAUSADOR"] = atitude_para_enviar
@@ -585,29 +669,6 @@ def render(df_quali, df_tec):
     with tab3:
         st.markdown("### Visualizar & Editar APA")
 
-        def _normalizar_data_ocorrencia(valor):
-            if valor is None or (isinstance(valor, float) and pd.isna(valor)) or valor == "":
-                return None
-            try:
-                return pd.to_datetime(valor).date()
-            except (ValueError, TypeError):
-                return None
-
-        def _chave_registro(row):
-            return str(row.get('id') or row.get('Airtable_Record_ID') or row.get('ID') or "")
-
-        def _rotulo_ocorrencia(row):
-            partes = []
-            if pd.notna(row.get('ID')):
-                partes.append(str(row.get('ID')))
-            if pd.notna(row.get('Negociador Principal')):
-                partes.append(str(row.get('Negociador Principal')))
-            if pd.notna(row.get('Tipologia')):
-                partes.append(str(row.get('Tipologia')))
-            if pd.notna(row.get('Modalidade do incidente')):
-                partes.append(str(row.get('Modalidade do incidente'))[:30])
-            return " — ".join(partes) if partes else "Ocorrência sem identificação"
-
         col_data_busca, col_btn = st.columns([3, 1])
         with col_data_busca:
             data_busca = st.date_input(
@@ -630,19 +691,15 @@ def render(df_quali, df_tec):
 
         if data_ativa:
             try:
-                if 'Data_Busca' not in df_quali.columns:
-                    df_quali['Data_Busca'] = df_quali['Data da ocorrência'].apply(_normalizar_data_ocorrencia)
-
                 data_filtro = data_ativa if isinstance(data_ativa, date) else pd.to_datetime(data_ativa).date()
-                registros = df_quali[df_quali['Data_Busca'] == data_filtro].copy()
+                registros = _buscar_registros_por_data(df_quali, data_filtro)
 
                 if registros.empty:
                     st.error(f"❌ Nenhuma APA encontrada para {data_filtro.strftime('%d/%m/%Y')}")
                     st.session_state.pop('_edit_data_ativo', None)
                     st.session_state.pop('_edit_registro_key', None)
                 else:
-                    registros = registros.reset_index(drop=True)
-                    chaves_registros = [_chave_registro(registros.iloc[i]) for i in range(len(registros))]
+                    chaves_registros = [_chave_registro_apa(registros.iloc[i]) for i in range(len(registros))]
 
                     if len(registros) > 1:
                         indice_atual = 0
@@ -653,7 +710,7 @@ def render(df_quali, df_tec):
                         indice_selecionado = st.selectbox(
                             f"📋 {len(registros)} ocorrências nesta data — selecione qual editar",
                             options=list(range(len(registros))),
-                            format_func=lambda i: _rotulo_ocorrencia(registros.iloc[i]),
+                            format_func=lambda i: _rotulo_ocorrencia_apa(registros.iloc[i]),
                             index=indice_atual,
                             key="vis_sel_ocorrencia_tab3"
                         )
