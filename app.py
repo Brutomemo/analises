@@ -531,13 +531,13 @@ else:
     if pagina == "✔ Visão seletiva":
         st.markdown("<h5 style='color: #FFD700;'> Seleção e Metadados da Ocorrência</h5>", unsafe_allow_html=True)        
 
-        df_quali['Neg_Limpo'] = df_quali['Negociador Principal'].apply(limpar_valor)
-        df_quali['Tip_Limpa'] = df_quali['Tipologia'].apply(limpar_valor)
-        df_quali['Mod_Limpa'] = df_quali['Modalidade do incidente'].apply(limpar_valor)
+        df_quali['Neg_Limpo'] = df_quali['Negociador Principal'].apply(utils.limpar_valor)
+        df_quali['Tip_Limpa'] = df_quali['Tipologia'].apply(utils.limpar_valor)
+        df_quali['Mod_Limpa'] = df_quali['Modalidade do incidente'].apply(utils.limpar_valor)
 
         if 'ID' not in df_quali.columns:
             df_quali['ID'] = "APA " + df_quali.index.astype(str)
-        df_quali['ID_Busca'] = df_quali['ID'].apply(limpar_id)
+        df_quali['ID_Busca'] = df_quali['ID'].apply(utils.limpar_id)
 
         # ── FILTROS ENCADEADOS BIDIRECIONAIS ────────────────────────────────
         col_fi1, col_fi2, col_fi3 = st.columns(3)
