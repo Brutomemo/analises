@@ -20,12 +20,16 @@ def _formatar_erro_airtable(exc):
 
 
 def get_credentials():
-    """
-    Obtém credenciais do Airtable de variáveis de ambiente.
-    Retorna: (api_key, base_id)
-    """
-    api_key = os.getenv("AIRTABLE_TOKEN")
-    base_id = os.getenv("AIRTABLE_BASE_ID") or os.getenv("BASE_ID")
+    import streamlit as st
+
+    def _get(key):
+        try:
+            return st.secrets[key]
+        except:
+            return os.getenv(key)
+
+    api_key = _get("AIRTABLE_TOKEN")
+    base_id = _get("AIRTABLE_BASE_ID") or _get("BASE_ID")
     return api_key, base_id
 
 

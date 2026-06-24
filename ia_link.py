@@ -8,19 +8,18 @@ OPENAI_ENDPOINT = "https://api.openai.com/v1/chat/completions"
  
  
 def _obter_api_key():
-    """Lê API key de variáveis de ambiente (Railway) ou secrets.toml (local)"""
-    
-    # Tentar ler de variáveis de ambiente (Railway)
+    """Lê API key do Streamlit Cloud (secrets) ou Railway (variável de ambiente)."""
+    try:
+        api_key = st.secrets["OPENAI_API_KEY"]
+        if api_key:
+            return api_key
+    except:
+        pass
+
     api_key = os.getenv("OPENAI_API_KEY")
-    
-    # Se não encontrar, tentar de secrets.toml (local)
     if not api_key:
-        raise RuntimeError("❌ OPENAI_API_KEY não configurada! Configure em Railway → Variables")
-    
-    # Validação
-    if not api_key:
-        raise RuntimeError("❌ OPENAI_API_KEY não configurada! Configure em Railway → Variables")
-    
+        raise RuntimeError("❌ OPENAI_API_KEY não configurada! Configure em Railway → Variables ou Streamlit → Secrets")
+
     return api_key
  
  

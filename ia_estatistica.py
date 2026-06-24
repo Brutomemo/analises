@@ -26,11 +26,18 @@ CHAVES_OBRIGATORIAS = [
 # OBTENÇÃO SEGURA DA API KEY (Railway + fallback local)
 # ============================================================
 def _obter_api_key():
-    """Lê API key de variáveis de ambiente (Railway)."""
+    """Lê API key do Streamlit Cloud (secrets) ou Railway (variável de ambiente)."""
+    try:
+        api_key = st.secrets["OPENAI_API_KEY"]
+        if api_key:
+            return api_key
+    except:
+        pass
+
     api_key = os.getenv("OPENAI_API_KEY")
     if not api_key:
         raise RuntimeError(
-            "❌ OPENAI_API_KEY não configurada! Configure em Railway → Variables"
+            "❌ OPENAI_API_KEY não configurada! Configure em Railway → Variables ou Streamlit → Secrets"
         )
     return api_key
 
