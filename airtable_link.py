@@ -24,9 +24,12 @@ def get_credentials():
 
     def _get(key):
         try:
-            return st.secrets[key]
+            val = st.secrets.get(key)
+            if val:
+                return val
         except:
-            return os.getenv(key)
+            pass
+        return os.getenv(key)
 
     api_key = _get("AIRTABLE_TOKEN")
     base_id = _get("AIRTABLE_BASE_ID") or _get("BASE_ID")
