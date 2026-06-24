@@ -69,12 +69,14 @@ def check_password():
     """Retorna True se o usuário inseriu a senha correta."""
     
     # LER APENAS DE VARIÁVEIS DE AMBIENTE (Railway)
-    correct_password = os.getenv("ACCESS_PASSWORD")
-    
-    # Validação
+    try:
+        correct_password = st.secrets["ACCESS_PASSWORD"]
+    except:
+        correct_password = os.getenv("ACCESS_PASSWORD")
+
     if not correct_password:
-        st.error("❌ ACCESS_PASSWORD não configurada no Railway!")
-        return False
+            st.error("❌ ACCESS_PASSWORD não configurada!")
+            return False
     
     def password_entered():
         """Verifica se a senha coincide."""
