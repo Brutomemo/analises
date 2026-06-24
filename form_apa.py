@@ -165,7 +165,8 @@ def _normalizar_data_ocorrencia(valor):
     if valor is None or (isinstance(valor, float) and pd.isna(valor)) or valor == "":
         return None
     try:
-        return pd.to_datetime(valor).date()
+        # Tenta formato D/M/YYYY primeiro (padrão brasileiro)
+        return pd.to_datetime(valor, dayfirst=True).date()
     except (ValueError, TypeError):
         return None
 
