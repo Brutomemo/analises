@@ -200,8 +200,7 @@ def _normalizar_id_apa(valor_id):
 
 
 def _garantir_coluna_data_busca(df_quali):
-    if 'Data_Busca' not in df_quali.columns:
-        df_quali['Data_Busca'] = df_quali['Data da ocorrência'].apply(_normalizar_data_ocorrencia)
+    df_quali['Data_Busca'] = df_quali['Data da ocorrência'].apply(_normalizar_data_ocorrencia)
     return df_quali
 
 
