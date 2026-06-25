@@ -332,7 +332,7 @@ def render_separador():
 
     # ── TÉCNICAS ──────────────────────────────────────────────
     st.markdown("---")
-    st.markdown("### ⚙️ Técnicas Extraídas")
+    st.markdown("### Técnicas Extraídas")
 
     if df_tec.empty:
         st.warning("⚠️ Nenhuma técnica encontrada no documento.")
