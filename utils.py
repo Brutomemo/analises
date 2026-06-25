@@ -8,6 +8,7 @@ import pandas as pd
 import streamlit as st
 
 
+
 # ============================================================
 # TRATAMENTO DE VALORES (AIRTABLE)
 # ============================================================

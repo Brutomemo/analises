@@ -5,11 +5,8 @@
 import os
 import re
 import pandas as pd
-import requests
 from pyairtable import Api
 from datetime import datetime
-
-_TABELA_VINCULO_TECNICAS = None
 
 
 def _formatar_erro_airtable(exc):
@@ -22,112 +19,21 @@ def _formatar_erro_airtable(exc):
     return str(exc)
 
 
-def _get_setting(key, default=None):
+def get_credentials():
     import streamlit as st
 
-    try:
-        val = st.secrets.get(key)
-        if val:
-            return val
-    except Exception:
-        pass
-    return os.getenv(key, default)
-
-
-def get_credentials():
-    api_key = _get_setting("AIRTABLE_TOKEN")
-    base_id = _get_setting("AIRTABLE_BASE_ID") or _get_setting("BASE_ID")
-    return api_key, base_id
-
-
-def _normalizar_ref_id_apa(id_apa):
-    if id_apa is None or (isinstance(id_apa, float) and pd.isna(id_apa)):
-        return None, None
-
-    bruto = str(id_apa).strip()
-    if bruto.endswith(".0"):
-        bruto = bruto[:-2]
-
-    try:
-        num = int(float(bruto.replace("APA", "").strip()))
-    except (ValueError, TypeError):
-        num = None
-
-    if bruto.upper().startswith("APA"):
-        fmt = bruto.upper()
-    elif num is not None:
-        fmt = f"APA {num:03d}"
-    else:
-        fmt = bruto.upper()
-
-    return num, fmt
-
-
-def _campo_id_coincide(campo_id, id_num, id_fmt):
-    if campo_id is None or (isinstance(campo_id, float) and pd.isna(campo_id)):
-        return False
-
-    campo_bruto = str(campo_id).strip()
-    if campo_bruto.endswith(".0"):
-        campo_bruto = campo_bruto[:-2]
-
-    if id_num is not None:
+    def _get(key):
         try:
-            if int(float(campo_bruto.replace("APA", "").strip())) == id_num:
-                return True
-        except (ValueError, TypeError):
+            val = st.secrets.get(key)
+            if val:
+                return val
+        except:
             pass
+        return os.getenv(key)
 
-    campo_fmt = campo_bruto.upper()
-    if campo_fmt.startswith("APA"):
-        return campo_fmt == id_fmt
-    if id_num is not None:
-        return campo_fmt == str(id_num) or campo_fmt == id_fmt
-    return campo_fmt == id_fmt
-
-
-def _tabela_vinculo_tecnicas():
-    """Nome da tabela Airtable ligada ao campo Vinculo_APA (cache em memória)."""
-    global _TABELA_VINCULO_TECNICAS
-    if _TABELA_VINCULO_TECNICAS:
-        return _TABELA_VINCULO_TECNICAS
-
-    fallback = _get_setting("TABLE_NAME_APA", "PARA ANALISE QUALITATIVA DA APA")
-    api_key, base_id = get_credentials()
-    if not api_key or not base_id:
-        _TABELA_VINCULO_TECNICAS = fallback
-        return _TABELA_VINCULO_TECNICAS
-
-    try:
-        resp = requests.get(
-            f"https://api.airtable.com/v0/meta/bases/{base_id}/tables",
-            headers={"Authorization": f"Bearer {api_key}"},
-            timeout=30,
-        )
-        resp.raise_for_status()
-        tabelas = resp.json().get("tables", [])
-        nomes = {t["id"]: t["name"] for t in tabelas}
-        nome_tecnicas = _get_setting(
-            "TABLE_NAME_HISTORICO", "TABELA DE FREQUÊNCIAS DAS TÉCNICAS"
-        )
-
-        for tabela in tabelas:
-            if tabela.get("name") != nome_tecnicas and "FREQU" not in tabela.get("name", "").upper():
-                continue
-            for campo in tabela.get("fields", []):
-                if campo.get("name") != "Vinculo_APA":
-                    continue
-                if campo.get("type") != "multipleRecordLinks":
-                    continue
-                linked_id = campo.get("options", {}).get("linkedTableId")
-                if linked_id in nomes:
-                    _TABELA_VINCULO_TECNICAS = nomes[linked_id]
-                    return _TABELA_VINCULO_TECNICAS
-    except Exception as exc:
-        print(f"[airtable_link] Falha ao resolver tabela de vínculo: {exc}")
-
-    _TABELA_VINCULO_TECNICAS = fallback
-    return _TABELA_VINCULO_TECNICAS
+    api_key = _get("AIRTABLE_TOKEN")
+    base_id = _get("AIRTABLE_BASE_ID") or _get("BASE_ID")
+    return api_key, base_id
 
 
 def buscar_todas_apas():
@@ -151,14 +57,9 @@ def buscar_todas_apas():
         data = []
         for record in records:
             fields = record['fields']
-            record_id = record['id']
-            fields['Airtable_Record_ID'] = record_id
-            fields['record_id_airtable'] = record_id
-            # Garante que 'id' não fique com o número da APA (campo ID) por colisão de nome
-            if str(fields.get('id', '')).strip().startswith('rec'):
-                fields['id'] = record_id
-            else:
-                fields.pop('id', None)
+            fields['id'] = record['id']
+            # Alias para compatibilidade com código que usa 'Airtable_Record_ID'
+            fields['Airtable_Record_ID'] = record['id']
             data.append(fields)
 
         df = pd.DataFrame(data)
@@ -227,95 +128,6 @@ def buscar_todas_tecnicas():
     except Exception as e:
         print(f"❌ Erro ao buscar técnicas: {str(e)}")
         return pd.DataFrame(), f"❌ Erro: {str(e)}"
-
-
-def _valor_coincide_id_apa(valor, id_num, id_fmt):
-    if valor is None or (isinstance(valor, float) and pd.isna(valor)):
-        return False
-    if isinstance(valor, list):
-        return any(_valor_coincide_id_apa(item, id_num, id_fmt) for item in valor)
-    return _campo_id_coincide(valor, id_num, id_fmt)
-
-
-def _registro_coincide_id_apa(fields, id_num, id_fmt):
-    for nome in ("ID", "Id", "id"):
-        if _campo_id_coincide(fields.get(nome), id_num, id_fmt):
-            return True
-    for valor in fields.values():
-        if _valor_coincide_id_apa(valor, id_num, id_fmt):
-            return True
-    return False
-
-
-def buscar_record_id_por_id_apa(id_apa, table_name=None):
-    """
-    Busca o record_id (rec...) de uma APA pelo número/código do campo ID.
-    Ex.: 31, 31.0, 'APA 031' → 'recXXXXXXXX'
-    """
-    id_num, id_fmt = _normalizar_ref_id_apa(id_apa)
-    if id_num is None and not id_fmt:
-        return None
-
-    if table_name is None:
-        table_name = _get_setting("TABLE_NAME_APA", "PARA ANALISE QUALITATIVA DA APA")
-
-    try:
-        api_key, base_id = get_credentials()
-        if not api_key or not base_id:
-            return None
-
-        api = Api(api_key)
-        table = api.base(base_id).table(table_name)
-
-        if id_num is not None:
-            formulas = [
-                f"{{ID}}={id_num}",
-                f"{{ID}}='{id_num}'",
-                f"{{ID}}='{id_fmt}'",
-            ]
-            formula = "OR(" + ",".join(formulas) + ")"
-            try:
-                registros = table.all(formula=formula)
-                if registros:
-                    return registros[0]["id"]
-            except Exception as exc:
-                print(f"[airtable_link] Filtro por ID falhou em {table_name}: {exc}")
-
-        for registro in table.all():
-            if _registro_coincide_id_apa(registro["fields"], id_num, id_fmt):
-                return registro["id"]
-        return None
-    except Exception as exc:
-        print(f"[airtable_link] Erro ao buscar APA {id_apa} em {table_name}: {exc}")
-        return None
-
-
-def buscar_record_id_vinculo_tecnica(id_apa, record_id_hint=None):
-    """
-    Record ID na tabela ligada ao campo Vinculo_APA, localizado pelo ID da APA.
-    Usa o record_id já carregado no app quando disponível (df_quali).
-    """
-    if record_id_hint and str(record_id_hint).strip().startswith("rec"):
-        return str(record_id_hint).strip()
-
-    tabela_config = _get_setting("TABLE_NAME_VINCULO_APA")
-    if tabela_config:
-        rec = buscar_record_id_por_id_apa(id_apa, table_name=tabela_config)
-        if rec:
-            return rec
-
-    tabela_vinculo = _tabela_vinculo_tecnicas()
-    rec = buscar_record_id_por_id_apa(id_apa, table_name=tabela_vinculo)
-    if rec:
-        return rec
-
-    tabela_apa = _get_setting("TABLE_NAME_APA", "PARA ANALISE QUALITATIVA DA APA")
-    if tabela_vinculo != tabela_apa:
-        rec = buscar_record_id_por_id_apa(id_apa, table_name=tabela_apa)
-        if rec:
-            return rec
-
-    return None
 
 
 def atualizar_apa_validacao(id_apa, payload, record_id_interno=None):
@@ -464,52 +276,53 @@ def criar_nova_apa(payload):
         return {"id": None, "erro": erro}
 
 
-def criar_tecnica(payload, vinculo_record_id=None, id_apa=None):
+def criar_tecnica(payload, vinculo_record_id=None):
     """
     Cria um novo registro de técnica no Airtable.
 
-    Vinculo_APA é linked record: envia [rec...] da APA encontrada pelo ID (31, APA 031).
+    Args:
+        payload: Dict com:
+            - TÉCNICAS: Nome da técnica (obrigatório)
+            - TRECHO DA TRANSCRIÇÃO: Texto (obrigatório)
+            - Vinculo_APA: ID formatado "APA 001" — usado apenas como fallback
+            - ATITUDE DO CAUSADOR: -1, 0 ou 1 (opcional — vazio = Inaudível/Não Observado)
+        vinculo_record_id: Airtable internal record ID da APA (ex: 'recXXXXXXXXXXXXXX').
+            Quando fornecido, `Vinculo_APA` é enviado como lista ['recXXX'] (linked record),
+            que é o formato correto para campos do tipo "Link to another record".
 
     Returns:
-        tuple: (sucesso: bool, erro: str | None)
+        bool: True se sucesso, False se erro
     """
     try:
         api_key, base_id = get_credentials()
 
         if not api_key or not base_id:
-            return False, "Credenciais do Airtable não configuradas."
+            print("❌ Credenciais não configuradas")
+            return False
 
         api = Api(api_key)
         base = api.base(base_id)
         table = base.table("TABELA DE FREQUÊNCIAS DAS TÉCNICAS")
 
         if not payload.get('TÉCNICAS'):
-            return False, "Campo TÉCNICAS obrigatório."
+            print("❌ Campo TÉCNICAS obrigatório")
+            return False
 
         if not payload.get('TRECHO DA TRANSCRIÇÃO'):
-            return False, "Campo TRECHO DA TRANSCRIÇÃO obrigatório."
+            print("❌ Campo TRECHO DA TRANSCRIÇÃO obrigatório")
+            return False
 
-        rec = vinculo_record_id
-        if not rec or not str(rec).startswith("rec"):
-            ref_id = id_apa or payload.pop("Vinculo_APA_ID", None)
-            if ref_id is None:
-                ref_id = payload.pop("Vinculo_APA", None)
-            if ref_id and str(ref_id).startswith("rec"):
-                rec = str(ref_id).strip()
-            elif ref_id:
-                rec = buscar_record_id_vinculo_tecnica(ref_id)
+        # Montar Vinculo_APA no formato correto para linked record
+        if vinculo_record_id and str(vinculo_record_id).startswith("rec"):
+            payload['Vinculo_APA'] = [vinculo_record_id]
+            print(f"🔗 Vinculo_APA como linked record: [{vinculo_record_id}]")
+        elif not payload.get('Vinculo_APA'):
+            print("❌ Campo Vinculo_APA obrigatório (nem texto nem record_id fornecido)")
+            return False
+        else:
+            print(f"⚠️ Vinculo_APA como texto simples: {payload['Vinculo_APA']} (linked record não disponível)")
 
-        if not rec or not str(rec).startswith("rec"):
-            ref_msg = id_apa or payload.get("Vinculo_APA_ID") or "informado"
-            return False, (
-                f"Não foi possível localizar o registro Airtable da APA {ref_msg} "
-                f"na tabela de vínculo ({_tabela_vinculo_tecnicas()})."
-            )
-
-        payload.pop("Vinculo_APA", None)
-        payload.pop("Vinculo_APA_ID", None)
-        payload["Vinculo_APA"] = [str(rec)]
-
+        # Validar ATITUDE — vazio é válido (Inaudível/Não Observado)
         atitude_raw = payload.get('ATITUDE DO CAUSADOR', None)
         vazio = (
             atitude_raw is None
@@ -523,13 +336,19 @@ def criar_tecnica(payload, vinculo_record_id=None, id_apa=None):
             try:
                 atitude = int(atitude_raw)
                 if atitude not in [-1, 0, 1]:
-                    return False, f"ATITUDE inválida: {atitude} (esperado -1, 0 ou 1)."
+                    print(f"❌ ATITUDE inválida: {atitude} (esperado -1, 0 ou 1)")
+                    return False
                 payload['ATITUDE DO CAUSADOR'] = atitude
             except (ValueError, TypeError):
-                return False, "ATITUDE deve ser número inteiro (-1, 0 ou 1)."
+                print("❌ ATITUDE deve ser número inteiro (-1, 0 ou 1)")
+                return False
 
-        table.create(payload)
-        return True, None
+        novo_record = table.create(payload)
+        print(f"✅ Técnica criada: {payload.get('TÉCNICAS')} → {payload.get('Vinculo_APA')}")
+        return True
 
     except Exception as e:
-        return False, _formatar_erro_airtable(e)
+        print(f"❌ Erro ao criar técnica: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return False
