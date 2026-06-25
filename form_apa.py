@@ -107,6 +107,60 @@ PERCEPCOES_RECEPTIVIDADE = [
 PERCEPCOES = PERCEPCOES_AGRESSIVIDADE
 
 
+def _opcoes_campo(df_quali, coluna, padrao):
+    """Une opções já usadas na base com a lista padrão do formulário."""
+    opcoes = list(padrao)
+    if df_quali is None or df_quali.empty or coluna not in df_quali.columns:
+        return opcoes
+    extras = (
+        df_quali[coluna]
+        .dropna()
+        .astype(str)
+        .str.strip()
+        .loc[lambda s: ~s.isin(["", "N/D", "nan", "None"])]
+        .unique()
+        .tolist()
+    )
+    vistos = set(opcoes)
+    for item in extras:
+        if item not in vistos:
+            opcoes.append(item)
+            vistos.add(item)
+    return opcoes
+
+
+def _payload_percepcoes_criar(
+    agr_principal_chegada,
+    agr_secundario_chegada,
+    agr_lider_chegada,
+    rec_principal_chegada,
+    rec_secundario_chegada,
+    rec_lider_chegada,
+    agr_principal_enc,
+    agr_secundario_enc,
+    agr_lider_enc,
+    rec_principal_enc,
+    rec_secundario_enc,
+    rec_lider_enc,
+):
+    """Inclui percepções no payload só quando o usuário selecionou um valor."""
+    bruto = {
+        "12 - PERCEPÇÕES DO NEGOCIADOR PRINCIPAL SOBRE A AGRESSIVIDADE DO  CAUSADOR NA CHEGADA À OCORRÊNCIA": agr_principal_chegada,
+        "12 - PERCEPÇÕES DO NEGOCIADOR SECUNDÁRIO SOBRE A AGRESSIVIDADE DO  CAUSADOR NA CHEGADA À OCORRÊNCIA": agr_secundario_chegada,
+        "12 - PERCEPÇÕES DO NEGOCIADOR LÍDER SOBRE A AGRESSIVIDADE DO  CAUSADOR NA CHEGADA À OCORRÊNCIA": agr_lider_chegada,
+        "13 - PERCEPÇÕES DO NEGOCIADOR PRINCIPAL SOBRE A RECEPTIVIDADE DO  CAUSADOR NA CHEGADA À OCORRÊNCIA": rec_principal_chegada,
+        "13 - PERCEPÇÕES DO NEGOCIADOR SECUNDÁRIO SOBRE A RECEPTIVIDADE DO  CAUSADOR NA CHEGADA À OCORRÊNCIA": rec_secundario_chegada,
+        "13 - PERCEPÇÕES DO NEGOCIADOR LÍDER SOBRE A RECEPTIVIDADE DO  CAUSADOR NA CHEGADA À OCORRÊNCIA": rec_lider_chegada,
+        "24 - PERCEPÇÕES DO NEGOCIADOR PRINCIPAL SOBRE A AGRESSIVIDADE DO  CAUSADOR NO ENCERRAMENTO DA OCORRÊNCIA": agr_principal_enc,
+        "24 - PERCEPÇÕES DO NEGOCIADOR SECUNDÁRIO SOBRE A AGRESSIVIDADE DO  CAUSADOR NO ENCERRAMENTO DA OCORRÊNCIA": agr_secundario_enc,
+        "24 - PERCEPÇÕES DO NEGOCIADOR LÍDER SOBRE A AGRESSIVIDADE DO  CAUSADOR NO ENCERRAMENTO DA OCORRÊNCIA": agr_lider_enc,
+        "25 - PERCEPÇÕES DO NEGOCIADOR PRINCIPAL SOBRE A RECEPTIVIDADE DO  CAUSADOR NO ENCERRAMENTO DA OCORRÊNCIA": rec_principal_enc,
+        "25 - PERCEPÇÕES DO NEGOCIADOR SECUNDÁRIO SOBRE A RECEPTIVIDADE DO  CAUSADOR NO ENCERRAMENTO DA OCORRÊNCIA": rec_secundario_enc,
+        "25 - PERCEPÇÕES DO NEGOCIADOR LÍDER SOBRE A RECEPTIVIDADE DO  CAUSADOR NO ENCERRAMENTO DA OCORRÊNCIA": rec_lider_enc,
+    }
+    return {k: v for k, v in bruto.items() if v}
+
+
 def _tempos_payload_apa(tempo_real, tempo_tatica):
     """Monta campos de tempo em segundos (int) para o Airtable."""
     bruto = {
@@ -592,84 +646,105 @@ def render(df_quali, df_tec):
             with col1:
                 data_oca = st.date_input("Data da Ocorrência *", key="c_data")
             with col2:
-                modalidade = st.selectbox("Modalidade do Incidente *", [""] + MODALIDADES, key="c_modalidade")
+                modalidade = st.selectbox(
+                    "Modalidade do Incidente *",
+                    [""] + _opcoes_campo(df_quali, "Modalidade do incidente", MODALIDADES),
+                    key="c_modalidade",
+                )
             
             col3, col4 = st.columns(2)
             with col3:
-                tipologia = st.selectbox("Tipologia *", [""] + TIPOLOGIAS, key="c_tipologia")
+                tipologia = st.selectbox(
+                    "Tipologia *",
+                    [""] + _opcoes_campo(df_quali, "Tipologia", TIPOLOGIAS),
+                    key="c_tipologia",
+                )
             with col4:
-                forma_transicao = st.selectbox("Forma de Transição", [""] + FORMAS_TRANSICAO, key="c_forma_transicao")
+                forma_transicao = st.selectbox(
+                    "Forma de Transição",
+                    [""] + _opcoes_campo(df_quali, "Forma de Transição", FORMAS_TRANSICAO),
+                    key="c_forma_transicao",
+                )
             
             motivacao = st.text_area("Motivação", placeholder="...", height=80, key="c_motivacao")
-            resolucao = st.selectbox("Resolução *", [""] + RESOLUCOES, key="c_resolucao")
+            resolucao = st.selectbox(
+                "Resolução *",
+                [""] + _opcoes_campo(df_quali, "Resolução", RESOLUCOES),
+                key="c_resolucao",
+            )
         
         # ─── EQUIPE ───
         with tab_equipe:
+            neg_opts = [""] + _opcoes_campo(df_quali, "Negociador Principal", NEGOCIADORES)
             col1, col2 = st.columns(2)
             with col1:
-                neg_principal = st.selectbox("Negociador Principal *", [""] + NEGOCIADORES, key="c_neg_principal")
+                neg_principal = st.selectbox("Negociador Principal *", neg_opts, key="c_neg_principal")
             with col2:
-                neg_secundario = st.selectbox("Negociador Secundário", [""] + NEGOCIADORES, key="c_neg_secundario")
+                neg_secundario = st.selectbox("Negociador Secundário", neg_opts, key="c_neg_secundario")
             
             col3, col4 = st.columns(2)
             with col3:
-                neg_anotador = st.selectbox("Negociador Anotador", [""] + NEGOCIADORES, key="c_neg_anotador")
+                neg_anotador = st.selectbox("Negociador Anotador", neg_opts, key="c_neg_anotador")
             with col4:
-                neg_lider = st.selectbox("Negociador Líder", [""] + NEGOCIADORES, key="c_neg_lider")
+                neg_lider = st.selectbox("Negociador Líder", neg_opts, key="c_neg_lider")
             
             col5, col6 = st.columns(2)
             with col5:
-                aux_info = st.selectbox("Auxiliar de Informações", [""] + NEGOCIADORES, key="c_aux_info")
+                aux_info = st.selectbox("Auxiliar de Informações", neg_opts, key="c_aux_info")
             with col6:
-                aux_log = st.selectbox("Auxiliar de Logística", [""] + NEGOCIADORES, key="c_aux_log")
+                aux_log = st.selectbox("Auxiliar de Logística", neg_opts, key="c_aux_log")
             
-            prof_saude = st.selectbox("Profissional de Saúde Mental", [""] + SAUDE_MENTAL, key="c_prof_saude")
+            prof_saude = st.selectbox(
+                "Profissional de Saúde Mental",
+                [""] + _opcoes_campo(df_quali, "Profissional de Saúde Mental", SAUDE_MENTAL),
+                key="c_prof_saude",
+            )
         
         # ─── PERCEPÇÃO CHEGADA ───
         with tab_chegada:
             st.markdown("**Negociador Principal**")
             col1, col2 = st.columns(2)
             with col1:
-                agr_principal_chegada = st.selectbox("12 - Agressividade", PERCEPCOES_AGRESSIVIDADE, key="c_agr_principal_chegada")
+                agr_principal_chegada = st.selectbox("12 - Agressividade", [""] + PERCEPCOES_AGRESSIVIDADE, key="c_agr_principal_chegada")
             with col2:
-                rec_principal_chegada = st.selectbox("13 - Receptividade", PERCEPCOES_RECEPTIVIDADE, key="c_rec_principal_chegada")
+                rec_principal_chegada = st.selectbox("13 - Receptividade", [""] + PERCEPCOES_RECEPTIVIDADE, key="c_rec_principal_chegada")
             
             st.markdown("**Negociador Secundário**")
             col3, col4 = st.columns(2)
             with col3:
-                agr_secundario_chegada = st.selectbox("12 - Agressividade", PERCEPCOES_AGRESSIVIDADE, key="c_agr_secundario_chegada")
+                agr_secundario_chegada = st.selectbox("12 - Agressividade", [""] + PERCEPCOES_AGRESSIVIDADE, key="c_agr_secundario_chegada")
             with col4:
-                rec_secundario_chegada = st.selectbox("13 - Receptividade", PERCEPCOES_RECEPTIVIDADE, key="c_rec_secundario_chegada")
+                rec_secundario_chegada = st.selectbox("13 - Receptividade", [""] + PERCEPCOES_RECEPTIVIDADE, key="c_rec_secundario_chegada")
             
             st.markdown("**Negociador Líder**")
             col5, col6 = st.columns(2)
             with col5:
-                agr_lider_chegada = st.selectbox("12 - Agressividade", PERCEPCOES_AGRESSIVIDADE, key="c_agr_lider_chegada")
+                agr_lider_chegada = st.selectbox("12 - Agressividade", [""] + PERCEPCOES_AGRESSIVIDADE, key="c_agr_lider_chegada")
             with col6:
-                rec_lider_chegada = st.selectbox("13 - Receptividade", PERCEPCOES_RECEPTIVIDADE, key="c_rec_lider_chegada")
+                rec_lider_chegada = st.selectbox("13 - Receptividade", [""] + PERCEPCOES_RECEPTIVIDADE, key="c_rec_lider_chegada")
         
         # ─── PERCEPÇÃO ENCERRAMENTO ───
         with tab_enc:
             st.markdown("**Negociador Principal**")
             col1, col2 = st.columns(2)
             with col1:
-                agr_principal_enc = st.selectbox("24 - Agressividade", PERCEPCOES_AGRESSIVIDADE, key="c_agr_principal_enc")
+                agr_principal_enc = st.selectbox("24 - Agressividade", [""] + PERCEPCOES_AGRESSIVIDADE, key="c_agr_principal_enc")
             with col2:
-                rec_principal_enc = st.selectbox("25 - Receptividade", PERCEPCOES_RECEPTIVIDADE, key="c_rec_principal_enc")
+                rec_principal_enc = st.selectbox("25 - Receptividade", [""] + PERCEPCOES_RECEPTIVIDADE, key="c_rec_principal_enc")
             
             st.markdown("**Negociador Secundário**")
             col3, col4 = st.columns(2)
             with col3:
-                agr_secundario_enc = st.selectbox("24 - Agressividade", PERCEPCOES_AGRESSIVIDADE, key="c_agr_secundario_enc")
+                agr_secundario_enc = st.selectbox("24 - Agressividade", [""] + PERCEPCOES_AGRESSIVIDADE, key="c_agr_secundario_enc")
             with col4:
-                rec_secundario_enc = st.selectbox("25 - Receptividade", PERCEPCOES_RECEPTIVIDADE, key="c_rec_secundario_enc")
+                rec_secundario_enc = st.selectbox("25 - Receptividade", [""] + PERCEPCOES_RECEPTIVIDADE, key="c_rec_secundario_enc")
             
             st.markdown("**Negociador Líder**")
             col5, col6 = st.columns(2)
             with col5:
-                agr_lider_enc = st.selectbox("24 - Agressividade", PERCEPCOES_AGRESSIVIDADE, key="c_agr_lider_enc")
+                agr_lider_enc = st.selectbox("24 - Agressividade", [""] + PERCEPCOES_AGRESSIVIDADE, key="c_agr_lider_enc")
             with col6:
-                rec_lider_enc = st.selectbox("25 - Receptividade", PERCEPCOES_RECEPTIVIDADE, key="c_rec_lider_enc")
+                rec_lider_enc = st.selectbox("25 - Receptividade", [""] + PERCEPCOES_RECEPTIVIDADE, key="c_rec_lider_enc")
         
         # ─── TRANSCRIÇÕES ───
         with tab_trans:
@@ -724,9 +799,17 @@ def render(df_quali, df_tec):
             
             col3, col4 = st.columns(2)
             with col3:
-                uniforme = st.selectbox("Uniforme Usado", [""] + UNIFORMES, key="c_uniforme")
+                uniforme = st.selectbox(
+                    "Uniforme Usado",
+                    [""] + _opcoes_campo(df_quali, "Uniforme Usado", UNIFORMES),
+                    key="c_uniforme",
+                )
             with col4:
-                sexo = st.selectbox("Sexo do Causador", [""] + SEXOS, key="c_sexo")
+                sexo = st.selectbox(
+                    "Sexo do Causador",
+                    [""] + _opcoes_campo(df_quali, "Sexo do Causador", SEXOS),
+                    key="c_sexo",
+                )
         
         # BOTÕES DE AÇÃO
         st.markdown("---")
@@ -776,18 +859,20 @@ def render(df_quali, df_tec):
                                 "Negociador Auxiliar de Informações": aux_info or "",
                                 "Negociador Auxiliar de Logística": aux_log or "",
                                 "Profissional de Saúde Mental": prof_saude or "",
-                                "12 - PERCEPÇÕES DO NEGOCIADOR PRINCIPAL SOBRE A AGRESSIVIDADE DO  CAUSADOR NA CHEGADA À OCORRÊNCIA": agr_principal_chegada,
-                                "12 - PERCEPÇÕES DO NEGOCIADOR SECUNDÁRIO SOBRE A AGRESSIVIDADE DO  CAUSADOR NA CHEGADA À OCORRÊNCIA": agr_secundario_chegada,
-                                "12 - PERCEPÇÕES DO NEGOCIADOR LÍDER SOBRE A AGRESSIVIDADE DO  CAUSADOR NA CHEGADA À OCORRÊNCIA": agr_lider_chegada,
-                                "13 - PERCEPÇÕES DO NEGOCIADOR PRINCIPAL SOBRE A RECEPTIVIDADE DO  CAUSADOR NA CHEGADA À OCORRÊNCIA": rec_principal_chegada,
-                                "13 - PERCEPÇÕES DO NEGOCIADOR SECUNDÁRIO SOBRE A RECEPTIVIDADE DO  CAUSADOR NA CHEGADA À OCORRÊNCIA": rec_secundario_chegada,
-                                "13 - PERCEPÇÕES DO NEGOCIADOR LÍDER SOBRE A RECEPTIVIDADE DO  CAUSADOR NA CHEGADA À OCORRÊNCIA": rec_lider_chegada,
-                                "24 - PERCEPÇÕES DO NEGOCIADOR PRINCIPAL SOBRE A AGRESSIVIDADE DO  CAUSADOR NO ENCERRAMENTO DA OCORRÊNCIA": agr_principal_enc,
-                                "24 - PERCEPÇÕES DO NEGOCIADOR SECUNDÁRIO SOBRE A AGRESSIVIDADE DO  CAUSADOR NO ENCERRAMENTO DA OCORRÊNCIA": agr_secundario_enc,
-                                "24 - PERCEPÇÕES DO NEGOCIADOR LÍDER SOBRE A AGRESSIVIDADE DO  CAUSADOR NO ENCERRAMENTO DA OCORRÊNCIA": agr_lider_enc,
-                                "25 - PERCEPÇÕES DO NEGOCIADOR PRINCIPAL SOBRE A RECEPTIVIDADE DO  CAUSADOR NO ENCERRAMENTO DA OCORRÊNCIA": rec_principal_enc,
-                                "25 - PERCEPÇÕES DO NEGOCIADOR SECUNDÁRIO SOBRE A RECEPTIVIDADE DO  CAUSADOR NO ENCERRAMENTO DA OCORRÊNCIA": rec_secundario_enc,
-                                "25 - PERCEPÇÕES DO NEGOCIADOR LÍDER SOBRE A RECEPTIVIDADE DO  CAUSADOR NO ENCERRAMENTO DA OCORRÊNCIA": rec_lider_enc,
+                                **_payload_percepcoes_criar(
+                                    agr_principal_chegada,
+                                    agr_secundario_chegada,
+                                    agr_lider_chegada,
+                                    rec_principal_chegada,
+                                    rec_secundario_chegada,
+                                    rec_lider_chegada,
+                                    agr_principal_enc,
+                                    agr_secundario_enc,
+                                    agr_lider_enc,
+                                    rec_principal_enc,
+                                    rec_secundario_enc,
+                                    rec_lider_enc,
+                                ),
                                 "TRANSCRIÇÃO DO CAUSADOR": trans_causador or "",
                                 "TRANSCRIÇÃO DO NEGOCIADOR PRINCIPAL": trans_principal or "",
                                 "TRANSCRIÇÃO DO NEGOCIADOR SECUNDÁRIO": trans_secundario or "",
@@ -799,7 +884,7 @@ def render(df_quali, df_tec):
 
                             payload = {k: v for k, v in payload.items() if v is not None and v != ""}
 
-                            resultado = airtable_link.criar_nova_apa(payload)
+                            resultado = airtable_link.criar_nova_apa(payload, df_quali=df_quali)
                             id_apa = resultado.get("id") if isinstance(resultado, dict) else resultado
                             erro = resultado.get("erro") if isinstance(resultado, dict) else None
 
@@ -820,6 +905,8 @@ def render(df_quali, df_tec):
                             else:
                                 st.error(f"❌ Falha ao criar APA: {erro or 'Erro desconhecido.'}")
 
+                        except ValueError as e:
+                            st.error(f"❌ Validação antes do Airtable:\n\n{str(e)}")
                         except Exception as e:
                             st.error(f"❌ Erro: {str(e)}")
                             import traceback
@@ -1137,9 +1224,10 @@ def render(df_quali, df_tec):
                                     st.write(f"**Campos no payload:** {list(payload_update.keys())}")
                                     for campo in ("Tempo de Negociação Real", "Tempo de Negociação Tática"):
                                         if campo in payload_update:
+                                            v = payload_update[campo]
                                             st.write(
-                                                f"**{campo}** → `{payload_update[campo]}` seg "
-                                                f"({utils.formatar_tempo_airtable(payload_update[campo])})"
+                                                f"**{campo}** → `{v}` ({type(v).__name__}) = "
+                                                f"{utils.formatar_tempo_airtable(v)}"
                                             )
 
                                 if not payload_update:
@@ -1149,7 +1237,8 @@ def render(df_quali, df_tec):
                                         resultado = airtable_link.atualizar_apa_validacao(
                                             id_apa,
                                             payload_update,
-                                            record_id_interno=record_id_interno
+                                            record_id_interno=record_id_interno,
+                                            df_quali=df_quali,
                                         )
                                         if resultado:
                                             st.success("✅ Dados atualizados com sucesso!")
