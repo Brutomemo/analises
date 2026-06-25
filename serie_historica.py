@@ -66,19 +66,16 @@ def render_serie_historica(df_quali):
     
     col_f1, col_f2, col_f3 = st.columns(3)
     with col_f1:
+        if 'Neg_Limpo' not in df_quali.columns:
+            df_quali['Neg_Limpo'] = df_quali['Negociador Principal'].apply(
+                lambda x: x[0] if isinstance(x, list) and len(x) > 0 else (str(x) if pd.notna(x) else 'N/D')
+            )
+
         lista_neg_g = ["Todos"] + sorted(df_quali[df_quali['Neg_Limpo'] != 'N/D']['Neg_Limpo'].unique().tolist())
-        filtro_neg_g = st.selectbox("Filtrar por Negociador:", lista_neg_g, key="f_neg_historico")
-    with col_f2:
-        lista_tip_g = ["Todas"] + sorted(df_quali[df_quali['Tip_Limpa'] != 'N/D']['Tip_Limpa'].unique().tolist())
-        filtro_tip_g = st.selectbox("Filtrar por Tipologia:", lista_tip_g, key="f_tip_historico")
-    with col_f3:
-        lista_mod_g = ["Todas"] + sorted(df_quali[df_quali['Mod_Limpa'] != 'N/D']['Mod_Limpa'].unique().tolist())
-        filtro_mod_g = st.selectbox("Filtrar por Modalidade:", lista_mod_g, key="f_mod_historico")
+    filtro_neg_g = st.selectbox("Filtrar por Negociador:", lista_neg_g, key="f_neg_historico")
 
     df_quali_filt = df_quali.copy()
     if filtro_neg_g != "Todos": df_quali_filt = df_quali_filt[df_quali_filt['Neg_Limpo'] == filtro_neg_g]
-    if filtro_tip_g != "Todas": df_quali_filt = df_quali_filt[df_quali_filt['Tip_Limpa'] == filtro_tip_g]
-    if filtro_mod_g != "Todas": df_quali_filt = df_quali_filt[df_quali_filt['Mod_Limpa'] == filtro_mod_g]
 
     st.markdown("---")
     col_m1, col_m2, col_m3 = st.columns(3)
