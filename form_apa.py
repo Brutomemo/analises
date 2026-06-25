@@ -233,29 +233,137 @@ def _buscar_registros_por_data(df_quali, data_filtro):
     return df_quali[df_quali['Data_Busca'] == data_cmp].copy().reset_index(drop=True)
 
 
+def _inserir_tecnicas_extraidas(df_tecnicas, apa, progress_bar=None):
+    """Insere técnicas extraídas do .docx no Airtable, vinculadas à APA selecionada."""
+    vinculo_record_id = apa.get('id') or apa.get('Airtable_Record_ID')
+    if vinculo_record_id is not None and isinstance(vinculo_record_id, float) and pd.isna(vinculo_record_id):
+        vinculo_record_id = None
+    elif vinculo_record_id is not None:
+        vinculo_record_id = str(vinculo_record_id)
+
+    id_apa_normalizado = _normalizar_id_apa(apa.get('ID'))
+    sucesso_count = 0
+    erro_count = 0
+    total = len(df_tecnicas)
+
+    for n, (_, row) in enumerate(df_tecnicas.iterrows()):
+        try:
+            tecnica = str(row.get('TÉCNICAS', '')).strip()
+            trecho = str(row.get('TRECHO DA TRANSCRIÇÃO', '')).strip()
+            if not tecnica or not trecho:
+                erro_count += 1
+                continue
+
+            payload = {
+                "TÉCNICAS": tecnica,
+                "TRECHO DA TRANSCRIÇÃO": trecho,
+                "Vinculo_APA": id_apa_normalizado or str(apa.get('ID', '')).strip(),
+            }
+
+            atitude = row.get('ATITUDE DO CAUSADOR')
+            if atitude is not None and not (isinstance(atitude, float) and pd.isna(atitude)):
+                if str(atitude).strip() != "":
+                    payload["ATITUDE DO CAUSADOR"] = int(atitude)
+
+            if airtable_link.criar_tecnica(payload, vinculo_record_id=vinculo_record_id):
+                sucesso_count += 1
+            else:
+                erro_count += 1
+        except Exception:
+            erro_count += 1
+
+        if progress_bar is not None and total:
+            progress_bar.progress((n + 1) / total)
+
+    return sucesso_count, erro_count
+
+
+def _render_envio_tecnicas_docx(apa, key_prefix):
+    """Upload .docx, extração e envio das técnicas para a APA já selecionada."""
+    id_apa = str(apa.get('ID', 'N/D')).strip()
+    id_apa_normalizado = _normalizar_id_apa(apa.get('ID'))
+    vinculo_record_id = apa.get('id') or apa.get('Airtable_Record_ID')
+
+    st.markdown("##### Enviar Técnicas Extraídas do .docx")
+
+    if vinculo_record_id is not None and not (isinstance(vinculo_record_id, float) and pd.isna(vinculo_record_id)):
+        st.info(f"🔗 APA **{id_apa_normalizado or id_apa}** vinculada: `{vinculo_record_id}`")
+    else:
+        st.warning(
+            f"⚠️ APA **{id_apa_normalizado or id_apa}** sem ID interno do Airtable. "
+            "O vínculo será salvo como texto simples."
+        )
+
+    df_tec_cache = st.session_state.get('tecnicas_extraidas_apa')
+
+    arq_tec = st.file_uploader(
+        "Upload do .docx da APA (extrai técnicas automaticamente)",
+        type=["docx", "docm"],
+        key=f"uploader_tec_{key_prefix}",
+    )
+    if arq_tec:
+        with st.spinner("Extraindo técnicas..."):
+            res = separador_apa.processar_apa(arq_tec.read())
+        if res['erro']:
+            st.error(f"❌ {res['erro']}")
+        elif res['tecnicas'].empty:
+            st.warning("⚠️ Nenhuma técnica encontrada no arquivo.")
+        else:
+            st.session_state['tecnicas_extraidas_apa'] = res['tecnicas']
+            df_tec_cache = res['tecnicas']
+            st.success(f"✅ {len(df_tec_cache)} técnicas extraídas e prontas para envio.")
+
+    if df_tec_cache is None or df_tec_cache.empty:
+        st.info(
+            "Faça upload do .docx acima ou extraia técnicas na aba **Criar Novo Registro** "
+            "(subaba Transcrições) — elas ficam em cache até o envio."
+        )
+        return
+
+    st.metric("Técnicas prontas para envio", len(df_tec_cache))
+    st.dataframe(df_tec_cache, use_container_width=True, hide_index=True)
+
+    if st.button(
+        f"✔️ Enviar {len(df_tec_cache)} técnicas para {id_apa}",
+        key=f"btn_enviar_tec_{key_prefix}",
+        use_container_width=True,
+        type="secondary",
+    ):
+        with st.spinner(f"💾 Enviando {len(df_tec_cache)} técnicas..."):
+            progress = st.progress(0)
+            sucesso, erros = _inserir_tecnicas_extraidas(df_tec_cache, apa, progress_bar=progress)
+            progress.empty()
+
+        if erros == 0:
+            st.success(f"✅ {sucesso} técnicas enviadas para {id_apa}!")
+            st.session_state.pop('tecnicas_extraidas_apa', None)
+            st.session_state.pop('df_tec', None)
+        else:
+            st.warning(f"⚠️ {sucesso} enviadas, {erros} com erro.")
+
+
 def render(df_quali, df_tec):
     """
-    Interface principal de Entrada de Dados com 3 abas:
+    Interface principal de Entrada de Dados com 2 abas:
     1. Criar Nova APA
-    2. Upload de Técnicas (INDEPENDENTE)
-    3. Visualizar & Editar (COM FORMULÁRIO)
+    2. Visualizar & Editar (COM FORMULÁRIO)
     """
     
     st.markdown("### Entrada de Dados")
     st.markdown("""
     <p style='color: #aaa; font-size: 0.9rem;'>
-    Crie novas APAs, faça upload de técnicas e edite dados existentes.
+    Crie novas APAs, extraia técnicas do .docx e edite dados existentes.
     </p>
     """, unsafe_allow_html=True)
     
     st.markdown("---")
     
     # ════════════════════════════════════════════════════════════
-    # 3 ABAS PRINCIPAIS
+    # 2 ABAS PRINCIPAIS
     # ════════════════════════════════════════════════════════════
     
     tab1, tab2 = st.tabs([
-        "✔️ Criar Novo Registro de APA",        
+        "✔️ Criar Novo Registro de APA",
         "🔎 Visualizar & Editar"
     ])
     
@@ -372,47 +480,30 @@ def render(df_quali, df_tec):
         
         # ─── FUNÇÕES ───
         with tab_func:
-            st.markdown("**NEGOCIADOR PRINCIPAL**")
-            func_np = st.text_area("Descrição", placeholder="...", height=68, key="c_func_np")
-            func_np_problema = st.text_area("Problema Identificado", placeholder="...", height=68, key="c_func_np_problema")
-            func_np_acoes = st.text_area("Ações Corretivas", placeholder="...", height=68, key="c_func_np_acoes")
-            func_np_praticas = st.text_area("Práticas Promissoras", placeholder="...", height=68, key="c_func_np_praticas")
-            
-            st.markdown("**NEGOCIADOR SECUNDÁRIO**")
-            func_ns = st.text_area("Descrição", placeholder="...", height=68, key="c_func_ns")
-            func_ns_problema = st.text_area("Problema Identificado", placeholder="...", height=68, key="c_func_ns_problema")
-            func_ns_acoes = st.text_area("Ações Corretivas", placeholder="...", height=68, key="c_func_ns_acoes")
-            func_ns_praticas = st.text_area("Práticas Promissoras", placeholder="...", height=68, key="c_func_ns_praticas")
-            
-            st.markdown("**NEGOCIADOR ANOTADOR**")
-            func_na = st.text_area("Descrição", placeholder="...", height=68, key="c_func_na")
-            func_na_problema = st.text_area("Problema Identificado", placeholder="...", height=68, key="c_func_na_problema")
-            func_na_acoes = st.text_area("Ações Corretivas", placeholder="...", height=68, key="c_func_na_acoes")
-            func_na_praticas = st.text_area("Práticas Promissoras", placeholder="...", height=68, key="c_func_na_praticas")
-            
-            st.markdown("**NEGOCIADOR LÍDER**")
-            func_nl = st.text_area("Descrição", placeholder="...", height=68, key="c_func_nl")
-            func_nl_problema = st.text_area("Problema Identificado", placeholder="...", height=68, key="c_func_nl_problema")
-            func_nl_acoes = st.text_area("Ações Corretivas", placeholder="...", height=68, key="c_func_nl_acoes")
-            func_nl_praticas = st.text_area("Práticas Promissoras", placeholder="...", height=68, key="c_func_nl_praticas")
-            
-            st.markdown("**AUXILIAR DE LOGÍSTICA**")
-            func_al = st.text_area("Descrição", placeholder="...", height=68, key="c_func_al")
-            func_al_problema = st.text_area("Problema Identificado", placeholder="...", height=68, key="c_func_al_problema")
-            func_al_acoes = st.text_area("Ações Corretivas", placeholder="...", height=68, key="c_func_al_acoes")
-            func_al_praticas = st.text_area("Práticas Promissoras", placeholder="...", height=68, key="c_func_al_praticas")
-            
-            st.markdown("**AUXILIAR DE INFORMAÇÕES**")
-            func_ai = st.text_area("Descrição", placeholder="...", height=68, key="c_func_ai")
-            func_ai_problema = st.text_area("Problema Identificado", placeholder="...", height=68, key="c_func_ai_problema")
-            func_ai_acoes = st.text_area("Ações Corretivas", placeholder="...", height=68, key="c_func_ai_acoes")
-            func_ai_praticas = st.text_area("Práticas Promissoras", placeholder="...", height=68, key="c_func_ai_praticas")
-            
-            st.markdown("**PROFISSIONAL DE SAÚDE MENTAL**")
-            func_psm = st.text_area("Descrição", placeholder="...", height=68, key="c_func_psm")
-            func_psm_problema = st.text_area("Problema Identificado", placeholder="...", height=68, key="c_func_psm_problema")
-            func_psm_acoes = st.text_area("Ações Corretivas", placeholder="...", height=68, key="c_func_psm_acoes")
-            func_psm_praticas = st.text_area("Práticas Promissoras", placeholder="...", height=68, key="c_func_psm_praticas")
+            for funcao, prefixo in [
+                ("NEGOCIADOR PRINCIPAL",        "c_func_np"),
+                ("NEGOCIADOR SECUNDÁRIO",        "c_func_ns"),
+                ("NEGOCIADOR ANOTADOR",          "c_func_na"),
+                ("NEGOCIADOR LÍDER",             "c_func_nl"),
+                ("AUXILIAR DE LOGÍSTICA",        "c_func_al"),
+                ("AUXILIAR DE INFORMAÇÕES",      "c_func_ai"),
+                ("PROFISSIONAL DE SAÚDE MENTAL", "c_func_psm"),
+            ]:
+                st.markdown(f"**{funcao}**")
+                locals()[f"{prefixo}"] = st.text_area(
+                    "Descrição", placeholder="...", height=68, key=f"{prefixo}"
+                )
+                with st.expander("📋 Problema / Ações / Práticas"):
+                    locals()[f"{prefixo}_problema"] = st.text_area(
+                        "Problema Identificado", placeholder="...", height=68, key=f"{prefixo}_problema"
+                    )
+                    locals()[f"{prefixo}_acoes"] = st.text_area(
+                        "Ações Corretivas", placeholder="...", height=68, key=f"{prefixo}_acoes"
+                    )
+                    locals()[f"{prefixo}_praticas"] = st.text_area(
+                        "Práticas Promissoras", placeholder="...", height=68, key=f"{prefixo}_praticas"
+                    )
+                st.markdown("---")
         
         # ─── INFO ADICIONAIS ───
         with tab_obs:
@@ -525,10 +616,8 @@ def render(df_quali, df_tec):
                         del st.session_state[key]
                 st.info("✨ Formulário limpo!")
     
-    
-    
     # ─────────────────────────────────────────────────────────────
-    # ABA 3: VISUALIZAR & EDITAR (COM FORMULÁRIO)
+    # ABA 2: VISUALIZAR & EDITAR (COM FORMULÁRIO)
     # ─────────────────────────────────────────────────────────────
     
     with tab2:
@@ -597,86 +686,8 @@ def render(df_quali, df_tec):
 
                     st.success(f"✅ APA encontrada! ({id_apa})")
 
-                    # ── ENVIO DE TÉCNICAS EXTRAÍDAS ──────────────────
                     st.markdown("---")
-                    st.markdown("#### Enviar Técnicas para esta APA")
-
-                    df_tec_cache = st.session_state.get('tecnicas_extraidas_apa')
-
-                    if df_tec_cache is None or df_tec_cache.empty:
-                        st.info("Nenhuma técnica em cache. Faça upload do .docx para extrair.")
-                        arq_tec = st.file_uploader(
-                            "Upload do .docx da APA",
-                            type=["docx", "docm"],
-                            key="uploader_tec_edit"
-                        )
-                        if arq_tec:
-                            with st.spinner("Extraindo técnicas..."):
-                                res = separador_apa.processar_apa(arq_tec.read())
-                            if res['erro']:
-                                st.error(f"❌ {res['erro']}")
-                            elif res['tecnicas'].empty:
-                                st.warning("⚠️ Nenhuma técnica encontrada no arquivo.")
-                            else:
-                                st.session_state['tecnicas_extraidas_apa'] = res['tecnicas']
-                                st.rerun()
-
-                    if df_tec_cache is not None and not df_tec_cache.empty:
-                        st.markdown("""
-                        <div class='info-card' style='border-left: 4px solid #FFD700;'>
-                        <h5 style='color: #FFD700; margin-top: 0;'>⚙️ Técnicas Extraídas Disponíveis</h5>
-                        <p style='font-size:0.9rem; color:#bbb; margin-bottom:0;'>
-                        Há técnicas extraídas em cache prontas para vincular a esta APA.
-                        </p>
-                        </div>
-                        """, unsafe_allow_html=True)
-
-                        st.metric("Total de técnicas no cache", len(df_tec_cache))
-                        st.dataframe(df_tec_cache, use_container_width=True, hide_index=True)
-
-                        _id_raw_tec = apa.get('id') or apa.get('Airtable_Record_ID')
-                        record_id_tec = (
-                            str(_id_raw_tec)
-                            if _id_raw_tec is not None and not (isinstance(_id_raw_tec, float) and pd.isna(_id_raw_tec))
-                            else None
-                        )
-
-                        if st.button(f"✔️ Enviar técnicas para {id_apa}", key="btn_enviar_tec_edit"):
-                            if not record_id_tec:
-                                st.error("❌ record_id da APA não encontrado.")
-                            else:
-                                sucesso = 0
-                                erros = 0
-                                progress = st.progress(0)
-                                total = len(df_tec_cache)
-
-                                for i, row in df_tec_cache.iterrows():
-                                    payload = {
-                                        'TÉCNICAS': str(row.get('TÉCNICAS', '')),
-                                        'TRECHO DA TRANSCRIÇÃO': str(row.get('TRECHO DA TRANSCRIÇÃO', '')),
-                                    }
-                                    atitude = row.get('ATITUDE DO CAUSADOR')
-                                    if atitude is not None and str(atitude) != 'nan':
-                                        payload['ATITUDE DO CAUSADOR'] = int(atitude)
-
-                                    ok = airtable_link.criar_tecnica(
-                                        payload,
-                                        vinculo_record_id=record_id_tec
-                                    )
-                                    if ok:
-                                        sucesso += 1
-                                    else:
-                                        erros += 1
-                                    progress.progress((i + 1) / total)
-
-                                progress.empty()
-
-                                if erros == 0:
-                                    st.success(f"✅ {sucesso} técnicas enviadas para {id_apa}!")
-                                    st.session_state.pop('tecnicas_extraidas_apa', None)
-                                else:
-                                    st.warning(f"⚠️ {sucesso} enviadas, {erros} com erro.")
-
+                    _render_envio_tecnicas_docx(apa, key_prefix=f"edit_{id_limpo}")
                     st.markdown("---")
 
                     # Mostrar resumo em cards
