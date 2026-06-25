@@ -330,6 +330,8 @@ def criar_tecnica(payload, vinculo_record_id=None):
     """
     Cria um novo registro de técnica no Airtable.
 
+    Vinculo_APA deve ser o ID visível da APA (ex.: 31, APA 031), não record_id rec...
+
     Returns:
         tuple: (sucesso: bool, erro: str | None)
     """
@@ -349,10 +351,10 @@ def criar_tecnica(payload, vinculo_record_id=None):
         if not payload.get('TRECHO DA TRANSCRIÇÃO'):
             return False, "Campo TRECHO DA TRANSCRIÇÃO obrigatório."
 
-        if vinculo_record_id and str(vinculo_record_id).startswith("rec"):
-            payload['Vinculo_APA'] = [str(vinculo_record_id)]
-        elif not payload.get('Vinculo_APA'):
-            return False, "Vínculo com a APA não encontrado (record_id rec... ausente)."
+        vinculo = payload.get('Vinculo_APA')
+        if vinculo is None or (isinstance(vinculo, float) and pd.isna(vinculo)) or str(vinculo).strip() == "":
+            return False, "Vínculo com a APA não informado (campo ID da APA)."
+        payload['Vinculo_APA'] = str(vinculo).strip()
 
         atitude_raw = payload.get('ATITUDE DO CAUSADOR', None)
         vazio = (

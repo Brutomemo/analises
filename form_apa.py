@@ -13,6 +13,7 @@ import io
 from datetime import datetime, date
 import airtable_link
 import separador_apa
+import utils
 
 
 # ════════════════════════════════════════════════════════════
@@ -283,9 +284,14 @@ def _resolver_record_id_apa(apa, df_quali=None):
     return airtable_link.buscar_record_id_por_id_apa(id_ref)
 
 
-def _criar_tecnica_airtable(payload, vinculo_record_id=None):
+def _vinculo_id_apa(apa):
+    """ID usado no campo Vinculo_APA (mesmo formato da aba de análise: ID_Busca)."""
+    return utils.limpar_id(apa.get('ID'))
+
+
+def _criar_tecnica_airtable(payload):
     """Compatível com criar_tecnica retornando bool (legado) ou (bool, erro)."""
-    resultado = airtable_link.criar_tecnica(payload, vinculo_record_id=vinculo_record_id)
+    resultado = airtable_link.criar_tecnica(payload)
     if isinstance(resultado, tuple):
         return resultado
     return bool(resultado), None if resultado else "Falha ao criar técnica no Airtable."
@@ -293,12 +299,10 @@ def _criar_tecnica_airtable(payload, vinculo_record_id=None):
 
 def _inserir_tecnicas_extraidas(df_tecnicas, apa, df_quali=None, progress_bar=None):
     """Insere técnicas extraídas do .docx no Airtable, vinculadas à APA selecionada."""
-    vinculo_record_id = _resolver_record_id_apa(apa, df_quali)
-    id_apa_normalizado = _normalizar_id_apa(apa.get('ID'))
-    if not vinculo_record_id:
+    vinculo_id = _vinculo_id_apa(apa)
+    if not vinculo_id:
         return 0, len(df_tecnicas), [
-            f"Não foi possível localizar o record_id (rec...) da APA "
-            f"{id_apa_normalizado or apa.get('ID')}. Recarregue os dados do Airtable."
+            "Não foi possível identificar o ID da APA para o vínculo. Recarregue os dados do Airtable."
         ]
 
     sucesso_count = 0
@@ -323,7 +327,7 @@ def _inserir_tecnicas_extraidas(df_tecnicas, apa, df_quali=None, progress_bar=No
         payload = {
             "TÉCNICAS": tecnica,
             "TRECHO DA TRANSCRIÇÃO": trecho,
-            "Vinculo_APA": id_apa_normalizado or str(apa.get('ID', '')).strip(),
+            "Vinculo_APA": vinculo_id,
         }
 
         atitude = row.get('ATITUDE DO CAUSADOR')
@@ -334,7 +338,7 @@ def _inserir_tecnicas_extraidas(df_tecnicas, apa, df_quali=None, progress_bar=No
                 except (ValueError, TypeError):
                     detalhes_erros.append(f"{tecnica}: atitude inválida ({atitude!r}).")
 
-        ok, erro = _criar_tecnica_airtable(payload, vinculo_record_id=vinculo_record_id)
+        ok, erro = _criar_tecnica_airtable(payload)
         if ok:
             sucesso_count += 1
         else:
@@ -350,16 +354,15 @@ def _inserir_tecnicas_extraidas(df_tecnicas, apa, df_quali=None, progress_bar=No
 def _render_envio_tecnicas_docx(apa, df_quali, key_prefix):
     """Upload .docx, extração e envio das técnicas para a APA já selecionada."""
     id_apa = str(apa.get('ID', 'N/D')).strip()
-    id_apa_normalizado = _normalizar_id_apa(apa.get('ID'))
-    record_id_apa = _resolver_record_id_apa(apa, df_quali)
+    vinculo_id = _vinculo_id_apa(apa)
 
     st.markdown("##### Enviar Técnicas Extraídas do .docx")
 
-    if record_id_apa:
-        st.info(f"🔗 APA **{id_apa_normalizado or id_apa}** vinculada: `{record_id_apa}`")
+    if vinculo_id:
+        st.info(f"🔗 Técnicas serão vinculadas ao ID da APA: **{vinculo_id}**")
     else:
         st.error(
-            "❌ Não foi possível obter o `record_id` (rec...) desta APA. "
+            "❌ Não foi possível identificar o ID desta APA. "
             "Recarregue a página para atualizar os dados do Airtable e tente novamente."
         )
 
@@ -403,7 +406,7 @@ def _render_envio_tecnicas_docx(apa, df_quali, key_prefix):
         key=f"btn_enviar_tec_{key_prefix}",
         use_container_width=True,
         type="secondary",
-        disabled=not record_id_apa,
+        disabled=not vinculo_id,
     ):
         with st.spinner(f"💾 Enviando {len(df_tec_cache)} técnicas..."):
             progress = st.progress(0)
