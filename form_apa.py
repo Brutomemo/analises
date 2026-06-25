@@ -254,7 +254,7 @@ def render(df_quali, df_tec):
     # 3 ABAS PRINCIPAIS
     # ════════════════════════════════════════════════════════════
     
-    tab1, tab2, tab3 = st.tabs([
+    tab1, tab2 = st.tabs([
         "✔️ Criar Novo Registro de APA",        
         "🔎 Visualizar & Editar"
     ])
