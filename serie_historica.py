@@ -2035,7 +2035,7 @@ def render_serie_historica(df_quali):
     st.markdown("---")
 
     if is_sum_funcoes:
-        cache_key_funcoes = f"sum_funcoes_{filtro_neg_g}_{filtro_tip_g}_{filtro_mod_g}_{len(df_quali_filt)}"
+        cache_key_funcoes = f"sum_funcoes_{filtro_neg_g}_{len(df_quali_filt)}"
 
         if cache_key_funcoes not in st.session_state:
             with st.spinner("Analisando registros de funções com IA..."):
