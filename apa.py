@@ -429,20 +429,28 @@ def render_apa(df_quali, df_tec):
             if st.button("✔ Analisar Efetividade das Técnicas", key="btn_efetividade_tecnicas"):
                 with st.spinner("Cruzando técnicas com reação do causador..."):
                     try:
+                        id_apa_atual = str(apa_selecionada).strip()
                         record_id_atual = df_apa.get('Airtable_Record_ID')
-                        if not record_id_atual:
-                            st.warning("⚠️ ID do registro não encontrado.")
+                        if not id_apa_atual:
+                            st.warning("⚠️ ID da APA não encontrado.")
                         else:
                             df_tec = st.session_state.get("df_tec", pd.DataFrame())
                             if df_tec.empty:
                                 st.warning("⚠️ Tabela de técnicas não carregada.")
                             else:
-                                def vinculo_contem(val, record_id):
+                                def vinculo_contem(val, id_apa, record_id):
                                     if isinstance(val, list):
-                                        return record_id in val
-                                    return str(val) == record_id
+                                        if record_id and record_id in val:
+                                            return True
+                                        return any(str(x).strip() == id_apa for x in val)
+                                    s = str(val).strip()
+                                    if record_id and s == str(record_id).strip():
+                                        return True
+                                    return s == id_apa
 
-                                mask = df_tec['Vinculo_APA'].apply(lambda x: vinculo_contem(x, record_id_atual))
+                                mask = df_tec['Vinculo_APA'].apply(
+                                    lambda x: vinculo_contem(x, id_apa_atual, record_id_atual)
+                                )
                                 df_tec_apa = df_tec[mask].copy()
 
                                 if df_tec_apa.empty:
