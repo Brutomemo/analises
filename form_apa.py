@@ -268,9 +268,56 @@ def _buscar_registros_por_data(df_quali, data_filtro):
     return df_quali[df_quali['Data_Busca'] == data_cmp].copy().reset_index(drop=True)
 
 
+def _formatar_lista_apas(df_apas):
+    if df_apas is None or df_apas.empty:
+        return ""
+    partes = []
+    for _, row in df_apas.iterrows():
+        id_a = _vinculo_id_apa(row) or _normalizar_id_apa(row.get("ID")) or "?"
+        neg = row.get("Negociador Principal")
+        sufixo = f" — {neg}" if neg is not None and not (isinstance(neg, float) and pd.isna(neg)) and str(neg).strip() else ""
+        partes.append(f"**{id_a}**{sufixo}")
+    return ", ".join(partes)
+
+
+def _payload_funcoes_criar():
+    """Lê campos de funções do session_state (chaves c_func_*)."""
+    mapa = {
+        "FUNÇÕES: NEGOCIADOR PRINCIPAL": "c_func_np",
+        "FUNÇÕES: NEGOCIADOR PRINCIPAL - PROBLEMA IDENTIFICADO": "c_func_np_problema",
+        "FUNÇÕES: NEGOCIADOR PRINCIPAL - AÇÕES CORRETIVAS ADOTADAS": "c_func_np_acoes",
+        "FUNÇÕES: NEGOCIADOR PRINCIPAL - PRÁTICAS PROMISSORAS": "c_func_np_praticas",
+        "FUNÇÕES: NEGOCIADOR SECUNDÁRIO": "c_func_ns",
+        "FUNÇÕES: NEGOCIADOR SECUNDÁRIO - PROBLEMA IDENTIFICADO": "c_func_ns_problema",
+        "FUNÇÕES: NEGOCIADOR SECUNDÁRIO - AÇÕES CORRETIVAS ADOTADAS": "c_func_ns_acoes",
+        "FUNÇÕES: NEGOCIADOR SECUNDÁRIO - PRÁTICAS PROMISSORAS": "c_func_ns_praticas",
+        "FUNÇÕES: NEGOCIADOR ANOTADOR": "c_func_na",
+        "FUNÇÕES: NEGOCIADOR ANOTADOR - PROBLEMA IDENTIFICADO": "c_func_na_problema",
+        "FUNÇÕES: NEGOCIADOR ANOTADOR - AÇÕES CORRETIVAS ADOTADAS": "c_func_na_acoes",
+        "FUNÇÕES: NEGOCIADOR ANOTADOR - PRÁTICAS PROMISSORAS": "c_func_na_praticas",
+        "FUNÇÕES: NEGOCIADOR LÍDER": "c_func_nl",
+        "FUNÇÕES: NEGOCIADOR LÍDER - PROBLEMA IDENTIFICADO": "c_func_nl_problema",
+        "FUNÇÕES: NEGOCIADOR LÍDER - AÇÕES CORRETIVAS ADOTADAS": "c_func_nl_acoes",
+        "FUNÇÕES: NEGOCIADOR LÍDER - PRÁTICAS PROMISSORAS": "c_func_nl_praticas",
+        "FUNÇÕES: NEGOCIADOR AUXILIAR DE LOGÍSTICA": "c_func_al",
+        "FUNÇÕES: AUXILIAR DE LOGÍSTICA - PROBLEMA IDENTIFICADO": "c_func_al_problema",
+        "FUNÇÕES: AUXILIAR DE LOGÍSTICA - AÇÕES CORRETIVAS": "c_func_al_acoes",
+        "FUNÇÕES: AUXILIAR DE LOGÍSTICA - PRÁTICAS PROMISSORAS": "c_func_al_praticas",
+        "FUNÇÕES: NEGOCIADOR AUXILIAR DE INFORMAÇÕES": "c_func_ai",
+        "FUNÇÕES: AUXILIAR DE INFORMAÇÕES - PROBLEMA IDENTIFICADO": "c_func_ai_problema",
+        "FUNÇÕES: AUXILIAR DE INFORMAÇÕES - AÇÕES CORRETIVAS": "c_func_ai_acoes",
+        "FUNÇÕES: AUXILIAR DE INFORMAÇÕES - PRÁTICAS PROMISSORAS": "c_func_ai_praticas",
+        "FUNÇÕES: PROFISSIONAL DE SAÚDE MENTAL": "c_func_psm",
+        "FUNÇÕES: PROFISSIONAL DE SAÚDE MENTAL - PROBLEMA IDENTIFICADO": "c_func_psm_problema",
+        "FUNÇÕES: PROFISSIONAL DE SAÚDE MENTAL - AÇÕES CORRETIVAS ADOTADAS": "c_func_psm_acoes",
+        "FUNÇÕES: PROFISSIONAL DE SAÚDE MENTAL - PRÁTICAS PROMISSORAS": "c_func_psm_praticas",
+    }
+    return {campo: (st.session_state.get(chave) or "") for campo, chave in mapa.items()}
+
+
 def _resolver_record_id_apa(apa, df_quali=None):
     """Obtém o record_id interno do Airtable (rec...) para a APA selecionada."""
-    for campo in ('Airtable_Record_ID', 'record_id_airtable', 'id'):
+    for campo in ('Airtable_Record_ID', 'record_id_airtable'):
         valor = apa.get(campo)
         if valor is None or (isinstance(valor, float) and pd.isna(valor)):
             continue
@@ -283,7 +330,7 @@ def _resolver_record_id_apa(apa, df_quali=None):
         for _, linha in df_quali.iterrows():
             if not _id_apa_coincide(linha.get('ID'), id_campo):
                 continue
-            for campo in ('Airtable_Record_ID', 'record_id_airtable', 'id'):
+            for campo in ('Airtable_Record_ID', 'record_id_airtable'):
                 valor = linha.get(campo)
                 if valor is None or (isinstance(valor, float) and pd.isna(valor)):
                     continue
@@ -324,8 +371,15 @@ def _inserir_tecnicas_extraidas(df_tecnicas, apa, df_quali=None, progress_bar=No
     )
     if not vinculo_record_id:
         return 0, len(df_tecnicas), [
-            f"APA {vinculo_id}: registro não encontrado na tabela de vínculo do Airtable. "
-            "Confira se a APA existe na base e recarregue os dados."
+            f"APA {vinculo_id}: registro não encontrado em "
+            f"'{airtable_link._tabela_vinculo_tecnicas()}'. "
+            "Recarregue a página (F5) e selecione a APA novamente."
+        ]
+
+    if not airtable_link.record_id_pertence_apa(vinculo_record_id, vinculo_id):
+        return 0, len(df_tecnicas), [
+            f"O vínculo interno `{vinculo_record_id}` não corresponde à APA {vinculo_id}. "
+            "Recarregue a página e selecione a APA correta antes de enviar."
         ]
 
     sucesso_count = 0
@@ -375,6 +429,23 @@ def _inserir_tecnicas_extraidas(df_tecnicas, apa, df_quali=None, progress_bar=No
     return sucesso_count, erro_count, detalhes_erros
 
 
+def _limpar_cache_tecnicas_docx():
+    """Remove técnicas em cache e força reset do file_uploader no próximo render."""
+    st.session_state.pop("tecnicas_extraidas_apa", None)
+    st.session_state["_tecnicas_uploader_reset"] = st.session_state.get("_tecnicas_uploader_reset", 0) + 1
+
+
+def _limpar_tela_visualizar_editar():
+    """Limpa busca, formulário de edição e cache de técnicas .docx da aba Visualizar & Editar."""
+    for key in (
+        "_edit_data_ativo",
+        "_edit_registro_key",
+        "vis_sel_ocorrencia_tab3",
+    ):
+        st.session_state.pop(key, None)
+    _limpar_cache_tecnicas_docx()
+
+
 def _render_envio_tecnicas_docx(apa, df_quali, key_prefix):
     """Upload .docx, extração e envio das técnicas para a APA já selecionada."""
     id_apa = str(apa.get('ID', 'N/D')).strip()
@@ -389,9 +460,7 @@ def _render_envio_tecnicas_docx(apa, df_quali, key_prefix):
     st.markdown("##### Enviar Técnicas Extraídas do .docx")
 
     if vinculo_id and vinculo_record_id:
-        st.info(
-            f"🔗 APA **{vinculo_id}** — vínculo linked record: `{vinculo_record_id}`"
-        )
+        st.info(f"🔗 Vínculo confirmado: APA **{vinculo_id}** → `{vinculo_record_id}`")
     elif vinculo_id:
         st.error(
             f"❌ APA **{vinculo_id}** encontrada, mas o registro de vínculo não foi localizado "
@@ -404,11 +473,12 @@ def _render_envio_tecnicas_docx(apa, df_quali, key_prefix):
         )
 
     df_tec_cache = st.session_state.get('tecnicas_extraidas_apa')
+    uploader_reset = st.session_state.get("_tecnicas_uploader_reset", 0)
 
     arq_tec = st.file_uploader(
         "Upload do .docx da APA (extrai técnicas automaticamente)",
         type=["docx", "docm"],
-        key=f"uploader_tec_{key_prefix}",
+        key=f"uploader_tec_{key_prefix}_{uploader_reset}",
     )
     if arq_tec:
         with st.spinner("Extraindo técnicas..."):
@@ -453,9 +523,14 @@ def _render_envio_tecnicas_docx(apa, df_quali, key_prefix):
             progress.empty()
 
         if erros == 0:
-            st.success(f"✅ {sucesso} técnicas enviadas para {id_apa}!")
-            st.session_state.pop('tecnicas_extraidas_apa', None)
-            st.session_state.pop('df_tec', None)
+            st.session_state["_tecnicas_enviadas_msg"] = (
+                f"✅ {sucesso} técnicas enviadas e vinculadas à APA **{vinculo_id}** "
+                f"(`{vinculo_record_id}`)."
+            )
+            st.session_state.pop("df_tec", None)
+            st.session_state.pop("df_quali", None)
+            _limpar_cache_tecnicas_docx()
+            st.rerun()
         else:
             st.warning(f"⚠️ {sucesso} enviadas, {erros} com erro.")
             with st.expander("Detalhes dos erros", expanded=True):
@@ -494,6 +569,10 @@ def render(df_quali, df_tec):
     
     with tab1:
         st.markdown("### Preencha os Dados da Nova APA")
+        st.caption(
+            "Esta aba **sempre cria um registro novo** no Airtable (ID autonumérico: 15, 29, 169…). "
+            "Para alterar uma APA existente, use **Visualizar & Editar**."
+        )
         
         # 7 ABAS DO FORMULÁRIO
         tab_meta, tab_equipe, tab_chegada, tab_enc, tab_trans, tab_func, tab_obs = st.tabs([
@@ -642,93 +721,103 @@ def render(df_quali, df_tec):
         
         # BOTÕES DE AÇÃO
         st.markdown("---")
+
+        existentes_na_data = (
+            _buscar_registros_por_data(df_quali, data_oca) if data_oca else pd.DataFrame()
+        )
+        if not existentes_na_data.empty:
+            st.warning(
+                f"⚠️ Já existe(m) APA(s) em **{data_oca.strftime('%d/%m/%Y')}**: "
+                f"{_formatar_lista_apas(existentes_na_data)}. "
+                "Se a intenção é **atualizar** uma delas, vá em **Visualizar & Editar**. "
+                "Clicar em **Criar** abaixo gera outro registro (novo ID no Airtable), "
+                "mesmo com os mesmos dados — isso parece duplicata."
+            )
+            st.checkbox(
+                "Confirmo: quero criar um **novo** registro nesta data (não editar o existente)",
+                key="c_confirmar_nova_apa_duplicada",
+            )
+
         col_save, col_clear = st.columns(2)
 
         with col_save:
             if st.button("✅ CRIAR REGISTRO DE APA", use_container_width=True, type="secondary", key="btn_criar_aba1"):
-                
-                with st.spinner("💾 Criando novo registro..."):
-                    try:
-                        payload = {
-                            "Data da ocorrência": data_oca.isoformat() if data_oca else "",
-                            "Modalidade do incidente": modalidade or "",
-                            "Tipologia": tipologia or "",
-                            "Forma de Transição": forma_transicao or "",
-                            "Resolução": resolucao or "",
-                            "Motivação": motivacao or "",
-                            "Negociador Principal": neg_principal or "",
-                            "Negociador Secundário": neg_secundario or "",
-                            "Negociador Anotador": neg_anotador or "",
-                            "Negociador Líder": neg_lider or "",
-                            "Negociador Auxiliar de Informações": aux_info or "",
-                            "Negociador Auxiliar de Logística": aux_log or "",
-                            "Profissional de Saúde Mental": prof_saude or "",
-                            "12 - PERCEPÇÕES DO NEGOCIADOR PRINCIPAL SOBRE A AGRESSIVIDADE DO  CAUSADOR NA CHEGADA À OCORRÊNCIA": agr_principal_chegada,
-                            "12 - PERCEPÇÕES DO NEGOCIADOR SECUNDÁRIO SOBRE A AGRESSIVIDADE DO  CAUSADOR NA CHEGADA À OCORRÊNCIA": agr_secundario_chegada,
-                            "12 - PERCEPÇÕES DO NEGOCIADOR LÍDER SOBRE A AGRESSIVIDADE DO  CAUSADOR NA CHEGADA À OCORRÊNCIA": agr_lider_chegada,
-                            "13 - PERCEPÇÕES DO NEGOCIADOR PRINCIPAL SOBRE A RECEPTIVIDADE DO  CAUSADOR NA CHEGADA À OCORRÊNCIA": rec_principal_chegada,
-                            "13 - PERCEPÇÕES DO NEGOCIADOR SECUNDÁRIO SOBRE A RECEPTIVIDADE DO  CAUSADOR NA CHEGADA À OCORRÊNCIA": rec_secundario_chegada,
-                            "13 - PERCEPÇÕES DO NEGOCIADOR LÍDER SOBRE A RECEPTIVIDADE DO  CAUSADOR NA CHEGADA À OCORRÊNCIA": rec_lider_chegada,
-                            "24 - PERCEPÇÕES DO NEGOCIADOR PRINCIPAL SOBRE A AGRESSIVIDADE DO  CAUSADOR NO ENCERRAMENTO DA OCORRÊNCIA": agr_principal_enc,
-                            "24 - PERCEPÇÕES DO NEGOCIADOR SECUNDÁRIO SOBRE A AGRESSIVIDADE DO  CAUSADOR NO ENCERRAMENTO DA OCORRÊNCIA": agr_secundario_enc,
-                            "24 - PERCEPÇÕES DO NEGOCIADOR LÍDER SOBRE A AGRESSIVIDADE DO  CAUSADOR NO ENCERRAMENTO DA OCORRÊNCIA": agr_lider_enc,
-                            "25 - PERCEPÇÕES DO NEGOCIADOR PRINCIPAL SOBRE A RECEPTIVIDADE DO  CAUSADOR NO ENCERRAMENTO DA OCORRÊNCIA": rec_principal_enc,
-                            "25 - PERCEPÇÕES DO NEGOCIADOR SECUNDÁRIO SOBRE A RECEPTIVIDADE DO  CAUSADOR NO ENCERRAMENTO DA OCORRÊNCIA": rec_secundario_enc,
-                            "25 - PERCEPÇÕES DO NEGOCIADOR LÍDER SOBRE A RECEPTIVIDADE DO  CAUSADOR NO ENCERRAMENTO DA OCORRÊNCIA": rec_lider_enc,
-                            "TRANSCRIÇÃO DO CAUSADOR": trans_causador or "",
-                            "TRANSCRIÇÃO DO NEGOCIADOR PRINCIPAL": trans_principal or "",
-                            "TRANSCRIÇÃO DO NEGOCIADOR SECUNDÁRIO": trans_secundario or "",
-                            "FUNÇÕES: NEGOCIADOR PRINCIPAL": func_np or "",
-                            "FUNÇÕES: NEGOCIADOR PRINCIPAL - PROBLEMA IDENTIFICADO": func_np_problema or "",
-                            "FUNÇÕES: NEGOCIADOR PRINCIPAL - AÇÕES CORRETIVAS ADOTADAS": func_np_acoes or "",
-                            "FUNÇÕES: NEGOCIADOR PRINCIPAL - PRÁTICAS PROMISSORAS": func_np_praticas or "",
-                            "FUNÇÕES: NEGOCIADOR SECUNDÁRIO": func_ns or "",
-                            "FUNÇÕES: NEGOCIADOR SECUNDÁRIO - PROBLEMA IDENTIFICADO": func_ns_problema or "",
-                            "FUNÇÕES: NEGOCIADOR SECUNDÁRIO - AÇÕES CORRETIVAS ADOTADAS": func_ns_acoes or "",
-                            "FUNÇÕES: NEGOCIADOR SECUNDÁRIO - PRÁTICAS PROMISSORAS": func_ns_praticas or "",
-                            "FUNÇÕES: NEGOCIADOR ANOTADOR": func_na or "",
-                            "FUNÇÕES: NEGOCIADOR ANOTADOR - PROBLEMA IDENTIFICADO": func_na_problema or "",
-                            "FUNÇÕES: NEGOCIADOR ANOTADOR - AÇÕES CORRETIVAS ADOTADAS": func_na_acoes or "",
-                            "FUNÇÕES: NEGOCIADOR ANOTADOR - PRÁTICAS PROMISSORAS": func_na_praticas or "",
-                            "FUNÇÕES: NEGOCIADOR LÍDER": func_nl or "",
-                            "FUNÇÕES: NEGOCIADOR LÍDER - PROBLEMA IDENTIFICADO": func_nl_problema or "",
-                            "FUNÇÕES: NEGOCIADOR LÍDER - AÇÕES CORRETIVAS ADOTADAS": func_nl_acoes or "",
-                            "FUNÇÕES: NEGOCIADOR LÍDER - PRÁTICAS PROMISSORAS": func_nl_praticas or "",
-                            "FUNÇÕES: NEGOCIADOR AUXILIAR DE LOGÍSTICA": func_al or "",
-                            "FUNÇÕES: AUXILIAR DE LOGÍSTICA - PROBLEMA IDENTIFICADO": func_al_problema or "",
-                            "FUNÇÕES: AUXILIAR DE LOGÍSTICA - AÇÕES CORRETIVAS": func_al_acoes or "",
-                            "FUNÇÕES: AUXILIAR DE LOGÍSTICA - PRÁTICAS PROMISSORAS": func_al_praticas or "",
-                            "FUNÇÕES: NEGOCIADOR AUXILIAR DE INFORMAÇÕES": func_ai or "",
-                            "FUNÇÕES: AUXILIAR DE INFORMAÇÕES - PROBLEMA IDENTIFICADO": func_ai_problema or "",
-                            "FUNÇÕES: AUXILIAR DE INFORMAÇÕES - AÇÕES CORRETIVAS": func_ai_acoes or "",
-                            "FUNÇÕES: AUXILIAR DE INFORMAÇÕES - PRÁTICAS PROMISSORAS": func_ai_praticas or "",
-                            "FUNÇÕES: PROFISSIONAL DE SAÚDE MENTAL": func_psm or "",
-                            "FUNÇÕES: PROFISSIONAL DE SAÚDE MENTAL - PROBLEMA IDENTIFICADO": func_psm_problema or "",
-                            "FUNÇÕES: PROFISSIONAL DE SAÚDE MENTAL - AÇÕES CORRETIVAS ADOTADAS": func_psm_acoes or "",
-                            "FUNÇÕES: PROFISSIONAL DE SAÚDE MENTAL - PRÁTICAS PROMISSORAS": func_psm_praticas or "",
-                            "Tempo de Negociação Real": tempo_real or "",
-                            "Tempo de Negociação Tática": tempo_tatica or "",
-                            "Uniforme Usado": uniforme or "",
-                            "Sexo do Causador": sexo or "",
-                        }
-                        
-                        # Remover campos vazios
-                        payload = {k: v for k, v in payload.items() if v != ""}
 
-                        resultado = airtable_link.criar_nova_apa(payload)
-                        id_apa = resultado.get("id") if isinstance(resultado, dict) else resultado
-                        erro = resultado.get("erro") if isinstance(resultado, dict) else None
+                if not existentes_na_data.empty and not st.session_state.get("c_confirmar_nova_apa_duplicada"):
+                    st.error(
+                        "Marque a confirmação acima antes de criar outro registro na mesma data."
+                    )
+                elif st.session_state.get("_apa_create_lock"):
+                    st.warning("Aguarde — a criação anterior ainda está em processamento.")
+                else:
+                    st.session_state["_apa_create_lock"] = True
+                    with st.spinner("💾 Criando novo registro..."):
+                        try:
+                            payload = {
+                                "Data da ocorrência": data_oca.isoformat() if data_oca else "",
+                                "Modalidade do incidente": modalidade or "",
+                                "Tipologia": tipologia or "",
+                                "Forma de Transição": forma_transicao or "",
+                                "Resolução": resolucao or "",
+                                "Motivação": motivacao or "",
+                                "Negociador Principal": neg_principal or "",
+                                "Negociador Secundário": neg_secundario or "",
+                                "Negociador Anotador": neg_anotador or "",
+                                "Negociador Líder": neg_lider or "",
+                                "Negociador Auxiliar de Informações": aux_info or "",
+                                "Negociador Auxiliar de Logística": aux_log or "",
+                                "Profissional de Saúde Mental": prof_saude or "",
+                                "12 - PERCEPÇÕES DO NEGOCIADOR PRINCIPAL SOBRE A AGRESSIVIDADE DO  CAUSADOR NA CHEGADA À OCORRÊNCIA": agr_principal_chegada,
+                                "12 - PERCEPÇÕES DO NEGOCIADOR SECUNDÁRIO SOBRE A AGRESSIVIDADE DO  CAUSADOR NA CHEGADA À OCORRÊNCIA": agr_secundario_chegada,
+                                "12 - PERCEPÇÕES DO NEGOCIADOR LÍDER SOBRE A AGRESSIVIDADE DO  CAUSADOR NA CHEGADA À OCORRÊNCIA": agr_lider_chegada,
+                                "13 - PERCEPÇÕES DO NEGOCIADOR PRINCIPAL SOBRE A RECEPTIVIDADE DO  CAUSADOR NA CHEGADA À OCORRÊNCIA": rec_principal_chegada,
+                                "13 - PERCEPÇÕES DO NEGOCIADOR SECUNDÁRIO SOBRE A RECEPTIVIDADE DO  CAUSADOR NA CHEGADA À OCORRÊNCIA": rec_secundario_chegada,
+                                "13 - PERCEPÇÕES DO NEGOCIADOR LÍDER SOBRE A RECEPTIVIDADE DO  CAUSADOR NA CHEGADA À OCORRÊNCIA": rec_lider_chegada,
+                                "24 - PERCEPÇÕES DO NEGOCIADOR PRINCIPAL SOBRE A AGRESSIVIDADE DO  CAUSADOR NO ENCERRAMENTO DA OCORRÊNCIA": agr_principal_enc,
+                                "24 - PERCEPÇÕES DO NEGOCIADOR SECUNDÁRIO SOBRE A AGRESSIVIDADE DO  CAUSADOR NO ENCERRAMENTO DA OCORRÊNCIA": agr_secundario_enc,
+                                "24 - PERCEPÇÕES DO NEGOCIADOR LÍDER SOBRE A AGRESSIVIDADE DO  CAUSADOR NO ENCERRAMENTO DA OCORRÊNCIA": agr_lider_enc,
+                                "25 - PERCEPÇÕES DO NEGOCIADOR PRINCIPAL SOBRE A RECEPTIVIDADE DO  CAUSADOR NO ENCERRAMENTO DA OCORRÊNCIA": rec_principal_enc,
+                                "25 - PERCEPÇÕES DO NEGOCIADOR SECUNDÁRIO SOBRE A RECEPTIVIDADE DO  CAUSADOR NO ENCERRAMENTO DA OCORRÊNCIA": rec_secundario_enc,
+                                "25 - PERCEPÇÕES DO NEGOCIADOR LÍDER SOBRE A RECEPTIVIDADE DO  CAUSADOR NO ENCERRAMENTO DA OCORRÊNCIA": rec_lider_enc,
+                                "TRANSCRIÇÃO DO CAUSADOR": trans_causador or "",
+                                "TRANSCRIÇÃO DO NEGOCIADOR PRINCIPAL": trans_principal or "",
+                                "TRANSCRIÇÃO DO NEGOCIADOR SECUNDÁRIO": trans_secundario or "",
+                                **_payload_funcoes_criar(),
+                                "Tempo de Negociação Real": tempo_real or "",
+                                "Tempo de Negociação Tática": tempo_tatica or "",
+                                "Uniforme Usado": uniforme or "",
+                                "Sexo do Causador": sexo or "",
+                            }
 
-                        if id_apa:
-                            st.session_state.id_apa_criado = id_apa
-                            st.success(f"✅ APA CRIADA COM SUCESSO! ID: {st.session_state.id_apa_criado}")
-                        else:
-                            st.error(f"❌ Falha ao criar APA: {erro or 'Erro desconhecido.'}")
-                    
-                    except Exception as e:
-                        st.error(f"❌ Erro: {str(e)}")
-                        import traceback
-                        traceback.print_exc()
+                            payload = {k: v for k, v in payload.items() if v != ""}
+
+                            resultado = airtable_link.criar_nova_apa(payload)
+                            id_apa = resultado.get("id") if isinstance(resultado, dict) else resultado
+                            erro = resultado.get("erro") if isinstance(resultado, dict) else None
+
+                            if id_apa:
+                                st.session_state.id_apa_criado = id_apa
+                                st.session_state.pop("df_quali", None)
+                                st.session_state.pop("df_tec", None)
+                                st.session_state.pop("c_confirmar_nova_apa_duplicada", None)
+                                rec_novo = resultado.get("record_id") if isinstance(resultado, dict) else None
+                                msg = f"✅ NOVO registro criado: **{st.session_state.id_apa_criado}**"
+                                if rec_novo:
+                                    msg += f" (`{rec_novo}`)"
+                                st.success(msg)
+                                st.caption(
+                                    "Este é um ID novo no Airtable (autonumeração). "
+                                    "Para enviar técnicas, use **Visualizar & Editar** e selecione esta APA."
+                                )
+                            else:
+                                st.error(f"❌ Falha ao criar APA: {erro or 'Erro desconhecido.'}")
+
+                        except Exception as e:
+                            st.error(f"❌ Erro: {str(e)}")
+                            import traceback
+                            traceback.print_exc()
+                        finally:
+                            st.session_state.pop("_apa_create_lock", None)
 
         with col_clear:
             if st.button("❌ Limpar Tudo", use_container_width=True, key="btn_clear_aba1"):
@@ -744,6 +833,10 @@ def render(df_quali, df_tec):
     with tab2:
         st.markdown("### Visualizar & Editar APA")
 
+        msg_tecnicas_ok = st.session_state.pop("_tecnicas_enviadas_msg", None)
+        if msg_tecnicas_ok:
+            st.success(msg_tecnicas_ok)
+
         def _on_edit_data_change():
             st.session_state['_edit_data_ativo'] = st.session_state['vis_data_busca_tab3']
             st.session_state.pop('_edit_registro_key', None)
@@ -751,17 +844,25 @@ def render(df_quali, df_tec):
         if 'vis_data_busca_tab3' not in st.session_state:
             st.session_state['vis_data_busca_tab3'] = st.session_state.get('_edit_data_ativo', date.today())
 
-        col_data_busca, col_btn = st.columns([3, 1])
+        col_data_busca, col_btn_buscar, col_btn_limpar = st.columns([3, 1, 1])
         with col_data_busca:
             data_busca = st.date_input(
                 "Data da Ocorrência",
                 key="vis_data_busca_tab3",
                 on_change=_on_edit_data_change,
             )
-        with col_btn:
+        with col_btn_buscar:
             st.write("")
             st.write("")
-            btn_buscar = st.button("🔍 Buscar", key="btn_buscar_vis_tab3")
+            btn_buscar = st.button("🔍 Buscar", key="btn_buscar_vis_tab3", use_container_width=True)
+        with col_btn_limpar:
+            st.write("")
+            st.write("")
+            btn_limpar = st.button("🧹 Limpar", key="btn_limpar_vis_tab3", use_container_width=True)
+
+        if btn_limpar:
+            _limpar_tela_visualizar_editar()
+            st.rerun()
 
         # Persiste a data buscada no session_state para que o formulário de edição
         # permaneça visível após o submit (no rerun, btn_buscar volta a False).
