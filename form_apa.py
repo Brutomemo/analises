@@ -759,6 +759,66 @@ def render(df_quali, df_tec):
 
                     st.success(f"✅ APA encontrada! ({id_apa})")
 
+                    # ── ENVIO DE TÉCNICAS EXTRAÍDAS ──────────────────
+                    df_tec_cache = st.session_state.get('tecnicas_extraidas_apa')
+                    if df_tec_cache is not None and not df_tec_cache.empty:
+                        st.markdown("""
+                        <div class='info-card' style='border-left: 4px solid #FFD700;'>
+                        <h5 style='color: #FFD700; margin-top: 0;'>⚙️ Técnicas Extraídas Disponíveis</h5>
+                        <p style='font-size:0.9rem; color:#bbb; margin-bottom:0;'>
+                        Há técnicas extraídas em cache prontas para vincular a esta APA.
+                        </p>
+                        </div>
+                        """, unsafe_allow_html=True)
+
+                        st.metric("Total de técnicas no cache", len(df_tec_cache))
+                        st.dataframe(df_tec_cache, use_container_width=True, hide_index=True)
+
+                        _id_raw_tec = apa.get('id') or apa.get('Airtable_Record_ID')
+                        record_id_tec = (
+                            str(_id_raw_tec)
+                            if _id_raw_tec is not None and not (isinstance(_id_raw_tec, float) and pd.isna(_id_raw_tec))
+                            else None
+                        )
+
+                        if st.button(f"✔️ Enviar técnicas para {id_apa}", key="btn_enviar_tec_edit"):
+                            if not record_id_tec:
+                                st.error("❌ record_id da APA não encontrado.")
+                            else:
+                                sucesso = 0
+                                erros = 0
+                                progress = st.progress(0)
+                                total = len(df_tec_cache)
+
+                                for i, row in df_tec_cache.iterrows():
+                                    payload = {
+                                        'TÉCNICAS': str(row.get('TÉCNICAS', '')),
+                                        'TRECHO DA TRANSCRIÇÃO': str(row.get('TRECHO DA TRANSCRIÇÃO', '')),
+                                    }
+                                    atitude = row.get('ATITUDE DO CAUSADOR')
+                                    if atitude is not None and str(atitude) != 'nan':
+                                        payload['ATITUDE DO CAUSADOR'] = int(atitude)
+
+                                    ok = airtable_link.criar_tecnica(
+                                        payload,
+                                        vinculo_record_id=record_id_tec
+                                    )
+                                    if ok:
+                                        sucesso += 1
+                                    else:
+                                        erros += 1
+                                    progress.progress((i + 1) / total)
+
+                                progress.empty()
+
+                                if erros == 0:
+                                    st.success(f"✅ {sucesso} técnicas enviadas para {id_apa}!")
+                                    st.session_state.pop('tecnicas_extraidas_apa', None)
+                                else:
+                                    st.warning(f"⚠️ {sucesso} enviadas, {erros} com erro.")
+
+                    st.markdown("---")
+
                     # Mostrar resumo em cards
                     col1, col2, col3, col4 = st.columns(4)
                     with col1:
