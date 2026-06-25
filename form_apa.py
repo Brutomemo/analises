@@ -975,9 +975,17 @@ def render(df_quali, df_tec):
                         st.markdown("#### ℹ️ Informações Adicionais")
                         col9, col10 = st.columns(2)
                         with col9:
-                            tempo_real_edit = st.text_input("Tempo de Negociação Real (HH:MM)", value=apa.get('Tempo de Negociação Real', ''), key=f"edit_tr_{id_limpo}")
+                            tempo_real_edit = st.text_input(
+                                "Tempo de Negociação Real (HH:MM)",
+                                value=utils.tempo_para_exibicao_hhmm(apa.get("Tempo de Negociação Real", "")),
+                                key=f"edit_tr_{id_limpo}",
+                            )
                         with col10:
-                            tempo_tatica_edit = st.text_input("Tempo de Negociação Tática (HH:MM)", value=apa.get('Tempo de Negociação Tática', ''), key=f"edit_tt_{id_limpo}")
+                            tempo_tatica_edit = st.text_input(
+                                "Tempo de Negociação Tática (HH:MM)",
+                                value=utils.tempo_para_exibicao_hhmm(apa.get("Tempo de Negociação Tática", "")),
+                                key=f"edit_tt_{id_limpo}",
+                            )
                         
                         col11, col12 = st.columns(2)
                         with col11:

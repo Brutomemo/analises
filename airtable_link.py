@@ -8,6 +8,7 @@ import pandas as pd
 import requests
 from pyairtable import Api
 from datetime import datetime
+import utils
 
 _TABELA_VINCULO_TECNICAS = None
 
@@ -360,6 +361,8 @@ def atualizar_apa_validacao(id_apa, payload, record_id_interno=None):
     base = api.base(base_id)
     table = base.table("PARA ANALISE QUALITATIVA DA APA")
 
+    utils.validar_tempos_payload_airtable(payload)
+
     # Caminho direto: record_id_interno fornecido (recXXXXXX)
     if record_id_interno and str(record_id_interno).startswith("rec"):
         try:
@@ -437,6 +440,8 @@ def criar_nova_apa(payload):
 
         if "ID" in payload:
             del payload["ID"]
+
+        utils.validar_tempos_payload_airtable(payload)
 
         print(f"[criar_nova_apa] Enviando {len(payload)} campos para o Airtable")
 
