@@ -2016,7 +2016,7 @@ def render_serie_historica(df_quali):
     # ============================================================
     st.markdown("""
     <div class='info-card'>
-    <h5 style='color: #FFD700; margin-top: 0;'> Sumarização de Funções e Entrada de Dados</h5>
+    <h5 style='color: #FFD700; margin-top: 0;'>Sumarização de Funções e Entrada de Dados</h5>
     <p style='font-size:0.9rem; color:#bbb;'>
     Análise assistida por IA dos registros de funções, problemas identificados,
     ações corretivas e práticas promissoras das APAs filtradas.
