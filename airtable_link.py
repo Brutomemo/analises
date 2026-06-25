@@ -4,164 +4,22 @@
 
 import os
 import re
-import unicodedata
 import pandas as pd
 import requests
 from pyairtable import Api
 from datetime import datetime
-import utils
 
 _TABELA_VINCULO_TECNICAS = None
-_TABELA_APA = "PARA ANALISE QUALITATIVA DA APA"
-_SCHEMA_SELECTS_APA_CACHE = None
 
 
 def _formatar_erro_airtable(exc):
     """Extrai mensagem legível de exceções da API Airtable/pyairtable."""
-    msg = None
     for arg in getattr(exc, "args", ()):
         if isinstance(arg, str) and "message" in arg:
             match = re.search(r"""['"]message['"]\s*:\s*['"]([^'"]+)['"]""", arg)
             if match:
-                msg = match.group(1)
-                break
-    if not msg:
-        msg = str(exc)
-
-    if "create new select option" in msg.lower():
-        msg += (
-            " — o valor enviado não existe nas opções do campo (single select) no Airtable. "
-            "Escolha uma opção já cadastrada na base ou peça a um editor da base para "
-            "adicionar a opção manualmente (o token da API não tem permissão para criar opções)."
-        )
-    return msg
-
-
-def _normalizar_texto_opcao(valor):
-    if valor is None:
-        return ""
-    s = unicodedata.normalize("NFKD", str(valor))
-    s = s.encode("ascii", "ignore").decode("ascii").lower().strip()
-    return re.sub(r"\s+", " ", s)
-
-
-def obter_campos_select_apa(force_refresh=False):
-    """Mapa {nome_campo: [opções]} dos single select da tabela APA (cache em memória)."""
-    global _SCHEMA_SELECTS_APA_CACHE
-    if _SCHEMA_SELECTS_APA_CACHE is not None and not force_refresh:
-        return _SCHEMA_SELECTS_APA_CACHE
-
-    api_key, base_id = get_credentials()
-    if not api_key or not base_id:
-        _SCHEMA_SELECTS_APA_CACHE = {}
-        return _SCHEMA_SELECTS_APA_CACHE
-
-    try:
-        url = f"https://api.airtable.com/v0/meta/bases/{base_id}/tables"
-        resp = requests.get(
-            url,
-            headers={"Authorization": f"Bearer {api_key}"},
-            timeout=30,
-        )
-        if not resp.ok:
-            print(f"[airtable_link] Meta API indisponível ({resp.status_code}) — validação via cache local.")
-            _SCHEMA_SELECTS_APA_CACHE = {}
-            return _SCHEMA_SELECTS_APA_CACHE
-
-        selects = {}
-        for table in resp.json().get("tables", []):
-            if table.get("name") != _TABELA_APA:
-                continue
-            for field in table.get("fields", []):
-                if field.get("type") == "singleSelect":
-                    choices = [
-                        c.get("name")
-                        for c in field.get("options", {}).get("choices", [])
-                        if c.get("name")
-                    ]
-                    selects[field["name"]] = choices
-
-        _SCHEMA_SELECTS_APA_CACHE = selects
-        return selects
-    except Exception as exc:
-        print(f"[airtable_link] Falha ao ler schema de selects: {exc}")
-        _SCHEMA_SELECTS_APA_CACHE = {}
-        return _SCHEMA_SELECTS_APA_CACHE
-
-
-def _opcoes_conhecidas_campo(campo, schema=None, fallback_selects=None):
-    """Opções válidas apenas para campos single-select (schema ou lista fixa do app)."""
-    if schema and campo in schema:
-        return schema[campo]
-    if fallback_selects and campo in fallback_selects:
-        return fallback_selects[campo]
-    return []
-
-
-def _fallback_selects_apa():
-    try:
-        import form_apa
-
-        return form_apa.OPCOES_SELECT_APA
-    except Exception:
-        return {}
-
-
-def mapear_valor_para_opcao_airtable(valor, opcoes):
-    """Tenta casar valor do formulário com opção exata do Airtable."""
-    if not opcoes or valor is None:
-        return valor
-    bruto = str(valor).strip()
-    if not bruto:
-        return None
-    if bruto in opcoes:
-        return bruto
-
-    alvo = _normalizar_texto_opcao(bruto)
-    for opcao in opcoes:
-        if _normalizar_texto_opcao(opcao) == alvo:
-            return opcao
-
-    return None
-
-
-def validar_selects_payload_apa(payload, df_quali=None):
-    """
-    Garante que valores de single select existem no Airtable antes do POST.
-    Só valida campos declarados como singleSelect no schema (ou lista fixa do app).
-    Campos de texto livre, data e long text não são validados aqui.
-    """
-    del df_quali  # mantido por compatibilidade; não usar valores da base como "opções"
-    schema = obter_campos_select_apa()
-    fallback = {} if schema else _fallback_selects_apa()
-    erros = []
-
-    for campo, valor in list(payload.items()):
-        if valor is None or str(valor).strip() in ("", "N/D"):
-            continue
-
-        if campo not in schema and campo not in fallback:
-            continue
-
-        opcoes = _opcoes_conhecidas_campo(campo, schema=schema, fallback_selects=fallback)
-        if not opcoes:
-            continue
-
-        mapeado = mapear_valor_para_opcao_airtable(valor, opcoes)
-        if mapeado is None:
-            amostra = ", ".join(f'"{o}"' for o in opcoes[:6])
-            sufixo = "…" if len(opcoes) > 6 else ""
-            erros.append(
-                f'Campo "{campo}": valor "{valor}" não está nas opções do Airtable. '
-                f"Válidas (amostra): {amostra}{sufixo}"
-            )
-            payload.pop(campo, None)
-        else:
-            payload[campo] = mapeado
-
-    if erros:
-        raise ValueError("\n".join(erros))
-    return payload
+                return match.group(1)
+    return str(exc)
 
 
 def _get_setting(key, default=None):
@@ -475,7 +333,7 @@ def buscar_record_id_vinculo_tecnica(id_apa, record_id_hint=None):
     return buscar_record_id_por_id_apa(id_apa, table_name=tabela_apa)
 
 
-def atualizar_apa_validacao(id_apa, payload, record_id_interno=None, df_quali=None):
+def atualizar_apa_validacao(id_apa, payload, record_id_interno=None):
     """
     Atualiza um registro de APA existente.
 
@@ -500,13 +358,7 @@ def atualizar_apa_validacao(id_apa, payload, record_id_interno=None, df_quali=No
 
     api = Api(api_key)
     base = api.base(base_id)
-    table = base.table(_TABELA_APA)
-
-    try:
-        utils.validar_tempos_payload_airtable(payload)
-        validar_selects_payload_apa(payload, df_quali=df_quali)
-    except ValueError:
-        raise
+    table = base.table("PARA ANALISE QUALITATIVA DA APA")
 
     # Caminho direto: record_id_interno fornecido (recXXXXXX)
     if record_id_interno and str(record_id_interno).startswith("rec"):
@@ -516,8 +368,7 @@ def atualizar_apa_validacao(id_apa, payload, record_id_interno=None, df_quali=No
             return True
         except Exception as e:
             raise RuntimeError(
-                f"Airtable rejeitou a atualização (record={record_id_interno}): {str(e)} "
-                f"[tempos: {utils.descrever_tempos_payload(payload)}]"
+                f"Airtable rejeitou a atualização (record={record_id_interno}): {str(e)}"
             ) from e
 
     # Fallback: busca pelo campo ID
@@ -556,12 +407,11 @@ def atualizar_apa_validacao(id_apa, payload, record_id_interno=None, df_quali=No
         return True
     except Exception as e:
         raise RuntimeError(
-            f"Airtable rejeitou a atualização (record={record_encontrado['id']}): {str(e)} "
-            f"[tempos: {utils.descrever_tempos_payload(payload)}]"
+            f"Airtable rejeitou a atualização (record={record_encontrado['id']}): {str(e)}"
         ) from e
 
 
-def criar_nova_apa(payload, df_quali=None):
+def criar_nova_apa(payload):
     """
     Cria um novo registro de APA no Airtable.
 
@@ -583,13 +433,10 @@ def criar_nova_apa(payload, df_quali=None):
 
         api = Api(api_key)
         base = api.base(base_id)
-        table = base.table(_TABELA_APA)
+        table = base.table("PARA ANALISE QUALITATIVA DA APA")
 
         if "ID" in payload:
             del payload["ID"]
-
-        utils.validar_tempos_payload_airtable(payload)
-        validar_selects_payload_apa(payload, df_quali=df_quali)
 
         print(f"[criar_nova_apa] Enviando {len(payload)} campos para o Airtable")
 
