@@ -192,8 +192,27 @@ def _normalizar_data_ocorrencia(valor):
         return None
 
 
-def _chave_registro_apa(row):
-    return str(row.get('id') or row.get('Airtable_Record_ID') or row.get('ID') or "")
+def _id_apa_coincide(id_a, id_b):
+    """Compara IDs de APA (31, 31.0, 'APA 031', etc.)."""
+    if id_a is None or id_b is None:
+        return False
+    if isinstance(id_a, float) and pd.isna(id_a):
+        return False
+    if isinstance(id_b, float) and pd.isna(id_b):
+        return False
+    fmt_a = _normalizar_id_apa(id_a)
+    fmt_b = _normalizar_id_apa(id_b)
+    if fmt_a and fmt_b:
+        return fmt_a == fmt_b
+    return str(id_a).strip() == str(id_b).strip()
+
+
+def _chave_registro_apa(row, df_quali=None):
+    rec = _resolver_record_id_apa(row, df_quali)
+    if rec:
+        return rec
+    id_fmt = _normalizar_id_apa(row.get('ID'))
+    return f"apa-{id_fmt or row.get('ID')}"
 
 
 def _rotulo_ocorrencia_apa(row):
@@ -212,7 +231,11 @@ def _rotulo_ocorrencia_apa(row):
 def _normalizar_id_apa(valor_id):
     if valor_id is None or (isinstance(valor_id, float) and pd.isna(valor_id)):
         return None
+    if isinstance(valor_id, (int, float)) and not isinstance(valor_id, bool):
+        return f"APA {int(valor_id):03d}"
     campo_id = str(valor_id).strip()
+    if campo_id.endswith('.0'):
+        campo_id = campo_id[:-2]
     try:
         num = int(campo_id.replace("APA", "").strip())
         return f"APA {num:03d}"
@@ -233,16 +256,31 @@ def _buscar_registros_por_data(df_quali, data_filtro):
     return df_quali[df_quali['Data_Busca'] == data_cmp].copy().reset_index(drop=True)
 
 
-def _resolver_record_id_apa(apa):
-    """Obtém o record_id interno do Airtable (rec...) a partir da linha da APA."""
-    for campo in ('id', 'Airtable_Record_ID'):
+def _resolver_record_id_apa(apa, df_quali=None):
+    """Obtém o record_id interno do Airtable (rec...) para a APA selecionada."""
+    for campo in ('Airtable_Record_ID', 'record_id_airtable', 'id'):
         valor = apa.get(campo)
         if valor is None or (isinstance(valor, float) and pd.isna(valor)):
             continue
         valor_str = str(valor).strip()
         if valor_str.startswith('rec'):
             return valor_str
-    return None
+
+    id_campo = apa.get('ID')
+    if df_quali is not None and not df_quali.empty and id_campo is not None:
+        for _, linha in df_quali.iterrows():
+            if not _id_apa_coincide(linha.get('ID'), id_campo):
+                continue
+            for campo in ('Airtable_Record_ID', 'record_id_airtable', 'id'):
+                valor = linha.get(campo)
+                if valor is None or (isinstance(valor, float) and pd.isna(valor)):
+                    continue
+                valor_str = str(valor).strip()
+                if valor_str.startswith('rec'):
+                    return valor_str
+
+    id_ref = _normalizar_id_apa(id_campo) or id_campo
+    return airtable_link.buscar_record_id_por_id_apa(id_ref)
 
 
 def _criar_tecnica_airtable(payload, vinculo_record_id=None):
@@ -253,10 +291,16 @@ def _criar_tecnica_airtable(payload, vinculo_record_id=None):
     return bool(resultado), None if resultado else "Falha ao criar técnica no Airtable."
 
 
-def _inserir_tecnicas_extraidas(df_tecnicas, apa, progress_bar=None):
+def _inserir_tecnicas_extraidas(df_tecnicas, apa, df_quali=None, progress_bar=None):
     """Insere técnicas extraídas do .docx no Airtable, vinculadas à APA selecionada."""
-    vinculo_record_id = _resolver_record_id_apa(apa)
+    vinculo_record_id = _resolver_record_id_apa(apa, df_quali)
     id_apa_normalizado = _normalizar_id_apa(apa.get('ID'))
+    if not vinculo_record_id:
+        return 0, len(df_tecnicas), [
+            f"Não foi possível localizar o record_id (rec...) da APA "
+            f"{id_apa_normalizado or apa.get('ID')}. Recarregue os dados do Airtable."
+        ]
+
     sucesso_count = 0
     erro_count = 0
     detalhes_erros = []
@@ -303,11 +347,11 @@ def _inserir_tecnicas_extraidas(df_tecnicas, apa, progress_bar=None):
     return sucesso_count, erro_count, detalhes_erros
 
 
-def _render_envio_tecnicas_docx(apa, key_prefix):
+def _render_envio_tecnicas_docx(apa, df_quali, key_prefix):
     """Upload .docx, extração e envio das técnicas para a APA já selecionada."""
     id_apa = str(apa.get('ID', 'N/D')).strip()
     id_apa_normalizado = _normalizar_id_apa(apa.get('ID'))
-    record_id_apa = _resolver_record_id_apa(apa)
+    record_id_apa = _resolver_record_id_apa(apa, df_quali)
 
     st.markdown("##### Enviar Técnicas Extraídas do .docx")
 
@@ -363,7 +407,9 @@ def _render_envio_tecnicas_docx(apa, key_prefix):
     ):
         with st.spinner(f"💾 Enviando {len(df_tec_cache)} técnicas..."):
             progress = st.progress(0)
-            sucesso, erros, detalhes = _inserir_tecnicas_extraidas(df_tec_cache, apa, progress_bar=progress)
+            sucesso, erros, detalhes = _inserir_tecnicas_extraidas(
+                df_tec_cache, apa, df_quali=df_quali, progress_bar=progress
+            )
             progress.empty()
 
         if erros == 0:
@@ -695,7 +741,9 @@ def render(df_quali, df_tec):
                     st.session_state.pop('_edit_data_ativo', None)
                     st.session_state.pop('_edit_registro_key', None)
                 else:
-                    chaves_registros = [_chave_registro_apa(registros.iloc[i]) for i in range(len(registros))]
+                    chaves_registros = [
+                        _chave_registro_apa(registros.iloc[i], df_quali) for i in range(len(registros))
+                    ]
 
                     if len(registros) > 1:
                         indice_atual = 0
@@ -717,12 +765,12 @@ def render(df_quali, df_tec):
                         st.session_state['_edit_registro_key'] = chaves_registros[0]
 
                     id_limpo = st.session_state.get('_edit_registro_key', 'edit')
-                    id_apa = str(apa.get('ID', 'N/D')).strip()
+                    id_apa = _normalizar_id_apa(apa.get('ID')) or str(apa.get('ID', 'N/D')).strip()
 
                     st.success(f"✅ APA encontrada! ({id_apa})")
 
                     st.markdown("---")
-                    _render_envio_tecnicas_docx(apa, key_prefix=f"edit_{id_limpo}")
+                    _render_envio_tecnicas_docx(apa, df_quali, key_prefix=f"edit_{id_limpo}")
                     st.markdown("---")
 
                     # Mostrar resumo em cards
@@ -930,14 +978,7 @@ def render(df_quali, df_tec):
                                 if v is not None and v != "" and not (isinstance(v, float) and pd.isna(v))
                             }
 
-                            # Recupera o ID interno do Airtable (recXXXXXX) para atualização direta.
-                            # pd.isna() evita que NaN do pandas vire a string "nan".
-                            _id_raw = apa.get('id') or apa.get('Airtable_Record_ID')
-                            record_id_interno = (
-                                str(_id_raw)
-                                if _id_raw is not None and not (isinstance(_id_raw, float) and pd.isna(_id_raw))
-                                else None
-                            )
+                            record_id_interno = _resolver_record_id_apa(apa, df_quali)
 
                             # Diagnóstico visível para facilitar depuração
                             with st.expander("🔍 Diagnóstico (expandir se houver erro)", expanded=False):

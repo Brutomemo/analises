@@ -57,9 +57,14 @@ def buscar_todas_apas():
         data = []
         for record in records:
             fields = record['fields']
-            fields['id'] = record['id']
-            # Alias para compatibilidade com código que usa 'Airtable_Record_ID'
-            fields['Airtable_Record_ID'] = record['id']
+            record_id = record['id']
+            fields['Airtable_Record_ID'] = record_id
+            fields['record_id_airtable'] = record_id
+            # Garante que 'id' não fique com o número da APA (campo ID) por colisão de nome
+            if str(fields.get('id', '')).strip().startswith('rec'):
+                fields['id'] = record_id
+            else:
+                fields.pop('id', None)
             data.append(fields)
 
         df = pd.DataFrame(data)
@@ -128,6 +133,51 @@ def buscar_todas_tecnicas():
     except Exception as e:
         print(f"❌ Erro ao buscar técnicas: {str(e)}")
         return pd.DataFrame(), f"❌ Erro: {str(e)}"
+
+
+def buscar_record_id_por_id_apa(id_apa):
+    """
+    Busca o record_id (rec...) de uma APA pelo número/código do campo ID.
+    Ex.: 31, 31.0, 'APA 031' → 'recXXXXXXXX'
+    """
+    if id_apa is None or (isinstance(id_apa, float) and pd.isna(id_apa)):
+        return None
+
+    try:
+        id_num = int(float(str(id_apa).replace("APA", "").strip()))
+    except (ValueError, TypeError):
+        id_num = None
+
+    id_apa_str = str(id_apa).strip().upper()
+    if id_apa_str.startswith("APA"):
+        id_apa_str = id_apa_str
+    elif id_num is not None:
+        id_apa_str = f"APA {id_num:03d}"
+
+    try:
+        api_key, base_id = get_credentials()
+        if not api_key or not base_id:
+            return None
+
+        api = Api(api_key)
+        table = api.base(base_id).table("PARA ANALISE QUALITATIVA DA APA")
+
+        for registro in table.all():
+            campo_id = registro['fields'].get('ID')
+            if campo_id is None:
+                continue
+            try:
+                campo_num = int(float(campo_id))
+                if id_num is not None and campo_num == id_num:
+                    return registro['id']
+                if f"APA {campo_num:03d}" == id_apa_str:
+                    return registro['id']
+            except (ValueError, TypeError):
+                if str(campo_id).strip().upper() == id_apa_str:
+                    return registro['id']
+        return None
+    except Exception:
+        return None
 
 
 def atualizar_apa_validacao(id_apa, payload, record_id_interno=None):
@@ -280,49 +330,30 @@ def criar_tecnica(payload, vinculo_record_id=None):
     """
     Cria um novo registro de técnica no Airtable.
 
-    Args:
-        payload: Dict com:
-            - TÉCNICAS: Nome da técnica (obrigatório)
-            - TRECHO DA TRANSCRIÇÃO: Texto (obrigatório)
-            - Vinculo_APA: ID formatado "APA 001" — usado apenas como fallback
-            - ATITUDE DO CAUSADOR: -1, 0 ou 1 (opcional — vazio = Inaudível/Não Observado)
-        vinculo_record_id: Airtable internal record ID da APA (ex: 'recXXXXXXXXXXXXXX').
-            Quando fornecido, `Vinculo_APA` é enviado como lista ['recXXX'] (linked record),
-            que é o formato correto para campos do tipo "Link to another record".
-
     Returns:
-        bool: True se sucesso, False se erro
+        tuple: (sucesso: bool, erro: str | None)
     """
     try:
         api_key, base_id = get_credentials()
 
         if not api_key or not base_id:
-            print("❌ Credenciais não configuradas")
-            return False
+            return False, "Credenciais do Airtable não configuradas."
 
         api = Api(api_key)
         base = api.base(base_id)
         table = base.table("TABELA DE FREQUÊNCIAS DAS TÉCNICAS")
 
         if not payload.get('TÉCNICAS'):
-            print("❌ Campo TÉCNICAS obrigatório")
-            return False
+            return False, "Campo TÉCNICAS obrigatório."
 
         if not payload.get('TRECHO DA TRANSCRIÇÃO'):
-            print("❌ Campo TRECHO DA TRANSCRIÇÃO obrigatório")
-            return False
+            return False, "Campo TRECHO DA TRANSCRIÇÃO obrigatório."
 
-        # Montar Vinculo_APA no formato correto para linked record
         if vinculo_record_id and str(vinculo_record_id).startswith("rec"):
-            payload['Vinculo_APA'] = [vinculo_record_id]
-            print(f"🔗 Vinculo_APA como linked record: [{vinculo_record_id}]")
+            payload['Vinculo_APA'] = [str(vinculo_record_id)]
         elif not payload.get('Vinculo_APA'):
-            print("❌ Campo Vinculo_APA obrigatório (nem texto nem record_id fornecido)")
-            return False
-        else:
-            print(f"⚠️ Vinculo_APA como texto simples: {payload['Vinculo_APA']} (linked record não disponível)")
+            return False, "Vínculo com a APA não encontrado (record_id rec... ausente)."
 
-        # Validar ATITUDE — vazio é válido (Inaudível/Não Observado)
         atitude_raw = payload.get('ATITUDE DO CAUSADOR', None)
         vazio = (
             atitude_raw is None
@@ -336,19 +367,13 @@ def criar_tecnica(payload, vinculo_record_id=None):
             try:
                 atitude = int(atitude_raw)
                 if atitude not in [-1, 0, 1]:
-                    print(f"❌ ATITUDE inválida: {atitude} (esperado -1, 0 ou 1)")
-                    return False
+                    return False, f"ATITUDE inválida: {atitude} (esperado -1, 0 ou 1)."
                 payload['ATITUDE DO CAUSADOR'] = atitude
             except (ValueError, TypeError):
-                print("❌ ATITUDE deve ser número inteiro (-1, 0 ou 1)")
-                return False
+                return False, "ATITUDE deve ser número inteiro (-1, 0 ou 1)."
 
-        novo_record = table.create(payload)
-        print(f"✅ Técnica criada: {payload.get('TÉCNICAS')} → {payload.get('Vinculo_APA')}")
-        return True
+        table.create(payload)
+        return True, None
 
     except Exception as e:
-        print(f"❌ Erro ao criar técnica: {str(e)}")
-        import traceback
-        traceback.print_exc()
-        return False
+        return False, _formatar_erro_airtable(e)
