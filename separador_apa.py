@@ -97,7 +97,13 @@ _RE_LEGENDA   = re.compile(
     r'^(CAUSADOR|NEGOCIADOR PRINCIPAL|NEGOCIADOR SECUND[AÁ]RIO|1[°º]\s*INTERVENTOR)\s*:\s*\S+\s*',
     re.IGNORECASE
 )
+
 _FRAGMENTOS = {'verde', 'azul', 'vermelho', 'roxo', 'amarelo', ',', '–', '-'}
+
+_RE_LEGENDA_COMPLETA = re.compile(
+    r'^(CAUSADOR|NEGOCIADOR PRINCIPAL|NEGOCIADOR SECUND[AÁ]RIO|1[°º]\s*INTERVENTOR|GERENTE|TERCEIRO)\s*[:\-–]\s*\w*\s*$',
+    re.IGNORECASE
+)
 
 def _limpar(texto: str) -> str:
     texto = _RE_TIMESTAMP.sub('', texto)
@@ -105,6 +111,12 @@ def _limpar(texto: str) -> str:
     texto = _RE_ESPACOS.sub(' ', texto)
     texto = texto.strip()
     if texto.lower() in _FRAGMENTOS:
+        return ''
+    # Remove linhas que são apenas legenda de cor
+    if _RE_LEGENDA_COMPLETA.match(texto):
+        return ''
+    # Remove separadores (linhas de travessão contínuo)
+    if re.match(r'^[–\-_]{3,}$', texto):
         return ''
     return texto
 
