@@ -106,6 +106,17 @@ PERCEPCOES_RECEPTIVIDADE = [
 
 PERCEPCOES = PERCEPCOES_AGRESSIVIDADE
 
+def _converter_tempo_para_segundos(valor_str):
+    """Converte HH:MM para segundos. Retorna None se vazio."""
+    if not valor_str or str(valor_str).strip() == "":
+        return None
+    try:
+        partes = str(valor_str).strip().split(":")
+        h = int(partes[0])
+        m = int(partes[1]) if len(partes) > 1 else 0
+        return (h * 3600) + (m * 60)
+    except:
+        return None
 
 def validar_excel_tecnicas(df):
     """Valida Excel de técnicas - PERMITE ATITUDE vazia (será "Inaudível/Não Observado")"""
