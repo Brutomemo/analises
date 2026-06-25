@@ -6,6 +6,7 @@
 # Aba 3: Visualizar & Editar (COM FORMULÁRIO DE EDIÇÃO)
 # ============================================================
 
+import re
 import streamlit as st
 import pandas as pd
 import io
@@ -162,11 +163,30 @@ def validar_excel_tecnicas(df):
 
 
 def _normalizar_data_ocorrencia(valor):
+    """Normaliza datas do Airtable e do formulário para comparação/busca."""
     if valor is None or (isinstance(valor, float) and pd.isna(valor)) or valor == "":
         return None
+    if isinstance(valor, date) and not isinstance(valor, datetime):
+        return valor
+    if isinstance(valor, datetime):
+        return valor.date()
+    if isinstance(valor, pd.Timestamp):
+        return valor.date()
+
+    s = str(valor).strip()
+    if not s:
+        return None
+
+    # ISO YYYY-MM-DD (gravado pelo formulário via isoformat)
+    if re.match(r"^\d{4}-\d{2}-\d{2}", s):
+        return pd.to_datetime(s[:10], format="%Y-%m-%d").date()
+
+    # Datas com barra: Airtable exibe no formato M/D/YYYY
+    if "/" in s:
+        return pd.to_datetime(s, dayfirst=False).date()
+
     try:
-        # Tenta formato D/M/YYYY primeiro (padrão brasileiro)
-        return pd.to_datetime(valor, dayfirst=True).date()
+        return pd.to_datetime(s, dayfirst=False).date()
     except (ValueError, TypeError):
         return None
 
@@ -206,9 +226,10 @@ def _garantir_coluna_data_busca(df_quali):
 
 def _buscar_registros_por_data(df_quali, data_filtro):
     df_quali = _garantir_coluna_data_busca(df_quali)
-    if not isinstance(data_filtro, date):
-        data_filtro = pd.to_datetime(data_filtro).date()
-    return df_quali[df_quali['Data_Busca'] == data_filtro].copy().reset_index(drop=True)
+    data_cmp = data_filtro if isinstance(data_filtro, date) else _normalizar_data_ocorrencia(data_filtro)
+    if data_cmp is None:
+        return df_quali.iloc[0:0].copy()
+    return df_quali[df_quali['Data_Busca'] == data_cmp].copy().reset_index(drop=True)
 
 
 def render(df_quali, df_tec):
@@ -404,8 +425,6 @@ def render(df_quali, df_tec):
                 uniforme = st.selectbox("Uniforme Usado", [""] + UNIFORMES, key="c_uniforme")
             with col4:
                 sexo = st.selectbox("Sexo do Causador", [""] + SEXOS, key="c_sexo")
-            
-            validador_nome = st.selectbox("Seu Nome/Identificação *", [""] + NEGOCIADORES, key="c_validador")
         
         # BOTÕES DE AÇÃO
         st.markdown("---")
@@ -477,7 +496,6 @@ def render(df_quali, df_tec):
                             "Tempo de Negociação Tática": tempo_tatica or "",
                             "Uniforme Usado": uniforme or "",
                             "Sexo do Causador": sexo or "",
-                            "VALIDADOR": validador_nome or "",
                         }
                         
                         # Remover campos vazios
@@ -515,12 +533,19 @@ def render(df_quali, df_tec):
 
         st.markdown("---")
 
+        def _on_upload_data_change():
+            st.session_state['_upload_data_ativo'] = st.session_state['upload_data_apa_tab2']
+            st.session_state.pop('_upload_registro_key', None)
+
+        if 'upload_data_apa_tab2' not in st.session_state:
+            st.session_state['upload_data_apa_tab2'] = st.session_state.get('_upload_data_ativo', date.today())
+
         col1, col2 = st.columns(2)
         with col1:
             data_apa_upload = st.date_input(
                 "Data da Ocorrência *",
-                value=st.session_state.get('_upload_data_ativo', date.today()),
-                key="upload_data_apa_tab2"
+                key="upload_data_apa_tab2",
+                on_change=_on_upload_data_change,
             )
             btn_buscar_apa_upload = st.button("🔍 Buscar APA", key="btn_buscar_apa_upload_tab2")
         with col2:
@@ -668,12 +693,19 @@ def render(df_quali, df_tec):
     with tab3:
         st.markdown("### Visualizar & Editar APA")
 
+        def _on_edit_data_change():
+            st.session_state['_edit_data_ativo'] = st.session_state['vis_data_busca_tab3']
+            st.session_state.pop('_edit_registro_key', None)
+
+        if 'vis_data_busca_tab3' not in st.session_state:
+            st.session_state['vis_data_busca_tab3'] = st.session_state.get('_edit_data_ativo', date.today())
+
         col_data_busca, col_btn = st.columns([3, 1])
         with col_data_busca:
             data_busca = st.date_input(
                 "Data da Ocorrência",
-                value=st.session_state.get('_edit_data_ativo', date.today()),
-                key="vis_data_busca_tab3"
+                key="vis_data_busca_tab3",
+                on_change=_on_edit_data_change,
             )
         with col_btn:
             st.write("")
@@ -745,7 +777,11 @@ def render(df_quali, df_tec):
                         st.markdown("#### Metadados")
                         col1, col2 = st.columns(2)
                         with col1:
-                            data_edit = st.date_input("Data da Ocorrência", value=pd.to_datetime(apa.get('Data da ocorrência')) if pd.notna(apa.get('Data da ocorrência')) else None, key=f"edit_data_{id_limpo}")
+                            data_edit = st.date_input(
+                                "Data da Ocorrência",
+                                value=_normalizar_data_ocorrencia(apa.get('Data da ocorrência')),
+                                key=f"edit_data_{id_limpo}",
+                            )
                         with col2:
                             modalidade_edit = st.selectbox("Modalidade", [""] + MODALIDADES, index=MODALIDADES.index(apa.get('Modalidade do incidente')) + 1 if apa.get('Modalidade do incidente') in MODALIDADES else 0, key=f"edit_mod_{id_limpo}")
                         
@@ -968,3 +1004,17 @@ def render(df_quali, df_tec):
             
             except Exception as e:
                 st.error(f"Erro: {str(e)}")
+
+                # =========================================================
+                # RODAPÉ
+                # =========================================================
+
+                st.markdown(
+                    '<p class="sub-title">Delta-Negociação - GATE / PMESP</p>',
+                    unsafe_allow_html=True
+                )
+
+                st.markdown(
+                    '<p style="color:#999; margin-top:5px;">Desenvolvido por Cb PM Marcos - Supervisão: Cap PM Pavão</p>',
+                    unsafe_allow_html=True
+                )
