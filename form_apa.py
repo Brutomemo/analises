@@ -245,6 +245,14 @@ def _resolver_record_id_apa(apa):
     return None
 
 
+def _criar_tecnica_airtable(payload, vinculo_record_id=None):
+    """Compatível com criar_tecnica retornando bool (legado) ou (bool, erro)."""
+    resultado = airtable_link.criar_tecnica(payload, vinculo_record_id=vinculo_record_id)
+    if isinstance(resultado, tuple):
+        return resultado
+    return bool(resultado), None if resultado else "Falha ao criar técnica no Airtable."
+
+
 def _inserir_tecnicas_extraidas(df_tecnicas, apa, progress_bar=None):
     """Insere técnicas extraídas do .docx no Airtable, vinculadas à APA selecionada."""
     vinculo_record_id = _resolver_record_id_apa(apa)
@@ -282,7 +290,7 @@ def _inserir_tecnicas_extraidas(df_tecnicas, apa, progress_bar=None):
                 except (ValueError, TypeError):
                     detalhes_erros.append(f"{tecnica}: atitude inválida ({atitude!r}).")
 
-        ok, erro = airtable_link.criar_tecnica(payload, vinculo_record_id=vinculo_record_id)
+        ok, erro = _criar_tecnica_airtable(payload, vinculo_record_id=vinculo_record_id)
         if ok:
             sucesso_count += 1
         else:
