@@ -255,8 +255,7 @@ def render(df_quali, df_tec):
     # ════════════════════════════════════════════════════════════
     
     tab1, tab2, tab3 = st.tabs([
-        "✔️ Criar Novo Registro de APA",
-        "✔️ Upload de Técnicas",
+        "✔️ Criar Novo Registro de APA",        
         "🔎 Visualizar & Editar"
     ])
     
@@ -526,168 +525,7 @@ def render(df_quali, df_tec):
                         del st.session_state[key]
                 st.info("✨ Formulário limpo!")
     
-    # ─────────────────────────────────────────────────────────────
-    # ABA 2: UPLOAD DE TÉCNICAS (INDEPENDENTE)
-    # ─────────────────────────────────────────────────────────────
     
-    with tab2:
-        st.markdown("## Upload de Técnicas")
-        st.markdown("Faça upload de técnicas para qualquer APA existente, em qualquer momento.")
-
-        st.markdown("---")
-
-        def _on_upload_data_change():
-            st.session_state['_upload_data_ativo'] = st.session_state['upload_data_apa_tab2']
-            st.session_state.pop('_upload_registro_key', None)
-
-        if 'upload_data_apa_tab2' not in st.session_state:
-            st.session_state['upload_data_apa_tab2'] = st.session_state.get('_upload_data_ativo', date.today())
-
-        col1, col2 = st.columns(2)
-        with col1:
-            data_apa_upload = st.date_input(
-                "Data da Ocorrência *",
-                key="upload_data_apa_tab2",
-                on_change=_on_upload_data_change,
-            )
-            btn_buscar_apa_upload = st.button("🔍 Buscar APA", key="btn_buscar_apa_upload_tab2")
-        with col2:
-            st.markdown("#### ")
-            uploaded_file = st.file_uploader(
-                "Selecione arquivo Excel",
-                type=['xlsx', 'xls'],
-                key="upload_excel_tab2"
-            )
-
-        if btn_buscar_apa_upload and data_apa_upload:
-            st.session_state['_upload_data_ativo'] = data_apa_upload
-            st.session_state.pop('_upload_registro_key', None)
-
-        data_ativa_upload = st.session_state.get('_upload_data_ativo')
-        apa_upload = None
-        vinculo_record_id = None
-        id_apa_normalizado = None
-
-        if data_ativa_upload:
-            registros_upload = _buscar_registros_por_data(df_quali, data_ativa_upload)
-
-            if registros_upload.empty:
-                data_fmt = (
-                    data_ativa_upload.strftime('%d/%m/%Y')
-                    if isinstance(data_ativa_upload, date)
-                    else pd.to_datetime(data_ativa_upload).strftime('%d/%m/%Y')
-                )
-                st.error(f"❌ Nenhuma APA encontrada para {data_fmt}")
-                st.session_state.pop('_upload_data_ativo', None)
-                st.session_state.pop('_upload_registro_key', None)
-            else:
-                chaves_upload = [_chave_registro_apa(registros_upload.iloc[i]) for i in range(len(registros_upload))]
-
-                if len(registros_upload) > 1:
-                    indice_atual_upload = 0
-                    registro_ativo_upload = st.session_state.get('_upload_registro_key')
-                    if registro_ativo_upload in chaves_upload:
-                        indice_atual_upload = chaves_upload.index(registro_ativo_upload)
-
-                    indice_selecionado_upload = st.selectbox(
-                        f" {len(registros_upload)} ocorrências nesta data — selecione a APA",
-                        options=list(range(len(registros_upload))),
-                        format_func=lambda i: _rotulo_ocorrencia_apa(registros_upload.iloc[i]),
-                        index=indice_atual_upload,
-                        key="upload_sel_ocorrencia_tab2"
-                    )
-                    apa_upload = registros_upload.iloc[indice_selecionado_upload]
-                    st.session_state['_upload_registro_key'] = chaves_upload[indice_selecionado_upload]
-                else:
-                    apa_upload = registros_upload.iloc[0]
-                    st.session_state['_upload_registro_key'] = chaves_upload[0]
-
-                vinculo_record_id = apa_upload.get('id') or apa_upload.get('Airtable_Record_ID')
-                id_apa_normalizado = _normalizar_id_apa(apa_upload.get('ID'))
-
-                if vinculo_record_id:
-                    st.info(
-                        f"🔗 APA **{id_apa_normalizado or apa_upload.get('ID', 'N/D')}** "
-                        f"encontrada e vinculada: `{vinculo_record_id}`"
-                    )
-                else:
-                    st.warning(
-                        f"⚠️ APA **{id_apa_normalizado or apa_upload.get('ID', 'N/D')}** encontrada, "
-                        "mas sem ID interno do Airtable. O vínculo será salvo como texto simples."
-                    )
-
-        if uploaded_file is not None and apa_upload is None:
-            st.warning("⚠️ Selecione a data da ocorrência e clique em **Buscar APA** antes de inserir as técnicas.")
-
-        if uploaded_file is not None and apa_upload is not None:
-            try:
-                df_excel = pd.read_excel(uploaded_file)
-                valido, mensagens, colunas = validar_excel_tecnicas(df_excel)
-
-                if not valido:
-                    st.error("### ❌ Erro na Validação")
-                    for msg in mensagens:
-                        st.error(msg)
-                else:
-                    st.success(f"✅ Excel validado! {len(df_excel)} técnicas prontas")
-
-                    if mensagens:
-                        for msg in mensagens:
-                            st.warning(msg)
-
-                    st.dataframe(df_excel.head(5), use_container_width=True, hide_index=True)
-
-                    if not id_apa_normalizado:
-                        st.warning(
-                            "⚠️ Não foi possível identificar o ID da APA selecionada. "
-                            "O vínculo será salvo como texto simples — pode não aparecer nas análises."
-                        )
-
-                    if st.button(f"✅ INSERIR {len(df_excel)} TÉCNICAS", use_container_width=True, type="secondary", key="btn_insert_tech_tab2"):
-                        with st.spinner(f"💾 Inserindo {len(df_excel)} técnicas..."):
-                            sucesso_count = 0
-                            erro_count = 0
-
-                            col_tecnicas = colunas['tecnicas']
-                            col_atitude = colunas['atitude']
-                            col_trecho = colunas['trecho']
-
-                            progress_bar = st.progress(0)
-
-                            for i, (idx, row) in enumerate(df_excel.iterrows()):
-                                try:
-                                    atitude_valor = row[col_atitude]
-
-                                    # Vazio = Inaudível/Não Observado (criar_tecnica remove o campo)
-                                    if pd.isna(atitude_valor) or atitude_valor == "" or str(atitude_valor).strip() == "":
-                                        atitude_para_enviar = None
-                                    else:
-                                        atitude_para_enviar = int(atitude_valor)
-
-                                    payload = {
-                                        "TÉCNICAS": str(row[col_tecnicas]).strip(),
-                                        "TRECHO DA TRANSCRIÇÃO": str(row[col_trecho]).strip(),
-                                        "Vinculo_APA": id_apa_normalizado or str(apa_upload.get('ID', '')).strip()
-                                    }
-                                    if atitude_para_enviar is not None:
-                                        payload["ATITUDE DO CAUSADOR"] = atitude_para_enviar
-
-                                    if airtable_link.criar_tecnica(payload, vinculo_record_id=vinculo_record_id):
-                                        sucesso_count += 1
-                                    else:
-                                        erro_count += 1
-                                except Exception:
-                                    erro_count += 1
-
-                                progress_bar.progress((i + 1) / len(df_excel))
-
-                            if erro_count == 0:
-                                st.success(f"✅ {sucesso_count} técnicas inseridas com sucesso!")
-                            else:
-                                st.warning(f"✅ {sucesso_count} inseridas | ⚠️ {erro_count} com erro")
-
-            except Exception as e:
-                st.error(f"❌ Erro: {str(e)}")
     
     # ─────────────────────────────────────────────────────────────
     # ABA 3: VISUALIZAR & EDITAR (COM FORMULÁRIO)
@@ -760,7 +598,29 @@ def render(df_quali, df_tec):
                     st.success(f"✅ APA encontrada! ({id_apa})")
 
                     # ── ENVIO DE TÉCNICAS EXTRAÍDAS ──────────────────
+                    st.markdown("---")
+                    st.markdown("#### Enviar Técnicas para esta APA")
+
                     df_tec_cache = st.session_state.get('tecnicas_extraidas_apa')
+
+                    if df_tec_cache is None or df_tec_cache.empty:
+                        st.info("Nenhuma técnica em cache. Faça upload do .docx para extrair.")
+                        arq_tec = st.file_uploader(
+                            "Upload do .docx da APA",
+                            type=["docx", "docm"],
+                            key="uploader_tec_edit"
+                        )
+                        if arq_tec:
+                            with st.spinner("Extraindo técnicas..."):
+                                res = separador_apa.processar_apa(arq_tec.read())
+                            if res['erro']:
+                                st.error(f"❌ {res['erro']}")
+                            elif res['tecnicas'].empty:
+                                st.warning("⚠️ Nenhuma técnica encontrada no arquivo.")
+                            else:
+                                st.session_state['tecnicas_extraidas_apa'] = res['tecnicas']
+                                st.rerun()
+
                     if df_tec_cache is not None and not df_tec_cache.empty:
                         st.markdown("""
                         <div class='info-card' style='border-left: 4px solid #FFD700;'>
@@ -857,7 +717,7 @@ def render(df_quali, df_tec):
                         motivacao_edit = st.text_area("Motivação", value=apa.get('Motivação', ''), key=f"edit_mot_{id_limpo}", height=80)
                         
                         # Equipe
-                        st.markdown("#### Equipe Principal")
+                        st.markdown("#### Equipe de Negociação")
                         col5, col6 = st.columns(2)
                         with col5:
                             neg_principal_edit = st.selectbox("Negociador Principal", [""] + NEGOCIADORES, index=NEGOCIADORES.index(apa.get('Negociador Principal')) + 1 if apa.get('Negociador Principal') in NEGOCIADORES else 0, key=f"edit_np_{id_limpo}")
