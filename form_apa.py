@@ -1005,16 +1005,19 @@ def render(df_quali, df_tec):
             except Exception as e:
                 st.error(f"Erro: {str(e)}")
 
-                # =========================================================
-                # RODAPÉ
-                # =========================================================
-
-                st.markdown(
-                    '<p class="sub-title">Delta-Negociação - GATE / PMESP</p>',
-                    unsafe_allow_html=True
-                )
-
-                st.markdown(
-                    '<p style="color:#999; margin-top:5px;">Desenvolvido por Cb PM Marcos - Supervisão: Cap PM Pavão</p>',
-                    unsafe_allow_html=True
-                )
+    st.markdown("<div style='margin-bottom: 20px;'></div>", unsafe_allow_html=True)
+    st.markdown("""
+    <div style='margin-top:20px; margin-bottom:100px; padding:15px; background-color:#111; border-radius:8px;'>
+    <p style="color:#bbb; font-size:13px; line-height:1.7; text-align:left;">
+    <span style="color:#ffae42; font-weight:700; font-size:14px; letter-spacing:1px;">DELTA-NEGOCIAÇÃO — GATE/PMESP</span>
+    <br><br>
+    "O maior inimigo do conhecimento não é a ignorância, mas a ilusão do conhecimento." — Stephen Hawking.
+    <br><br>
+    "Sem dados, você é apenas mais uma pessoa com opinião." — W. Edwards Deming.
+    </p>
+    <hr style="border:none; height:1px; background:linear-gradient(to right, transparent, rgba(255,174,66,0.6), transparent); margin-top:18px; margin-bottom:12px;">
+    <div style="text-align:center; font-size:11px; color:#666; line-height:1.5;">
+    © 2026 Delta-Negociação — Todos os direitos reservados.
+    </div>
+    </div>
+    """, unsafe_allow_html=True)
