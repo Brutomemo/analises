@@ -531,7 +531,7 @@ def render(df_quali, df_tec):
     # ABA 3: VISUALIZAR & EDITAR (COM FORMULÁRIO)
     # ─────────────────────────────────────────────────────────────
     
-    with tab3:
+    with tab2:
         st.markdown("### Visualizar & Editar APA")
 
         def _on_edit_data_change():
