@@ -12,6 +12,7 @@ import pandas as pd
 import io
 from datetime import datetime, date
 import airtable_link
+import separador_transcricao
 
 
 # ════════════════════════════════════════════════════════════
@@ -240,7 +241,7 @@ def render(df_quali, df_tec):
     3. Visualizar & Editar (COM FORMULÁRIO)
     """
     
-    st.markdown("### ⌛ Entrada de Dados — GATE/PMESP")
+    st.markdown("### Entrada de Dados")
     st.markdown("""
     <p style='color: #aaa; font-size: 0.9rem;'>
     Crie novas APAs, faça upload de técnicas e edite dados existentes.
@@ -364,6 +365,9 @@ def render(df_quali, df_tec):
         
         # ─── TRANSCRIÇÕES ───
         with tab_trans:
+            st.markdown("#### 📄 Separador Automático de Transcrições")
+            separador_transcricao.render_separador()
+            st.markdown("---")
             trans_causador = st.text_area("Transcrição do Causador", placeholder="...", height=100, key="c_trans_causador")
             trans_principal = st.text_area("Transcrição do Negociador Principal", placeholder="...", height=100, key="c_trans_principal")
             trans_secundario = st.text_area("Transcrição do Negociador Secundário", placeholder="...", height=100, key="c_trans_secundario")
