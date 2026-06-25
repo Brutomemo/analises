@@ -1428,3 +1428,48 @@ Regras obrigatórias:
         return f"Erro de comunicação com a OpenAI. Detalhe: {detalhe}"
     except Exception as e:
         return f"Falha ao gerar sumário: {str(e)}"
+
+def chamar_openai_simples(prompt: str, max_tokens: int = 800) -> str:
+    """
+    Chamada simples à OpenAI com um único prompt.
+    Usada para sumarizações e análises diretas sem contexto complexo.
+
+    Args:
+        prompt: Texto do prompt completo.
+        max_tokens: Limite de tokens na resposta.
+
+    Returns:
+        str: Resposta da IA em texto.
+    """
+    try:
+        api_key = _obter_api_key()
+    except RuntimeError as e:
+        return str(e)
+
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {api_key}",
+    }
+
+    data = {
+        "model": "gpt-4o-mini",
+        "temperature": 0.2,
+        "max_tokens": max_tokens,
+        "messages": [
+            {"role": "user", "content": prompt}
+        ],
+    }
+
+    try:
+        response = requests.post(OPENAI_ENDPOINT, headers=headers, json=data, timeout=60)
+        response.raise_for_status()
+        conteudo = response.json()["choices"][0]["message"]["content"]
+        return conteudo.strip() if conteudo else "A IA não retornou conteúdo."
+    except requests.exceptions.HTTPError as err:
+        try:
+            detalhe = err.response.text
+        except Exception:
+            detalhe = str(err)
+        return f"Erro de comunicação com a OpenAI: {detalhe}"
+    except Exception as e:
+        return f"Falha na chamada à IA: {str(e)}"

@@ -2012,6 +2012,162 @@ def render_serie_historica(df_quali):
     st.markdown("---")
 
     # ============================================================
+    # SUMARIZAÇÃO DE FUNÇÕES E ENTRADA DE DADOS
+    # ============================================================
+    st.markdown("""
+    <div class='info-card'>
+    <h5 style='color: #FFD700; margin-top: 0;'>📋 Sumarização de Funções e Entrada de Dados</h5>
+    <p style='font-size:0.9rem; color:#bbb;'>
+    Análise assistida por IA dos registros de funções, problemas identificados,
+    ações corretivas e práticas promissoras das APAs filtradas.
+    </p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    col_sum_left, col_sum_center, col_sum_right = st.columns([1, 1, 1])
+    with col_sum_center:
+        is_sum_funcoes = render_toggle_button(
+            label="✔️ Abrir Sumarização de Funções",
+            session_key="sum_funcoes_historico",
+            button_key="btn_sum_funcoes_historico"
+        )
+
+    st.markdown("---")
+
+    if is_sum_funcoes:
+        cache_key_funcoes = f"sum_funcoes_{filtro_neg_g}_{filtro_tip_g}_{filtro_mod_g}_{len(df_quali_filt)}"
+
+        if cache_key_funcoes not in st.session_state:
+            with st.spinner("Analisando registros de funções com IA..."):
+                try:
+                    import ia_link
+
+                    # Campos de funções a coletar
+                    FUNCOES_CAMPOS = {
+                        "Negociador Principal": {
+                            "descricao":  "FUNÇÕES: NEGOCIADOR PRINCIPAL",
+                            "problema":   "FUNÇÕES: NEGOCIADOR PRINCIPAL - PROBLEMA IDENTIFICADO",
+                            "acoes":      "FUNÇÕES: NEGOCIADOR PRINCIPAL - AÇÕES CORRETIVAS ADOTADAS",
+                            "praticas":   "FUNÇÕES: NEGOCIADOR PRINCIPAL - PRÁTICAS PROMISSORAS",
+                        },
+                        "Negociador Secundário": {
+                            "descricao":  "FUNÇÕES: NEGOCIADOR SECUNDÁRIO",
+                            "problema":   "FUNÇÕES: NEGOCIADOR SECUNDÁRIO - PROBLEMA IDENTIFICADO",
+                            "acoes":      "FUNÇÕES: NEGOCIADOR SECUNDÁRIO - AÇÕES CORRETIVAS ADOTADAS",
+                            "praticas":   "FUNÇÕES: NEGOCIADOR SECUNDÁRIO - PRÁTICAS PROMISSORAS",
+                        },
+                        "Negociador Anotador": {
+                            "descricao":  "FUNÇÕES: NEGOCIADOR ANOTADOR",
+                            "problema":   "FUNÇÕES: NEGOCIADOR ANOTADOR - PROBLEMA IDENTIFICADO",
+                            "acoes":      "FUNÇÕES: NEGOCIADOR ANOTADOR - AÇÕES CORRETIVAS ADOTADAS",
+                            "praticas":   "FUNÇÕES: NEGOCIADOR ANOTADOR - PRÁTICAS PROMISSORAS",
+                        },
+                        "Negociador Líder": {
+                            "descricao":  "FUNÇÕES: NEGOCIADOR LÍDER",
+                            "problema":   "FUNÇÕES: NEGOCIADOR LÍDER - PROBLEMA IDENTIFICADO",
+                            "acoes":      "FUNÇÕES: NEGOCIADOR LÍDER - AÇÕES CORRETIVAS ADOTADAS",
+                            "praticas":   "FUNÇÕES: NEGOCIADOR LÍDER - PRÁTICAS PROMISSORAS",
+                        },
+                        "Auxiliar de Logística": {
+                            "descricao":  "FUNÇÕES: NEGOCIADOR AUXILIAR DE LOGÍSTICA",
+                            "problema":   "FUNÇÕES: AUXILIAR DE LOGÍSTICA - PROBLEMA IDENTIFICADO",
+                            "acoes":      "FUNÇÕES: AUXILIAR DE LOGÍSTICA - AÇÕES CORRETIVAS",
+                            "praticas":   "FUNÇÕES: AUXILIAR DE LOGÍSTICA - PRÁTICAS PROMISSORAS",
+                        },
+                        "Auxiliar de Informações": {
+                            "descricao":  "FUNÇÕES: NEGOCIADOR AUXILIAR DE INFORMAÇÕES",
+                            "problema":   "FUNÇÕES: AUXILIAR DE INFORMAÇÕES - PROBLEMA IDENTIFICADO",
+                            "acoes":      "FUNÇÕES: AUXILIAR DE INFORMAÇÕES - AÇÕES CORRETIVAS",
+                            "praticas":   "FUNÇÕES: AUXILIAR DE INFORMAÇÕES - PRÁTICAS PROMISSORAS",
+                        },
+                        "Profissional de Saúde Mental": {
+                            "descricao":  "FUNÇÕES: PROFISSIONAL DE SAÚDE MENTAL",
+                            "problema":   "FUNÇÕES: PROFISSIONAL DE SAÚDE MENTAL - PROBLEMA IDENTIFICADO",
+                            "acoes":      "FUNÇÕES: PROFISSIONAL DE SAÚDE MENTAL - AÇÕES CORRETIVAS ADOTADAS",
+                            "praticas":   "FUNÇÕES: PROFISSIONAL DE SAÚDE MENTAL - PRÁTICAS PROMISSORAS",
+                        },
+                    }
+
+                    resumos_funcoes = {}
+
+                    for funcao, campos in FUNCOES_CAMPOS.items():
+                        textos = {"descricao": [], "problema": [], "acoes": [], "praticas": []}
+
+                        for _, row in df_quali_filt.iterrows():
+                            for chave, col in campos.items():
+                                if col in df_quali_filt.columns:
+                                    val = limpar_valor(row.get(col, ''))
+                                    if val and val not in ['N/D', 'nan', '']:
+                                        textos[chave].append(val)
+
+                        # Só gera sumarização se houver conteúdo
+                        tem_conteudo = any(len(v) > 0 for v in textos.values())
+                        if not tem_conteudo:
+                            resumos_funcoes[funcao] = None
+                            continue
+
+                        texto_consolidado = ""
+                        if textos["descricao"]:
+                            texto_consolidado += f"DESCRIÇÕES ({len(textos['descricao'])} registros):\n"
+                            texto_consolidado += "\n".join(f"- {t}" for t in textos["descricao"]) + "\n\n"
+                        if textos["problema"]:
+                            texto_consolidado += f"PROBLEMAS IDENTIFICADOS ({len(textos['problema'])} registros):\n"
+                            texto_consolidado += "\n".join(f"- {t}" for t in textos["problema"]) + "\n\n"
+                        if textos["acoes"]:
+                            texto_consolidado += f"AÇÕES CORRETIVAS ({len(textos['acoes'])} registros):\n"
+                            texto_consolidado += "\n".join(f"- {t}" for t in textos["acoes"]) + "\n\n"
+                        if textos["praticas"]:
+                            texto_consolidado += f"PRÁTICAS PROMISSORAS ({len(textos['praticas'])} registros):\n"
+                            texto_consolidado += "\n".join(f"- {t}" for t in textos["praticas"]) + "\n\n"
+
+                        prompt = f"""Você é um analista especializado em negociação tática de alto risco (GATE/PMESP).
+Analise os registros consolidados abaixo da função {funcao} em {len(df_quali_filt)} APAs.
+
+{texto_consolidado}
+
+Gere uma sumarização estruturada com:
+1. **Padrão de Atuação** — como essa função tem sido desempenhada
+2. **Problemas Recorrentes** — principais dificuldades identificadas
+3. **Ações Corretivas Adotadas** — o que a equipe tem feito para corrigir
+4. **Práticas Promissoras** — o que está funcionando bem
+5. **Recomendação** — 1 ação prioritária para desenvolvimento desta função
+
+Seja direto e objetivo. Use linguagem técnica operacional."""
+
+                        try:
+                            resumo = ia_link.chamar_openai_simples(prompt)
+                            resumos_funcoes[funcao] = resumo
+                        except Exception:
+                            resumos_funcoes[funcao] = "⚠️ Não foi possível gerar sumarização para esta função."
+
+                    st.session_state[cache_key_funcoes] = resumos_funcoes
+
+                except Exception as e:
+                    st.error(f"❌ Erro ao gerar sumarização: {str(e)[:100]}")
+                    st.session_state[cache_key_funcoes] = {}
+
+        resumos_funcoes = st.session_state.get(cache_key_funcoes, {})
+
+        if resumos_funcoes:
+            funcoes_com_dados = {k: v for k, v in resumos_funcoes.items() if v}
+
+            if not funcoes_com_dados:
+                st.warning("⚠️ Nenhuma função possui registros suficientes nas APAs filtradas.")
+            else:
+                tabs_funcoes = st.tabs([f"👤 {f}" for f in funcoes_com_dados.keys()])
+                for tab, (funcao, resumo) in zip(tabs_funcoes, funcoes_com_dados.items()):
+                    with tab:
+                        st.markdown(f"""
+                        <div class='info-card'>
+                        <h5 style='color: #FFD700; margin-top: 0;'>👤 {funcao}</h5>
+                        </div>
+                        """, unsafe_allow_html=True)
+                        st.markdown(f"<div style='font-size:0.9rem; line-height:1.6'>{resumo}</div>",
+                                    unsafe_allow_html=True)
+
+        st.markdown("---")
+
+    # ============================================================
     # SÍNTESE INTERPRETATIVA POR IA
     # ============================================================
     st.markdown("""
