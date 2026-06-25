@@ -89,20 +89,22 @@ def obter_campos_select_apa(force_refresh=False):
         return _SCHEMA_SELECTS_APA_CACHE
 
 
-def _opcoes_conhecidas_campo(campo, df_quali=None, schema=None):
-    opcoes = set()
+def _opcoes_conhecidas_campo(campo, schema=None, fallback_selects=None):
+    """Opções válidas apenas para campos single-select (schema ou lista fixa do app)."""
     if schema and campo in schema:
-        opcoes.update(schema[campo])
-    if df_quali is not None and not df_quali.empty and campo in df_quali.columns:
-        serie = (
-            df_quali[campo]
-            .dropna()
-            .astype(str)
-            .str.strip()
-            .loc[lambda s: ~s.isin(["", "N/D", "nan", "None"])]
-        )
-        opcoes.update(serie.unique().tolist())
-    return list(opcoes)
+        return schema[campo]
+    if fallback_selects and campo in fallback_selects:
+        return fallback_selects[campo]
+    return []
+
+
+def _fallback_selects_apa():
+    try:
+        import form_apa
+
+        return form_apa.OPCOES_SELECT_APA
+    except Exception:
+        return {}
 
 
 def mapear_valor_para_opcao_airtable(valor, opcoes):
@@ -120,27 +122,28 @@ def mapear_valor_para_opcao_airtable(valor, opcoes):
         if _normalizar_texto_opcao(opcao) == alvo:
             return opcao
 
-    for opcao in opcoes:
-        norm = _normalizar_texto_opcao(opcao)
-        if alvo in norm or norm in alvo:
-            return opcao
-
     return None
 
 
 def validar_selects_payload_apa(payload, df_quali=None):
     """
     Garante que valores de single select existem no Airtable antes do POST.
-    Corrige pequenas diferenças de acento/caixa; levanta ValueError se não houver match.
+    Só valida campos declarados como singleSelect no schema (ou lista fixa do app).
+    Campos de texto livre, data e long text não são validados aqui.
     """
+    del df_quali  # mantido por compatibilidade; não usar valores da base como "opções"
     schema = obter_campos_select_apa()
+    fallback = {} if schema else _fallback_selects_apa()
     erros = []
 
     for campo, valor in list(payload.items()):
         if valor is None or str(valor).strip() in ("", "N/D"):
             continue
 
-        opcoes = _opcoes_conhecidas_campo(campo, df_quali=df_quali, schema=schema)
+        if campo not in schema and campo not in fallback:
+            continue
+
+        opcoes = _opcoes_conhecidas_campo(campo, schema=schema, fallback_selects=fallback)
         if not opcoes:
             continue
 
