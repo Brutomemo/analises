@@ -1150,7 +1150,7 @@ def render(df_quali, df_tec):
                                         st.success("✅ Dados atualizados com sucesso!")
                                         # Invalida cache para forçar recarga na próxima navegação
                                         st.session_state.pop("df_quali", None)
-                                        st.balloons()
+                                        
                                     else:
                                         st.error(
                                             "❌ APA não encontrada na base de dados. "
