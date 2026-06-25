@@ -13,6 +13,7 @@ import io
 from datetime import datetime, date
 import airtable_link
 import separador_transcricao
+import separador_apa
 
 
 # ════════════════════════════════════════════════════════════
@@ -365,7 +366,9 @@ def render(df_quali, df_tec):
         
         # ─── TRANSCRIÇÕES ───
         with tab_trans:
-            st.markdown("#### 📄 Separador Automático de Transcrições")
+            separador_apa.render_separador()
+            st.markdown("---")
+            st.markdown("#### Separador Automático de Transcrições")
             separador_transcricao.render_separador()
             st.markdown("---")
             trans_causador = st.text_area("Transcrição do Causador", placeholder="...", height=100, key="c_trans_causador")
