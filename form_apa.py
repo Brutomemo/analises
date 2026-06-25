@@ -233,65 +233,82 @@ def _buscar_registros_por_data(df_quali, data_filtro):
     return df_quali[df_quali['Data_Busca'] == data_cmp].copy().reset_index(drop=True)
 
 
+def _resolver_record_id_apa(apa):
+    """Obtém o record_id interno do Airtable (rec...) a partir da linha da APA."""
+    for campo in ('id', 'Airtable_Record_ID'):
+        valor = apa.get(campo)
+        if valor is None or (isinstance(valor, float) and pd.isna(valor)):
+            continue
+        valor_str = str(valor).strip()
+        if valor_str.startswith('rec'):
+            return valor_str
+    return None
+
+
 def _inserir_tecnicas_extraidas(df_tecnicas, apa, progress_bar=None):
     """Insere técnicas extraídas do .docx no Airtable, vinculadas à APA selecionada."""
-    vinculo_record_id = apa.get('id') or apa.get('Airtable_Record_ID')
-    if vinculo_record_id is not None and isinstance(vinculo_record_id, float) and pd.isna(vinculo_record_id):
-        vinculo_record_id = None
-    elif vinculo_record_id is not None:
-        vinculo_record_id = str(vinculo_record_id)
-
+    vinculo_record_id = _resolver_record_id_apa(apa)
     id_apa_normalizado = _normalizar_id_apa(apa.get('ID'))
     sucesso_count = 0
     erro_count = 0
+    detalhes_erros = []
     total = len(df_tecnicas)
 
     for n, (_, row) in enumerate(df_tecnicas.iterrows()):
-        try:
-            tecnica = str(row.get('TÉCNICAS', '')).strip()
-            trecho = str(row.get('TRECHO DA TRANSCRIÇÃO', '')).strip()
-            if not tecnica or not trecho:
-                erro_count += 1
-                continue
+        tecnica = str(row.get('TÉCNICAS', '')).strip()
+        trecho = str(row.get('TRECHO DA TRANSCRIÇÃO', '')).strip()
 
-            payload = {
-                "TÉCNICAS": tecnica,
-                "TRECHO DA TRANSCRIÇÃO": trecho,
-                "Vinculo_APA": id_apa_normalizado or str(apa.get('ID', '')).strip(),
-            }
-
-            atitude = row.get('ATITUDE DO CAUSADOR')
-            if atitude is not None and not (isinstance(atitude, float) and pd.isna(atitude)):
-                if str(atitude).strip() != "":
-                    payload["ATITUDE DO CAUSADOR"] = int(atitude)
-
-            if airtable_link.criar_tecnica(payload, vinculo_record_id=vinculo_record_id):
-                sucesso_count += 1
-            else:
-                erro_count += 1
-        except Exception:
+        if not tecnica:
             erro_count += 1
+            detalhes_erros.append(f"Linha {n + 1}: técnica vazia.")
+            if progress_bar is not None and total:
+                progress_bar.progress((n + 1) / total)
+            continue
+
+        if not trecho:
+            trecho = "[Trecho não extraído do documento — revise a tabela no .docx]"
+
+        payload = {
+            "TÉCNICAS": tecnica,
+            "TRECHO DA TRANSCRIÇÃO": trecho,
+            "Vinculo_APA": id_apa_normalizado or str(apa.get('ID', '')).strip(),
+        }
+
+        atitude = row.get('ATITUDE DO CAUSADOR')
+        if atitude is not None and not (isinstance(atitude, float) and pd.isna(atitude)):
+            if str(atitude).strip() != "":
+                try:
+                    payload["ATITUDE DO CAUSADOR"] = int(atitude)
+                except (ValueError, TypeError):
+                    detalhes_erros.append(f"{tecnica}: atitude inválida ({atitude!r}).")
+
+        ok, erro = airtable_link.criar_tecnica(payload, vinculo_record_id=vinculo_record_id)
+        if ok:
+            sucesso_count += 1
+        else:
+            erro_count += 1
+            detalhes_erros.append(f"{tecnica}: {erro or 'erro desconhecido'}")
 
         if progress_bar is not None and total:
             progress_bar.progress((n + 1) / total)
 
-    return sucesso_count, erro_count
+    return sucesso_count, erro_count, detalhes_erros
 
 
 def _render_envio_tecnicas_docx(apa, key_prefix):
     """Upload .docx, extração e envio das técnicas para a APA já selecionada."""
     id_apa = str(apa.get('ID', 'N/D')).strip()
     id_apa_normalizado = _normalizar_id_apa(apa.get('ID'))
-    vinculo_record_id = apa.get('id') or apa.get('Airtable_Record_ID')
+    record_id_apa = _resolver_record_id_apa(apa)
 
     st.markdown("##### Enviar Técnicas Extraídas do .docx")
 
-    if vinculo_record_id is not None and not (isinstance(vinculo_record_id, float) and pd.isna(vinculo_record_id)):
-        st.info(f"🔗 APA **{id_apa_normalizado or id_apa}** vinculada: `{vinculo_record_id}`")
+    if record_id_apa:
+        st.info(f"🔗 APA **{id_apa_normalizado or id_apa}** vinculada: `{record_id_apa}`")
     else:
-        st.warning(
-            f"⚠️ APA **{id_apa_normalizado or id_apa}** sem ID interno do Airtable. "
-            "O vínculo será salvo como texto simples."
+        st.error(
+            "❌ Não foi possível obter o `record_id` (rec...) desta APA. "
+            "Recarregue a página para atualizar os dados do Airtable e tente novamente."
         )
 
     df_tec_cache = st.session_state.get('tecnicas_extraidas_apa')
@@ -321,6 +338,12 @@ def _render_envio_tecnicas_docx(apa, key_prefix):
         return
 
     st.metric("Técnicas prontas para envio", len(df_tec_cache))
+    sem_trecho = int((df_tec_cache['TRECHO DA TRANSCRIÇÃO'].fillna('').astype(str).str.strip() == '').sum())
+    if sem_trecho:
+        st.warning(
+            f"⚠️ {sem_trecho} técnica(s) sem trecho extraído — serão enviadas com aviso no campo trecho. "
+            "Reenvie o .docx após conferir a tabela de técnicas."
+        )
     st.dataframe(df_tec_cache, use_container_width=True, hide_index=True)
 
     if st.button(
@@ -328,10 +351,11 @@ def _render_envio_tecnicas_docx(apa, key_prefix):
         key=f"btn_enviar_tec_{key_prefix}",
         use_container_width=True,
         type="secondary",
+        disabled=not record_id_apa,
     ):
         with st.spinner(f"💾 Enviando {len(df_tec_cache)} técnicas..."):
             progress = st.progress(0)
-            sucesso, erros = _inserir_tecnicas_extraidas(df_tec_cache, apa, progress_bar=progress)
+            sucesso, erros, detalhes = _inserir_tecnicas_extraidas(df_tec_cache, apa, progress_bar=progress)
             progress.empty()
 
         if erros == 0:
@@ -340,6 +364,9 @@ def _render_envio_tecnicas_docx(apa, key_prefix):
             st.session_state.pop('df_tec', None)
         else:
             st.warning(f"⚠️ {sucesso} enviadas, {erros} com erro.")
+            with st.expander("Detalhes dos erros", expanded=True):
+                for msg in detalhes[:20]:
+                    st.write(f"- {msg}")
 
 
 def render(df_quali, df_tec):
