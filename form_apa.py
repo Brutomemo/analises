@@ -590,7 +590,7 @@ def render(df_quali, df_tec):
                         indice_atual_upload = chaves_upload.index(registro_ativo_upload)
 
                     indice_selecionado_upload = st.selectbox(
-                        f"📋 {len(registros_upload)} ocorrências nesta data — selecione a APA",
+                        f" {len(registros_upload)} ocorrências nesta data — selecione a APA",
                         options=list(range(len(registros_upload))),
                         format_func=lambda i: _rotulo_ocorrencia_apa(registros_upload.iloc[i]),
                         index=indice_atual_upload,
@@ -742,7 +742,7 @@ def render(df_quali, df_tec):
                             indice_atual = chaves_registros.index(registro_ativo)
 
                         indice_selecionado = st.selectbox(
-                            f"📋 {len(registros)} ocorrências nesta data — selecione qual editar",
+                            f" {len(registros)} ocorrências nesta data — selecione qual editar",
                             options=list(range(len(registros))),
                             format_func=lambda i: _rotulo_ocorrencia_apa(registros.iloc[i]),
                             index=indice_atual,
@@ -891,7 +891,7 @@ def render(df_quali, df_tec):
                             sexo_edit = st.selectbox("Sexo do Causador", [""] + SEXOS, index=SEXOS.index(apa.get('Sexo do Causador')) + 1 if apa.get('Sexo do Causador') in SEXOS else 0, key=f"edit_sex_{id_limpo}")
                         
                         # Funções (em expander para não ficar gigante)
-                        with st.expander("👔 FUNÇÕES - Clique para Expandir", expanded=False):
+                        with st.expander(" FUNÇÕES - Clique para Expandir", expanded=False):
                             st.markdown("#### NEGOCIADOR PRINCIPAL")
                             col_f1a, col_f1b = st.columns(2)
                             with col_f1a:
