@@ -318,7 +318,10 @@ def _inserir_tecnicas_extraidas(df_tecnicas, apa, df_quali=None, progress_bar=No
             "Não foi possível identificar o ID da APA para o vínculo. Recarregue os dados do Airtable."
         ]
 
-    vinculo_record_id = airtable_link.buscar_record_id_vinculo_tecnica(vinculo_id)
+    record_hint = _resolver_record_id_apa(apa, df_quali)
+    vinculo_record_id = airtable_link.buscar_record_id_vinculo_tecnica(
+        vinculo_id, record_id_hint=record_hint
+    )
     if not vinculo_record_id:
         return 0, len(df_tecnicas), [
             f"APA {vinculo_id}: registro não encontrado na tabela de vínculo do Airtable. "
@@ -376,8 +379,11 @@ def _render_envio_tecnicas_docx(apa, df_quali, key_prefix):
     """Upload .docx, extração e envio das técnicas para a APA já selecionada."""
     id_apa = str(apa.get('ID', 'N/D')).strip()
     vinculo_id = _vinculo_id_apa(apa)
+    record_hint = _resolver_record_id_apa(apa, df_quali)
     vinculo_record_id = (
-        airtable_link.buscar_record_id_vinculo_tecnica(vinculo_id) if vinculo_id else None
+        airtable_link.buscar_record_id_vinculo_tecnica(vinculo_id, record_id_hint=record_hint)
+        if vinculo_id
+        else None
     )
 
     st.markdown("##### Enviar Técnicas Extraídas do .docx")

@@ -229,6 +229,24 @@ def buscar_todas_tecnicas():
         return pd.DataFrame(), f"❌ Erro: {str(e)}"
 
 
+def _valor_coincide_id_apa(valor, id_num, id_fmt):
+    if valor is None or (isinstance(valor, float) and pd.isna(valor)):
+        return False
+    if isinstance(valor, list):
+        return any(_valor_coincide_id_apa(item, id_num, id_fmt) for item in valor)
+    return _campo_id_coincide(valor, id_num, id_fmt)
+
+
+def _registro_coincide_id_apa(fields, id_num, id_fmt):
+    for nome in ("ID", "Id", "id"):
+        if _campo_id_coincide(fields.get(nome), id_num, id_fmt):
+            return True
+    for valor in fields.values():
+        if _valor_coincide_id_apa(valor, id_num, id_fmt):
+            return True
+    return False
+
+
 def buscar_record_id_por_id_apa(id_apa, table_name=None):
     """
     Busca o record_id (rec...) de uma APA pelo número/código do campo ID.
@@ -249,19 +267,43 @@ def buscar_record_id_por_id_apa(id_apa, table_name=None):
         api = Api(api_key)
         table = api.base(base_id).table(table_name)
 
+        if id_num is not None:
+            formulas = [
+                f"{{ID}}={id_num}",
+                f"{{ID}}='{id_num}'",
+                f"{{ID}}='{id_fmt}'",
+            ]
+            formula = "OR(" + ",".join(formulas) + ")"
+            try:
+                registros = table.all(formula=formula)
+                if registros:
+                    return registros[0]["id"]
+            except Exception as exc:
+                print(f"[airtable_link] Filtro por ID falhou em {table_name}: {exc}")
+
         for registro in table.all():
-            campo_id = registro["fields"].get("ID")
-            if _campo_id_coincide(campo_id, id_num, id_fmt):
+            if _registro_coincide_id_apa(registro["fields"], id_num, id_fmt):
                 return registro["id"]
         return None
-    except Exception:
+    except Exception as exc:
+        print(f"[airtable_link] Erro ao buscar APA {id_apa} em {table_name}: {exc}")
         return None
 
 
-def buscar_record_id_vinculo_tecnica(id_apa):
+def buscar_record_id_vinculo_tecnica(id_apa, record_id_hint=None):
     """
     Record ID na tabela ligada ao campo Vinculo_APA, localizado pelo ID da APA.
+    Usa o record_id já carregado no app quando disponível (df_quali).
     """
+    if record_id_hint and str(record_id_hint).strip().startswith("rec"):
+        return str(record_id_hint).strip()
+
+    tabela_config = _get_setting("TABLE_NAME_VINCULO_APA")
+    if tabela_config:
+        rec = buscar_record_id_por_id_apa(id_apa, table_name=tabela_config)
+        if rec:
+            return rec
+
     tabela_vinculo = _tabela_vinculo_tecnicas()
     rec = buscar_record_id_por_id_apa(id_apa, table_name=tabela_vinculo)
     if rec:
@@ -269,7 +311,10 @@ def buscar_record_id_vinculo_tecnica(id_apa):
 
     tabela_apa = _get_setting("TABLE_NAME_APA", "PARA ANALISE QUALITATIVA DA APA")
     if tabela_vinculo != tabela_apa:
-        return buscar_record_id_por_id_apa(id_apa, table_name=tabela_apa)
+        rec = buscar_record_id_por_id_apa(id_apa, table_name=tabela_apa)
+        if rec:
+            return rec
+
     return None
 
 

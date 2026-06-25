@@ -113,6 +113,12 @@ st.sidebar.success("Autenticação validada.")
 if "df_quali" in st.session_state and "df_tec" in st.session_state:
     df_quali = st.session_state["df_quali"]
     df_tec = st.session_state["df_tec"]
+    if "Airtable_Record_ID" not in df_quali.columns:
+        st.session_state.pop("df_quali", None)
+        st.session_state.pop("df_tec", None)
+        st.session_state.pop("status_q", None)
+        st.session_state.pop("status_t", None)
+        st.rerun()
 
 # 2. Se não estiverem no cofre (ex: acabou de logar), busca no Airtable
 else:
