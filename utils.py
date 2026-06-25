@@ -4,6 +4,7 @@ Funções auxiliares do Delta-Negociação — GATE/PMESP.
 Extraído do app.py — Fase 2 da reestruturação.
 """
 
+import re
 import pandas as pd
 import streamlit as st
 
@@ -43,6 +44,115 @@ def formatar_tempo_airtable(val):
         return f"{h:02d}h {m:02d}m"
     except:
         return str(val)
+
+
+def tempo_para_exibicao_hhmm(val):
+    """Converte segundos do Airtable (ou texto) para HH:MM nos formulários."""
+    if val is None or (isinstance(val, float) and pd.isna(val)):
+        return ""
+    if isinstance(val, list) and len(val) > 0:
+        val = val[0]
+    s = str(val).strip()
+    if s in ("", "N/D"):
+        return ""
+    if re.match(r"^\d+:\d{1,2}$", s):
+        partes = s.split(":")
+        return f"{int(partes[0]):02d}:{int(partes[1]):02d}"
+    m = re.match(r"^(\d+)\s*h\s*(\d+)\s*m", s, re.I)
+    if m:
+        return f"{int(m.group(1)):02d}:{int(m.group(2)):02d}"
+    try:
+        total = int(float(s))
+        return f"{total // 3600:02d}:{(total % 3600) // 60:02d}"
+    except (ValueError, TypeError):
+        return s
+
+
+def tempo_para_airtable_segundos(val):
+    """Converte h:mm (ou segundos numéricos) para inteiro em segundos — formato do Airtable."""
+    if val is None or (isinstance(val, float) and pd.isna(val)):
+        return None
+    if isinstance(val, bool):
+        return None
+    if isinstance(val, (int, float)) and not isinstance(val, bool):
+        seg = int(val)
+        return seg if seg > 0 else None
+    if isinstance(val, list) and len(val) > 0:
+        val = val[0]
+    s = str(val).strip()
+    if s in ("", "N/D", "None", "nan", "00:00", "0:00"):
+        return None
+    s = s.replace("：", ":")
+    m = re.match(r"^(\d+)\s*h\s*(\d+)\s*m", s, re.I)
+    if m:
+        seg = int(m.group(1)) * 3600 + int(m.group(2)) * 60
+        return seg if seg > 0 else None
+    if ":" in s:
+        partes = [p.strip() for p in s.split(":")]
+        try:
+            h = int(partes[0])
+            mins = int(partes[1]) if len(partes) > 1 else 0
+            seg = (h * 3600) + (mins * 60)
+            return seg if seg > 0 else None
+        except (ValueError, TypeError):
+            return None
+    try:
+        seg = int(float(s.replace(",", ".")))
+        return seg if seg > 0 else None
+    except (ValueError, TypeError):
+        return None
+
+
+def validar_tempos_payload_airtable(payload):
+    """
+    Converte campos de duração para segundos (int) antes do Airtable.
+    Levanta ValueError se o usuário informou texto inválido (ex.: '01:30' sem converter).
+    """
+    erros = []
+    for campo in ("Tempo de Negociação Real", "Tempo de Negociação Tática"):
+        if campo not in payload:
+            continue
+        bruto = payload[campo]
+        if bruto is None or (isinstance(bruto, float) and pd.isna(bruto)):
+            payload.pop(campo, None)
+            continue
+        if isinstance(bruto, str) and bruto.strip() in ("", "N/D"):
+            payload.pop(campo, None)
+            continue
+
+        segundos = tempo_para_airtable_segundos(bruto)
+        if segundos is None:
+            erros.append(
+                f'"{campo}": valor inválido ({bruto!r}). Use h:mm — ex.: 1:30 (1h30min).'
+            )
+            payload.pop(campo, None)
+        else:
+            payload[campo] = int(segundos)
+            if not isinstance(payload[campo], int):
+                erros.append(
+                    f'"{campo}": conversão interna falhou ({bruto!r} → {payload[campo]!r}).'
+                )
+                payload.pop(campo, None)
+
+    if erros:
+        raise ValueError(" ".join(erros))
+    return payload
+
+
+def descrever_tempos_payload(payload):
+    """Resumo legível dos campos de duração (para diagnóstico de erro)."""
+    partes = []
+    for campo in ("Tempo de Negociação Real", "Tempo de Negociação Tática"):
+        if campo not in payload:
+            continue
+        valor = payload[campo]
+        partes.append(f"{campo}={valor!r} (tipo {type(valor).__name__})")
+    return "; ".join(partes) if partes else "(sem campos de tempo)"
+
+
+def aplicar_tempos_payload_airtable(payload):
+    """Alias retrocompatível — valida e converte tempos no payload."""
+    return validar_tempos_payload_airtable(payload)
 
 
 def somar_tempos_segundos(serie):
