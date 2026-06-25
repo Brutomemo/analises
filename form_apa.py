@@ -789,7 +789,7 @@ def render(df_quali, df_tec):
                                 "Sexo do Causador": sexo or "",
                             }
 
-                            payload = {k: v for k, v in payload.items() if v != ""}
+                            payload = {k: v for k, v in payload.items() if v is not None and v != ""}
 
                             resultado = airtable_link.criar_nova_apa(payload)
                             id_apa = resultado.get("id") if isinstance(resultado, dict) else resultado
