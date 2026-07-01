@@ -72,10 +72,31 @@ def render_serie_historica(df_quali):
             )
 
         lista_neg_g = ["Todos"] + sorted(df_quali[df_quali['Neg_Limpo'] != 'N/D']['Neg_Limpo'].unique().tolist())
-    filtro_neg_g = st.selectbox("Filtrar por Negociador:", lista_neg_g, key="f_neg_historico")
+        filtro_neg_g = st.selectbox("Filtrar por Negociador:", lista_neg_g, key="f_neg_historico")
+
+    with col_f2:
+        if 'Tip_Limpa' not in df_quali.columns and 'Tipologia' in df_quali.columns:
+            df_quali['Tip_Limpa'] = df_quali['Tipologia'].apply(limpar_valor)
+        lista_tip_g = ["Todas"]
+        if 'Tip_Limpa' in df_quali.columns:
+            lista_tip_g += sorted(df_quali[df_quali['Tip_Limpa'] != 'N/D']['Tip_Limpa'].unique().tolist())
+        filtro_tip_g = st.selectbox("Filtrar por Tipologia:", lista_tip_g, key="f_tip_historico")
+
+    with col_f3:
+        if 'Mod_Limpa' not in df_quali.columns and 'Modalidade do incidente' in df_quali.columns:
+            df_quali['Mod_Limpa'] = df_quali['Modalidade do incidente'].apply(limpar_valor)
+        lista_mod_g = ["Todas"]
+        if 'Mod_Limpa' in df_quali.columns:
+            lista_mod_g += sorted(df_quali[df_quali['Mod_Limpa'] != 'N/D']['Mod_Limpa'].unique().tolist())
+        filtro_mod_g = st.selectbox("Filtrar por Modalidade:", lista_mod_g, key="f_mod_historico")
 
     df_quali_filt = df_quali.copy()
-    if filtro_neg_g != "Todos": df_quali_filt = df_quali_filt[df_quali_filt['Neg_Limpo'] == filtro_neg_g]
+    if filtro_neg_g != "Todos":
+        df_quali_filt = df_quali_filt[df_quali_filt['Neg_Limpo'] == filtro_neg_g]
+    if filtro_tip_g != "Todas" and 'Tip_Limpa' in df_quali_filt.columns:
+        df_quali_filt = df_quali_filt[df_quali_filt['Tip_Limpa'] == filtro_tip_g]
+    if filtro_mod_g != "Todas" and 'Mod_Limpa' in df_quali_filt.columns:
+        df_quali_filt = df_quali_filt[df_quali_filt['Mod_Limpa'] == filtro_mod_g]
 
     st.markdown("---")
     col_m1, col_m2, col_m3 = st.columns(3)
@@ -264,7 +285,8 @@ def render_serie_historica(df_quali):
     st.markdown("---")
 
     if is_ranking:
-        
+        df_tec_filt = pd.DataFrame()
+
         if not df_tec.empty:
             df_tec["Neg_Limpo"] = (
                 df_tec["Negociador Principal do incidente crítico"].apply(limpar_valor)
