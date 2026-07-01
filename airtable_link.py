@@ -15,12 +15,21 @@ _TABELA_VINCULO_TECNICAS = None
 
 def _formatar_erro_airtable(exc):
     """Extrai mensagem legível de exceções da API Airtable/pyairtable."""
+    msg = None
     for arg in getattr(exc, "args", ()):
         if isinstance(arg, str) and "message" in arg:
             match = re.search(r"""['"]message['"]\s*:\s*['"]([^'"]+)['"]""", arg)
             if match:
-                return match.group(1)
-    return str(exc)
+                msg = match.group(1)
+                break
+    if not msg:
+        msg = str(exc)
+    if "create new select option" in msg.lower():
+        msg += (
+            " — escolha uma opção já cadastrada no Airtable (lista do formulário) "
+            "ou peça a um editor da base para adicionar a opção manualmente."
+        )
+    return msg
 
 
 def _get_setting(key, default=None):
