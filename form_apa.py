@@ -106,17 +106,21 @@ PERCEPCOES_RECEPTIVIDADE = [
 
 PERCEPCOES = PERCEPCOES_AGRESSIVIDADE
 
-def _converter_tempo_para_segundos(valor_str):
-    """Converte HH:MM para segundos. Retorna None se vazio."""
-    if not valor_str or str(valor_str).strip() == "":
-        return None
-    try:
-        partes = str(valor_str).strip().split(":")
-        h = int(partes[0])
-        m = int(partes[1]) if len(partes) > 1 else 0
-        return (h * 3600) + (m * 60)
-    except:
-        return None
+
+def _tempos_payload_apa(tempo_real, tempo_tatica):
+    """Converte h:mm digitado pelo usuário para segundos (int) no payload do Airtable."""
+    bruto = {
+        "Tempo de Negociação Real": tempo_real,
+        "Tempo de Negociação Tática": tempo_tatica,
+    }
+    payload = {
+        k: v for k, v in bruto.items()
+        if v is not None and str(v).strip() not in ("", "N/D")
+    }
+    if not payload:
+        return {}
+    return utils.validar_tempos_payload_airtable(payload)
+
 
 def validar_excel_tecnicas(df):
     """Valida Excel de técnicas - PERMITE ATITUDE vazia (será "Inaudível/Não Observado")"""
@@ -709,9 +713,17 @@ def render(df_quali, df_tec):
         with tab_obs:
             col1, col2 = st.columns(2)
             with col1:
-                tempo_real = st.text_input("Tempo de Negociação Real (HH:MM)", placeholder="Ex: 01:30", key="c_tempo_real")
+                tempo_real = st.text_input(
+                    "Tempo de Negociação Real (h:mm)",
+                    placeholder="Ex: 1:30",
+                    key="c_tempo_real",
+                )
             with col2:
-                tempo_tatica = st.text_input("Tempo de Negociação Tática (HH:MM)", placeholder="Ex: 00:45", key="c_tempo_tatica")
+                tempo_tatica = st.text_input(
+                    "Tempo de Negociação Tática (h:mm)",
+                    placeholder="Ex: 0:45",
+                    key="c_tempo_tatica",
+                )
             
             col3, col4 = st.columns(2)
             with col3:
@@ -783,8 +795,7 @@ def render(df_quali, df_tec):
                                 "TRANSCRIÇÃO DO NEGOCIADOR PRINCIPAL": trans_principal or "",
                                 "TRANSCRIÇÃO DO NEGOCIADOR SECUNDÁRIO": trans_secundario or "",
                                 **_payload_funcoes_criar(),
-                                "Tempo de Negociação Real": tempo_real or "",
-                                "Tempo de Negociação Tática": tempo_tatica or "",
+                                **_tempos_payload_apa(tempo_real, tempo_tatica),
                                 "Uniforme Usado": uniforme or "",
                                 "Sexo do Causador": sexo or "",
                             }
@@ -812,6 +823,8 @@ def render(df_quali, df_tec):
                             else:
                                 st.error(f"❌ Falha ao criar APA: {erro or 'Erro desconhecido.'}")
 
+                        except ValueError as e:
+                            st.error(f"❌ {str(e)}")
                         except Exception as e:
                             st.error(f"❌ Erro: {str(e)}")
                             import traceback
@@ -976,14 +989,16 @@ def render(df_quali, df_tec):
                         col9, col10 = st.columns(2)
                         with col9:
                             tempo_real_edit = st.text_input(
-                                "Tempo de Negociação Real (HH:MM)",
+                                "Tempo de Negociação Real (h:mm)",
                                 value=utils.tempo_para_exibicao_hhmm(apa.get("Tempo de Negociação Real", "")),
+                                placeholder="Ex: 1:30",
                                 key=f"edit_tr_{id_limpo}",
                             )
                         with col10:
                             tempo_tatica_edit = st.text_input(
-                                "Tempo de Negociação Tática (HH:MM)",
+                                "Tempo de Negociação Tática (h:mm)",
                                 value=utils.tempo_para_exibicao_hhmm(apa.get("Tempo de Negociação Tática", "")),
+                                placeholder="Ex: 0:45",
                                 key=f"edit_tt_{id_limpo}",
                             )
                         
@@ -1066,7 +1081,6 @@ def render(df_quali, df_tec):
                             btn_cancelar = st.form_submit_button("❌ CANCELAR", use_container_width=True)
                         
                         if btn_salvar:
-                            # Preparar payload de atualização
                             payload_update = {
                                 "Data da ocorrência": data_edit.isoformat() if data_edit else "",
                                 "Modalidade do incidente": modalidade_edit or "",
@@ -1080,8 +1094,7 @@ def render(df_quali, df_tec):
                                 "TRANSCRIÇÃO DO CAUSADOR": trans_causador_edit or "",
                                 "TRANSCRIÇÃO DO NEGOCIADOR PRINCIPAL": trans_principal_edit or "",
                                 "TRANSCRIÇÃO DO NEGOCIADOR SECUNDÁRIO": trans_secundario_edit or "",
-                                "Tempo de Negociação Real": tempo_real_edit or "",
-                                "Tempo de Negociação Tática": tempo_tatica_edit or "",
+                                **_tempos_payload_apa(tempo_real_edit, tempo_tatica_edit),
                                 "Uniforme Usado": uniforme_edit or "",
                                 "Sexo do Causador": sexo_edit or "",
                                 # Funções - Negociador Principal
@@ -1120,8 +1133,7 @@ def render(df_quali, df_tec):
                                 "FUNÇÕES: PROFISSIONAL DE SAÚDE MENTAL - AÇÕES CORRETIVAS ADOTADAS": func_psm_acoes_edit or "",
                                 "FUNÇÕES: PROFISSIONAL DE SAÚDE MENTAL - PRÁTICAS PROMISSORAS": func_psm_praticas_edit or "",
                             }
-                            
-                            # Remover vazios e None (campos não preenchidos não devem sobrescrever dados)
+
                             payload_update = {
                                 k: v for k, v in payload_update.items()
                                 if v is not None and v != "" and not (isinstance(v, float) and pd.isna(v))
@@ -1129,7 +1141,6 @@ def render(df_quali, df_tec):
 
                             record_id_interno = _resolver_record_id_apa(apa, df_quali)
 
-                            # Diagnóstico visível para facilitar depuração
                             with st.expander("🔍 Diagnóstico (expandir se houver erro)", expanded=False):
                                 st.write(f"**record_id_interno:** `{record_id_interno}`")
                                 st.write(f"**id_apa:** `{id_apa}`")
@@ -1139,7 +1150,6 @@ def render(df_quali, df_tec):
                             if not payload_update:
                                 st.warning("⚠️ Nenhum campo foi alterado. Não há dados para salvar.")
                             else:
-                                # Atualizar no Airtable
                                 try:
                                     resultado = airtable_link.atualizar_apa_validacao(
                                         id_apa,
@@ -1148,9 +1158,7 @@ def render(df_quali, df_tec):
                                     )
                                     if resultado:
                                         st.success("✅ Dados atualizados com sucesso!")
-                                        # Invalida cache para forçar recarga na próxima navegação
                                         st.session_state.pop("df_quali", None)
-                                        
                                     else:
                                         st.error(
                                             "❌ APA não encontrada na base de dados. "
