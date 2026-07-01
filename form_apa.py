@@ -446,6 +446,13 @@ def _limpar_tela_visualizar_editar():
     _limpar_cache_tecnicas_docx()
 
 
+def _limpar_formulario_criar():
+    """Limpa todos os campos da aba Criar Novo Registro (chaves c_*)."""
+    for key in list(st.session_state.keys()):
+        if key.startswith("c_"):
+            del st.session_state[key]
+
+
 def _render_envio_tecnicas_docx(apa, df_quali, key_prefix):
     """Upload .docx, extração e envio das técnicas para a APA já selecionada."""
     id_apa = str(apa.get('ID', 'N/D')).strip()
@@ -820,11 +827,12 @@ def render(df_quali, df_tec):
                             st.session_state.pop("_apa_create_lock", None)
 
         with col_clear:
-            if st.button("❌ Limpar Tudo", use_container_width=True, key="btn_clear_aba1"):
-                for key in list(st.session_state.keys()):
-                    if key.startswith("c_"):
-                        del st.session_state[key]
-                st.rerun()
+            st.button(
+                "❌ Limpar Tudo",
+                use_container_width=True,
+                key="btn_clear_aba1",
+                on_click=_limpar_formulario_criar,
+            )
     
     # ─────────────────────────────────────────────────────────────
     # ABA 2: VISUALIZAR & EDITAR (COM FORMULÁRIO)
