@@ -15,16 +15,12 @@ _TABELA_VINCULO_TECNICAS = None
 
 def _formatar_erro_airtable(exc):
     """Extrai mensagem legível de exceções da API Airtable/pyairtable."""
-    msg = None
     for arg in getattr(exc, "args", ()):
         if isinstance(arg, str) and "message" in arg:
             match = re.search(r"""['"]message['"]\s*:\s*['"]([^'"]+)['"]""", arg)
             if match:
-                msg = match.group(1)
-                break
-    if not msg:
-        msg = str(exc)
-    return msg
+                return match.group(1)
+    return str(exc)
 
 
 def _get_setting(key, default=None):
