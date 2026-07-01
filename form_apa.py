@@ -824,7 +824,7 @@ def render(df_quali, df_tec):
                 for key in list(st.session_state.keys()):
                     if key.startswith("c_"):
                         del st.session_state[key]
-                st.info("✨ Formulário limpo!")
+                st.rerun()
     
     # ─────────────────────────────────────────────────────────────
     # ABA 2: VISUALIZAR & EDITAR (COM FORMULÁRIO)
