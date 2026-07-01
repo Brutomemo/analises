@@ -440,8 +440,6 @@ def render_serie_historica(df_quali):
 
                     with col_ef2:
                         # ── GRÁFICO BARRAS EMPILHADAS (igual Aba Individual) ──
-                        import plotly.graph_objects as go
-
                         tecnicas  = df_resumo_tec["Técnica"].tolist()
                         positivos = df_resumo_tec["Positivas"].tolist()
                         neutros   = df_resumo_tec["Neutras"].tolist()
