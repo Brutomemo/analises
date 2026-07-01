@@ -4,7 +4,6 @@
 
 import os
 import re
-import unicodedata
 import pandas as pd
 import requests
 from pyairtable import Api
@@ -12,11 +11,9 @@ from datetime import datetime
 import utils
 
 _TABELA_VINCULO_TECNICAS = None
-_TABELA_APA = "PARA ANALISE QUALITATIVA DA APA"
-_SCHEMA_SELECTS_APA_CACHE = None
 
 
-def _formatar_erro_airtable(exc, payload=None):
+def _formatar_erro_airtable(exc):
     """Extrai mensagem legível de exceções da API Airtable/pyairtable."""
     msg = None
     for arg in getattr(exc, "args", ()):
@@ -27,189 +24,7 @@ def _formatar_erro_airtable(exc, payload=None):
                 break
     if not msg:
         msg = str(exc)
-    if "create new select option" in msg.lower():
-        msg = _enriquecer_erro_select_option(msg, payload)
-        msg += (
-            " — escolha uma opção já cadastrada no Airtable (lista do formulário) "
-            "ou peça a um editor da base para adicionar a opção manualmente."
-        )
     return msg
-
-
-def _enriquecer_erro_select_option(msg, payload=None):
-    """Identifica campo e valor rejeitados a partir da resposta do Airtable."""
-    valor_rejeitado = None
-    for pattern in (
-        r'create new select option\s+""([^"]+)""',
-        r'create new select option\s+\\"([^"\\]+)\\"',
-        r'create new select option\s+"([^"]+)"',
-    ):
-        match = re.search(pattern, msg, re.I)
-        if match:
-            valor_rejeitado = match.group(1).strip()
-            break
-    if not valor_rejeitado:
-        return msg
-
-    detalhe = f' Valor rejeitado pelo Airtable: "{valor_rejeitado}".'
-    if not payload:
-        return msg + detalhe
-
-    campos_exatos = [
-        campo for campo, valor in payload.items()
-        if str(valor).strip() == valor_rejeitado
-    ]
-    if not campos_exatos:
-        alvo = _normalizar_opcao(valor_rejeitado)
-        campos_exatos = [
-            campo for campo, valor in payload.items()
-            if _normalizar_opcao(valor) == alvo
-        ]
-    if campos_exatos:
-        detalhe += f' Campo provável: "{campos_exatos[0]}".'
-    return msg + detalhe
-
-
-def _normalizar_opcao(valor):
-    if valor is None:
-        return ""
-    s = unicodedata.normalize("NFKD", str(valor))
-    return s.encode("ascii", "ignore").decode("ascii").lower().strip()
-
-
-# Grafia do formulário → opção real no Airtable (base usa 3× "s" em agresssivo)
-_ALIASES_OPCAO_APA = {
-    "nao agressivo": "Não agresssivo",
-    "nao agresssivo": "Não agresssivo",
-}
-
-
-def _mapear_valor_para_opcao(valor, opcoes):
-    if not opcoes or valor is None:
-        return None
-    bruto = str(valor).strip()
-    if not bruto:
-        return None
-    if bruto in opcoes:
-        return bruto
-    alvo = _normalizar_opcao(bruto)
-    alias = _ALIASES_OPCAO_APA.get(alvo)
-    if alias and alias in opcoes:
-        return alias
-    for opcao in opcoes:
-        if _normalizar_opcao(opcao) == alvo:
-            return opcao
-    return None
-
-
-def obter_campos_select_apa(force_refresh=False):
-    """{nome_campo: [opções]} dos single select da tabela APA."""
-    global _SCHEMA_SELECTS_APA_CACHE
-    if _SCHEMA_SELECTS_APA_CACHE is not None and not force_refresh:
-        return _SCHEMA_SELECTS_APA_CACHE
-
-    api_key, base_id = get_credentials()
-    if not api_key or not base_id:
-        _SCHEMA_SELECTS_APA_CACHE = {}
-        return _SCHEMA_SELECTS_APA_CACHE
-
-    try:
-        url = f"https://api.airtable.com/v0/meta/bases/{base_id}/tables"
-        resp = requests.get(
-            url,
-            headers={"Authorization": f"Bearer {api_key}"},
-            timeout=30,
-        )
-        if not resp.ok:
-            _SCHEMA_SELECTS_APA_CACHE = {}
-            return _SCHEMA_SELECTS_APA_CACHE
-
-        selects = {}
-        for table in resp.json().get("tables", []):
-            if table.get("name") != _TABELA_APA:
-                continue
-            for field in table.get("fields", []):
-                if field.get("type") == "singleSelect":
-                    choices = [
-                        c.get("name")
-                        for c in field.get("options", {}).get("choices", [])
-                        if c.get("name")
-                    ]
-                    selects[field["name"]] = choices
-
-        _SCHEMA_SELECTS_APA_CACHE = selects
-        return selects
-    except Exception:
-        _SCHEMA_SELECTS_APA_CACHE = {}
-        return _SCHEMA_SELECTS_APA_CACHE
-
-
-def obter_opcoes_campo_apa(nome_campo):
-    """Opções oficiais do Airtable para um campo select (lista vazia se indisponível)."""
-    return list(obter_campos_select_apa().get(nome_campo, []))
-
-
-def _aplicar_aliases_payload(payload):
-    """Corrige grafias conhecidas form → Airtable antes do envio."""
-    for campo, valor in list(payload.items()):
-        if valor is None or str(valor).strip() == "":
-            continue
-        alias = _ALIASES_OPCAO_APA.get(_normalizar_opcao(valor))
-        if alias:
-            payload[campo] = alias
-
-
-def validar_selects_payload_apa(payload):
-    """
-    Garante que valores de single select existem no Airtable.
-    Levanta ValueError com o campo e opções válidas antes do POST.
-    """
-    _aplicar_aliases_payload(payload)
-    schema = obter_campos_select_apa()
-    if not schema:
-        try:
-            import streamlit as st
-
-            df = st.session_state.get("df_quali")
-            if df is not None and not df.empty:
-                schema = {}
-                for campo in payload:
-                    if campo not in df.columns:
-                        continue
-                    vals = (
-                        df[campo]
-                        .dropna()
-                        .astype(str)
-                        .str.strip()
-                        .loc[lambda s: ~s.isin(["", "N/D", "nan", "None"])]
-                        .unique()
-                        .tolist()
-                    )
-                    if vals:
-                        schema[campo] = vals
-        except Exception:
-            pass
-    if not schema:
-        return payload
-
-    erros = []
-    for campo, valor in list(payload.items()):
-        if campo not in schema or valor is None or str(valor).strip() in ("", "N/D"):
-            continue
-        mapeado = _mapear_valor_para_opcao(valor, schema[campo])
-        if mapeado is None:
-            amostra = ", ".join(f'"{o}"' for o in schema[campo][:8])
-            sufixo = "…" if len(schema[campo]) > 8 else ""
-            erros.append(
-                f'Campo "{campo}": valor "{valor}" não está cadastrado no Airtable. '
-                f"Opções válidas: {amostra}{sufixo}"
-            )
-        else:
-            payload[campo] = mapeado
-
-    if erros:
-        raise ValueError(" ".join(erros))
-    return payload
 
 
 def _get_setting(key, default=None):
@@ -551,7 +366,6 @@ def atualizar_apa_validacao(id_apa, payload, record_id_interno=None):
     table = base.table("PARA ANALISE QUALITATIVA DA APA")
 
     utils.validar_tempos_payload_airtable(payload)
-    validar_selects_payload_apa(payload)
 
     # Caminho direto: record_id_interno fornecido (recXXXXXX)
     if record_id_interno and str(record_id_interno).startswith("rec"):
@@ -632,7 +446,6 @@ def criar_nova_apa(payload):
             del payload["ID"]
 
         utils.validar_tempos_payload_airtable(payload)
-        validar_selects_payload_apa(payload)
 
         print(f"[criar_nova_apa] Enviando {len(payload)} campos para o Airtable")
 
@@ -660,10 +473,8 @@ def criar_nova_apa(payload):
         print(f"[criar_nova_apa] Registro criado: {id_formatado} ({record_id})")
         return {"id": id_formatado, "record_id": record_id, "erro": None}
 
-    except ValueError as e:
-        return {"id": None, "erro": str(e)}
     except Exception as e:
-        erro = _formatar_erro_airtable(e, payload)
+        erro = _formatar_erro_airtable(e)
         print(f"[criar_nova_apa] ERRO {type(e).__name__}: {erro}")
         import traceback
         traceback.print_exc()

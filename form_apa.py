@@ -108,55 +108,6 @@ PERCEPCOES_RECEPTIVIDADE = [
 PERCEPCOES = PERCEPCOES_AGRESSIVIDADE
 
 
-def _opcoes_campo(df_quali, coluna, padrao):
-    """Lista fixa + valores já usados na base (ex.: Óbito recém-adicionado no Airtable)."""
-    opcoes = list(padrao)
-    if df_quali is None or df_quali.empty or coluna not in df_quali.columns:
-        return opcoes
-    extras = (
-        df_quali[coluna]
-        .dropna()
-        .astype(str)
-        .str.strip()
-        .loc[lambda s: ~s.isin(["", "N/D", "nan", "None"])]
-        .unique()
-        .tolist()
-    )
-    for item in extras:
-        if item not in opcoes:
-            opcoes.append(item)
-    return opcoes
-
-
-def _opcoes_select_ui(df_quali, coluna, padrao):
-    """Opções do schema Airtable quando disponível; senão valores já usados na base; por último lista fixa."""
-    schema_opts = airtable_link.obter_opcoes_campo_apa(coluna)
-    if schema_opts:
-        return list(schema_opts)
-    somente_df = _opcoes_campo(df_quali, coluna, [])
-    if somente_df:
-        return somente_df
-    return _opcoes_campo(df_quali, coluna, padrao)
-
-
-def _sanitizar_sessao_select(key, opcoes):
-    """Evita valor antigo no session_state fora da lista (ex.: 'Não observado' após mudança de opções)."""
-    if key not in st.session_state:
-        return
-    valor = st.session_state[key]
-    if not valor or valor in opcoes:
-        return
-    for opcao in opcoes:
-        if str(opcao).lower() == str(valor).lower():
-            st.session_state[key] = opcao
-            return
-    alias = airtable_link._ALIASES_OPCAO_APA.get(airtable_link._normalizar_opcao(valor))
-    if alias and alias in opcoes:
-        st.session_state[key] = alias
-        return
-    st.session_state[key] = ""
-
-
 def _payload_percepcoes_criar(
     agr_principal_chegada,
     agr_secundario_chegada,
@@ -677,156 +628,84 @@ def render(df_quali, df_tec):
             with col1:
                 data_oca = st.date_input("Data da Ocorrência *", key="c_data")
             with col2:
-                modalidade = st.selectbox(
-                    "Modalidade do Incidente *",
-                    [""] + _opcoes_select_ui(df_quali, "Modalidade do incidente", MODALIDADES),
-                    key="c_modalidade",
-                )
+                modalidade = st.selectbox("Modalidade do Incidente *", [""] + MODALIDADES, key="c_modalidade")
             
             col3, col4 = st.columns(2)
             with col3:
-                tipologia = st.selectbox(
-                    "Tipologia *",
-                    [""] + _opcoes_select_ui(df_quali, "Tipologia", TIPOLOGIAS),
-                    key="c_tipologia",
-                )
+                tipologia = st.selectbox("Tipologia *", [""] + TIPOLOGIAS, key="c_tipologia")
             with col4:
-                forma_transicao = st.selectbox(
-                    "Forma de Transição",
-                    [""] + _opcoes_select_ui(df_quali, "Forma de Transição", FORMAS_TRANSICAO),
-                    key="c_forma_transicao",
-                )
+                forma_transicao = st.selectbox("Forma de Transição", [""] + FORMAS_TRANSICAO, key="c_forma_transicao")
             
             motivacao = st.text_area("Motivação", placeholder="...", height=80, key="c_motivacao")
-            resolucao = st.selectbox(
-                "Resolução *",
-                [""] + _opcoes_select_ui(df_quali, "Resolução", RESOLUCOES),
-                key="c_resolucao",
-            )
+            resolucao = st.selectbox("Resolução *", [""] + RESOLUCOES, key="c_resolucao")
         
         # ─── EQUIPE ───
         with tab_equipe:
             col1, col2 = st.columns(2)
             with col1:
-                _opcoes_neg = [""] + _opcoes_select_ui(df_quali, "Negociador Principal", NEGOCIADORES)
-                _sanitizar_sessao_select("c_neg_principal", _opcoes_neg)
-                neg_principal = st.selectbox("Negociador Principal *", _opcoes_neg, key="c_neg_principal")
+                neg_principal = st.selectbox("Negociador Principal *", [""] + NEGOCIADORES, key="c_neg_principal")
             with col2:
-                _opcoes_neg_sec = [""] + _opcoes_select_ui(df_quali, "Negociador Secundário", NEGOCIADORES)
-                _sanitizar_sessao_select("c_neg_secundario", _opcoes_neg_sec)
-                neg_secundario = st.selectbox("Negociador Secundário", _opcoes_neg_sec, key="c_neg_secundario")
+                neg_secundario = st.selectbox("Negociador Secundário", [""] + NEGOCIADORES, key="c_neg_secundario")
             
             col3, col4 = st.columns(2)
             with col3:
-                _opcoes_neg_anot = [""] + _opcoes_select_ui(df_quali, "Negociador Anotador", NEGOCIADORES)
-                _sanitizar_sessao_select("c_neg_anotador", _opcoes_neg_anot)
-                neg_anotador = st.selectbox("Negociador Anotador", _opcoes_neg_anot, key="c_neg_anotador")
+                neg_anotador = st.selectbox("Negociador Anotador", [""] + NEGOCIADORES, key="c_neg_anotador")
             with col4:
-                _opcoes_neg_lid = [""] + _opcoes_select_ui(df_quali, "Negociador Líder", NEGOCIADORES)
-                _sanitizar_sessao_select("c_neg_lider", _opcoes_neg_lid)
-                neg_lider = st.selectbox("Negociador Líder", _opcoes_neg_lid, key="c_neg_lider")
+                neg_lider = st.selectbox("Negociador Líder", [""] + NEGOCIADORES, key="c_neg_lider")
             
             col5, col6 = st.columns(2)
             with col5:
-                _opcoes_aux_info = [""] + _opcoes_select_ui(df_quali, "Negociador Auxiliar de Informações", NEGOCIADORES)
-                _sanitizar_sessao_select("c_aux_info", _opcoes_aux_info)
-                aux_info = st.selectbox("Auxiliar de Informações", _opcoes_aux_info, key="c_aux_info")
+                aux_info = st.selectbox("Auxiliar de Informações", [""] + NEGOCIADORES, key="c_aux_info")
             with col6:
-                _opcoes_aux_log = [""] + _opcoes_select_ui(df_quali, "Negociador Auxiliar de Logística", NEGOCIADORES)
-                _sanitizar_sessao_select("c_aux_log", _opcoes_aux_log)
-                aux_log = st.selectbox("Auxiliar de Logística", _opcoes_aux_log, key="c_aux_log")
+                aux_log = st.selectbox("Auxiliar de Logística", [""] + NEGOCIADORES, key="c_aux_log")
             
-            _opcoes_saude = [""] + _opcoes_select_ui(df_quali, "Profissional de Saúde Mental", SAUDE_MENTAL)
-            _sanitizar_sessao_select("c_prof_saude", _opcoes_saude)
-            prof_saude = st.selectbox("Profissional de Saúde Mental", _opcoes_saude, key="c_prof_saude")
+            prof_saude = st.selectbox("Profissional de Saúde Mental", [""] + SAUDE_MENTAL, key="c_prof_saude")
         
         # ─── PERCEPÇÃO CHEGADA ───
         with tab_chegada:
-            _col_agr_cheg = (
-                "12 - PERCEPÇÕES DO NEGOCIADOR PRINCIPAL SOBRE A AGRESSIVIDADE DO  CAUSADOR NA CHEGADA À OCORRÊNCIA"
-            )
-            _col_rec_cheg = (
-                "13 - PERCEPÇÕES DO NEGOCIADOR PRINCIPAL SOBRE A RECEPTIVIDADE DO  CAUSADOR NA CHEGADA À OCORRÊNCIA"
-            )
-            _opcoes_agr_cheg = [""] + _opcoes_select_ui(df_quali, _col_agr_cheg, PERCEPCOES_AGRESSIVIDADE)
-            _opcoes_rec_cheg = [""] + _opcoes_select_ui(df_quali, _col_rec_cheg, PERCEPCOES_RECEPTIVIDADE)
-            for _k in (
-                "c_agr_principal_chegada",
-                "c_agr_secundario_chegada",
-                "c_agr_lider_chegada",
-            ):
-                _sanitizar_sessao_select(_k, _opcoes_agr_cheg)
-            for _k in (
-                "c_rec_principal_chegada",
-                "c_rec_secundario_chegada",
-                "c_rec_lider_chegada",
-            ):
-                _sanitizar_sessao_select(_k, _opcoes_rec_cheg)
-
             st.markdown("**Negociador Principal**")
             col1, col2 = st.columns(2)
             with col1:
-                agr_principal_chegada = st.selectbox("12 - Agressividade", _opcoes_agr_cheg, key="c_agr_principal_chegada")
+                agr_principal_chegada = st.selectbox("12 - Agressividade", [""] + PERCEPCOES_AGRESSIVIDADE, key="c_agr_principal_chegada")
             with col2:
-                rec_principal_chegada = st.selectbox("13 - Receptividade", _opcoes_rec_cheg, key="c_rec_principal_chegada")
+                rec_principal_chegada = st.selectbox("13 - Receptividade", [""] + PERCEPCOES_RECEPTIVIDADE, key="c_rec_principal_chegada")
             
             st.markdown("**Negociador Secundário**")
             col3, col4 = st.columns(2)
             with col3:
-                agr_secundario_chegada = st.selectbox("12 - Agressividade", _opcoes_agr_cheg, key="c_agr_secundario_chegada")
+                agr_secundario_chegada = st.selectbox("12 - Agressividade", [""] + PERCEPCOES_AGRESSIVIDADE, key="c_agr_secundario_chegada")
             with col4:
-                rec_secundario_chegada = st.selectbox("13 - Receptividade", _opcoes_rec_cheg, key="c_rec_secundario_chegada")
+                rec_secundario_chegada = st.selectbox("13 - Receptividade", [""] + PERCEPCOES_RECEPTIVIDADE, key="c_rec_secundario_chegada")
             
             st.markdown("**Negociador Líder**")
             col5, col6 = st.columns(2)
             with col5:
-                agr_lider_chegada = st.selectbox("12 - Agressividade", _opcoes_agr_cheg, key="c_agr_lider_chegada")
+                agr_lider_chegada = st.selectbox("12 - Agressividade", [""] + PERCEPCOES_AGRESSIVIDADE, key="c_agr_lider_chegada")
             with col6:
-                rec_lider_chegada = st.selectbox("13 - Receptividade", _opcoes_rec_cheg, key="c_rec_lider_chegada")
+                rec_lider_chegada = st.selectbox("13 - Receptividade", [""] + PERCEPCOES_RECEPTIVIDADE, key="c_rec_lider_chegada")
         
         # ─── PERCEPÇÃO ENCERRAMENTO ───
         with tab_enc:
-            _col_agr_enc = (
-                "24 - PERCEPÇÕES DO NEGOCIADOR PRINCIPAL SOBRE A AGRESSIVIDADE DO  CAUSADOR NO ENCERRAMENTO DA OCORRÊNCIA"
-            )
-            _col_rec_enc = (
-                "25 - PERCEPÇÕES DO NEGOCIADOR PRINCIPAL SOBRE A RECEPTIVIDADE DO  CAUSADOR NO ENCERRAMENTO DA OCORRÊNCIA"
-            )
-            _opcoes_agr_enc = [""] + _opcoes_select_ui(df_quali, _col_agr_enc, PERCEPCOES_AGRESSIVIDADE)
-            _opcoes_rec_enc = [""] + _opcoes_select_ui(df_quali, _col_rec_enc, PERCEPCOES_RECEPTIVIDADE)
-            for _k in (
-                "c_agr_principal_enc",
-                "c_agr_secundario_enc",
-                "c_agr_lider_enc",
-            ):
-                _sanitizar_sessao_select(_k, _opcoes_agr_enc)
-            for _k in (
-                "c_rec_principal_enc",
-                "c_rec_secundario_enc",
-                "c_rec_lider_enc",
-            ):
-                _sanitizar_sessao_select(_k, _opcoes_rec_enc)
-
             st.markdown("**Negociador Principal**")
             col1, col2 = st.columns(2)
             with col1:
-                agr_principal_enc = st.selectbox("24 - Agressividade", _opcoes_agr_enc, key="c_agr_principal_enc")
+                agr_principal_enc = st.selectbox("24 - Agressividade", [""] + PERCEPCOES_AGRESSIVIDADE, key="c_agr_principal_enc")
             with col2:
-                rec_principal_enc = st.selectbox("25 - Receptividade", _opcoes_rec_enc, key="c_rec_principal_enc")
+                rec_principal_enc = st.selectbox("25 - Receptividade", [""] + PERCEPCOES_RECEPTIVIDADE, key="c_rec_principal_enc")
             
             st.markdown("**Negociador Secundário**")
             col3, col4 = st.columns(2)
             with col3:
-                agr_secundario_enc = st.selectbox("24 - Agressividade", _opcoes_agr_enc, key="c_agr_secundario_enc")
+                agr_secundario_enc = st.selectbox("24 - Agressividade", [""] + PERCEPCOES_AGRESSIVIDADE, key="c_agr_secundario_enc")
             with col4:
-                rec_secundario_enc = st.selectbox("25 - Receptividade", _opcoes_rec_enc, key="c_rec_secundario_enc")
+                rec_secundario_enc = st.selectbox("25 - Receptividade", [""] + PERCEPCOES_RECEPTIVIDADE, key="c_rec_secundario_enc")
             
             st.markdown("**Negociador Líder**")
             col5, col6 = st.columns(2)
             with col5:
-                agr_lider_enc = st.selectbox("24 - Agressividade", _opcoes_agr_enc, key="c_agr_lider_enc")
+                agr_lider_enc = st.selectbox("24 - Agressividade", [""] + PERCEPCOES_AGRESSIVIDADE, key="c_agr_lider_enc")
             with col6:
-                rec_lider_enc = st.selectbox("25 - Receptividade", _opcoes_rec_enc, key="c_rec_lider_enc")
+                rec_lider_enc = st.selectbox("25 - Receptividade", [""] + PERCEPCOES_RECEPTIVIDADE, key="c_rec_lider_enc")
         
         # ─── TRANSCRIÇÕES ───
         with tab_trans:
@@ -881,13 +760,9 @@ def render(df_quali, df_tec):
             
             col3, col4 = st.columns(2)
             with col3:
-                _opcoes_uniforme = [""] + _opcoes_select_ui(df_quali, "Uniforme Usado", UNIFORMES)
-                _sanitizar_sessao_select("c_uniforme", _opcoes_uniforme)
-                uniforme = st.selectbox("Uniforme Usado", _opcoes_uniforme, key="c_uniforme")
+                uniforme = st.selectbox("Uniforme Usado", [""] + UNIFORMES, key="c_uniforme")
             with col4:
-                _opcoes_sexo = [""] + _opcoes_select_ui(df_quali, "Sexo do Causador", SEXOS)
-                _sanitizar_sessao_select("c_sexo", _opcoes_sexo)
-                sexo = st.selectbox("Sexo do Causador", _opcoes_sexo, key="c_sexo")
+                sexo = st.selectbox("Sexo do Causador", [""] + SEXOS, key="c_sexo")
         
         # BOTÕES DE AÇÃO
         st.markdown("---")
@@ -1120,11 +995,13 @@ def render(df_quali, df_tec):
                         with col3:
                             tipologia_edit = st.selectbox("Tipologia", [""] + TIPOLOGIAS, index=TIPOLOGIAS.index(apa.get('Tipologia')) + 1 if apa.get('Tipologia') in TIPOLOGIAS else 0, key=f"edit_tip_{id_limpo}")
                         with col4:
-                            opcoes_res_edit = [""] + _opcoes_campo(df_quali, "Resolução", RESOLUCOES)
+                            opcoes_res_edit = [""] + RESOLUCOES
                             val_res_edit = apa.get("Resolução", "")
                             if isinstance(val_res_edit, list) and val_res_edit:
                                 val_res_edit = val_res_edit[0]
                             val_res_edit = str(val_res_edit).strip() if val_res_edit is not None else ""
+                            if val_res_edit and val_res_edit not in opcoes_res_edit:
+                                opcoes_res_edit.append(val_res_edit)
                             idx_res_edit = (
                                 opcoes_res_edit.index(val_res_edit)
                                 if val_res_edit in opcoes_res_edit
