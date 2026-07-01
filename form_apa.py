@@ -89,7 +89,7 @@ SEXOS = ["Homem", "Mulher"]
 
 PERCEPCOES_AGRESSIVIDADE = [
     "Não observado",
-    "Não agressivo",
+    "Não agresssivo",
     "Neutro",
     "Parcialmente agressivo",
     "Agressivo",
@@ -150,6 +150,10 @@ def _sanitizar_sessao_select(key, opcoes):
         if str(opcao).lower() == str(valor).lower():
             st.session_state[key] = opcao
             return
+    alias = airtable_link._ALIASES_OPCAO_APA.get(airtable_link._normalizar_opcao(valor))
+    if alias and alias in opcoes:
+        st.session_state[key] = alias
+        return
     st.session_state[key] = ""
 
 

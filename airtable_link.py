@@ -16,7 +16,7 @@ _TABELA_APA = "PARA ANALISE QUALITATIVA DA APA"
 _SCHEMA_SELECTS_APA_CACHE = None
 
 
-def _formatar_erro_airtable(exc):
+def _formatar_erro_airtable(exc, payload=None):
     """Extrai mensagem legível de exceções da API Airtable/pyairtable."""
     msg = None
     for arg in getattr(exc, "args", ()):
@@ -28,6 +28,7 @@ def _formatar_erro_airtable(exc):
     if not msg:
         msg = str(exc)
     if "create new select option" in msg.lower():
+        msg = _enriquecer_erro_select_option(msg, payload)
         msg += (
             " — escolha uma opção já cadastrada no Airtable (lista do formulário) "
             "ou peça a um editor da base para adicionar a opção manualmente."
@@ -35,11 +36,70 @@ def _formatar_erro_airtable(exc):
     return msg
 
 
+def _enriquecer_erro_select_option(msg, payload=None):
+    """Identifica campo e valor rejeitados a partir da resposta do Airtable."""
+    valor_rejeitado = None
+    for pattern in (
+        r'create new select option\s+""([^"]+)""',
+        r'create new select option\s+\\"([^"\\]+)\\"',
+        r'create new select option\s+"([^"]+)"',
+    ):
+        match = re.search(pattern, msg, re.I)
+        if match:
+            valor_rejeitado = match.group(1).strip()
+            break
+    if not valor_rejeitado:
+        return msg
+
+    detalhe = f' Valor rejeitado pelo Airtable: "{valor_rejeitado}".'
+    if not payload:
+        return msg + detalhe
+
+    campos_exatos = [
+        campo for campo, valor in payload.items()
+        if str(valor).strip() == valor_rejeitado
+    ]
+    if not campos_exatos:
+        alvo = _normalizar_opcao(valor_rejeitado)
+        campos_exatos = [
+            campo for campo, valor in payload.items()
+            if _normalizar_opcao(valor) == alvo
+        ]
+    if campos_exatos:
+        detalhe += f' Campo provável: "{campos_exatos[0]}".'
+    return msg + detalhe
+
+
 def _normalizar_opcao(valor):
     if valor is None:
         return ""
     s = unicodedata.normalize("NFKD", str(valor))
     return s.encode("ascii", "ignore").decode("ascii").lower().strip()
+
+
+# Grafia do formulário → opção real no Airtable (base usa 3× "s" em agresssivo)
+_ALIASES_OPCAO_APA = {
+    "nao agressivo": "Não agresssivo",
+    "nao agresssivo": "Não agresssivo",
+}
+
+
+def _mapear_valor_para_opcao(valor, opcoes):
+    if not opcoes or valor is None:
+        return None
+    bruto = str(valor).strip()
+    if not bruto:
+        return None
+    if bruto in opcoes:
+        return bruto
+    alvo = _normalizar_opcao(bruto)
+    alias = _ALIASES_OPCAO_APA.get(alvo)
+    if alias and alias in opcoes:
+        return alias
+    for opcao in opcoes:
+        if _normalizar_opcao(opcao) == alvo:
+            return opcao
+    return None
 
 
 def obter_campos_select_apa(force_refresh=False):
@@ -89,19 +149,14 @@ def obter_opcoes_campo_apa(nome_campo):
     return list(obter_campos_select_apa().get(nome_campo, []))
 
 
-def _mapear_valor_para_opcao(valor, opcoes):
-    if not opcoes or valor is None:
-        return None
-    bruto = str(valor).strip()
-    if not bruto:
-        return None
-    if bruto in opcoes:
-        return bruto
-    alvo = _normalizar_opcao(bruto)
-    for opcao in opcoes:
-        if _normalizar_opcao(opcao) == alvo:
-            return opcao
-    return None
+def _aplicar_aliases_payload(payload):
+    """Corrige grafias conhecidas form → Airtable antes do envio."""
+    for campo, valor in list(payload.items()):
+        if valor is None or str(valor).strip() == "":
+            continue
+        alias = _ALIASES_OPCAO_APA.get(_normalizar_opcao(valor))
+        if alias:
+            payload[campo] = alias
 
 
 def validar_selects_payload_apa(payload):
@@ -109,6 +164,7 @@ def validar_selects_payload_apa(payload):
     Garante que valores de single select existem no Airtable.
     Levanta ValueError com o campo e opções válidas antes do POST.
     """
+    _aplicar_aliases_payload(payload)
     schema = obter_campos_select_apa()
     if not schema:
         try:
@@ -607,7 +663,7 @@ def criar_nova_apa(payload):
     except ValueError as e:
         return {"id": None, "erro": str(e)}
     except Exception as e:
-        erro = _formatar_erro_airtable(e)
+        erro = _formatar_erro_airtable(e, payload)
         print(f"[criar_nova_apa] ERRO {type(e).__name__}: {erro}")
         import traceback
         traceback.print_exc()
