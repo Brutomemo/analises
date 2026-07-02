@@ -312,7 +312,7 @@ def _payload_funcoes_criar():
         "FUNÇÕES: PROFISSIONAL DE SAÚDE MENTAL - AÇÕES CORRETIVAS ADOTADAS": "c_func_psm_acoes",
         "FUNÇÕES: PROFISSIONAL DE SAÚDE MENTAL - PRÁTICAS PROMISSORAS": "c_func_psm_praticas",
     }
-    return {campo: (st.session_state.get(chave) or "") for campo, chave in mapa.items()}
+    return {campo: (st.session_state.get(_criar_key(chave)) or "") for campo, chave in mapa.items()}
 
 
 def _resolver_record_id_apa(apa, df_quali=None):
@@ -446,11 +446,26 @@ def _limpar_tela_visualizar_editar():
     _limpar_cache_tecnicas_docx()
 
 
+def _criar_form_rev():
+    return st.session_state.get("_criar_apa_form_rev", 0)
+
+
+def _criar_key(nome):
+    """Chave versionada do formulário Criar — nova revisão = widgets novos no navegador."""
+    return f"{nome}__{_criar_form_rev()}"
+
+
 def _limpar_formulario_criar():
-    """Limpa todos os campos da aba Criar Novo Registro (chaves c_*)."""
+    """Limpa todos os campos da aba Criar Novo Registro."""
     for key in list(st.session_state.keys()):
-        if key.startswith("c_"):
-            del st.session_state[key]
+        if (
+            key.startswith("c_")
+            or key.startswith("ext_")
+            or key.startswith("uploader_apa")
+        ):
+            st.session_state.pop(key, None)
+    _limpar_cache_tecnicas_docx()
+    st.session_state["_criar_apa_form_rev"] = _criar_form_rev() + 1
 
 
 def _render_envio_tecnicas_docx(apa, df_quali, key_prefix):
@@ -580,6 +595,15 @@ def render(df_quali, df_tec):
             "Esta aba **sempre cria um registro novo** no Airtable (ID autonumérico: 15, 29, 169…). "
             "Para alterar uma APA existente, use **Visualizar & Editar**."
         )
+
+        _, col_clear_top = st.columns([4, 1])
+        with col_clear_top:
+            st.button(
+                "❌ Limpar Tudo",
+                use_container_width=True,
+                key="btn_clear_aba1",
+                on_click=_limpar_formulario_criar,
+            )
         
         # 7 ABAS DO FORMULÁRIO
         tab_meta, tab_equipe, tab_chegada, tab_enc, tab_trans, tab_func, tab_obs = st.tabs([
@@ -596,94 +620,94 @@ def render(df_quali, df_tec):
         with tab_meta:
             col1, col2 = st.columns(2)
             with col1:
-                data_oca = st.date_input("Data da Ocorrência *", key="c_data")
+                data_oca = st.date_input("Data da Ocorrência *", key=_criar_key("c_data"))
             with col2:
-                modalidade = st.selectbox("Modalidade do Incidente *", [""] + MODALIDADES, key="c_modalidade")
+                modalidade = st.selectbox("Modalidade do Incidente *", [""] + MODALIDADES, key=_criar_key("c_modalidade"))
             
             col3, col4 = st.columns(2)
             with col3:
-                tipologia = st.selectbox("Tipologia *", [""] + TIPOLOGIAS, key="c_tipologia")
+                tipologia = st.selectbox("Tipologia *", [""] + TIPOLOGIAS, key=_criar_key("c_tipologia"))
             with col4:
-                forma_transicao = st.selectbox("Forma de Transição", [""] + FORMAS_TRANSICAO, key="c_forma_transicao")
+                forma_transicao = st.selectbox("Forma de Transição", [""] + FORMAS_TRANSICAO, key=_criar_key("c_forma_transicao"))
             
-            motivacao = st.text_area("Motivação", placeholder="...", height=80, key="c_motivacao")
-            resolucao = st.selectbox("Resolução *", [""] + RESOLUCOES, key="c_resolucao")
+            motivacao = st.text_area("Motivação", placeholder="...", height=80, key=_criar_key("c_motivacao"))
+            resolucao = st.selectbox("Resolução *", [""] + RESOLUCOES, key=_criar_key("c_resolucao"))
         
         # ─── EQUIPE ───
         with tab_equipe:
             col1, col2 = st.columns(2)
             with col1:
-                neg_principal = st.selectbox("Negociador Principal *", [""] + NEGOCIADORES, key="c_neg_principal")
+                neg_principal = st.selectbox("Negociador Principal *", [""] + NEGOCIADORES, key=_criar_key("c_neg_principal"))
             with col2:
-                neg_secundario = st.selectbox("Negociador Secundário", [""] + NEGOCIADORES, key="c_neg_secundario")
+                neg_secundario = st.selectbox("Negociador Secundário", [""] + NEGOCIADORES, key=_criar_key("c_neg_secundario"))
             
             col3, col4 = st.columns(2)
             with col3:
-                neg_anotador = st.selectbox("Negociador Anotador", [""] + NEGOCIADORES, key="c_neg_anotador")
+                neg_anotador = st.selectbox("Negociador Anotador", [""] + NEGOCIADORES, key=_criar_key("c_neg_anotador"))
             with col4:
-                neg_lider = st.selectbox("Negociador Líder", [""] + NEGOCIADORES, key="c_neg_lider")
+                neg_lider = st.selectbox("Negociador Líder", [""] + NEGOCIADORES, key=_criar_key("c_neg_lider"))
             
             col5, col6 = st.columns(2)
             with col5:
-                aux_info = st.selectbox("Auxiliar de Informações", [""] + NEGOCIADORES, key="c_aux_info")
+                aux_info = st.selectbox("Auxiliar de Informações", [""] + NEGOCIADORES, key=_criar_key("c_aux_info"))
             with col6:
-                aux_log = st.selectbox("Auxiliar de Logística", [""] + NEGOCIADORES, key="c_aux_log")
+                aux_log = st.selectbox("Auxiliar de Logística", [""] + NEGOCIADORES, key=_criar_key("c_aux_log"))
             
-            prof_saude = st.selectbox("Profissional de Saúde Mental", [""] + SAUDE_MENTAL, key="c_prof_saude")
+            prof_saude = st.selectbox("Profissional de Saúde Mental", [""] + SAUDE_MENTAL, key=_criar_key("c_prof_saude"))
         
         # ─── PERCEPÇÃO CHEGADA ───
         with tab_chegada:
             st.markdown("**Negociador Principal**")
             col1, col2 = st.columns(2)
             with col1:
-                agr_principal_chegada = st.selectbox("12 - Agressividade", PERCEPCOES_AGRESSIVIDADE, key="c_agr_principal_chegada")
+                agr_principal_chegada = st.selectbox("12 - Agressividade", PERCEPCOES_AGRESSIVIDADE, key=_criar_key("c_agr_principal_chegada"))
             with col2:
-                rec_principal_chegada = st.selectbox("13 - Receptividade", PERCEPCOES_RECEPTIVIDADE, key="c_rec_principal_chegada")
+                rec_principal_chegada = st.selectbox("13 - Receptividade", PERCEPCOES_RECEPTIVIDADE, key=_criar_key("c_rec_principal_chegada"))
             
             st.markdown("**Negociador Secundário**")
             col3, col4 = st.columns(2)
             with col3:
-                agr_secundario_chegada = st.selectbox("12 - Agressividade", PERCEPCOES_AGRESSIVIDADE, key="c_agr_secundario_chegada")
+                agr_secundario_chegada = st.selectbox("12 - Agressividade", PERCEPCOES_AGRESSIVIDADE, key=_criar_key("c_agr_secundario_chegada"))
             with col4:
-                rec_secundario_chegada = st.selectbox("13 - Receptividade", PERCEPCOES_RECEPTIVIDADE, key="c_rec_secundario_chegada")
+                rec_secundario_chegada = st.selectbox("13 - Receptividade", PERCEPCOES_RECEPTIVIDADE, key=_criar_key("c_rec_secundario_chegada"))
             
             st.markdown("**Negociador Líder**")
             col5, col6 = st.columns(2)
             with col5:
-                agr_lider_chegada = st.selectbox("12 - Agressividade", PERCEPCOES_AGRESSIVIDADE, key="c_agr_lider_chegada")
+                agr_lider_chegada = st.selectbox("12 - Agressividade", PERCEPCOES_AGRESSIVIDADE, key=_criar_key("c_agr_lider_chegada"))
             with col6:
-                rec_lider_chegada = st.selectbox("13 - Receptividade", PERCEPCOES_RECEPTIVIDADE, key="c_rec_lider_chegada")
+                rec_lider_chegada = st.selectbox("13 - Receptividade", PERCEPCOES_RECEPTIVIDADE, key=_criar_key("c_rec_lider_chegada"))
         
         # ─── PERCEPÇÃO ENCERRAMENTO ───
         with tab_enc:
             st.markdown("**Negociador Principal**")
             col1, col2 = st.columns(2)
             with col1:
-                agr_principal_enc = st.selectbox("24 - Agressividade", PERCEPCOES_AGRESSIVIDADE, key="c_agr_principal_enc")
+                agr_principal_enc = st.selectbox("24 - Agressividade", PERCEPCOES_AGRESSIVIDADE, key=_criar_key("c_agr_principal_enc"))
             with col2:
-                rec_principal_enc = st.selectbox("25 - Receptividade", PERCEPCOES_RECEPTIVIDADE, key="c_rec_principal_enc")
+                rec_principal_enc = st.selectbox("25 - Receptividade", PERCEPCOES_RECEPTIVIDADE, key=_criar_key("c_rec_principal_enc"))
             
             st.markdown("**Negociador Secundário**")
             col3, col4 = st.columns(2)
             with col3:
-                agr_secundario_enc = st.selectbox("24 - Agressividade", PERCEPCOES_AGRESSIVIDADE, key="c_agr_secundario_enc")
+                agr_secundario_enc = st.selectbox("24 - Agressividade", PERCEPCOES_AGRESSIVIDADE, key=_criar_key("c_agr_secundario_enc"))
             with col4:
-                rec_secundario_enc = st.selectbox("25 - Receptividade", PERCEPCOES_RECEPTIVIDADE, key="c_rec_secundario_enc")
+                rec_secundario_enc = st.selectbox("25 - Receptividade", PERCEPCOES_RECEPTIVIDADE, key=_criar_key("c_rec_secundario_enc"))
             
             st.markdown("**Negociador Líder**")
             col5, col6 = st.columns(2)
             with col5:
-                agr_lider_enc = st.selectbox("24 - Agressividade", PERCEPCOES_AGRESSIVIDADE, key="c_agr_lider_enc")
+                agr_lider_enc = st.selectbox("24 - Agressividade", PERCEPCOES_AGRESSIVIDADE, key=_criar_key("c_agr_lider_enc"))
             with col6:
-                rec_lider_enc = st.selectbox("25 - Receptividade", PERCEPCOES_RECEPTIVIDADE, key="c_rec_lider_enc")
+                rec_lider_enc = st.selectbox("25 - Receptividade", PERCEPCOES_RECEPTIVIDADE, key=_criar_key("c_rec_lider_enc"))
         
         # ─── TRANSCRIÇÕES ───
         with tab_trans:
             separador_apa.render_separador()
             st.markdown("---")
-            trans_causador = st.text_area("Transcrição do Causador", placeholder="...", height=100, key="c_trans_causador")
-            trans_principal = st.text_area("Transcrição do Negociador Principal", placeholder="...", height=100, key="c_trans_principal")
-            trans_secundario = st.text_area("Transcrição do Negociador Secundário", placeholder="...", height=100, key="c_trans_secundario")
+            trans_causador = st.text_area("Transcrição do Causador", placeholder="...", height=100, key=_criar_key("c_trans_causador"))
+            trans_principal = st.text_area("Transcrição do Negociador Principal", placeholder="...", height=100, key=_criar_key("c_trans_principal"))
+            trans_secundario = st.text_area("Transcrição do Negociador Secundário", placeholder="...", height=100, key=_criar_key("c_trans_secundario"))
         
         # ─── FUNÇÕES ───
         with tab_func:
@@ -698,17 +722,17 @@ def render(df_quali, df_tec):
             ]:
                 st.markdown(f"**{funcao}**")
                 locals()[f"{prefixo}"] = st.text_area(
-                    "Descrição", placeholder="...", height=68, key=f"{prefixo}"
+                    "Descrição", placeholder="...", height=68, key=_criar_key(f"{prefixo}")
                 )
                 with st.expander("📋 Problema / Ações / Práticas"):
                     locals()[f"{prefixo}_problema"] = st.text_area(
-                        "Problema Identificado", placeholder="...", height=68, key=f"{prefixo}_problema"
+                        "Problema Identificado", placeholder="...", height=68, key=_criar_key(f"{prefixo}_problema")
                     )
                     locals()[f"{prefixo}_acoes"] = st.text_area(
-                        "Ações Corretivas", placeholder="...", height=68, key=f"{prefixo}_acoes"
+                        "Ações Corretivas", placeholder="...", height=68, key=_criar_key(f"{prefixo}_acoes")
                     )
                     locals()[f"{prefixo}_praticas"] = st.text_area(
-                        "Práticas Promissoras", placeholder="...", height=68, key=f"{prefixo}_praticas"
+                        "Práticas Promissoras", placeholder="...", height=68, key=_criar_key(f"{prefixo}_praticas")
                     )
                 st.markdown("---")
         
@@ -716,15 +740,15 @@ def render(df_quali, df_tec):
         with tab_obs:
             col1, col2 = st.columns(2)
             with col1:
-                tempo_real = st.text_input("Tempo de Negociação Real (HH:MM)", placeholder="Ex: 01:30", key="c_tempo_real")
+                tempo_real = st.text_input("Tempo de Negociação Real (HH:MM)", placeholder="Ex: 01:30", key=_criar_key("c_tempo_real"))
             with col2:
-                tempo_tatica = st.text_input("Tempo de Negociação Tática (HH:MM)", placeholder="Ex: 00:45", key="c_tempo_tatica")
+                tempo_tatica = st.text_input("Tempo de Negociação Tática (HH:MM)", placeholder="Ex: 00:45", key=_criar_key("c_tempo_tatica"))
             
             col3, col4 = st.columns(2)
             with col3:
-                uniforme = st.selectbox("Uniforme Usado", [""] + UNIFORMES, key="c_uniforme")
+                uniforme = st.selectbox("Uniforme Usado", [""] + UNIFORMES, key=_criar_key("c_uniforme"))
             with col4:
-                sexo = st.selectbox("Sexo do Causador", [""] + SEXOS, key="c_sexo")
+                sexo = st.selectbox("Sexo do Causador", [""] + SEXOS, key=_criar_key("c_sexo"))
         
         # BOTÕES DE AÇÃO
         st.markdown("---")
@@ -742,15 +766,15 @@ def render(df_quali, df_tec):
             )
             st.checkbox(
                 "Confirmo: quero criar um **novo** registro nesta data (não editar o existente)",
-                key="c_confirmar_nova_apa_duplicada",
+                key=_criar_key("c_confirmar_nova_apa_duplicada"),
             )
 
-        col_save, col_clear = st.columns(2)
+        col_save, _ = st.columns(2)
 
         with col_save:
             if st.button("✅ CRIAR REGISTRO DE APA", use_container_width=True, type="secondary", key="btn_criar_aba1"):
 
-                if not existentes_na_data.empty and not st.session_state.get("c_confirmar_nova_apa_duplicada"):
+                if not existentes_na_data.empty and not st.session_state.get(_criar_key("c_confirmar_nova_apa_duplicada")):
                     st.error(
                         "Marque a confirmação acima antes de criar outro registro na mesma data."
                     )
@@ -806,7 +830,7 @@ def render(df_quali, df_tec):
                                 st.session_state.id_apa_criado = id_apa
                                 st.session_state.pop("df_quali", None)
                                 st.session_state.pop("df_tec", None)
-                                st.session_state.pop("c_confirmar_nova_apa_duplicada", None)
+                                st.session_state.pop(_criar_key("c_confirmar_nova_apa_duplicada"), None)
                                 rec_novo = resultado.get("record_id") if isinstance(resultado, dict) else None
                                 msg = f"✅ NOVO registro criado: **{st.session_state.id_apa_criado}**"
                                 if rec_novo:
@@ -825,14 +849,6 @@ def render(df_quali, df_tec):
                             traceback.print_exc()
                         finally:
                             st.session_state.pop("_apa_create_lock", None)
-
-        with col_clear:
-            st.button(
-                "❌ Limpar Tudo",
-                use_container_width=True,
-                key="btn_clear_aba1",
-                on_click=_limpar_formulario_criar,
-            )
     
     # ─────────────────────────────────────────────────────────────
     # ABA 2: VISUALIZAR & EDITAR (COM FORMULÁRIO)
