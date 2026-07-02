@@ -184,41 +184,50 @@ def _extrair_transcricoes(tbl: ET.Element) -> dict:
 
 def _extrair_tecnicas(tbl: ET.Element) -> pd.DataFrame:
     """
-    Extrai colunas da tabela de técnicas:
-    Col 0: Técnica
-    Col 4: Trecho da Transcrição
-    Col 5: Atitude do Causador
+    Extrai colunas da tabela de técnicas do .docx.
+    Tolerante a variações de layout (colunas mescladas / ordem diferente).
     """
     registros = []
     rows = tbl.findall('.//w:tr', NS)
+    atitude_map = {
+        '1': 1, '0': 0, '-1': -1,
+        'positivo': 1, 'negativo': -1, 'neutro': 0,
+        'positiva': 1, 'negativa': -1,
+        '🟢 reação positiva': 1,
+        '⚪ reação neutra': 0,
+        '🔴 reação negativa': -1,
+    }
 
     for i, row in enumerate(rows):
-        if i < 2:  # Pula título e cabeçalho
+        if i < 2:
             continue
+
         cells = row.findall('.//w:tc', NS)
-        if len(cells) < 6:
+        if len(cells) < 2:
             continue
 
-        def cel_texto(idx):
-            return ''.join(t.text or '' for t in cells[idx].findall('.//w:t', NS)).strip()
-
-        tecnica  = cel_texto(0)
-        trecho   = cel_texto(4)
-        atitude_raw = cel_texto(5).strip()
-
+        textos = [
+            ''.join(t.text or '' for t in cell.findall('.//w:t', NS)).strip()
+            for cell in cells
+        ]
+        tecnica = re.sub(r'^\d+[\.\)]\s*', '', textos[0]).strip()
         if not tecnica:
             continue
 
-        # Normalizar atitude: 1=positivo, 0=neutro, -1=negativo, None=inaudível
-        atitude_map = {
-            '1': 1, '0': 0, '-1': -1,
-            'positivo': 1, 'negativo': -1, 'neutro': 0,
-            'positiva': 1, 'negativa': -1,
-            '🟢 reação positiva': 1,
-            '⚪ reação neutra': 0,
-            '🔴 reação negativa': -1,
-        }
-        atitude = atitude_map.get(atitude_raw.lower(), None)
+        atitude_raw = textos[5].strip() if len(textos) > 5 else textos[-1].strip()
+        atitude = atitude_map.get(atitude_raw.lower()) if atitude_raw else None
+
+        trecho = ''
+        indices_trecho = range(1, 5) if len(textos) > 5 else range(1, len(textos))
+        for idx in indices_trecho:
+            candidato = textos[idx].strip()
+            if not candidato or candidato == atitude_raw:
+                continue
+            if len(candidato) > len(trecho):
+                trecho = candidato
+
+        if not trecho and len(textos) > 5:
+            trecho = textos[4].strip()
 
         registros.append({
             'TÉCNICAS': tecnica,
@@ -267,11 +276,18 @@ def processar_apa(file_bytes: bytes) -> dict:
 # WIDGET STREAMLIT
 # ============================================================
 
+def _separador_keys():
+    """Chaves versionadas do extrator (sincronizadas com _criar_apa_form_rev em form_apa)."""
+    rev = st.session_state.get("_criar_apa_form_rev", 0)
+    return lambda nome: f"{nome}__{rev}"
+
+
 def render_separador():
     """
     Widget completo de extração da APA.
     Exibe transcrições separadas e tabela de técnicas prontas para usar.
     """
+    sk = _separador_keys()
     st.markdown("""
     <div class='info-card'>
     <h5 style='color: #FFD700; margin-top: 0;'>📄 Extrator de APA</h5>
@@ -285,7 +301,7 @@ def render_separador():
     arquivo = st.file_uploader(
         "Selecione o arquivo .docx da APA",
         type=["docx", "docm"],
-        key="uploader_apa"
+        key=sk("uploader_apa")
     )
 
     if arquivo is None:
@@ -319,16 +335,16 @@ def render_separador():
     tab_c, tab_np, tab_ns, tab_pi = st.tabs(tabs_nomes)
 
     with tab_c:
-        st.text_area("Transcrição do Causador", value=trans.get('causador', ''), height=300, key="ext_causador")
+        st.text_area("Transcrição do Causador", value=trans.get('causador', ''), height=300, key=sk("ext_causador"))
 
     with tab_np:
-        st.text_area("Transcrição do Negociador Principal", value=trans.get('negociador_principal', ''), height=300, key="ext_neg_principal")
+        st.text_area("Transcrição do Negociador Principal", value=trans.get('negociador_principal', ''), height=300, key=sk("ext_neg_principal"))
 
     with tab_ns:
-        st.text_area("Transcrição do Negociador Secundário", value=trans.get('negociador_secundario', ''), height=300, key="ext_neg_secundario")
+        st.text_area("Transcrição do Negociador Secundário", value=trans.get('negociador_secundario', ''), height=300, key=sk("ext_neg_secundario"))
 
     with tab_pi:
-        st.text_area("Transcrição do 1º Interventor", value=trans.get('primeiro_interventor', ''), height=300, key="ext_primeiro_interventor")
+        st.text_area("Transcrição do 1º Interventor", value=trans.get('primeiro_interventor', ''), height=300, key=sk("ext_primeiro_interventor"))
 
     # ── TÉCNICAS ──────────────────────────────────────────────
     st.markdown("---")
