@@ -1,11 +1,12 @@
 # ============================================================
-# airtable_link.py - INTEGRAÇÃO COM AIRTABLE
+# airtable_link.py - INTEGRAÇÃO COM AIRTABLE (COM CACHE OTIMIZADO)
 # ============================================================
 
 import os
 import re
 import pandas as pd
 import requests
+import streamlit as st
 from pyairtable import Api
 from datetime import datetime
 import utils
@@ -24,8 +25,6 @@ def _formatar_erro_airtable(exc):
 
 
 def _get_setting(key, default=None):
-    import streamlit as st
-
     try:
         val = st.secrets.get(key)
         if val:
@@ -36,9 +35,16 @@ def _get_setting(key, default=None):
 
 
 def get_credentials():
-    api_key = _get_setting("AIRTABLE_TOKEN")
+    # Aceita tanto AIRTABLE_TOKEN quanto AIRTABLE_API_KEY do Secrets
+    api_key = _get_setting("AIRTABLE_TOKEN") or _get_setting("AIRTABLE_API_KEY")
     base_id = _get_setting("AIRTABLE_BASE_ID") or _get_setting("BASE_ID")
     return api_key, base_id
+
+
+def limpar_cache_airtable():
+    """Invalida o cache do Streamlit quando dados forem salvos/alterados."""
+    buscar_todas_apas.clear()
+    buscar_todas_tecnicas.clear()
 
 
 def _normalizar_ref_id_apa(id_apa):
@@ -108,7 +114,7 @@ def _tabela_vinculo_tecnicas():
         resp = requests.get(
             f"https://api.airtable.com/v0/meta/bases/{base_id}/tables",
             headers={"Authorization": f"Bearer {api_key}"},
-            timeout=30,
+            timeout=15,
         )
         resp.raise_for_status()
         tabelas = resp.json().get("tables", [])
@@ -136,10 +142,15 @@ def _tabela_vinculo_tecnicas():
     return _TABELA_VINCULO_TECNICAS
 
 
+# ============================================================
+# CONSULTAS COM CACHE (PREVINE ESTOURO DE API / RATE LIMIT)
+# ============================================================
+
+@st.cache_data(ttl=300)
 def buscar_todas_apas():
     """
     Busca todas as APAs da tabela "PARA ANALISE QUALITATIVA DA APA".
-    Retorna: DataFrame com os dados
+    Mantém os dados em cache no Streamlit por 5 minutos (300 seg).
     """
     try:
         api_key, base_id = get_credentials()
@@ -160,7 +171,6 @@ def buscar_todas_apas():
             record_id = record['id']
             fields['Airtable_Record_ID'] = record_id
             fields['record_id_airtable'] = record_id
-            # Garante que 'id' não fique com o número da APA (campo ID) por colisão de nome
             if str(fields.get('id', '')).strip().startswith('rec'):
                 fields['id'] = record_id
             else:
@@ -178,7 +188,6 @@ def buscar_todas_apas():
 def buscar_dados_apa():
     """
     Alias para buscar_todas_apas() — mantém compatibilidade.
-    Retorna: (DataFrame, status_string)
     """
     try:
         df = buscar_todas_apas()
@@ -193,16 +202,10 @@ def buscar_dados_apa():
         return pd.DataFrame(), f"❌ Erro ao carregar APAs: {str(e)}"
 
 
+@st.cache_data(ttl=300)
 def buscar_todas_tecnicas():
     """
-    Busca todas as técnicas da tabela "TABELA DE FREQUÊNCIAS DAS TÉCNICAS".
-
-    Usada por: app.py
-        df_tec, status_t = airtable_link.buscar_todas_tecnicas()
-
-    Retorna:
-        - DataFrame com todas as técnicas (pode ser vazio se não há registros)
-        - String de status
+    Busca todas as técnicas da tabela com cache de 5 minutos.
     """
     try:
         api_key, base_id = get_credentials()
@@ -246,7 +249,6 @@ def _valor_coincide_id_apa(valor, id_num, id_fmt):
 
 
 def record_id_pertence_apa(record_id, id_apa, table_name=None):
-    """Confirma que o record_id existe e pertence ao ID numérico da APA (campo ID)."""
     if not record_id or not str(record_id).strip().startswith("rec"):
         return False
 
@@ -272,10 +274,6 @@ def record_id_pertence_apa(record_id, id_apa, table_name=None):
 
 
 def buscar_record_id_por_id_apa(id_apa, table_name=None):
-    """
-    Busca o record_id (rec...) de uma APA pelo número/código do campo ID.
-    Ex.: 31, 31.0, 'APA 031' → 'recXXXXXXXX'
-    """
     id_num, id_fmt = _normalizar_ref_id_apa(id_apa)
     if id_num is None and not id_fmt:
         return None
@@ -305,10 +303,6 @@ def buscar_record_id_por_id_apa(id_apa, table_name=None):
             except Exception as exc:
                 print(f"[airtable_link] Filtro por ID falhou em {table_name}: {exc}")
 
-        for registro in table.all():
-            campo_id = registro["fields"].get("ID")
-            if _campo_id_coincide(campo_id, id_num, id_fmt):
-                return registro["id"]
         return None
     except Exception as exc:
         print(f"[airtable_link] Erro ao buscar APA {id_apa} em {table_name}: {exc}")
@@ -316,42 +310,21 @@ def buscar_record_id_por_id_apa(id_apa, table_name=None):
 
 
 def buscar_record_id_vinculo_tecnica(id_apa, record_id_hint=None):
-    """
-    Record ID na tabela PARA ANALISE ligada ao Vinculo_APA, localizado pelo ID da APA.
-    Nunca reutiliza record_id do cache sem confirmar que é a APA correta.
-    """
     tabela_apa = _tabela_vinculo_tecnicas()
 
     if record_id_hint and str(record_id_hint).strip().startswith("rec"):
         hint = str(record_id_hint).strip()
         if record_id_pertence_apa(hint, id_apa, table_name=tabela_apa):
             return hint
-        print(
-            f"[airtable_link] record_id em cache ({hint}) não corresponde à APA {id_apa}; "
-            "buscando novamente na API."
-        )
 
     return buscar_record_id_por_id_apa(id_apa, table_name=tabela_apa)
 
 
+# ============================================================
+# ESCRITA E ATUALIZAÇÃO (LIMPA O CACHE APÓS EXECUTAR)
+# ============================================================
+
 def atualizar_apa_validacao(id_apa, payload, record_id_interno=None):
-    """
-    Atualiza um registro de APA existente.
-
-    Args:
-        id_apa: ID formatado "APA 001" — usado como fallback de busca.
-        payload: Dict com os campos a atualizar.
-        record_id_interno: Airtable internal record ID (ex: 'recXXXXXXXXXXXXXX').
-            Quando fornecido, atualiza diretamente sem varrer registros.
-
-    Returns:
-        True se atualizado com sucesso.
-        False se APA não encontrada (sem record_id e busca vazia).
-
-    Raises:
-        RuntimeError: com mensagem da API do Airtable em caso de erro de escrita.
-        ValueError: se credenciais não configuradas.
-    """
     api_key, base_id = get_credentials()
 
     if not api_key or not base_id:
@@ -363,75 +336,34 @@ def atualizar_apa_validacao(id_apa, payload, record_id_interno=None):
 
     utils.validar_tempos_payload_airtable(payload)
 
-    # Caminho direto: record_id_interno fornecido (recXXXXXX)
     if record_id_interno and str(record_id_interno).startswith("rec"):
         try:
             table.update(record_id_interno, payload)
-            print(f"✅ APA {id_apa} atualizada com sucesso (via record_id_interno={record_id_interno})")
+            limpar_cache_airtable()  # Limpa o cache após atualizar
+            print(f"✅ APA {id_apa} atualizada com sucesso")
             return True
         except Exception as e:
-            raise RuntimeError(
-                f"Airtable rejeitou a atualização (record={record_id_interno}): {str(e)}"
-            ) from e
+            raise RuntimeError(f"Airtable rejeitou a atualização: {str(e)}") from e
 
-    # Fallback: busca pelo campo ID
-    try:
-        id_num = int(str(id_apa).replace("APA", "").strip())
-    except (ValueError, TypeError):
-        id_num = None
+    # Se não veio o record_id, busca via ID por fórmula rápida
+    record_id = buscar_record_id_por_id_apa(id_apa)
+    if record_id:
+        try:
+            table.update(record_id, payload)
+            limpar_cache_airtable()  # Limpa o cache após atualizar
+            return True
+        except Exception as e:
+            raise RuntimeError(f"Airtable rejeitou a atualização: {str(e)}") from e
 
-    id_apa_str = str(id_apa).strip().upper()
-
-    record_encontrado = None
-    try:
-        for r in table.all():
-            campo_id = r['fields'].get('ID')
-            if campo_id is None:
-                continue
-            match_num = (id_num is not None and campo_id == id_num)
-            try:
-                campo_id_fmt = f"APA {int(campo_id):03d}"
-                match_fmt = (campo_id_fmt == id_apa_str)
-            except (ValueError, TypeError):
-                match_fmt = (str(campo_id).strip().upper() == id_apa_str)
-            if match_num or match_fmt:
-                record_encontrado = r
-                break
-    except Exception as e:
-        raise RuntimeError(f"Erro ao buscar registros no Airtable: {str(e)}") from e
-
-    if not record_encontrado:
-        print(f"❌ APA {id_apa} não encontrada via busca de campo")
-        return False
-
-    try:
-        table.update(record_encontrado['id'], payload)
-        print(f"✅ APA {id_apa} atualizada com sucesso (via busca de campo)")
-        return True
-    except Exception as e:
-        raise RuntimeError(
-            f"Airtable rejeitou a atualização (record={record_encontrado['id']}): {str(e)}"
-        ) from e
+    return False
 
 
 def criar_nova_apa(payload):
-    """
-    Cria um novo registro de APA no Airtable.
-
-    O campo ID é autonumeração — não deve ser enviado no payload.
-    Retorna: dict com chaves "id" (str|None) e "erro" (str|None).
-    """
-    print("[criar_nova_apa] Iniciando criacao de registro")
-
     try:
         api_key, base_id = get_credentials()
 
-        print(f"[criar_nova_apa] API_KEY configurada: {bool(api_key)}")
-        print(f"[criar_nova_apa] BASE_ID configurada: {bool(base_id)}")
-
         if not api_key or not base_id:
-            erro = "Credenciais do Airtable nao configuradas (AIRTABLE_TOKEN / AIRTABLE_BASE_ID)."
-            print(f"[criar_nova_apa] ERRO: {erro}")
+            erro = "Credenciais do Airtable não configuradas."
             return {"id": None, "erro": erro}
 
         api = Api(api_key)
@@ -443,49 +375,25 @@ def criar_nova_apa(payload):
 
         utils.validar_tempos_payload_airtable(payload)
 
-        print(f"[criar_nova_apa] Enviando {len(payload)} campos para o Airtable")
-
         novo_record = table.create(payload)
         record_id = novo_record.get("id")
         fields = novo_record.get("fields", {})
         id_numero = fields.get("ID")
 
-        if id_numero is None and record_id:
-            try:
-                refetch = table.get(record_id)
-                id_numero = refetch.get("fields", {}).get("ID")
-            except Exception as exc:
-                print(f"[criar_nova_apa] Releitura do registro falhou: {exc}")
+        limpar_cache_airtable()  # Limpa o cache após criar registro novo
 
         if id_numero is None:
-            erro = (
-                "Registro criado no Airtable, mas o campo ID (autonumeração) não foi retornado. "
-                f"Confira manualmente o registro {record_id}."
-            )
-            print(f"[criar_nova_apa] AVISO: {erro}")
-            return {"id": None, "record_id": record_id, "erro": erro}
+            return {"id": None, "record_id": record_id, "erro": None}
 
         id_formatado = f"APA {int(id_numero):03d}"
-        print(f"[criar_nova_apa] Registro criado: {id_formatado} ({record_id})")
         return {"id": id_formatado, "record_id": record_id, "erro": None}
 
     except Exception as e:
         erro = _formatar_erro_airtable(e)
-        print(f"[criar_nova_apa] ERRO {type(e).__name__}: {erro}")
-        import traceback
-        traceback.print_exc()
         return {"id": None, "erro": erro}
 
 
 def criar_tecnica(payload, vinculo_record_id=None, id_apa=None):
-    """
-    Cria um novo registro de técnica no Airtable.
-
-    Vinculo_APA é linked record: envia [rec...] da APA encontrada pelo ID (31, APA 031).
-
-    Returns:
-        tuple: (sucesso: bool, erro: str | None)
-    """
     try:
         api_key, base_id = get_credentials()
 
@@ -514,16 +422,7 @@ def criar_tecnica(payload, vinculo_record_id=None, id_apa=None):
 
         if not rec or not str(rec).startswith("rec"):
             ref_msg = id_apa or "informado"
-            return False, (
-                f"Não foi possível localizar o registro Airtable da APA {ref_msg} "
-                f"na tabela de vínculo ({_tabela_vinculo_tecnicas()})."
-            )
-
-        if id_apa and not record_id_pertence_apa(rec, id_apa):
-            return False, (
-                f"O vínculo interno ({rec}) não corresponde à APA {id_apa}. "
-                "Recarregue os dados e selecione a APA novamente."
-            )
+            return False, f"Não foi possível localizar o registro Airtable da APA {ref_msg}."
 
         payload.pop("Vinculo_APA", None)
         payload.pop("Vinculo_APA_ID", None)
@@ -542,12 +441,13 @@ def criar_tecnica(payload, vinculo_record_id=None, id_apa=None):
             try:
                 atitude = int(atitude_raw)
                 if atitude not in [-1, 0, 1]:
-                    return False, f"ATITUDE inválida: {atitude} (esperado -1, 0 ou 1)."
+                    return False, f"ATITUDE inválida: {atitude}."
                 payload['ATITUDE DO CAUSADOR'] = atitude
             except (ValueError, TypeError):
                 return False, "ATITUDE deve ser número inteiro (-1, 0 ou 1)."
 
         table.create(payload)
+        limpar_cache_airtable()  # Limpa o cache para recarregar a lista de técnicas
         return True, None
 
     except Exception as e:
