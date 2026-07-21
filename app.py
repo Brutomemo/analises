@@ -64,37 +64,57 @@ import apa
 # 4. SISTEMA DE SEGURANÇA
 # ====
 import os
+import streamlit as st
 
 def check_password():
     """Retorna True se o usuário inseriu a senha correta."""
     
-    # LER APENAS DE VARIÁVEIS DE AMBIENTE (Railway)
+    # 1. Recupera a senha de acesso (Secrets ou Variáveis de Ambiente)
+    correct_password = None
     try:
-        correct_password = st.secrets["ACCESS_PASSWORD"]
-    except:
+        correct_password = st.secrets.get("ACCESS_PASSWORD")
+    except Exception:
+        pass
+        
+    if not correct_password:
         correct_password = os.getenv("ACCESS_PASSWORD")
 
     if not correct_password:
-            st.error("❌ ACCESS_PASSWORD não configurada!")
-            return False
-    
-    def password_entered():
-        """Verifica se a senha coincide."""
-        if st.session_state["password"] == correct_password:
-            st.session_state["password_correct"] = True
-            del st.session_state["password"]  
-        else:
-            st.session_state["password_correct"] = False
-
-    if "password_correct" not in st.session_state:
-        st.markdown("## ✔ Controle de Acesso")
-        st.text_input("Insira a Senha de Acesso:", type="password", on_change=password_entered, key="password")
+        st.error("❌ ACCESS_PASSWORD não configurada nos Secrets ou Env!")
         return False
+    
+    # 2. Funçao interna para validar quando o campo muda
+    def password_entered():
+        """Verifica se a senha coincide de forma segura."""
+        if "password" in st.session_state:
+            if st.session_state["password"] == correct_password:
+                st.session_state["password_correct"] = True
+                del st.session_state["password"]  # Limpa do estado por segurança
+            else:
+                st.session_state["password_correct"] = False
+
+    # 3. Fluxo de validação da interface
+    if "password_correct" not in st.session_state:
+        st.markdown("## 🔒 Controle de Acesso")
+        st.text_input(
+            "Insira a Senha de Acesso:", 
+            type="password", 
+            on_change=password_entered, 
+            key="password"
+        )
+        return False
+
     elif not st.session_state["password_correct"]:
-        st.markdown("## ✔ Controle de Acesso - GATE")
-        st.text_input("Senha incorreta. Tente novamente:", type="password", on_change=password_entered, key="password")
+        st.markdown("## 🔒 Controle de Acesso - GATE")
+        st.text_input(
+            "Senha incorreta. Tente novamente:", 
+            type="password", 
+            on_change=password_entered, 
+            key="password"
+        )
         st.error("Acesso negado. Credenciais inválidas.")
         return False
+
     else:
         return True
 # ====
@@ -113,7 +133,11 @@ st.sidebar.success("Autenticação validada.")
 if "df_quali" in st.session_state and "df_tec" in st.session_state:
     df_quali = st.session_state["df_quali"]
     df_tec = st.session_state["df_tec"]
-    if "Airtable_Record_ID" not in df_quali.columns:
+    cache_desatualizado = (
+        "Airtable_Record_ID" not in df_quali.columns
+        or "Airtable_Record_ID" not in df_tec.columns
+    )
+    if cache_desatualizado:
         st.session_state.pop("df_quali", None)
         st.session_state.pop("df_tec", None)
         st.session_state.pop("status_q", None)
