@@ -151,8 +151,16 @@ else:
         df_tec, status_t = airtable_link.buscar_todas_tecnicas()
 
         if df_quali.empty:
-            st.error("Falha ao carregar as APAs. Verifique a conexão com o Airtable.")
+            # Exibe o status exato do erro retornado pela API do Airtable
+            st.error(f"Falha ao carregar as APAs. Detalhe técnico: {status_q}")
+            
+            # Botão para limpar o cache e tentar novamente imediatamente
+            if st.button("🔄 Tentar Novamente (Limpar Cache)"):
+                st.cache_data.clear()
+                st.rerun()
+                
             st.stop()
+            
         # df_tec pode ser vazio legitimamente (tabela de técnicas ainda não tem registros)
 
         # Persiste em session_state para evitar buscar de novo a cada rerun
