@@ -11,7 +11,7 @@ import streamlit as st
 import pandas as pd
 import io
 from datetime import datetime, date
-import airtable_link
+import database
 import separador_apa
 import utils
 
@@ -315,14 +315,23 @@ def _payload_funcoes_criar():
     return {campo: (st.session_state.get(_criar_key(chave)) or "") for campo, chave in mapa.items()}
 
 
+def _invalidar_dados_app():
+    """Força recarga dos DataFrames e indicadores após gravação."""
+    database.invalidar_cache_completo()
+    st.session_state.pop("df_quali", None)
+    st.session_state.pop("df_tec", None)
+    st.session_state.pop("status_q", None)
+    st.session_state.pop("status_t", None)
+
+
 def _resolver_record_id_apa(apa, df_quali=None):
-    """Obtém o record_id interno do Airtable (rec...) para a APA selecionada."""
-    for campo in ('Airtable_Record_ID', 'record_id_airtable'):
+    """Obtém o UUID da APA no Supabase."""
+    for campo in ('Airtable_Record_ID', 'record_id_airtable', 'id'):
         valor = apa.get(campo)
         if valor is None or (isinstance(valor, float) and pd.isna(valor)):
             continue
         valor_str = str(valor).strip()
-        if valor_str.startswith('rec'):
+        if valor_str and valor_str.lower() != 'nan':
             return valor_str
 
     id_campo = apa.get('ID')
@@ -330,16 +339,16 @@ def _resolver_record_id_apa(apa, df_quali=None):
         for _, linha in df_quali.iterrows():
             if not _id_apa_coincide(linha.get('ID'), id_campo):
                 continue
-            for campo in ('Airtable_Record_ID', 'record_id_airtable'):
+            for campo in ('Airtable_Record_ID', 'record_id_airtable', 'id'):
                 valor = linha.get(campo)
                 if valor is None or (isinstance(valor, float) and pd.isna(valor)):
                     continue
                 valor_str = str(valor).strip()
-                if valor_str.startswith('rec'):
+                if valor_str and valor_str.lower() != 'nan':
                     return valor_str
 
     id_ref = _normalizar_id_apa(id_campo) or id_campo
-    return airtable_link.buscar_record_id_por_id_apa(id_ref)
+    return database.buscar_apa_uuid(id_ref)
 
 
 def _vinculo_id_apa(apa):
@@ -347,39 +356,24 @@ def _vinculo_id_apa(apa):
     return utils.limpar_id(apa.get('ID'))
 
 
-def _criar_tecnica_airtable(payload, vinculo_record_id=None, id_apa=None):
-    """Compatível com criar_tecnica retornando bool (legado) ou (bool, erro)."""
-    resultado = airtable_link.criar_tecnica(
-        payload, vinculo_record_id=vinculo_record_id, id_apa=id_apa
-    )
-    if isinstance(resultado, tuple):
-        return resultado
-    return bool(resultado), None if resultado else "Falha ao criar técnica no Airtable."
+def _criar_tecnica_supabase(apa_uuid, payload):
+    """Grava uma técnica no Supabase vinculada à APA."""
+    return database.criar_tecnica(payload, apa_id=apa_uuid)
 
 
 def _inserir_tecnicas_extraidas(df_tecnicas, apa, df_quali=None, progress_bar=None):
-    """Insere técnicas extraídas do .docx no Airtable, vinculadas à APA selecionada."""
+    """Insere técnicas extraídas do .docx no Supabase, vinculadas à APA selecionada."""
     vinculo_id = _vinculo_id_apa(apa)
     if not vinculo_id:
         return 0, len(df_tecnicas), [
-            "Não foi possível identificar o ID da APA para o vínculo. Recarregue os dados do Airtable."
+            "Não foi possível identificar o ID da APA para o vínculo. Recarregue os dados do Supabase."
         ]
 
-    record_hint = _resolver_record_id_apa(apa, df_quali)
-    vinculo_record_id = airtable_link.buscar_record_id_vinculo_tecnica(
-        vinculo_id, record_id_hint=record_hint
-    )
-    if not vinculo_record_id:
+    apa_uuid = _resolver_record_id_apa(apa, df_quali)
+    if not apa_uuid:
         return 0, len(df_tecnicas), [
-            f"APA {vinculo_id}: registro não encontrado em "
-            f"'{airtable_link._tabela_vinculo_tecnicas()}'. "
+            f"APA {vinculo_id}: registro não encontrado no Supabase. "
             "Recarregue a página (F5) e selecione a APA novamente."
-        ]
-
-    if not airtable_link.record_id_pertence_apa(vinculo_record_id, vinculo_id):
-        return 0, len(df_tecnicas), [
-            f"O vínculo interno `{vinculo_record_id}` não corresponde à APA {vinculo_id}. "
-            "Recarregue a página e selecione a APA correta antes de enviar."
         ]
 
     sucesso_count = 0
@@ -414,9 +408,7 @@ def _inserir_tecnicas_extraidas(df_tecnicas, apa, df_quali=None, progress_bar=No
                 except (ValueError, TypeError):
                     detalhes_erros.append(f"{tecnica}: atitude inválida ({atitude!r}).")
 
-        ok, erro = _criar_tecnica_airtable(
-            payload, vinculo_record_id=vinculo_record_id, id_apa=vinculo_id
-        )
+        ok, erro = _criar_tecnica_supabase(apa_uuid, payload)
         if ok:
             sucesso_count += 1
         else:
@@ -472,26 +464,21 @@ def _render_envio_tecnicas_docx(apa, df_quali, key_prefix):
     """Upload .docx, extração e envio das técnicas para a APA já selecionada."""
     id_apa = str(apa.get('ID', 'N/D')).strip()
     vinculo_id = _vinculo_id_apa(apa)
-    record_hint = _resolver_record_id_apa(apa, df_quali)
-    vinculo_record_id = (
-        airtable_link.buscar_record_id_vinculo_tecnica(vinculo_id, record_id_hint=record_hint)
-        if vinculo_id
-        else None
-    )
+    apa_uuid = _resolver_record_id_apa(apa, df_quali)
 
     st.markdown("##### Enviar Técnicas Extraídas do .docx")
 
-    if vinculo_id and vinculo_record_id:
-        st.info(f"🔗 Vínculo confirmado: APA **{vinculo_id}** → `{vinculo_record_id}`")
+    if vinculo_id and apa_uuid:
+        st.info(f"🔗 Vínculo confirmado: APA **{vinculo_id}** → `{apa_uuid}`")
     elif vinculo_id:
         st.error(
-            f"❌ APA **{vinculo_id}** encontrada, mas o registro de vínculo não foi localizado "
-            "no Airtable. Recarregue os dados e confira se a APA existe na tabela ligada."
+            f"❌ APA **{vinculo_id}** encontrada, mas o UUID não foi localizado "
+            "no Supabase. Recarregue os dados e confira se a APA existe na base."
         )
     else:
         st.error(
             "❌ Não foi possível identificar o ID desta APA. "
-            "Recarregue a página para atualizar os dados do Airtable e tente novamente."
+            "Recarregue a página para atualizar os dados do Supabase e tente novamente."
         )
 
     df_tec_cache = st.session_state.get('tecnicas_extraidas_apa')
@@ -535,7 +522,7 @@ def _render_envio_tecnicas_docx(apa, df_quali, key_prefix):
         key=f"btn_enviar_tec_{key_prefix}",
         use_container_width=True,
         type="secondary",
-        disabled=not (vinculo_id and vinculo_record_id),
+        disabled=not (vinculo_id and apa_uuid),
     ):
         with st.spinner(f"💾 Enviando {len(df_tec_cache)} técnicas..."):
             progress = st.progress(0)
@@ -547,10 +534,9 @@ def _render_envio_tecnicas_docx(apa, df_quali, key_prefix):
         if erros == 0:
             st.session_state["_tecnicas_enviadas_msg"] = (
                 f"✅ {sucesso} técnicas enviadas e vinculadas à APA **{vinculo_id}** "
-                f"(`{vinculo_record_id}`)."
+                f"(`{apa_uuid}`)."
             )
-            st.session_state.pop("df_tec", None)
-            st.session_state.pop("df_quali", None)
+            _invalidar_dados_app()
             _limpar_cache_tecnicas_docx()
             st.rerun()
         else:
@@ -592,7 +578,7 @@ def render(df_quali, df_tec):
     with tab1:
         st.markdown("### Preencha os Dados da Nova APA")
         st.caption(
-            "Esta aba **sempre cria um registro novo** no Airtable (ID autonumérico: 15, 29, 169…). "
+            "Esta aba **sempre cria um registro novo** no Supabase (ID autonumérico). "
             "Para alterar uma APA existente, use **Visualizar & Editar**."
         )
 
@@ -761,7 +747,7 @@ def render(df_quali, df_tec):
                 f"⚠️ Já existe(m) APA(s) em **{data_oca.strftime('%d/%m/%Y')}**: "
                 f"{_formatar_lista_apas(existentes_na_data)}. "
                 "Se a intenção é **atualizar** uma delas, vá em **Visualizar & Editar**. "
-                "Clicar em **Criar** abaixo gera outro registro (novo ID no Airtable), "
+                "Clicar em **Criar** abaixo gera outro registro (novo ID no Supabase), "
                 "mesmo com os mesmos dados — isso parece duplicata."
             )
             st.checkbox(
@@ -822,14 +808,13 @@ def render(df_quali, df_tec):
 
                             payload = {k: v for k, v in payload.items() if v is not None and v != ""}
 
-                            resultado = airtable_link.criar_nova_apa(payload)
+                            resultado = database.criar_nova_apa(payload)
                             id_apa = resultado.get("id") if isinstance(resultado, dict) else resultado
                             erro = resultado.get("erro") if isinstance(resultado, dict) else None
 
                             if id_apa:
                                 st.session_state.id_apa_criado = id_apa
-                                st.session_state.pop("df_quali", None)
-                                st.session_state.pop("df_tec", None)
+                                _invalidar_dados_app()
                                 st.session_state.pop(_criar_key("c_confirmar_nova_apa_duplicada"), None)
                                 rec_novo = resultado.get("record_id") if isinstance(resultado, dict) else None
                                 msg = f"✅ NOVO registro criado: **{st.session_state.id_apa_criado}**"
@@ -837,7 +822,7 @@ def render(df_quali, df_tec):
                                     msg += f" (`{rec_novo}`)"
                                 st.success(msg)
                                 st.caption(
-                                    "Este é um ID novo no Airtable (autonumeração). "
+                                    "Este é um ID novo no Supabase. "
                                     "Para enviar técnicas, use **Visualizar & Editar** e selecione esta APA."
                                 )
                             else:
@@ -1163,25 +1148,23 @@ def render(df_quali, df_tec):
                             if not payload_update:
                                 st.warning("⚠️ Nenhum campo foi alterado. Não há dados para salvar.")
                             else:
-                                # Atualizar no Airtable
+                                # Atualizar no Supabase
                                 try:
-                                    resultado = airtable_link.atualizar_apa_validacao(
+                                    resultado = database.atualizar_apa_validacao(
                                         id_apa,
                                         payload_update,
                                         record_id_interno=record_id_interno
                                     )
                                     if resultado:
                                         st.success("✅ Dados atualizados com sucesso!")
-                                        # Invalida cache para forçar recarga na próxima navegação
-                                        st.session_state.pop("df_quali", None)
-                                        
+                                        _invalidar_dados_app()
                                     else:
                                         st.error(
                                             "❌ APA não encontrada na base de dados. "
                                             "Expanda o diagnóstico acima e verifique o record_id_interno."
                                         )
                                 except (RuntimeError, ValueError) as e:
-                                    st.error(f"❌ Erro do Airtable: {str(e)}")
+                                    st.error(f"❌ Erro do Supabase: {str(e)}")
                                 except Exception as e:
                                     st.error(f"❌ Erro inesperado: {type(e).__name__}: {str(e)}")
             
