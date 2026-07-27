@@ -40,3 +40,4 @@ langchain-experimental
 # Airtable & Excel
 pyairtable>=2.3.3
 openpyxl>=3.1.2
+supabase>=2.0.0

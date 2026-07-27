@@ -47,6 +47,7 @@ warnings.filterwarnings('ignore')
 # ====
 # 2.1. IMPORTAÇÃO DOS MÓDULOS DE IA E DADOS
 # ====
+import database
 import airtable_link
 import analise
 import ia_link        # Cérebro da Aba 1 (Transcrições)
@@ -126,6 +127,20 @@ if not check_password():
 # --- TUDO A PARTIR DAQUI ESTÁ PROTEGIDO PELA SENHA ---
 
 st.sidebar.success("Autenticação validada.")
+
+# Status da base Supabase (sidebar)
+try:
+    _sb_ok, _sb_apas, _sb_tecs, _sb_msg = database.test_connection()
+    if _sb_ok:
+        st.sidebar.markdown("### Base Supabase")
+        st.sidebar.success(_sb_msg)
+        st.sidebar.metric("APAs", _sb_apas)
+        st.sidebar.metric("Técnicas", _sb_tecs)
+    else:
+        st.sidebar.error(f"Supabase: {_sb_msg}")
+except Exception as _sb_exc:
+    st.sidebar.error(f"Supabase: {_sb_exc}")
+
 # =====================================================================
 #  INSERIR O CÓDIGO DE CARREGAMENTO GERAL AQUI (O "PORTEIRO")
 # =====================================================================
@@ -144,18 +159,26 @@ if "df_quali" in st.session_state and "df_tec" in st.session_state:
         st.session_state.pop("status_t", None)
         st.rerun()
 
-# 2. Se não estiverem no cofre (ex: acabou de logar), busca no Airtable
+# 2. Se não estiverem no cofre (ex: acabou de logar), busca no Supabase
 else:
-    with st.spinner("Carregando bases operacionais do Airtable..."):
-        df_quali, status_q = airtable_link.buscar_dados_apa()
-        df_tec, status_t = airtable_link.buscar_todas_tecnicas()
+    with st.spinner("Carregando bases operacionais do Supabase..."):
+        _conn_ok, _n_apas, _n_tecs, _conn_msg = database.test_connection()
+        if not _conn_ok:
+            st.error(f"Falha na conexão com Supabase: {_conn_msg}")
+            if st.button("🔄 Tentar Novamente (Limpar Cache)"):
+                database.limpar_cache()
+                st.cache_data.clear()
+                st.rerun()
+            st.stop()
+
+        df_quali, status_q = database.buscar_dados_apa()
+        df_tec, status_t = database.buscar_todas_tecnicas()
 
         if df_quali.empty:
-            # Exibe o status exato do erro retornado pela API do Airtable
             st.error(f"Falha ao carregar as APAs. Detalhe técnico: {status_q}")
             
-            # Botão para limpar o cache e tentar novamente imediatamente
             if st.button("🔄 Tentar Novamente (Limpar Cache)"):
+                database.limpar_cache()
                 st.cache_data.clear()
                 st.rerun()
                 
@@ -387,7 +410,7 @@ try:
                         Negociações em Incidentes Críticos atendidos pelo Grupo de Ações Táticas Especiais.
                     </p>
                     <p style="font-size:0.9rem; color:#bbb; line-height:1.7; margin-top:18px;">
-                        Os dados são geridos de forma automatizada em nuvem via <strong>Airtable</strong>, integrando um motor estatístico multifatorial.
+                        Os dados são geridos de forma automatizada em nuvem via <strong>Supabase</strong>, integrando um motor estatístico multifatorial.
                     </p>
                 </div>
             </div>
@@ -423,13 +446,16 @@ status_t = st.session_state.get("status_t", "OK")
 
 
 # ============================================================
-# VALIDAÇÃO AIRTABLE
+# VALIDAÇÃO SUPABASE
 # ============================================================
 
 if df_quali.empty:
-    st.error(f"Erro na conexão com Airtable: {status_q}")
+    st.error(f"Erro na conexão com Supabase: {status_q}")
 
 else:
+    st.success(
+        f"Base Supabase carregada: **{len(df_quali)} APAs** e **{len(df_tec)} técnicas**."
+    )
     # ========================================================
     # NAVEGAÇÃO PRINCIPAL
     # ========================================================
