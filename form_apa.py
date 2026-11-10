@@ -356,13 +356,39 @@ def _vinculo_id_apa(apa):
     return utils.limpar_id(apa.get('ID'))
 
 
+def _texto_campo(val) -> str:
+    """Normaliza valor de campo textual (evita 'nan' / None / NaN no formulário)."""
+    if val is None:
+        return ""
+    try:
+        if isinstance(val, float) and pd.isna(val):
+            return ""
+    except (TypeError, ValueError):
+        pass
+    texto = str(val).strip()
+    if not texto or texto.lower() in {"nan", "none", "null"}:
+        return ""
+    return texto
+
+
 def _criar_tecnica_supabase(apa_uuid, payload):
     """Grava uma técnica no Supabase vinculada à APA."""
     return database.criar_tecnica(payload, apa_id=apa_uuid)
 
 
-def _inserir_tecnicas_extraidas(df_tecnicas, apa, df_quali=None, progress_bar=None):
-    """Insere técnicas extraídas do .docx no Supabase, vinculadas à APA selecionada."""
+def _inserir_tecnicas_extraidas(
+    df_tecnicas,
+    apa,
+    df_quali=None,
+    progress_bar=None,
+    substituir=True,
+):
+    """
+    Insere técnicas extraídas do .docx no Supabase, vinculadas à APA selecionada.
+
+    Se substituir=True e já houver técnicas, remove as existentes antes de inserir
+    (evita duplicar o primeiro registro ao reenviar o .docx).
+    """
     vinculo_id = _vinculo_id_apa(apa)
     if not vinculo_id:
         return 0, len(df_tecnicas), [
@@ -376,9 +402,16 @@ def _inserir_tecnicas_extraidas(df_tecnicas, apa, df_quali=None, progress_bar=No
             "Recarregue a página (F5) e selecione a APA novamente."
         ]
 
+    detalhes_erros = []
+    if substituir:
+        removidas, erro_del = database.deletar_tecnicas_por_apa(apa_uuid)
+        if erro_del:
+            return 0, len(df_tecnicas), [f"Falha ao substituir técnicas anteriores: {erro_del}"]
+        if removidas:
+            detalhes_erros.append(f"Removidas {removidas} técnica(s) anterior(es) antes do reenvio.")
+
     sucesso_count = 0
     erro_count = 0
-    detalhes_erros = []
     total = len(df_tecnicas)
 
     for n, (_, row) in enumerate(df_tecnicas.iterrows()):
@@ -421,9 +454,37 @@ def _inserir_tecnicas_extraidas(df_tecnicas, apa, df_quali=None, progress_bar=No
     return sucesso_count, erro_count, detalhes_erros
 
 
+def _aplicar_transcricoes_nos_campos_edit(id_limpo, transcricoes, sobrescrever=False):
+    """
+    Preenche os text_area de edição com falas extraídas do .docx.
+    Por padrão só preenche campos ainda vazios (não carregados anteriormente).
+    """
+    mapa = {
+        "causador": f"edit_tc_{id_limpo}",
+        "negociador_principal": f"edit_tp_{id_limpo}",
+        "negociador_secundario": f"edit_ts_{id_limpo}",
+    }
+    labels = {
+        "causador": "TRANSCRIÇÃO DO CAUSADOR",
+        "negociador_principal": "TRANSCRIÇÃO DO NEGOCIADOR PRINCIPAL",
+        "negociador_secundario": "TRANSCRIÇÃO DO NEGOCIADOR SECUNDÁRIO",
+    }
+    aplicados = {}
+    for papel, key in mapa.items():
+        novo = _texto_campo((transcricoes or {}).get(papel, ""))
+        if not novo:
+            continue
+        atual = _texto_campo(st.session_state.get(key, ""))
+        if sobrescrever or not atual:
+            st.session_state[key] = novo
+            aplicados[labels[papel]] = novo
+    return aplicados
+
+
 def _limpar_cache_tecnicas_docx():
-    """Remove técnicas em cache e força reset do file_uploader no próximo render."""
+    """Remove técnicas/transcrições em cache e força reset do file_uploader no próximo render."""
     st.session_state.pop("tecnicas_extraidas_apa", None)
+    st.session_state.pop("transcricoes_extraidas_apa", None)
     st.session_state["_tecnicas_uploader_reset"] = st.session_state.get("_tecnicas_uploader_reset", 0) + 1
 
 
@@ -461,12 +522,18 @@ def _limpar_formulario_criar():
 
 
 def _render_envio_tecnicas_docx(apa, df_quali, key_prefix):
-    """Upload .docx, extração e envio das técnicas para a APA já selecionada."""
+    """
+    Upload .docx na Visualizar & Editar:
+    - extrai técnicas e transcrições
+    - preenche campos de transcrição vazios (sem apagar o que já existe)
+    - permite reenviar técnicas substituindo as anteriores (sem duplicar)
+    """
     id_apa = str(apa.get('ID', 'N/D')).strip()
+    id_limpo = key_prefix.replace("edit_", "", 1) if key_prefix.startswith("edit_") else key_prefix
     vinculo_id = _vinculo_id_apa(apa)
     apa_uuid = _resolver_record_id_apa(apa, df_quali)
 
-    st.markdown("##### Enviar Técnicas Extraídas do .docx")
+    st.markdown("##### Upload do .docx — Técnicas e Transcrições")
 
     if vinculo_id and apa_uuid:
         st.info(f"🔗 Vínculo confirmado: APA **{vinculo_id}** → `{apa_uuid}`")
@@ -481,69 +548,192 @@ def _render_envio_tecnicas_docx(apa, df_quali, key_prefix):
             "Recarregue a página para atualizar os dados do Supabase e tente novamente."
         )
 
+    # Sanitiza 'nan' já presente nos widgets de transcrição desta APA
+    for key in (f"edit_tc_{id_limpo}", f"edit_tp_{id_limpo}", f"edit_ts_{id_limpo}"):
+        if key in st.session_state:
+            st.session_state[key] = _texto_campo(st.session_state.get(key))
+
     df_tec_cache = st.session_state.get('tecnicas_extraidas_apa')
+    trans_cache = st.session_state.get('transcricoes_extraidas_apa') or {}
     uploader_reset = st.session_state.get("_tecnicas_uploader_reset", 0)
+    sig_key = f"_docx_sig_{key_prefix}"
+    applied_key = f"_docx_trans_applied_{key_prefix}"
 
     arq_tec = st.file_uploader(
-        "Upload do .docx da APA (extrai técnicas automaticamente)",
+        "Upload do .docx da APA (extrai técnicas e transcrições)",
         type=["docx", "docm"],
         key=f"uploader_tec_{key_prefix}_{uploader_reset}",
     )
     if arq_tec:
-        with st.spinner("Extraindo técnicas..."):
-            res = separador_apa.processar_apa(arq_tec.read())
-        if res['erro']:
-            st.error(f"❌ {res['erro']}")
-        elif res['tecnicas'].empty:
-            st.warning("⚠️ Nenhuma técnica encontrada no arquivo.")
-        else:
-            st.session_state['tecnicas_extraidas_apa'] = res['tecnicas']
-            df_tec_cache = res['tecnicas']
+        file_sig = f"{arq_tec.name}:{arq_tec.size}"
+        if st.session_state.get(sig_key) != file_sig:
+            with st.spinner("Extraindo técnicas e transcrições..."):
+                res = separador_apa.processar_apa(arq_tec.read())
+
+            if res['erro']:
+                st.error(f"❌ {res['erro']}")
+                st.session_state.pop(sig_key, None)
+            else:
+                st.session_state[sig_key] = file_sig
+                st.session_state[applied_key] = None
+
+                df_res = res.get('tecnicas')
+                if df_res is not None and not df_res.empty:
+                    st.session_state['tecnicas_extraidas_apa'] = df_res
+                else:
+                    st.session_state.pop('tecnicas_extraidas_apa', None)
+                    st.warning("⚠️ Nenhuma técnica encontrada no arquivo.")
+
+                st.session_state['transcricoes_extraidas_apa'] = res.get('transcricoes') or {}
+
+        df_tec_cache = st.session_state.get('tecnicas_extraidas_apa')
+        trans_cache = st.session_state.get('transcricoes_extraidas_apa') or {}
+
+        n_palavras = {
+            k: len(_texto_campo(v).split())
+            for k, v in (trans_cache or {}).items()
+            if _texto_campo(v)
+        }
+        if n_palavras:
+            st.success(
+                "✅ Transcrições extraídas: "
+                + ", ".join(f"{k} ({n} palavras)" for k, n in n_palavras.items())
+            )
+        elif st.session_state.get(sig_key) == file_sig:
+            st.warning(
+                "⚠️ Nenhuma fala colorida encontrada na seção Transcrição. "
+                "Confira o .docx (causador=vermelho, principal=azul, secundário=verde)."
+            )
+
+        if df_tec_cache is not None and not getattr(df_tec_cache, "empty", True):
             st.success(f"✅ {len(df_tec_cache)} técnicas extraídas e prontas para envio.")
 
-    if df_tec_cache is None or df_tec_cache.empty:
+        sobrescrever_trans = st.checkbox(
+            "Sobrescrever transcrições já preenchidas nesta APA",
+            value=False,
+            key=f"chk_overwrite_trans_{key_prefix}",
+            help="Desmarcado: só preenche campos ainda vazios. Marcado: substitui o texto atual.",
+        )
+        apply_sig = f"{st.session_state.get(sig_key)}:{sobrescrever_trans}"
+        if (
+            st.session_state.get(sig_key)
+            and st.session_state.get(applied_key) != apply_sig
+            and any(_texto_campo(v) for v in (trans_cache or {}).values())
+        ):
+            aplicados = _aplicar_transcricoes_nos_campos_edit(
+                id_limpo, trans_cache, sobrescrever=sobrescrever_trans
+            )
+            st.session_state[applied_key] = apply_sig
+
+            if aplicados and apa_uuid:
+                atuais_db = {
+                    "TRANSCRIÇÃO DO CAUSADOR": _texto_campo(apa.get("TRANSCRIÇÃO DO CAUSADOR")),
+                    "TRANSCRIÇÃO DO NEGOCIADOR PRINCIPAL": _texto_campo(
+                        apa.get("TRANSCRIÇÃO DO NEGOCIADOR PRINCIPAL")
+                    ),
+                    "TRANSCRIÇÃO DO NEGOCIADOR SECUNDÁRIO": _texto_campo(
+                        apa.get("TRANSCRIÇÃO DO NEGOCIADOR SECUNDÁRIO")
+                    ),
+                }
+                payload_trans = {
+                    campo: texto
+                    for campo, texto in aplicados.items()
+                    if sobrescrever_trans or not atuais_db.get(campo)
+                }
+                if payload_trans:
+                    try:
+                        database.atualizar_apa_validacao(
+                            id_apa, payload_trans, record_id_interno=apa_uuid
+                        )
+                        st.info(
+                            "💾 Transcrições gravadas na APA: "
+                            + ", ".join(payload_trans.keys())
+                        )
+                    except Exception as exc:
+                        st.warning(
+                            f"Transcrições carregadas no formulário, mas falha ao gravar: {exc}"
+                        )
+
+    if (df_tec_cache is None or getattr(df_tec_cache, "empty", True)) and not any(
+        _texto_campo(v) for v in (trans_cache or {}).values()
+    ):
         st.info(
-            "Faça upload do .docx acima ou extraia técnicas na aba **Criar Novo Registro** "
-            "(subaba Transcrições) — elas ficam em cache até o envio."
+            "Faça upload do .docx acima para carregar **técnicas** e **transcrições** "
+            "nesta APA já registrada."
         )
         return
 
-    st.metric("Técnicas prontas para envio", len(df_tec_cache))
-    sem_trecho = int((df_tec_cache['TRECHO DA TRANSCRIÇÃO'].fillna('').astype(str).str.strip() == '').sum())
-    if sem_trecho:
-        st.warning(
-            f"⚠️ {sem_trecho} técnica(s) sem trecho extraído — serão enviadas com aviso no campo trecho. "
-            "Reenvie o .docx após conferir a tabela de técnicas."
+    if df_tec_cache is not None and not getattr(df_tec_cache, "empty", True):
+        st.metric("Técnicas prontas para envio", len(df_tec_cache))
+        sem_trecho = int(
+            (df_tec_cache['TRECHO DA TRANSCRIÇÃO'].fillna('').astype(str).str.strip() == '').sum()
         )
-    st.dataframe(df_tec_cache, use_container_width=True, hide_index=True)
-
-    if st.button(
-        f"✔️ Enviar {len(df_tec_cache)} técnicas para {id_apa}",
-        key=f"btn_enviar_tec_{key_prefix}",
-        use_container_width=True,
-        type="secondary",
-        disabled=not (vinculo_id and apa_uuid),
-    ):
-        with st.spinner(f"💾 Enviando {len(df_tec_cache)} técnicas..."):
-            progress = st.progress(0)
-            sucesso, erros, detalhes = _inserir_tecnicas_extraidas(
-                df_tec_cache, apa, df_quali=df_quali, progress_bar=progress
+        if sem_trecho:
+            st.warning(
+                f"⚠️ {sem_trecho} técnica(s) sem trecho extraído — serão enviadas com aviso no campo trecho. "
+                "Reenvie o .docx após conferir a tabela de técnicas."
             )
-            progress.empty()
+        st.dataframe(df_tec_cache, use_container_width=True, hide_index=True)
 
-        if erros == 0:
-            st.session_state["_tecnicas_enviadas_msg"] = (
-                f"✅ {sucesso} técnicas enviadas e vinculadas à APA **{vinculo_id}** "
-                f"(`{apa_uuid}`)."
+        n_existentes = 0
+        if apa_uuid:
+            try:
+                n_existentes = len(database.buscar_tecnicas_por_apa(apa_uuid))
+            except Exception:
+                n_existentes = 0
+
+        substituir = st.checkbox(
+            "Substituir técnicas já cadastradas (recomendado — evita duplicar)",
+            value=True,
+            key=f"chk_subst_tec_{key_prefix}",
+            help=(
+                "Marcado: remove as técnicas atuais desta APA e grava as do .docx. "
+                "Desmarcado: apenas adiciona (pode duplicar)."
+            ),
+        )
+        if n_existentes and substituir:
+            st.caption(
+                f"Serão removidas **{n_existentes}** técnica(s) já cadastrada(s) antes do novo envio."
             )
-            _invalidar_dados_app()
-            _limpar_cache_tecnicas_docx()
-            st.rerun()
-        else:
-            st.warning(f"⚠️ {sucesso} enviadas, {erros} com erro.")
-            with st.expander("Detalhes dos erros", expanded=True):
-                for msg in detalhes[:20]:
-                    st.write(f"- {msg}")
+
+        rotulo_btn = (
+            f"✔️ Substituir por {len(df_tec_cache)} técnicas em {id_apa}"
+            if substituir
+            else f"✔️ Enviar {len(df_tec_cache)} técnicas para {id_apa}"
+        )
+        if st.button(
+            rotulo_btn,
+            key=f"btn_enviar_tec_{key_prefix}",
+            use_container_width=True,
+            type="secondary",
+            disabled=not (vinculo_id and apa_uuid),
+        ):
+            with st.spinner(f"💾 Gravando {len(df_tec_cache)} técnicas..."):
+                progress = st.progress(0)
+                sucesso, erros, detalhes = _inserir_tecnicas_extraidas(
+                    df_tec_cache,
+                    apa,
+                    df_quali=df_quali,
+                    progress_bar=progress,
+                    substituir=substituir,
+                )
+                progress.empty()
+
+            if erros == 0:
+                st.session_state["_tecnicas_enviadas_msg"] = (
+                    f"✅ {sucesso} técnicas gravadas e vinculadas à APA **{vinculo_id}** "
+                    f"(`{apa_uuid}`)."
+                )
+                st.session_state.pop(sig_key, None)
+                st.session_state.pop(applied_key, None)
+                _invalidar_dados_app()
+                _limpar_cache_tecnicas_docx()
+                st.rerun()
+            else:
+                st.warning(f"⚠️ {sucesso} enviadas, {erros} com erro.")
+                with st.expander("Detalhes dos erros", expanded=True):
+                    for msg in detalhes[:20]:
+                        st.write(f"- {msg}")
 
 
 def render(df_quali, df_tec):
@@ -935,16 +1125,37 @@ def render(df_quali, df_tec):
                     with col1:
                         st.metric("ID", id_apa[:15])
                     with col2:
-                        st.metric("Negociador", str(apa.get('Negociador Principal', 'N/D'))[:15])
+                        st.metric(
+                            "Negociador",
+                            (_texto_campo(apa.get('Negociador Principal')) or 'N/D')[:15],
+                        )
                     with col3:
-                        st.metric("Tipologia", str(apa.get('Tipologia', 'N/D'))[:15])
+                        st.metric(
+                            "Tipologia",
+                            (_texto_campo(apa.get('Tipologia')) or 'N/D')[:15],
+                        )
                     with col4:
-                        st.metric("Resolução", str(apa.get('Resolução', 'N/D'))[:12])
+                        st.metric(
+                            "Resolução",
+                            (_texto_campo(apa.get('Resolução')) or 'N/D')[:12],
+                        )
                     
                     st.markdown("---")
                     
                     # FORMULÁRIO DE EDIÇÃO
                     st.markdown("### Editar Dados")
+
+                    # Garante valores iniciais limpos nos campos de transcrição
+                    # (evita 'nan' e permite preenchimento pelo upload acima)
+                    for _k, _campo in (
+                        (f"edit_tc_{id_limpo}", "TRANSCRIÇÃO DO CAUSADOR"),
+                        (f"edit_tp_{id_limpo}", "TRANSCRIÇÃO DO NEGOCIADOR PRINCIPAL"),
+                        (f"edit_ts_{id_limpo}", "TRANSCRIÇÃO DO NEGOCIADOR SECUNDÁRIO"),
+                    ):
+                        if _k not in st.session_state:
+                            st.session_state[_k] = _texto_campo(apa.get(_campo))
+                        else:
+                            st.session_state[_k] = _texto_campo(st.session_state.get(_k))
                     
                     with st.form(f"form_edit_{id_limpo}", clear_on_submit=False):
                         # Metadados
@@ -981,11 +1192,23 @@ def render(df_quali, df_tec):
                         with col8:
                             neg_lider_edit = st.selectbox("Negociador Líder", [""] + NEGOCIADORES, index=NEGOCIADORES.index(apa.get('Negociador Líder')) + 1 if apa.get('Negociador Líder') in NEGOCIADORES else 0, key=f"edit_nl_{id_limpo}")
                         
-                        # Transcrições
+                        # Transcrições (valores vêm do session_state — upload .docx ou registro)
                         st.markdown("#### Transcrições")
-                        trans_causador_edit = st.text_area("Transcrição do Causador", value=apa.get('TRANSCRIÇÃO DO CAUSADOR', ''), key=f"edit_tc_{id_limpo}", height=100)
-                        trans_principal_edit = st.text_area("Transcrição do Negociador Principal", value=apa.get('TRANSCRIÇÃO DO NEGOCIADOR PRINCIPAL', ''), key=f"edit_tp_{id_limpo}", height=100)
-                        trans_secundario_edit = st.text_area("Transcrição do Negociador Secundário", value=apa.get('TRANSCRIÇÃO DO NEGOCIADOR SECUNDÁRIO', ''), key=f"edit_ts_{id_limpo}", height=100)
+                        trans_causador_edit = st.text_area(
+                            "Transcrição do Causador",
+                            key=f"edit_tc_{id_limpo}",
+                            height=100,
+                        )
+                        trans_principal_edit = st.text_area(
+                            "Transcrição do Negociador Principal",
+                            key=f"edit_tp_{id_limpo}",
+                            height=100,
+                        )
+                        trans_secundario_edit = st.text_area(
+                            "Transcrição do Negociador Secundário",
+                            key=f"edit_ts_{id_limpo}",
+                            height=100,
+                        )
                         
                         # Info Adicionais
                         st.markdown("#### ℹ️ Informações Adicionais")

@@ -660,6 +660,32 @@ def criar_nova_apa(payload: dict[str, Any]) -> dict[str, Any]:
     return salvar_apa(payload)
 
 
+def deletar_tecnicas_por_apa(apa_id: Any) -> tuple[int, str | None]:
+    """
+    Remove todas as técnicas vinculadas à APA (para reenvio sem duplicar).
+    Aceita UUID, id_numero ou 'APA 031'. Retorna (removidas, erro).
+    """
+    apa_uuid = buscar_apa_uuid(apa_id)
+    if not apa_uuid:
+        return 0, f"APA {apa_id!r} não encontrada."
+
+    try:
+        client = get_supabase_client()
+        existentes = (
+            client.table(TABELA_TECNICAS)
+            .select("id")
+            .eq("apa_id", apa_uuid)
+            .execute()
+        )
+        n = len(existentes.data or [])
+        if n:
+            client.table(TABELA_TECNICAS).delete().eq("apa_id", apa_uuid).execute()
+            invalidar_cache_completo()
+        return n, None
+    except Exception as exc:
+        return 0, str(exc)
+
+
 def deletar_apa(apa_id: Any) -> tuple[bool, str | None]:
     """Remove APA e técnicas vinculadas. Aceita UUID ou id_numero."""
     apa_uuid = buscar_apa_uuid(apa_id)
