@@ -523,6 +523,15 @@ def _limpar_tela_visualizar_editar():
         "vis_sel_ocorrencia_tab3",
     ):
         st.session_state.pop(key, None)
+    # Libera widgets de transcrição / seed para a próxima busca hidratar do Supabase
+    for key in list(st.session_state.keys()):
+        if (
+            key.startswith("edit_tc_")
+            or key.startswith("edit_tp_")
+            or key.startswith("edit_ts_")
+            or key.startswith("_trans_seeded_")
+        ):
+            st.session_state.pop(key, None)
     _limpar_cache_tecnicas_docx()
 
 
@@ -657,6 +666,8 @@ def _render_envio_tecnicas_docx(apa, df_quali, key_prefix):
             aplicados = _aplicar_transcricoes_nos_campos_edit(
                 id_limpo, trans_cache, sobrescrever=sobrescrever_trans
             )
+            # Permite o bloco de UI re-hidratar/aceitar o texto injetado no próximo rerun
+            st.session_state.pop(f"_trans_seeded_{id_limpo}", None)
             campos_ok = any(
                 _texto_campo(st.session_state.get(k))
                 for k in (f"edit_tc_{id_limpo}", f"edit_tp_{id_limpo}", f"edit_ts_{id_limpo}")
@@ -1188,45 +1199,39 @@ def render(df_quali, df_tec):
                     
                     st.markdown("---")
 
-                    # Transcrições FORA do st.form — o form do Streamlit impede
-                    # atualizar text_area via session_state após o upload do .docx.
-                    st.markdown("### Transcrições")
+                    # Hidrata session_state das transcrições ANTES dos widgets
+                    # (fora do form para o upload .docx conseguir injetar texto).
                     _mapa_trans_edit = (
                         (f"edit_tc_{id_limpo}", "TRANSCRIÇÃO DO CAUSADOR", "causador"),
                         (f"edit_tp_{id_limpo}", "TRANSCRIÇÃO DO NEGOCIADOR PRINCIPAL", "negociador_principal"),
                         (f"edit_ts_{id_limpo}", "TRANSCRIÇÃO DO NEGOCIADOR SECUNDÁRIO", "negociador_secundario"),
                     )
                     _trans_cache_ui = st.session_state.get("transcricoes_extraidas_apa") or {}
-                    _sobrescrever_ui = st.session_state.get(f"chk_overwrite_trans_edit_{id_limpo}", True)
+                    _chk_overwrite = f"chk_overwrite_trans_edit_{id_limpo}"
+                    _sobrescrever_ui = bool(st.session_state.get(_chk_overwrite, False))
+                    _seed_key = f"_trans_seeded_{id_limpo}"
+
+                    def _injetar_trans_widget(chave_widget: str, texto: str) -> None:
+                        """Pop + set: Streamlit ignora assignment se a key do widget já veio vazia do browser."""
+                        texto = _texto_campo(texto)
+                        st.session_state.pop(chave_widget, None)
+                        st.session_state[chave_widget] = texto
+
                     for _k, _campo, _papel in _mapa_trans_edit:
+                        db_val = _texto_campo(apa.get(_campo))
                         extraido = _texto_campo(_trans_cache_ui.get(_papel, ""))
                         atual = _texto_campo(st.session_state.get(_k)) if _k in st.session_state else ""
-                        # Com sobrescrever: força o texto extraído (remove valor antigo do widget)
-                        if extraido and _sobrescrever_ui:
-                            st.session_state.pop(_k, None)
-                            atual = extraido
-                        elif not atual:
-                            atual = _texto_campo(apa.get(_campo)) or extraido
-                        elif extraido and not atual:
-                            atual = extraido
-                        st.session_state[_k] = atual
 
-                    st.text_area(
-                        "Transcrição do Causador",
-                        key=f"edit_tc_{id_limpo}",
-                        height=120,
-                    )
-                    st.text_area(
-                        "Transcrição do Negociador Principal",
-                        key=f"edit_tp_{id_limpo}",
-                        height=120,
-                    )
-                    st.text_area(
-                        "Transcrição do Negociador Secundário",
-                        key=f"edit_ts_{id_limpo}",
-                        height=120,
-                    )
-                    
+                        if extraido and _sobrescrever_ui:
+                            _injetar_trans_widget(_k, extraido)
+                        elif (not st.session_state.get(_seed_key)) or (not atual):
+                            preenchimento = db_val or extraido
+                            if preenchimento and preenchimento != atual:
+                                _injetar_trans_widget(_k, preenchimento)
+                            elif _k not in st.session_state:
+                                st.session_state[_k] = ""
+                    st.session_state[_seed_key] = True
+
                     # FORMULÁRIO DE EDIÇÃO (mesma sequência do Criar, sem editar o nº da APA)
                     st.markdown("### Editar Dados")
                     st.caption(f"APA **{id_apa}** (número somente leitura)")
@@ -1497,6 +1502,39 @@ def render(df_quali, df_tec):
                                 index=_indice_opcao(SEXOS, apa.get('Sexo do Causador'), com_vazio=True),
                                 key=f"edit_sex_{id_limpo}",
                             )
+
+                        # Transcrições (após Info Adicionais; valores hidratados antes do form)
+                        st.markdown("#### Transcrições")
+                        _n_chars = {
+                            "Causador": len(_texto_campo(st.session_state.get(f"edit_tc_{id_limpo}"))),
+                            "Principal": len(_texto_campo(st.session_state.get(f"edit_tp_{id_limpo}"))),
+                            "Secundário": len(_texto_campo(st.session_state.get(f"edit_ts_{id_limpo}"))),
+                        }
+                        if any(_n_chars.values()):
+                            st.caption(
+                                "Carregado do Supabase — "
+                                + ", ".join(f"{k}: {n:,} caracteres" for k, n in _n_chars.items() if n)
+                            )
+                        else:
+                            st.caption(
+                                "Nenhuma transcrição no Supabase para esta APA. "
+                                "Envie o .docx acima ou preencha manualmente."
+                            )
+                        st.text_area(
+                            "Transcrição do Causador",
+                            key=f"edit_tc_{id_limpo}",
+                            height=180,
+                        )
+                        st.text_area(
+                            "Transcrição do Negociador Principal",
+                            key=f"edit_tp_{id_limpo}",
+                            height=180,
+                        )
+                        st.text_area(
+                            "Transcrição do Negociador Secundário",
+                            key=f"edit_ts_{id_limpo}",
+                            height=180,
+                        )
                         
                         # Funções (em expander para não ficar gigante)
                         with st.expander("Funções — clique para expandir", expanded=False):
