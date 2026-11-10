@@ -11,6 +11,7 @@ Uso no app.py:
 import streamlit as st
 import pandas as pd
 import unicodedata
+import re
 import plotly.express as px
 import plotly.graph_objects as go
 from fpdf import FPDF
@@ -18,6 +19,192 @@ from fpdf import FPDF
 import utils
 import analise
 import ia_link
+import database
+
+
+def _extrair_numero_apa(val):
+    """Extrai dígitos do ID/vínculo APA para comparação resiliente (6, APA 006, etc.)."""
+    if val is None or (isinstance(val, float) and pd.isna(val)):
+        return None
+    if isinstance(val, list):
+        for item in val:
+            num = _extrair_numero_apa(item)
+            if num is not None:
+                return num
+        return None
+    digits = re.sub(r"\D", "", str(val).strip())
+    if not digits:
+        return None
+    try:
+        return int(digits)
+    except ValueError:
+        return None
+
+
+def _vinculo_coincide_apa(val_vinculo, apa_id, record_id=None):
+    """True se o vínculo da técnica corresponde à APA (número, formato ou UUID)."""
+    if record_id is not None and not (isinstance(record_id, float) and pd.isna(record_id)):
+        rec = str(record_id).strip()
+        if rec:
+            if isinstance(val_vinculo, list):
+                if any(str(x).strip() == rec for x in val_vinculo):
+                    return True
+            else:
+                s_vinc = str(val_vinculo).strip()
+                if s_vinc == rec or rec in s_vinc:
+                    return True
+
+    num_apa = _extrair_numero_apa(apa_id)
+    num_vinc = _extrair_numero_apa(val_vinculo)
+    if num_apa is not None and num_vinc is not None:
+        return num_apa == num_vinc
+
+    return str(val_vinculo).strip() == str(apa_id).strip()
+
+
+def _coluna_vinculo_tecnicas(df_tec):
+    return next(
+        (c for c in df_tec.columns if "VINCULO" in c.upper() or "VÍNCULO" in c.upper()),
+        None,
+    )
+
+
+def _coluna_tecnica(df_tec):
+    return next(
+        (
+            c
+            for c in ["TÉCNICAS", "TECNICAS", "TÉCNICA", "TECNICA", "tecnica", "Técnicas"]
+            if c in df_tec.columns
+        ),
+        None,
+    )
+
+
+def _valor_valido_ref(val):
+    """Ignora None, NaN e strings vazias (evita `nan or apa_id` → nan)."""
+    if val is None:
+        return False
+    try:
+        if pd.isna(val):
+            return False
+    except (TypeError, ValueError):
+        pass
+    s = str(val).strip()
+    return bool(s) and s.lower() != "nan"
+
+
+def _record_id_apa(df_apa):
+    """UUID da APA no Supabase, ignorando valores nulos/NaN."""
+    if df_apa is None:
+        return None
+    for campo in ("Airtable_Record_ID", "record_id_airtable", "id", "apa_uuid"):
+        val = df_apa.get(campo) if hasattr(df_apa, "get") else None
+        if _valor_valido_ref(val):
+            return str(val).strip()
+    return None
+
+
+def _referencias_apa(df_apa, apa_id):
+    """Referências possíveis para localizar técnicas (UUID, ID formatado, número)."""
+    candidatos: list[str] = []
+
+    for val in (apa_id,):
+        if _valor_valido_ref(val):
+            candidatos.append(str(val).strip())
+
+    if df_apa is not None:
+        for val in (df_apa.get("ID"), df_apa.get("ID_Busca")):
+            if _valor_valido_ref(val):
+                candidatos.append(str(val).strip())
+        rec = _record_id_apa(df_apa)
+        if rec:
+            candidatos.append(rec)
+        num = _extrair_numero_apa(df_apa.get("ID") or apa_id)
+        if num is not None:
+            candidatos.extend([str(num), f"APA {num:03d}"])
+
+    vistos: set[str] = set()
+    unicos: list[str] = []
+    for item in candidatos:
+        if item not in vistos:
+            vistos.add(item)
+            unicos.append(item)
+    return unicos
+
+
+def _obter_tecnicas_da_apa(df_tec, apa_id, df_apa=None, usar_supabase=True):
+    """
+    Retorna técnicas da APA selecionada.
+    Prioriza buscar_tecnicas_por_apa no Supabase; complementa com filtro local.
+    """
+    record_id = _record_id_apa(df_apa)
+
+    for ref in _referencias_apa(df_apa, apa_id):
+        try:
+            df_supabase = database.buscar_tecnicas_por_apa(ref)
+            if not df_supabase.empty:
+                return database.tecnicas_para_formato_app(df_supabase)
+        except Exception:
+            continue
+
+    if df_tec is not None and not df_tec.empty:
+        col_vinculo = _coluna_vinculo_tecnicas(df_tec)
+        if col_vinculo:
+            mask = df_tec[col_vinculo].apply(
+                lambda v: _vinculo_coincide_apa(v, apa_id, record_id)
+            )
+            df_filtrado = df_tec[mask].copy()
+            if not df_filtrado.empty:
+                return df_filtrado
+        elif record_id and "apa_id" in df_tec.columns:
+            rec = str(record_id).strip()
+            df_filtrado = df_tec[
+                df_tec["apa_id"].astype(str).str.strip() == rec
+            ].copy()
+            if not df_filtrado.empty:
+                return df_filtrado
+
+    return pd.DataFrame()
+
+
+def _chave_cache_apa(apa_id, df_apa=None):
+    """Chave estável para session_state (por número da APA)."""
+    num = _extrair_numero_apa(apa_id)
+    if num is None and df_apa is not None:
+        num = _extrair_numero_apa(df_apa.get("ID"))
+    return str(num) if num is not None else str(apa_id).strip()
+
+
+def _render_frequencia_tecnicas(df_tec_filtrado, cache_key):
+    """Monta tabela + treemap e persiste no session_state."""
+    col_tecnica = _coluna_tecnica(df_tec_filtrado)
+    if not col_tecnica:
+        st.warning("Técnicas encontradas, mas a coluna 'TÉCNICAS' não foi identificada.")
+        return False
+
+    freq_abs = df_tec_filtrado[col_tecnica].value_counts()
+    freq_rel = (df_tec_filtrado[col_tecnica].value_counts(normalize=True) * 100).round(1)
+    df_freq = pd.DataFrame(
+        {"Frequência Absoluta": freq_abs, "Frequência Relativa (%)": freq_rel}
+    ).reset_index().rename(columns={col_tecnica: "Técnica Empregada"})
+
+    fig_tree = px.treemap(
+        df_freq,
+        path=["Técnica Empregada"],
+        values="Frequência Absoluta",
+        color="Frequência Absoluta",
+        color_continuous_scale="Oranges",
+    )
+    fig_tree.update_layout(
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
+        font_color="#FFF",
+        margin=dict(t=10, l=10, r=10, b=10),
+    )
+
+    st.session_state[f"df_freq_apa_{cache_key}"] = df_freq
+    st.session_state[f"treemap_freq_apa_{cache_key}"] = fig_tree
+    return True
 
 
 def render_apa(df_quali, df_tec):
@@ -382,39 +569,40 @@ def render_apa(df_quali, df_tec):
             </div>
             """, unsafe_allow_html=True)
 
-            if st.button("✔ Calcular Frequência de Técnicas", key="btn_freq_tecnicas"):
-                if not df_tec.empty:
-                    col_vinculo = next((c for c in df_tec.columns if 'VINCULO' in c.upper() or 'VÍNCULO' in c.upper()), None)
-                    if col_vinculo:
-                        id_visivel = str(apa_selecionada).strip()
-                        df_tec['Vinculo_Str'] = df_tec[col_vinculo].astype(str).str.replace(r"[\[\]'\"]", "", regex=True).str.strip()
-                        df_tec_filtrado = df_tec[df_tec['Vinculo_Str'] == id_visivel]
-                        if df_tec_filtrado.empty and 'Airtable_Record_ID' in df_apa:
-                            id_interno = str(df_apa['Airtable_Record_ID']).strip()
-                            df_tec_filtrado = df_tec[df_tec[col_vinculo].astype(str).str.contains(id_interno, na=False, regex=False)]
-                        if not df_tec_filtrado.empty:
-                            col_tecnica = next((col for col in ['TÉCNICAS', 'TECNICAS', 'TÉCNICA', 'TECNICA'] if col in df_tec_filtrado.columns), None)
-                            if col_tecnica:
-                                freq_abs = df_tec_filtrado[col_tecnica].value_counts()
-                                freq_rel = (df_tec_filtrado[col_tecnica].value_counts(normalize=True) * 100).round(1)
-                                df_freq = pd.DataFrame({'Frequência Absoluta': freq_abs, 'Frequência Relativa (%)': freq_rel}).reset_index().rename(columns={col_tecnica: 'Técnica Empregada'})
-                                st.dataframe(df_freq, use_container_width=True, hide_index=True)
-                                st.markdown("<h4 style='text-align:center; color: #FFD700; margin-top: 20px;'>Frequências das Técnicas Aplicadas (Treemap)</h4>", unsafe_allow_html=True)
-                                fig_tree = px.treemap(df_freq, path=['Técnica Empregada'], values='Frequência Absoluta', color='Frequência Absoluta', color_continuous_scale='Oranges')
-                                fig_tree.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font_color="#FFF", margin=dict(t=10, l=10, r=10, b=10))
-                                st.session_state['treemap_freq'] = fig_tree
-                                st.success("✅ Treemap gerado!")
-                            else:
-                                st.warning("Técnicas encontradas, mas a coluna 'TÉCNICAS' não foi identificada no Airtable.")
-                        else:
-                            st.info("Nenhuma técnica cruzou com a APA atual.")
-                    else:
-                        st.warning("A coluna de vínculo (ex: 'Vinculo_APA') não foi encontrada na aba de técnicas.")
-                else:
-                    st.warning("Tabela de técnicas vazia no Airtable.")
+            cache_key = _chave_cache_apa(apa_selecionada, df_apa)
+            freq_key = f"df_freq_apa_{cache_key}"
+            treemap_key = f"treemap_freq_apa_{cache_key}"
 
-            if st.session_state.get('treemap_freq'):
-                st.plotly_chart(st.session_state['treemap_freq'], use_container_width=True)
+            if st.button("✔ Calcular Frequência de Técnicas", key="btn_freq_tecnicas"):
+                with st.spinner("Consultando técnicas no Supabase..."):
+                    df_tec_filtrado = _obter_tecnicas_da_apa(
+                        df_tec, apa_selecionada, df_apa
+                    )
+
+                if not df_tec_filtrado.empty:
+                    if _render_frequencia_tecnicas(df_tec_filtrado, cache_key):
+                        st.success(
+                            f"✅ {len(df_tec_filtrado)} técnicas encontradas para "
+                            f"**{apa_selecionada}** — treemap gerado!"
+                        )
+                else:
+                    st.session_state.pop(freq_key, None)
+                    st.session_state.pop(treemap_key, None)
+                    st.info("Nenhuma técnica cruzou com a APA atual.")
+
+            if freq_key in st.session_state:
+                st.dataframe(
+                    st.session_state[freq_key], use_container_width=True, hide_index=True
+                )
+            if treemap_key in st.session_state:
+                st.markdown(
+                    "<h4 style='text-align:center; color: #FFD700; margin-top: 20px;'>"
+                    "Frequências das Técnicas Aplicadas (Treemap)</h4>",
+                    unsafe_allow_html=True,
+                )
+                st.plotly_chart(
+                    st.session_state[treemap_key], use_container_width=True
+                )
 
         with tab_efet:
             st.markdown("""
@@ -426,75 +614,94 @@ def render_apa(df_quali, df_tec):
             </div>
             """, unsafe_allow_html=True)
 
+            cache_key = _chave_cache_apa(apa_selecionada, df_apa)
+            efet_key = f"tecnicas_analisadas_apa_{cache_key}"
+
             if st.button("✔ Analisar Efetividade das Técnicas", key="btn_efetividade_tecnicas"):
-                with st.spinner("Cruzando técnicas com reação do causador..."):
+                with st.spinner("Consultando técnicas no Supabase..."):
                     try:
                         id_apa_atual = str(apa_selecionada).strip()
-                        record_id_atual = df_apa.get('Airtable_Record_ID')
                         if not id_apa_atual:
                             st.warning("⚠️ ID da APA não encontrado.")
                         else:
-                            df_tec = st.session_state.get("df_tec", pd.DataFrame())
-                            if df_tec.empty:
-                                st.warning("⚠️ Tabela de técnicas não carregada.")
+                            df_tec_apa = _obter_tecnicas_da_apa(
+                                df_tec, id_apa_atual, df_apa
+                            )
+
+                            if df_tec_apa.empty:
+                                st.session_state.pop(efet_key, None)
+                                st.info("Nenhuma técnica registrada para esta ocorrência.")
                             else:
-                                def vinculo_contem(val, id_apa, record_id):
-                                    if isinstance(val, list):
-                                        if record_id and record_id in val:
-                                            return True
-                                        return any(str(x).strip() == id_apa for x in val)
-                                    s = str(val).strip()
-                                    if record_id and s == str(record_id).strip():
-                                        return True
-                                    return s == id_apa
-
-                                mask = df_tec['Vinculo_APA'].apply(
-                                    lambda x: vinculo_contem(x, id_apa_atual, record_id_atual)
-                                )
-                                df_tec_apa = df_tec[mask].copy()
-
-                                if df_tec_apa.empty:
-                                    st.info("Nenhuma técnica registrada para esta ocorrência.")
-                                else:
-                                    def normalizar_reacao(val):
-                                        if val is None:
-                                            return None
-                                        s = str(val).strip()
-                                        if s in ["-1", "-1.0", "🔴 Reação Negativa", "Reação Negativa"]:
-                                            return -1
-                                        elif s in ["0", "0.0", "⚪ Reação Neutra", "Reação Neutra"]:
-                                            return 0
-                                        elif s in ["1", "1.0", "🟢 Reação Positiva", "Reação Positiva"]:
-                                            return 1
+                                def normalizar_reacao(val):
+                                    if val is None:
                                         return None
+                                    s = str(val).strip()
+                                    if s in ["-1", "-1.0", "🔴 Reação Negativa", "Reação Negativa"]:
+                                        return -1
+                                    elif s in ["0", "0.0", "⚪ Reação Neutra", "Reação Neutra"]:
+                                        return 0
+                                    elif s in ["1", "1.0", "🟢 Reação Positiva", "Reação Positiva"]:
+                                        return 1
+                                    return None
 
-                                    col_reacao = next((c for c in ['ATITUDE DO CAUSADOR', 'Atitude do Causador', 'atitude_causador'] if c in df_tec_apa.columns), None)
-                                    col_tecnica = next((c for c in ['TÉCNICAS', 'Técnicas', 'tecnicas'] if c in df_tec_apa.columns), None)
+                                col_reacao = next(
+                                    (
+                                        c
+                                        for c in [
+                                            "ATITUDE DO CAUSADOR",
+                                            "Atitude do Causador",
+                                            "atitude_causador",
+                                        ]
+                                        if c in df_tec_apa.columns
+                                    ),
+                                    None,
+                                )
+                                col_tecnica = _coluna_tecnica(df_tec_apa)
 
-                                    if not col_tecnica:
-                                        st.warning("⚠️ Coluna TÉCNICAS não encontrada.")
-                                    else:
-                                        df_tec_apa['_reacao_num'] = df_tec_apa[col_reacao].apply(normalizar_reacao) if col_reacao else None
-                                        resumo = []
-                                        for tecnica, grupo in df_tec_apa.groupby(col_tecnica):
-                                            total    = len(grupo)
-                                            positivo = (grupo['_reacao_num'] == 1).sum()
-                                            neutro   = (grupo['_reacao_num'] == 0).sum()
-                                            negativo = (grupo['_reacao_num'] == -1).sum()
-                                            inaud    = grupo['_reacao_num'].isna().sum()
-                                            observados = positivo + neutro + negativo
-                                            score = round(((positivo - negativo) / observados) * 100, 1) if observados > 0 else None
-                                            resumo.append({"Técnica": tecnica, "Total": total, "🟢 Positiva": int(positivo), "⚪ Neutra": int(neutro), "🔴 Negativa": int(negativo), "❓ Inaudível": int(inaud), "Score (%)": score})
+                                if not col_tecnica:
+                                    st.warning("⚠️ Coluna TÉCNICAS não encontrada.")
+                                else:
+                                    df_tec_apa["_reacao_num"] = (
+                                        df_tec_apa[col_reacao].apply(normalizar_reacao)
+                                        if col_reacao
+                                        else None
+                                    )
+                                    resumo = []
+                                    for tecnica, grupo in df_tec_apa.groupby(col_tecnica):
+                                        total = len(grupo)
+                                        positivo = (grupo["_reacao_num"] == 1).sum()
+                                        neutro = (grupo["_reacao_num"] == 0).sum()
+                                        negativo = (grupo["_reacao_num"] == -1).sum()
+                                        inaud = grupo["_reacao_num"].isna().sum()
+                                        observados = positivo + neutro + negativo
+                                        score = (
+                                            round(((positivo - negativo) / observados) * 100, 1)
+                                            if observados > 0
+                                            else None
+                                        )
+                                        resumo.append(
+                                            {
+                                                "Técnica": tecnica,
+                                                "Total": total,
+                                                "🟢 Positiva": int(positivo),
+                                                "⚪ Neutra": int(neutro),
+                                                "🔴 Negativa": int(negativo),
+                                                "❓ Inaudível": int(inaud),
+                                                "Score (%)": score,
+                                            }
+                                        )
 
-                                        df_resumo = pd.DataFrame(resumo).sort_values("Score (%)", ascending=False, na_position='last')
-                                        st.session_state['tecnicas_analisadas'] = df_resumo
-                                        st.success(f"✅ {len(df_resumo)} técnicas analisadas!")
+                                    df_resumo = pd.DataFrame(resumo).sort_values(
+                                        "Score (%)", ascending=False, na_position="last"
+                                    )
+                                    st.session_state[efet_key] = df_resumo
+                                    st.success(f"✅ {len(df_resumo)} técnicas analisadas!")
 
                     except Exception as e:
                         st.error(f"Erro ao analisar técnicas: {str(e)[:80]}")
 
-            if st.session_state.get('tecnicas_analisadas') is not None:
-                df_resumo = st.session_state['tecnicas_analisadas']
+            if st.session_state.get(efet_key) is not None:
+                df_resumo = st.session_state[efet_key]
                 total_usos     = int(df_resumo["Total"].sum())
                 total_positivo = int(df_resumo["🟢 Positiva"].sum())
                 total_neutro   = int(df_resumo["⚪ Neutra"].sum())
@@ -910,26 +1117,44 @@ def render_apa(df_quali, df_tec):
                 estatisticas_ocorrencia = {}
 
                 try:
-                    if not df_tec.empty:
-                        col_vinculo = next((c for c in df_tec.columns if 'VINCULO' in c.upper() or 'VÍNCULO' in c.upper()), None)
-                        if col_vinculo:
-                            id_visivel = str(apa_selecionada).strip()
-                            df_tec_tmp = df_tec.copy()
-                            df_tec_tmp['Vinculo_Str'] = df_tec_tmp[col_vinculo].astype(str).str.replace(r"[\[\]'\"]", "", regex=True).str.strip()
-                            df_tec_filtrado_pdf = df_tec_tmp[df_tec_tmp['Vinculo_Str'] == id_visivel].copy()
-                            if df_tec_filtrado_pdf.empty and 'Airtable_Record_ID' in df_apa:
-                                id_interno = str(df_apa['Airtable_Record_ID']).strip()
-                                df_tec_filtrado_pdf = df_tec_tmp[df_tec_tmp[col_vinculo].astype(str).str.contains(id_interno, na=False, regex=False)].copy()
-                            if not df_tec_filtrado_pdf.empty:
-                                col_tecnica = next((col for col in ['TÉCNICAS', 'TECNICAS', 'TÉCNICA', 'TECNICA'] if col in df_tec_filtrado_pdf.columns), None)
-                                if col_tecnica:
-                                    freq_abs = df_tec_filtrado_pdf[col_tecnica].value_counts()
-                                    freq_rel = (df_tec_filtrado_pdf[col_tecnica].value_counts(normalize=True) * 100).round(1)
-                                    df_freq_pdf = pd.DataFrame({'Técnica Empregada': freq_abs.index, 'Frequência Absoluta': freq_abs.values, 'Frequência Relativa (%)': freq_rel.values})
-                                    tecnicas_da_apa = df_freq_pdf['Técnica Empregada'].dropna().astype(str).tolist()
-                                    frequencia_tecnicas_ocorrencia = [{"tecnica": str(r["Técnica Empregada"]), "frequencia_absoluta": int(r["Frequência Absoluta"]), "frequencia_relativa": float(r["Frequência Relativa (%)"])} for _, r in df_freq_pdf.iterrows()]
-                                    freq_tecnicas_dict = dict(zip(df_freq_pdf['Técnica Empregada'].astype(str), df_freq_pdf['Frequência Absoluta'].astype(int)))
-                                    estatisticas_ocorrencia = {"frequencia_tecnicas_ocorrencia": frequencia_tecnicas_ocorrencia, "frequencia_absoluta_por_tecnica": freq_tecnicas_dict}
+                    df_tec_filtrado_pdf = _obter_tecnicas_da_apa(
+                        df_tec, apa_selecionada, df_apa
+                    )
+                    if not df_tec_filtrado_pdf.empty:
+                        col_tecnica = _coluna_tecnica(df_tec_filtrado_pdf)
+                        if col_tecnica:
+                            freq_abs = df_tec_filtrado_pdf[col_tecnica].value_counts()
+                            freq_rel = (
+                                df_tec_filtrado_pdf[col_tecnica].value_counts(normalize=True) * 100
+                            ).round(1)
+                            df_freq_pdf = pd.DataFrame(
+                                {
+                                    "Técnica Empregada": freq_abs.index,
+                                    "Frequência Absoluta": freq_abs.values,
+                                    "Frequência Relativa (%)": freq_rel.values,
+                                }
+                            )
+                            tecnicas_da_apa = (
+                                df_freq_pdf["Técnica Empregada"].dropna().astype(str).tolist()
+                            )
+                            frequencia_tecnicas_ocorrencia = [
+                                {
+                                    "tecnica": str(r["Técnica Empregada"]),
+                                    "frequencia_absoluta": int(r["Frequência Absoluta"]),
+                                    "frequencia_relativa": float(r["Frequência Relativa (%)"]),
+                                }
+                                for _, r in df_freq_pdf.iterrows()
+                            ]
+                            freq_tecnicas_dict = dict(
+                                zip(
+                                    df_freq_pdf["Técnica Empregada"].astype(str),
+                                    df_freq_pdf["Frequência Absoluta"].astype(int),
+                                )
+                            )
+                            estatisticas_ocorrencia = {
+                                "frequencia_tecnicas_ocorrencia": frequencia_tecnicas_ocorrencia,
+                                "frequencia_absoluta_por_tecnica": freq_tecnicas_dict,
+                            }
                 except Exception as e:
                     st.warning(f"Falha ao montar frequências para a IA: {e}")
 

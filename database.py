@@ -22,6 +22,9 @@ TABELA_APAS = "apas"
 TABELA_TECNICAS = "tecnicas"
 CACHE_TTL = 300
 PREFIXO_FUNCOES = "FUNÇÕES:"
+SELECT_TECNICAS_COM_APA = (
+    "*, apas!inner(id_numero, id, negociador_principal, tipologia, modalidade_incidente)"
+)
 
 MAPA_LEGADO_PARA_APA: dict[str, str] = {
     legacy: db for db, legacy in {
@@ -156,41 +159,80 @@ def fetch_tecnicas() -> pd.DataFrame:
     return pd.DataFrame(response.data or [])
 
 
+def _formatar_vinculo_apa(id_numero: Any) -> str | None:
+    """Formato exibido no app (ID_Busca): APA 006."""
+    if id_numero is None:
+        return None
+    try:
+        if pd.isna(id_numero):
+            return None
+    except (TypeError, ValueError):
+        pass
+    return f"APA {int(id_numero):03d}"
+
+
+def _flatten_tecnicas_join(rows: list[dict[str, Any]]) -> pd.DataFrame:
+    """Achata resposta PostgREST `tecnicas` + `apas` aninhado."""
+    if not rows:
+        return pd.DataFrame()
+
+    registros: list[dict[str, Any]] = []
+    for row in rows:
+        item = {k: v for k, v in row.items() if k != "apas"}
+        apas_data = row.get("apas")
+        if isinstance(apas_data, dict):
+            for chave, valor in apas_data.items():
+                if chave == "id":
+                    item.setdefault("apa_uuid", valor)
+                else:
+                    item[chave] = valor
+
+        id_num = item.get("id_numero")
+        if id_num is not None and not pd.isna(id_num):
+            item["Vinculo_APA"] = _formatar_vinculo_apa(id_num)
+
+        if item.get("negociador_principal") is not None:
+            item["NEGOCIADOR PRINCIPAL"] = item["negociador_principal"]
+            item["Negociador Principal do incidente crítico"] = item["negociador_principal"]
+        if item.get("tipologia") is not None:
+            item["Tipologia do incidente crítico"] = item["tipologia"]
+        if item.get("modalidade_incidente") is not None:
+            item["Modalidade do incidente crítico"] = item["modalidade_incidente"]
+
+        registros.append(item)
+
+    return pd.DataFrame(registros)
+
+
 @st.cache_data(ttl=CACHE_TTL)
 def fetch_tecnicas_com_apa() -> pd.DataFrame:
-    """Técnicas com dados da APA associada (join via apa_id)."""
-    df_tec = fetch_tecnicas()
-    df_apa = fetch_apas()
-
-    if df_tec.empty:
-        return df_tec
-    if df_apa.empty:
-        return df_tec
-
-    cols_apa = [
-        c
-        for c in df_apa.columns
-        if c not in ("created_at", "updated_at", "funcoes_dados")
-    ]
-    df_join = df_tec.merge(
-        df_apa[cols_apa],
-        left_on="apa_id",
-        right_on="id",
-        how="left",
-        suffixes=("", "_apa"),
+    """Técnicas com dados da APA associada (join PostgREST via FK apa_id)."""
+    client = get_supabase_client()
+    response = (
+        client.table(TABELA_TECNICAS)
+        .select(SELECT_TECNICAS_COM_APA)
+        .execute()
     )
+    return _flatten_tecnicas_join(response.data or [])
 
-    if "negociador_principal" in df_join.columns:
-        df_join["NEGOCIADOR PRINCIPAL"] = df_join["negociador_principal"]
-        df_join["Negociador Principal do incidente crítico"] = df_join["negociador_principal"]
-    if "tipologia" in df_join.columns:
-        df_join["Tipologia do incidente crítico"] = df_join["tipologia"]
-    if "modalidade_incidente" in df_join.columns:
-        df_join["Modalidade do incidente crítico"] = df_join["modalidade_incidente"]
-    if "id_numero" in df_join.columns:
-        df_join["Vinculo_APA"] = df_join["id_numero"]
 
-    return df_join
+def buscar_tecnicas_por_apa(apa_ref: Any) -> pd.DataFrame:
+    """
+    Técnicas vinculadas a uma APA.
+    `apa_ref` aceita UUID, id_numero (6), 'APA 006' ou '6'.
+    """
+    apa_uuid = buscar_apa_uuid(apa_ref)
+    if not apa_uuid:
+        return pd.DataFrame()
+
+    client = get_supabase_client()
+    response = (
+        client.table(TABELA_TECNICAS)
+        .select(SELECT_TECNICAS_COM_APA)
+        .eq("apa_id", apa_uuid)
+        .execute()
+    )
+    return _flatten_tecnicas_join(response.data or [])
 
 
 def test_connection() -> tuple[bool, int, int, str]:
@@ -278,7 +320,10 @@ def tecnicas_para_formato_app(df: pd.DataFrame | None = None) -> pd.DataFrame:
 
         vinculo = row.get("Vinculo_APA", row.get("id_numero"))
         if vinculo is not None and not pd.isna(vinculo):
-            item["Vinculo_APA"] = int(vinculo)
+            if isinstance(vinculo, str) and vinculo.strip().upper().startswith("APA"):
+                item["Vinculo_APA"] = vinculo.strip()
+            else:
+                item["Vinculo_APA"] = _formatar_vinculo_apa(vinculo)
 
         apa_uuid = row.get("apa_id")
         if apa_uuid is not None and not pd.isna(apa_uuid):
@@ -312,11 +357,14 @@ def buscar_dados_apa() -> tuple[pd.DataFrame, str]:
 def buscar_todas_tecnicas() -> tuple[pd.DataFrame, str]:
     """Compatível com airtable_link.buscar_todas_tecnicas()."""
     try:
-        df = tecnicas_para_formato_app(fetch_tecnicas_com_apa())
+        df_join = fetch_tecnicas_com_apa()
+        df = tecnicas_para_formato_app(df_join)
         if df.empty:
             return df, "Nenhuma técnica encontrada no Supabase"
         return df, f"{len(df)} técnicas carregadas (Supabase)"
     except Exception as exc:
+        limpar_cache()
+        st.cache_data.clear()
         return pd.DataFrame(), f"Erro ao carregar técnicas do Supabase: {exc}"
 
 
@@ -529,17 +577,20 @@ def _preparar_payload_tecnica(item: dict[str, Any], apa_id: str) -> dict[str, An
 
 
 def salvar_tecnicas(
-    apa_id: str,
+    apa_id: Any,
     lista_tecnicas: list[dict[str, Any]],
 ) -> tuple[int, int, list[str]]:
     """
     Insere ou atualiza técnicas vinculadas à APA.
 
+    `apa_id` deve ser o UUID da APA; também aceita id_numero ou 'APA 031'
+    (resolvido via buscar_apa_uuid antes de gravar).
     Item com `id` ou `Airtable_Record_ID` faz update; caso contrário, insert.
     Retorna (inseridas, atualizadas, erros).
     """
-    if not apa_id:
-        return 0, 0, ["apa_id obrigatório."]
+    apa_uuid = buscar_apa_uuid(apa_id)
+    if not apa_uuid:
+        return 0, 0, [f"APA {apa_id!r} não encontrada. apa_id deve ser UUID ou id_numero."]
 
     client = get_supabase_client()
     inseridas = 0
@@ -548,7 +599,7 @@ def salvar_tecnicas(
 
     for idx, item in enumerate(lista_tecnicas):
         try:
-            payload = _preparar_payload_tecnica(item, apa_id)
+            payload = _preparar_payload_tecnica(item, apa_uuid)
             reg_id = item.get("id") or item.get("Airtable_Record_ID") or item.get("record_id")
 
             if reg_id and not _vazio(reg_id):
@@ -609,15 +660,16 @@ def criar_nova_apa(payload: dict[str, Any]) -> dict[str, Any]:
     return salvar_apa(payload)
 
 
-def deletar_apa(apa_id: str) -> tuple[bool, str | None]:
-    """Remove APA e técnicas vinculadas."""
-    if not apa_id:
-        return False, "apa_id obrigatório."
+def deletar_apa(apa_id: Any) -> tuple[bool, str | None]:
+    """Remove APA e técnicas vinculadas. Aceita UUID ou id_numero."""
+    apa_uuid = buscar_apa_uuid(apa_id)
+    if not apa_uuid:
+        return False, f"APA {apa_id!r} não encontrada."
 
     try:
         client = get_supabase_client()
-        client.table(TABELA_TECNICAS).delete().eq("apa_id", apa_id).execute()
-        client.table(TABELA_APAS).delete().eq("id", apa_id).execute()
+        client.table(TABELA_TECNICAS).delete().eq("apa_id", apa_uuid).execute()
+        client.table(TABELA_APAS).delete().eq("id", apa_uuid).execute()
         invalidar_cache_completo()
         return True, None
     except Exception as exc:

@@ -129,17 +129,109 @@ def _texto_da_tabela(tbl: ET.Element) -> str:
     return ''.join(t.text or '' for t in tbl.findall('.//w:t', NS))
 
 
+def _normalizar_texto(texto: str) -> str:
+    """Uppercase sem acentos — compara versões diferentes da APA com o mesmo critério."""
+    mapa = str.maketrans({
+        'Á': 'A', 'À': 'A', 'Â': 'A', 'Ã': 'A',
+        'É': 'E', 'Ê': 'E',
+        'Í': 'I',
+        'Ó': 'O', 'Ô': 'O', 'Õ': 'O',
+        'Ú': 'U',
+        'Ç': 'C',
+    })
+    return (texto or '').upper().translate(mapa)
+
+
+def _linhas_cabecalho(tbl: ET.Element, max_linhas: int = 5) -> list[str]:
+    rows = tbl.findall('.//w:tr', NS)
+    linhas = []
+    for row in rows[:max_linhas]:
+        linhas.append(_normalizar_texto(
+            ''.join(t.text or '' for t in row.findall('.//w:t', NS))
+        ))
+    return linhas
+
+
 def _encontrar_tabela_por_titulo(tabelas: list, palavra_chave: str) -> ET.Element | None:
+    """
+    Localiza tabela cujo cabeçalho contenha a palavra-chave.
+
+    Não depende do número do item (28, 33, …). Em APAs reais o título pode
+    estar na 2ª/3ª linha (ex.: linha 0 = "PARTE 2").
+    """
+    chave = _normalizar_texto(palavra_chave)
     for tbl in tabelas:
-        rows = tbl.findall('.//w:tr', NS)
-        if not rows:
-            continue
-        primeira_linha = ''.join(
-            t.text or '' for t in rows[0].findall('.//w:t', NS)
-        ).upper()
-        if palavra_chave.upper() in primeira_linha:
-            return tbl
+        for linha in _linhas_cabecalho(tbl):
+            if chave in linha:
+                return tbl
     return None
+
+
+def _encontrar_tabela_transcricao(tabelas: list) -> ET.Element | None:
+    """
+    Localiza a seção de transcrição integral pela palavra TRANSCRICAO.
+
+    Independente do número do item na APA. Evita falso positivo da coluna
+    "TRECHO DA TRANSCRIÇÃO" na tabela de técnicas.
+    """
+    # Título de seção: opcional "NN - " + TRANSCRICAO (+ INTEGRAL...)
+    re_titulo = re.compile(
+        r'(?:^|\b)\d{0,3}\s*[-–.]?\s*TRANSCRICAO(?:\s+INTEGRAL)?'
+    )
+    candidatos = []
+
+    for idx, tbl in enumerate(tabelas):
+        linhas = _linhas_cabecalho(tbl)
+        if not linhas:
+            continue
+
+        # Descarta tabela de técnicas mesmo que mencione "trecho da transcrição"
+        cabecalho_junto = ' | '.join(linhas)
+        if 'ANALISE DAS TECNICAS' in cabecalho_junto or (
+            'TECNICAS' in linhas[0] and 'TRECHO' in cabecalho_junto
+        ):
+            continue
+
+        melhor_score = 0
+        for linha in linhas:
+            if 'TRANSCRICAO' not in linha:
+                continue
+            # Coluna auxiliar de técnicas, não a seção de falas
+            if 'TRECHO DA TRANSCRICAO' in linha and 'INTEGRAL' not in linha:
+                continue
+
+            score = 0
+            if re_titulo.search(linha):
+                score += 3
+            if 'INTEGRAL' in linha:
+                score += 2
+            if 'TRANSCRICAO' in linha:
+                score += 1
+            # Títulos de seção costumam ser curtos
+            if len(linha) < 80:
+                score += 1
+            melhor_score = max(melhor_score, score)
+
+        if melhor_score > 0:
+            candidatos.append((melhor_score, idx, tbl))
+
+    if not candidatos:
+        # Fallback: TRANSCRICAO de seção, nunca coluna "TRECHO DA TRANSCRICAO"
+        for tbl in tabelas:
+            linhas = _linhas_cabecalho(tbl)
+            cabecalho_junto = ' | '.join(linhas)
+            if 'ANALISE DAS TECNICAS' in cabecalho_junto:
+                continue
+            for linha in linhas:
+                if 'TRANSCRICAO' not in linha:
+                    continue
+                if 'TRECHO DA TRANSCRICAO' in linha and 'INTEGRAL' not in linha:
+                    continue
+                return tbl
+        return None
+
+    candidatos.sort(key=lambda x: (-x[0], x[1]))
+    return candidatos[0][2]
 
 
 # ============================================================
@@ -155,9 +247,11 @@ def _extrair_transcricoes(tbl: ET.Element) -> dict:
     }
 
     for row in tbl.findall('.//w:tr', NS):
-        # Pula a linha de cabeçalho (título da seção)
-        linha_texto = ''.join(t.text or '' for t in row.findall('.//w:t', NS)).upper()
-        if 'TRANSCRI' in linha_texto and len(linha_texto) < 60:
+        # Pula a linha de cabeçalho (título da seção — número do item irrelevante)
+        linha_texto = _normalizar_texto(
+            ''.join(t.text or '' for t in row.findall('.//w:t', NS))
+        )
+        if 'TRANSCRICAO' in linha_texto and len(linha_texto) < 80:
             continue
 
         for cell in row.findall('.//w:tc', NS):
@@ -260,8 +354,9 @@ def processar_apa(file_bytes: bytes) -> dict:
         body = root.find('w:body', NS)
         tabelas = body.findall('.//w:tbl', NS)
 
-        tbl_trans = _encontrar_tabela_por_titulo(tabelas, 'TRANSCRI')
-        tbl_tec   = _encontrar_tabela_por_titulo(tabelas, 'ANÁLISE DAS TÉCNICAS')
+        # Âncora = "Transcrição" (qualquer número de item). Técnicas = título próprio.
+        tbl_trans = _encontrar_tabela_transcricao(tabelas)
+        tbl_tec   = _encontrar_tabela_por_titulo(tabelas, 'ANALISE DAS TECNICAS')
 
         transcricoes = _extrair_transcricoes(tbl_trans) if tbl_trans else {}
         tecnicas     = _extrair_tecnicas(tbl_tec)       if tbl_tec   else pd.DataFrame()

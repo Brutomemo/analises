@@ -919,6 +919,13 @@ def render(df_quali, df_tec):
 
                     st.success(f"✅ APA encontrada! ({id_apa})")
 
+                    tecnicas_apa = database.buscar_tecnicas_por_apa(
+                        _resolver_record_id_apa(apa, df_quali) or id_apa
+                    )
+                    st.caption(
+                        f"**{len(tecnicas_apa)}** técnica(s) cadastrada(s) no Supabase para esta APA."
+                    )
+
                     st.markdown("---")
                     _render_envio_tecnicas_docx(apa, df_quali, key_prefix=f"edit_{id_limpo}")
                     st.markdown("---")
