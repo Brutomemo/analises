@@ -418,9 +418,8 @@ def _inserir_tecnicas_extraidas(
         tecnica = str(row.get('TÉCNICAS', '')).strip()
         trecho = str(row.get('TRECHO DA TRANSCRIÇÃO', '')).strip()
 
-        if not tecnica:
-            erro_count += 1
-            detalhes_erros.append(f"Linha {n + 1}: técnica vazia.")
+        if not tecnica or re.match(r'^escolher\s+um\s+item\.?$', tecnica, re.I):
+            # Linha placeholder do Word — não grava
             if progress_bar is not None and total:
                 progress_bar.progress((n + 1) / total)
             continue
@@ -620,6 +619,13 @@ def _render_envio_tecnicas_docx(apa, df_quali, key_prefix):
             and st.session_state.get(applied_key) != apply_sig
             and any(_texto_campo(v) for v in (trans_cache or {}).values())
         ):
+            # Remove chaves vazias/'nan' para o text_area (fora do form) aceitar o texto novo.
+            # Só remove conteúdo existente se o usuário pediu sobrescrever.
+            for k in (f"edit_tc_{id_limpo}", f"edit_tp_{id_limpo}", f"edit_ts_{id_limpo}"):
+                atual = _texto_campo(st.session_state.get(k))
+                if sobrescrever_trans or not atual:
+                    st.session_state.pop(k, None)
+
             aplicados = _aplicar_transcricoes_nos_campos_edit(
                 id_limpo, trans_cache, sobrescrever=sobrescrever_trans
             )
@@ -645,14 +651,19 @@ def _render_envio_tecnicas_docx(apa, df_quali, key_prefix):
                         database.atualizar_apa_validacao(
                             id_apa, payload_trans, record_id_interno=apa_uuid
                         )
-                        st.info(
+                        st.session_state["_trans_gravadas_msg"] = (
                             "💾 Transcrições gravadas na APA: "
                             + ", ".join(payload_trans.keys())
                         )
                     except Exception as exc:
-                        st.warning(
-                            f"Transcrições carregadas no formulário, mas falha ao gravar: {exc}"
+                        st.session_state["_trans_gravadas_msg"] = (
+                            f"Transcrições nos campos, mas falha ao gravar: {exc}"
                         )
+                st.rerun()
+
+        msg_trans = st.session_state.pop("_trans_gravadas_msg", None)
+        if msg_trans:
+            st.info(msg_trans)
 
     if (df_tec_cache is None or getattr(df_tec_cache, "empty", True)) and not any(
         _texto_campo(v) for v in (trans_cache or {}).values()
@@ -1141,12 +1152,10 @@ def render(df_quali, df_tec):
                         )
                     
                     st.markdown("---")
-                    
-                    # FORMULÁRIO DE EDIÇÃO
-                    st.markdown("### Editar Dados")
 
-                    # Garante valores iniciais limpos nos campos de transcrição
-                    # (evita 'nan' e permite preenchimento pelo upload acima)
+                    # Transcrições FORA do st.form — o form do Streamlit impede
+                    # atualizar text_area via session_state após o upload do .docx.
+                    st.markdown("### Transcrições")
                     for _k, _campo in (
                         (f"edit_tc_{id_limpo}", "TRANSCRIÇÃO DO CAUSADOR"),
                         (f"edit_tp_{id_limpo}", "TRANSCRIÇÃO DO NEGOCIADOR PRINCIPAL"),
@@ -1156,6 +1165,25 @@ def render(df_quali, df_tec):
                             st.session_state[_k] = _texto_campo(apa.get(_campo))
                         else:
                             st.session_state[_k] = _texto_campo(st.session_state.get(_k))
+
+                    st.text_area(
+                        "Transcrição do Causador",
+                        key=f"edit_tc_{id_limpo}",
+                        height=120,
+                    )
+                    st.text_area(
+                        "Transcrição do Negociador Principal",
+                        key=f"edit_tp_{id_limpo}",
+                        height=120,
+                    )
+                    st.text_area(
+                        "Transcrição do Negociador Secundário",
+                        key=f"edit_ts_{id_limpo}",
+                        height=120,
+                    )
+                    
+                    # FORMULÁRIO DE EDIÇÃO
+                    st.markdown("### Editar Dados")
                     
                     with st.form(f"form_edit_{id_limpo}", clear_on_submit=False):
                         # Metadados
@@ -1191,24 +1219,6 @@ def render(df_quali, df_tec):
                             neg_anotador_edit = st.selectbox("Negociador Anotador", [""] + NEGOCIADORES, index=NEGOCIADORES.index(apa.get('Negociador Anotador')) + 1 if apa.get('Negociador Anotador') in NEGOCIADORES else 0, key=f"edit_na_{id_limpo}")
                         with col8:
                             neg_lider_edit = st.selectbox("Negociador Líder", [""] + NEGOCIADORES, index=NEGOCIADORES.index(apa.get('Negociador Líder')) + 1 if apa.get('Negociador Líder') in NEGOCIADORES else 0, key=f"edit_nl_{id_limpo}")
-                        
-                        # Transcrições (valores vêm do session_state — upload .docx ou registro)
-                        st.markdown("#### Transcrições")
-                        trans_causador_edit = st.text_area(
-                            "Transcrição do Causador",
-                            key=f"edit_tc_{id_limpo}",
-                            height=100,
-                        )
-                        trans_principal_edit = st.text_area(
-                            "Transcrição do Negociador Principal",
-                            key=f"edit_tp_{id_limpo}",
-                            height=100,
-                        )
-                        trans_secundario_edit = st.text_area(
-                            "Transcrição do Negociador Secundário",
-                            key=f"edit_ts_{id_limpo}",
-                            height=100,
-                        )
                         
                         # Info Adicionais
                         st.markdown("#### ℹ️ Informações Adicionais")
@@ -1316,9 +1326,15 @@ def render(df_quali, df_tec):
                                 "Negociador Secundário": neg_secundario_edit or "",
                                 "Negociador Anotador": neg_anotador_edit or "",
                                 "Negociador Líder": neg_lider_edit or "",
-                                "TRANSCRIÇÃO DO CAUSADOR": trans_causador_edit or "",
-                                "TRANSCRIÇÃO DO NEGOCIADOR PRINCIPAL": trans_principal_edit or "",
-                                "TRANSCRIÇÃO DO NEGOCIADOR SECUNDÁRIO": trans_secundario_edit or "",
+                                "TRANSCRIÇÃO DO CAUSADOR": _texto_campo(
+                                    st.session_state.get(f"edit_tc_{id_limpo}")
+                                ),
+                                "TRANSCRIÇÃO DO NEGOCIADOR PRINCIPAL": _texto_campo(
+                                    st.session_state.get(f"edit_tp_{id_limpo}")
+                                ),
+                                "TRANSCRIÇÃO DO NEGOCIADOR SECUNDÁRIO": _texto_campo(
+                                    st.session_state.get(f"edit_ts_{id_limpo}")
+                                ),
                                 "Tempo de Negociação Real": tempo_real_edit or "",
                                 "Tempo de Negociação Tática": tempo_tatica_edit or "",
                                 "Uniforme Usado": uniforme_edit or "",

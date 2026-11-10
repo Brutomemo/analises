@@ -74,17 +74,32 @@ def _classificar_cor(hex_color: str) -> str | None:
     return None
 
 
+def _hex_de_elemento_cor(el: ET.Element | None) -> str | None:
+    """Lê w:val de w:color / w:shd (fill), ignorando auto."""
+    if el is None:
+        return None
+    for k, v in el.attrib.items():
+        if k.endswith('val') or k.endswith('fill'):
+            if not v:
+                continue
+            hx = str(v).upper().strip()
+            if hx in {'AUTO', 'NONE', 'WINDOWTEXT'}:
+                continue
+            if re.fullmatch(r'[0-9A-F]{6}', hx):
+                return hx
+    return None
+
+
 def _cor_do_run(run: ET.Element) -> str | None:
     rpr = run.find('w:rPr', NS)
     if rpr is None:
         return None
-    cel = rpr.find('w:color', NS)
-    if cel is None:
-        return None
-    for k, v in cel.attrib.items():
-        if 'val' in k:
-            return v
-    return None
+    # Cor de fonte (padrão APA)
+    hx = _hex_de_elemento_cor(rpr.find('w:color', NS))
+    if hx:
+        return hx
+    # Alguns templates usam sombreamento colorido no run
+    return _hex_de_elemento_cor(rpr.find('w:shd', NS))
 
 
 # ============================================================
@@ -256,6 +271,9 @@ def _extrair_transcricoes(tbl: ET.Element) -> dict:
 
         for cell in row.findall('.//w:tc', NS):
             for para in cell.findall('.//w:p', NS):
+                # No Word, só o 1º run do parágrafo costuma trazer w:color;
+                # os seguintes herdam visualmente — repetimos o último papel válido.
+                papel_atual = None
                 for run in para.findall('.//w:r', NS):
                     texto = ''.join(t.text or '' for t in run.findall('w:t', NS))
                     if not texto.strip():
@@ -263,11 +281,13 @@ def _extrair_transcricoes(tbl: ET.Element) -> dict:
 
                     cor_hex = _cor_do_run(run)
                     papel = _classificar_cor(cor_hex) if cor_hex else None
+                    if papel:
+                        papel_atual = papel
 
-                    if papel and papel in falas:
+                    if papel_atual and papel_atual in falas:
                         texto_limpo = _limpar(texto)
                         if texto_limpo:
-                            falas[papel].append(texto_limpo)
+                            falas[papel_atual].append(texto_limpo)
 
     return {papel: ' '.join(linhas) for papel, linhas in falas.items()}
 
@@ -276,10 +296,29 @@ def _extrair_transcricoes(tbl: ET.Element) -> dict:
 # EXTRAÇÃO DAS TÉCNICAS
 # ============================================================
 
+_RE_PLACEHOLDER_TECNICA = re.compile(
+    r'^escolher\s+um\s+item\.?$',
+    re.IGNORECASE,
+)
+
+
+def _tecnica_valida(tecnica: str) -> bool:
+    """Ignora placeholders de dropdown do Word ('Escolher um item.')."""
+    t = (tecnica or '').strip()
+    if not t:
+        return False
+    if _RE_PLACEHOLDER_TECNICA.match(t):
+        return False
+    if _normalizar_texto(t) in {'ESCOLHER UM ITEM', 'ESCOLHER UM ITEM.'}:
+        return False
+    return True
+
+
 def _extrair_tecnicas(tbl: ET.Element) -> pd.DataFrame:
     """
     Extrai colunas da tabela de técnicas do .docx.
     Tolerante a variações de layout (colunas mescladas / ordem diferente).
+    Ignora linhas com placeholder "Escolher um item." (técnica não preenchida).
     """
     registros = []
     rows = tbl.findall('.//w:tr', NS)
@@ -305,10 +344,12 @@ def _extrair_tecnicas(tbl: ET.Element) -> pd.DataFrame:
             for cell in cells
         ]
         tecnica = re.sub(r'^\d+[\.\)]\s*', '', textos[0]).strip()
-        if not tecnica:
+        if not _tecnica_valida(tecnica):
             continue
 
         atitude_raw = textos[5].strip() if len(textos) > 5 else textos[-1].strip()
+        if _RE_PLACEHOLDER_TECNICA.match(atitude_raw or ''):
+            atitude_raw = ''
         atitude = atitude_map.get(atitude_raw.lower()) if atitude_raw else None
 
         trecho = ''
@@ -317,11 +358,17 @@ def _extrair_tecnicas(tbl: ET.Element) -> pd.DataFrame:
             candidato = textos[idx].strip()
             if not candidato or candidato == atitude_raw:
                 continue
+            if _RE_PLACEHOLDER_TECNICA.match(candidato):
+                continue
             if len(candidato) > len(trecho):
                 trecho = candidato
 
         if not trecho and len(textos) > 5:
-            trecho = textos[4].strip()
+            candidato = textos[4].strip()
+            if _tecnica_valida(candidato) or (
+                candidato and not _RE_PLACEHOLDER_TECNICA.match(candidato)
+            ):
+                trecho = candidato
 
         registros.append({
             'TÉCNICAS': tecnica,
@@ -359,7 +406,22 @@ def processar_apa(file_bytes: bytes) -> dict:
         tbl_tec   = _encontrar_tabela_por_titulo(tabelas, 'ANALISE DAS TECNICAS')
 
         transcricoes = _extrair_transcricoes(tbl_trans) if tbl_trans else {}
-        tecnicas     = _extrair_tecnicas(tbl_tec)       if tbl_tec   else pd.DataFrame()
+        # Fallback: se a seção foi achada mas saiu vazia, tenta demais tabelas
+        # (versões com tabela aninhada / título em célula separada).
+        if not any(transcricoes.get(k) for k in (
+            'causador', 'negociador_principal', 'negociador_secundario'
+        )):
+            for tbl in tabelas:
+                if tbl is tbl_trans:
+                    continue
+                candidato = _extrair_transcricoes(tbl)
+                if any(candidato.get(k) for k in (
+                    'causador', 'negociador_principal', 'negociador_secundario'
+                )):
+                    transcricoes = candidato
+                    break
+
+        tecnicas = _extrair_tecnicas(tbl_tec) if tbl_tec else pd.DataFrame()
 
         return {'transcricoes': transcricoes, 'tecnicas': tecnicas, 'erro': None}
 
