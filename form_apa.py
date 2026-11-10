@@ -629,7 +629,13 @@ def _render_envio_tecnicas_docx(apa, df_quali, key_prefix):
             aplicados = _aplicar_transcricoes_nos_campos_edit(
                 id_limpo, trans_cache, sobrescrever=sobrescrever_trans
             )
-            st.session_state[applied_key] = apply_sig
+            # Só marca como aplicado se de fato preencheu algum campo
+            campos_ok = any(
+                _texto_campo(st.session_state.get(k))
+                for k in (f"edit_tc_{id_limpo}", f"edit_tp_{id_limpo}", f"edit_ts_{id_limpo}")
+            )
+            if aplicados or campos_ok:
+                st.session_state[applied_key] = apply_sig
 
             if aplicados and apa_uuid:
                 atuais_db = {
@@ -1156,15 +1162,22 @@ def render(df_quali, df_tec):
                     # Transcrições FORA do st.form — o form do Streamlit impede
                     # atualizar text_area via session_state após o upload do .docx.
                     st.markdown("### Transcrições")
-                    for _k, _campo in (
-                        (f"edit_tc_{id_limpo}", "TRANSCRIÇÃO DO CAUSADOR"),
-                        (f"edit_tp_{id_limpo}", "TRANSCRIÇÃO DO NEGOCIADOR PRINCIPAL"),
-                        (f"edit_ts_{id_limpo}", "TRANSCRIÇÃO DO NEGOCIADOR SECUNDÁRIO"),
-                    ):
-                        if _k not in st.session_state:
-                            st.session_state[_k] = _texto_campo(apa.get(_campo))
-                        else:
-                            st.session_state[_k] = _texto_campo(st.session_state.get(_k))
+                    _mapa_trans_edit = (
+                        (f"edit_tc_{id_limpo}", "TRANSCRIÇÃO DO CAUSADOR", "causador"),
+                        (f"edit_tp_{id_limpo}", "TRANSCRIÇÃO DO NEGOCIADOR PRINCIPAL", "negociador_principal"),
+                        (f"edit_ts_{id_limpo}", "TRANSCRIÇÃO DO NEGOCIADOR SECUNDÁRIO", "negociador_secundario"),
+                    )
+                    _trans_cache_ui = st.session_state.get("transcricoes_extraidas_apa") or {}
+                    for _k, _campo, _papel in _mapa_trans_edit:
+                        atual = _texto_campo(st.session_state.get(_k)) if _k in st.session_state else ""
+                        if not atual:
+                            atual = _texto_campo(apa.get(_campo))
+                        # Se o upload extraiu fala e o campo ainda está vazio, injeta agora
+                        # (antes de criar o widget — Streamlit só aceita isso neste momento).
+                        extraido = _texto_campo(_trans_cache_ui.get(_papel, ""))
+                        if extraido and not atual:
+                            atual = extraido
+                        st.session_state[_k] = atual
 
                     st.text_area(
                         "Transcrição do Causador",

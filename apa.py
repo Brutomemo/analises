@@ -12,7 +12,6 @@ import streamlit as st
 import pandas as pd
 import unicodedata
 import re
-import calendar as cal_mod
 from collections import Counter
 from datetime import date
 import plotly.express as px
@@ -23,132 +22,6 @@ import utils
 import analise
 import ia_link
 import database
-
-_MESES_PT = (
-    "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
-    "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro",
-)
-
-
-def _avancar_mes(mes_ref: date, delta: int) -> date:
-    y, m = mes_ref.year, mes_ref.month + delta
-    while m < 1:
-        m += 12
-        y -= 1
-    while m > 12:
-        m -= 12
-        y += 1
-    return date(y, m, 1)
-
-
-def _render_calendario_visao_seletiva(datas_com_oca, contagem_por_dia, key_prefix="visao_cal"):
-    """
-    Calendário premium da Visão Seletiva.
-    Dias com ocorrência ficam em destaque amarelo (#FFD700) e são clicáveis.
-    """
-    datas_com_oca = {d for d in (datas_com_oca or set()) if isinstance(d, date)}
-    contagem_por_dia = contagem_por_dia or Counter()
-
-    if "f_cal_mes_visao" not in st.session_state:
-        if datas_com_oca:
-            ultima = max(datas_com_oca)
-            st.session_state["f_cal_mes_visao"] = date(ultima.year, ultima.month, 1)
-        else:
-            hoje = date.today()
-            st.session_state["f_cal_mes_visao"] = date(hoje.year, hoje.month, 1)
-
-    mes_ref = st.session_state["f_cal_mes_visao"]
-    data_sel = st.session_state.get("f_data_visao_seletiva")
-
-    # CSS: botões primary do calendário = amarelo (dias com ocorrência)
-    st.markdown(
-        """
-        <style>
-        div[data-testid="stHorizontalBlock"] button[kind="primary"] {
-            background: linear-gradient(180deg, #FFE566 0%, #FFD700 100%) !important;
-            color: #111111 !important;
-            border: 1px solid #E6C200 !important;
-            font-weight: 700 !important;
-            border-radius: 999px !important;
-            min-height: 2.35rem !important;
-            box-shadow: 0 0 0 1px rgba(255, 215, 0, 0.25);
-        }
-        div[data-testid="stHorizontalBlock"] button[kind="primary"]:hover {
-            filter: brightness(1.05);
-            border-color: #FFD700 !important;
-        }
-        </style>
-        """,
-        unsafe_allow_html=True,
-    )
-
-    st.markdown("**Data da Ocorrência ***")
-    st.caption("Dias em amarelo possuem ocorrência registrada. Clique para filtrar.")
-
-    c_prev, c_label, c_next, c_todas = st.columns([1, 3, 1, 2])
-    with c_prev:
-        if st.button("◀", key=f"{key_prefix}_prev", use_container_width=True):
-            st.session_state["f_cal_mes_visao"] = _avancar_mes(mes_ref, -1)
-            st.rerun()
-    with c_label:
-        st.markdown(
-            f"<p style='text-align:center;margin:0.45rem 0 0 0;font-weight:600;color:#FFD700;'>"
-            f"{_MESES_PT[mes_ref.month - 1]} {mes_ref.year}</p>",
-            unsafe_allow_html=True,
-        )
-    with c_next:
-        if st.button("▶", key=f"{key_prefix}_next", use_container_width=True):
-            st.session_state["f_cal_mes_visao"] = _avancar_mes(mes_ref, 1)
-            st.rerun()
-    with c_todas:
-        todas_datas = st.checkbox(
-            "Todas as datas",
-            value=True,
-            key="f_todas_datas_visao",
-            help="Desmarque para filtrar pela data selecionada no calendário.",
-        )
-
-    dias_semana = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"]
-    header_cols = st.columns(7)
-    for i, nome in enumerate(dias_semana):
-        header_cols[i].markdown(
-            f"<p style='text-align:center;color:#888;margin:0;font-size:0.75rem;'>{nome}</p>",
-            unsafe_allow_html=True,
-        )
-
-    semanas = cal_mod.Calendar(firstweekday=0).monthdayscalendar(mes_ref.year, mes_ref.month)
-    for semana in semanas:
-        cols = st.columns(7)
-        for di, dia in enumerate(semana):
-            with cols[di]:
-                if dia == 0:
-                    st.write("")
-                    continue
-                d = date(mes_ref.year, mes_ref.month, dia)
-                tem = d in datas_com_oca
-                sel = (not todas_datas) and (data_sel == d)
-                n = contagem_por_dia.get(d, 0)
-                if tem:
-                    label = f"{dia} ✓" if sel else str(dia)
-                    if st.button(
-                        label,
-                        key=f"{key_prefix}_{d.isoformat()}",
-                        use_container_width=True,
-                        type="primary",
-                        help=f"{n} ocorrência(s) em {d.strftime('%d/%m/%Y')}",
-                    ):
-                        st.session_state["f_data_visao_seletiva"] = d
-                        st.session_state["f_cal_mes_visao"] = date(d.year, d.month, 1)
-                        st.session_state["f_todas_datas_visao"] = False
-                        st.rerun()
-                else:
-                    st.markdown(
-                        f"<p style='text-align:center;color:#555;margin:0.55rem 0;"
-                        f"font-size:0.9rem;'>{dia}</p>",
-                        unsafe_allow_html=True,
-                    )
-
-    return todas_datas, st.session_state.get("f_data_visao_seletiva")
 
 
 def _extrair_numero_apa(val):
@@ -354,26 +227,95 @@ def render_apa(df_quali, df_tec):
         df_quali['ID'] = "APA " + df_quali.index.astype(str)
     df_quali['ID_Busca'] = df_quali['ID'].apply(utils.limpar_id)
 
-    # ── CALENDÁRIO: dias com ocorrência em destaque amarelo ─────────────
+    # ── CALENDÁRIO (st.date_input) + datas com ocorrência em amarelo ────
     col_data_oca = next(
         (c for c in ("Data da ocorrência", "Data", "DATA", "data_ocorrencia") if c in df_quali.columns),
         None,
     )
     contagem_dias = Counter()
-    datas_com_oca = set()
+    datas_com_oca: list[date] = []
     if col_data_oca:
         serie_datas = pd.to_datetime(df_quali[col_data_oca], errors="coerce").dt.date.dropna()
         contagem_dias = Counter(serie_datas.tolist())
-        datas_com_oca = set(contagem_dias.keys())
+        datas_com_oca = sorted(contagem_dias.keys())
 
     if "f_data_visao_seletiva" not in st.session_state:
         st.session_state["f_data_visao_seletiva"] = (
-            max(datas_com_oca) if datas_com_oca else date.today()
+            datas_com_oca[-1] if datas_com_oca else date.today()
         )
 
-    todas_datas, data_visao = _render_calendario_visao_seletiva(
-        datas_com_oca, contagem_dias, key_prefix="visao_cal"
-    )
+    col_cal, col_todas = st.columns([3, 1])
+    with col_cal:
+        _kwargs_data = {"label": "Data da Ocorrência *", "key": "f_data_visao_seletiva"}
+        if datas_com_oca:
+            _kwargs_data["min_value"] = datas_com_oca[0]
+            _kwargs_data["max_value"] = datas_com_oca[-1]
+        data_visao = st.date_input(**_kwargs_data)
+    with col_todas:
+        st.write("")
+        st.write("")
+        todas_datas = st.checkbox(
+            "Todas as datas",
+            value=True,
+            key="f_todas_datas_visao",
+            help="Desmarque para filtrar pela data do calendário.",
+        )
+
+    # Identificação amarela das datas com registro (date_input nativo não pinta o popup)
+    if datas_com_oca:
+        chips = "".join(
+            (
+                f'<span style="display:inline-block;background:#FFD700;color:#111;'
+                f'border-radius:999px;padding:3px 10px;margin:2px 4px 2px 0;'
+                f'font-size:0.78rem;font-weight:700;">'
+                f'{d.strftime("%d/%m/%Y")}'
+                f'{" · " + str(contagem_dias[d]) if contagem_dias.get(d, 0) > 1 else ""}'
+                f"</span>"
+            )
+            for d in datas_com_oca
+        )
+        st.markdown(
+            f'<div style="margin:0.25rem 0 0.4rem 0;">'
+            f'<span style="color:#FFD700;font-size:0.85rem;font-weight:600;">'
+            f"Datas com ocorrência registrada:</span><br>{chips}</div>",
+            unsafe_allow_html=True,
+        )
+
+        opcoes_datas = [d.strftime("%d/%m/%Y") for d in datas_com_oca]
+
+        def _on_pill_data_visao():
+            escolha = st.session_state.get("f_pills_datas_visao")
+            if not escolha:
+                return
+            try:
+                data_pill = pd.to_datetime(escolha, dayfirst=True).date()
+            except Exception:
+                return
+            st.session_state["f_data_visao_seletiva"] = data_pill
+            st.session_state["f_todas_datas_visao"] = False
+
+        st.pills(
+            "Selecionar data com registro",
+            options=opcoes_datas,
+            key="f_pills_datas_visao",
+            help="Atalho: escolhe uma data com APA registrada e aplica o filtro.",
+            on_change=_on_pill_data_visao,
+        )
+        # Releitura após possível on_change
+        data_visao = st.session_state.get("f_data_visao_seletiva", data_visao)
+        todas_datas = st.session_state.get("f_todas_datas_visao", todas_datas)
+
+    if isinstance(data_visao, date) and datas_com_oca:
+        if data_visao in set(datas_com_oca):
+            st.caption(
+                f"✔️ **{data_visao.strftime('%d/%m/%Y')}** tem ocorrência registrada "
+                f"({contagem_dias.get(data_visao, 0)})."
+            )
+        else:
+            st.caption(
+                f"⚠️ **{data_visao.strftime('%d/%m/%Y')}** não possui ocorrência no banco. "
+                "Use uma data marcada em amarelo."
+            )
 
     if col_data_oca and not todas_datas and data_visao:
         mask_data = pd.to_datetime(df_quali[col_data_oca], errors="coerce").dt.date == data_visao
@@ -381,7 +323,7 @@ def render_apa(df_quali, df_tec):
         if n_no_dia == 0:
             st.warning(
                 f"Nenhuma ocorrência em **{data_visao.strftime('%d/%m/%Y')}**. "
-                "Escolha um dia amarelo ou marque **Todas as datas**."
+                "Escolha uma data amarela ou marque **Todas as datas**."
             )
         else:
             st.caption(

@@ -29,6 +29,16 @@ NS = {'w': 'http://schemas.openxmlformats.org/wordprocessingml/2006/main'}
 
 CORES = {
     'FF0000': 'causador',
+    'C00000': 'causador',
+    'FF5050': 'causador',
+    # Fundos rosa/vermelho claros (marcação de fala do causador)
+    'FFC7CE': 'causador',
+    'FFC0CB': 'causador',
+    'F4CCCC': 'causador',
+    'F8CBAD': 'causador',
+    'FCE4D6': 'causador',
+    'FFD6D6': 'causador',
+    'FFCCCC': 'causador',
     # Azuis/cianos → negociador principal
     '00B0F0': 'negociador_principal',
     '4472C4': 'negociador_principal',
@@ -36,11 +46,21 @@ CORES = {
     '0070C0': 'negociador_principal',
     '00B8FF': 'negociador_principal',
     '17375E': 'negociador_principal',
+    # Fundos azul/ciano claros (marcação de fala do negociador)
+    'BDD7EE': 'negociador_principal',
+    'DDEBF7': 'negociador_principal',
+    'D6EAF8': 'negociador_principal',
+    'CFE2F3': 'negociador_principal',
+    'DEEAF6': 'negociador_principal',
+    '9DC3E6': 'negociador_principal',
+    '5B9BD5': 'negociador_principal',
     # Verdes → negociador secundário
     '00B050': 'negociador_secundario',
     '70AD47': 'negociador_secundario',
     '375623': 'negociador_secundario',
     '00FF00': 'negociador_secundario',
+    'C6EFCE': 'negociador_secundario',
+    'E2EFDA': 'negociador_secundario',
     # Roxo → 1º interventor
     '7030A0': 'primeiro_interventor',
     # Preto e sem cor → remover
@@ -55,25 +75,47 @@ def _classificar_cor(hex_color: str) -> str | None:
     hex_upper = hex_color.upper().strip()
     if hex_upper in CORES:
         return CORES[hex_upper]
-    # Fallback por componente RGB
+    # Fallback por componente RGB (fonte forte OU fundo claro rosa/azul)
     try:
         r = int(hex_upper[0:2], 16)
         g = int(hex_upper[2:4], 16)
         b = int(hex_upper[4:6], 16)
-        # Vermelho dominante
+        # Vermelho / rosa (fonte ou fundo de destaque)
         if r > 180 and g < 80 and b < 80:
             return 'causador'
-        # Azul/ciano dominante
+        if r > 200 and r >= g + 15 and r >= b + 15:
+            return 'causador'
+        # Azul/ciano (fonte ou fundo de destaque)
         if b > 150 and r < 80:
             return 'negociador_principal'
         if b > 100 and g > 100 and r < 60:
             return 'negociador_principal'
+        if b > 180 and b >= r and b >= g - 10 and r < 220:
+            return 'negociador_principal'
         # Verde dominante
         if g > 150 and r < 80 and b < 80:
+            return 'negociador_secundario'
+        if g > 180 and g >= r + 15 and g >= b + 15:
             return 'negociador_secundario'
     except (ValueError, IndexError):
         pass
     return None
+
+
+_HIGHLIGHT_PAPEL = {
+    'red': 'causador',
+    'darkred': 'causador',
+    'cyan': 'negociador_principal',
+    'blue': 'negociador_principal',
+    'darkblue': 'negociador_principal',
+    'turquoise': 'negociador_principal',
+    'green': 'negociador_secundario',
+    'darkgreen': 'negociador_secundario',
+    'yellow': None,
+    'white': None,
+    'black': None,
+    'none': None,
+}
 
 
 def _hex_de_elemento_cor(el: ET.Element | None) -> str | None:
@@ -85,22 +127,54 @@ def _hex_de_elemento_cor(el: ET.Element | None) -> str | None:
             if not v:
                 continue
             hx = str(v).upper().strip()
-            if hx in {'AUTO', 'NONE', 'WINDOWTEXT'}:
+            if hx in {'AUTO', 'NONE', 'WINDOWTEXT', 'CLEAR'}:
                 continue
             if re.fullmatch(r'[0-9A-F]{6}', hx):
                 return hx
     return None
 
 
+def _papel_de_rpr(rpr: ET.Element | None) -> str | None:
+    """Classifica papel a partir de rPr (cor de fonte, sombreamento ou highlight)."""
+    if rpr is None:
+        return None
+    hx = _hex_de_elemento_cor(rpr.find('w:color', NS))
+    papel = _classificar_cor(hx) if hx else None
+    if papel:
+        return papel
+    hx = _hex_de_elemento_cor(rpr.find('w:shd', NS))
+    papel = _classificar_cor(hx) if hx else None
+    if papel:
+        return papel
+    # Marcador de destaque do Word (fundo azul/vermelho nas falas)
+    hl = rpr.find('w:highlight', NS)
+    if hl is not None:
+        for k, v in hl.attrib.items():
+            if 'val' in k and v:
+                return _HIGHLIGHT_PAPEL.get(str(v).lower().strip())
+    return None
+
+
+def _papel_do_run(run: ET.Element) -> str | None:
+    return _papel_de_rpr(run.find('w:rPr', NS))
+
+
+def _papel_do_paragrafo(para: ET.Element) -> str | None:
+    """Fallback: sombreamento no parágrafo (fundo rosa/azul da fala)."""
+    ppr = para.find('w:pPr', NS)
+    if ppr is None:
+        return None
+    return _papel_de_rpr(ppr) or _classificar_cor(_hex_de_elemento_cor(ppr.find('w:shd', NS)))
+
+
 def _cor_do_run(run: ET.Element) -> str | None:
+    """Compat: retorna hex quando houver; preferir _papel_do_run na extração."""
     rpr = run.find('w:rPr', NS)
     if rpr is None:
         return None
-    # Cor de fonte (padrão APA)
     hx = _hex_de_elemento_cor(rpr.find('w:color', NS))
     if hx:
         return hx
-    # Alguns templates usam sombreamento colorido no run
     return _hex_de_elemento_cor(rpr.find('w:shd', NS))
 
 
@@ -272,17 +346,21 @@ def _extrair_transcricoes(tbl: ET.Element) -> dict:
             continue
 
         for cell in row.findall('.//w:tc', NS):
+            # Sombreamento da célula (alguns templates pintam a célula inteira)
+            tc_pr = cell.find('w:tcPr', NS)
+            papel_celula = None
+            if tc_pr is not None:
+                papel_celula = _classificar_cor(_hex_de_elemento_cor(tc_pr.find('w:shd', NS)))
+
             for para in cell.findall('.//w:p', NS):
-                # No Word, só o 1º run do parágrafo costuma trazer w:color;
-                # os seguintes herdam visualmente — repetimos o último papel válido.
-                papel_atual = None
+                # Fonte / highlight / sombreamento: herda no parágrafo se o run não trouxer cor
+                papel_atual = _papel_do_paragrafo(para) or papel_celula
                 for run in para.findall('.//w:r', NS):
                     texto = ''.join(t.text or '' for t in run.findall('w:t', NS))
                     if not texto.strip():
                         continue
 
-                    cor_hex = _cor_do_run(run)
-                    papel = _classificar_cor(cor_hex) if cor_hex else None
+                    papel = _papel_do_run(run)
                     if papel:
                         papel_atual = papel
 
@@ -316,14 +394,73 @@ def _tecnica_valida(tecnica: str) -> bool:
     return True
 
 
-def _extrair_tecnicas(tbl: ET.Element) -> pd.DataFrame:
+def _score_tabela_tecnicas(tbl: ET.Element) -> int:
+    """Pontua tabela candidata a técnicas (evita wrapper com tabela aninhada)."""
+    score = 0
+    for linha in _linhas_cabecalho(tbl, max_linhas=8):
+        if 'ANALISE DAS TECNICAS' in linha or 'TECNICAS DE NEGOCIACAO' in linha:
+            score += 3
+        if 'TECNICAS' in linha and ('TEMPO' in linha or 'VIDEO' in linha):
+            score += 5
+        if 'TECNICAS' in linha and 'TRECHO' in linha:
+            score += 4
+        if 'TECNICAS' in linha and 'ATITUDE' in linha:
+            score += 3
+        if 'EXPLICACAO SOBRE A UTILIZACAO' in linha:
+            score += 2
+    # Preferir tabela com várias linhas de dados (não só o título wrapper)
+    n_rows = len(tbl.findall('./w:tr', NS))
+    if n_rows >= 3:
+        score += 2
+    elif n_rows <= 1:
+        score -= 2
+    return score
+
+
+def _encontrar_tabela_tecnicas(tabelas: list) -> ET.Element | None:
     """
-    Extrai colunas da tabela de técnicas do .docx.
-    Tolerante a variações de layout (colunas mescladas / ordem diferente).
-    Ignora linhas com placeholder "Escolher um item." (técnica não preenchida).
+    Localiza a tabela de técnicas em versões diferentes da APA
+    (ex.: '34 - ANÁLISE DAS TÉCNICAS DE NEGOCIAÇÃO EMPREGADAS').
+    Prefere a tabela cujo cabeçalho tem colunas Técnicas/Tempo/Trecho.
     """
-    registros = []
-    rows = tbl.findall('.//w:tr', NS)
+    melhores = []
+    for idx, tbl in enumerate(tabelas):
+        sc = _score_tabela_tecnicas(tbl)
+        if sc > 0:
+            melhores.append((sc, -idx, tbl))
+    if melhores:
+        melhores.sort(reverse=True)
+        return melhores[0][2]
+
+    for chave in (
+        'ANALISE DAS TECNICAS',
+        'TECNICAS DE NEGOCIACAO',
+        'TECNICAS EMPREGADAS',
+    ):
+        tbl = _encontrar_tabela_por_titulo(tabelas, chave)
+        if tbl is not None:
+            return tbl
+    return None
+
+
+def _eh_cabecalho_tecnicas(textos: list[str]) -> bool:
+    juntos = _normalizar_texto(' '.join(textos))
+    if 'TECNICAS' in juntos and ('TEMPO' in juntos or 'TRECHO' in juntos or 'ATITUDE' in juntos):
+        return True
+    prim = _normalizar_texto(textos[0] if textos else '')
+    return prim in {'TECNICAS', 'TECNICA'}
+
+
+def _texto_celula(cell: ET.Element) -> str:
+    """Texto da célula, inclusive valor visível de content control (dropdown)."""
+    partes = []
+    for t in cell.findall('.//w:t', NS):
+        if t.text:
+            partes.append(t.text)
+    return re.sub(r'\s+', ' ', ''.join(partes)).strip()
+
+
+def _extrair_tecnicas_de_rows(rows: list) -> list[dict]:
     atitude_map = {
         '1': 1, '0': 0, '-1': -1,
         'positivo': 1, 'negativo': -1, 'neutro': 0,
@@ -332,53 +469,91 @@ def _extrair_tecnicas(tbl: ET.Element) -> pd.DataFrame:
         '⚪ reação neutra': 0,
         '🔴 reação negativa': -1,
     }
-
-    for i, row in enumerate(rows):
-        if i < 2:
-            continue
-
-        cells = row.findall('.//w:tc', NS)
+    registros = []
+    for row in rows:
+        # Apenas células diretas da linha (evita bagunça com tabelas aninhadas)
+        cells = row.findall('./w:tc', NS) or row.findall('w:tc', NS)
         if len(cells) < 2:
             continue
 
-        textos = [
-            ''.join(t.text or '' for t in cell.findall('.//w:t', NS)).strip()
-            for cell in cells
-        ]
+        textos = [_texto_celula(cell) for cell in cells]
+        if _eh_cabecalho_tecnicas(textos):
+            continue
+        # Título da seção (ex.: "34 - ANÁLISE DAS TÉCNICAS...")
+        linha_norm = _normalizar_texto(' '.join(textos))
+        if 'ANALISE DAS TECNICAS' in linha_norm or 'TECNICAS DE NEGOCIACAO' in linha_norm:
+            continue
+
         tecnica = re.sub(r'^\d+[\.\)]\s*', '', textos[0]).strip()
+        # Nome longo demais = provavelmente célula wrapper, não uma técnica
+        if len(tecnica) > 120:
+            continue
         if not _tecnica_valida(tecnica):
             continue
 
+        # Preferir coluna "Trecho da Transcrição" quando o layout tem 6 colunas
         atitude_raw = textos[5].strip() if len(textos) > 5 else textos[-1].strip()
         if _RE_PLACEHOLDER_TECNICA.match(atitude_raw or ''):
             atitude_raw = ''
         atitude = atitude_map.get(atitude_raw.lower()) if atitude_raw else None
 
         trecho = ''
-        indices_trecho = range(1, 5) if len(textos) > 5 else range(1, len(textos))
-        for idx in indices_trecho:
-            candidato = textos[idx].strip()
-            if not candidato or candidato == atitude_raw:
-                continue
-            if _RE_PLACEHOLDER_TECNICA.match(candidato):
-                continue
-            if len(candidato) > len(trecho):
-                trecho = candidato
-
-        if not trecho and len(textos) > 5:
-            candidato = textos[4].strip()
-            if _tecnica_valida(candidato) or (
-                candidato and not _RE_PLACEHOLDER_TECNICA.match(candidato)
-            ):
-                trecho = candidato
+        if len(textos) > 5:
+            # Layout padrão: Técnicas | Tempo | Vídeo | Explicação | Trecho | Atitude
+            trecho = textos[4].strip()
+            if _RE_PLACEHOLDER_TECNICA.match(trecho or '') or trecho == atitude_raw:
+                trecho = ''
+            if not trecho:
+                for idx in range(1, 5):
+                    candidato = textos[idx].strip()
+                    if not candidato or candidato == atitude_raw:
+                        continue
+                    if _RE_PLACEHOLDER_TECNICA.match(candidato):
+                        continue
+                    if re.fullmatch(r'\d{1,2}:\d{2}(?::\d{2})?', candidato):
+                        continue
+                    if re.fullmatch(r'\d{1,3}', candidato):
+                        continue
+                    if len(candidato) > len(trecho):
+                        trecho = candidato
+        else:
+            for idx in range(1, len(textos)):
+                candidato = textos[idx].strip()
+                if not candidato or candidato == atitude_raw:
+                    continue
+                if _RE_PLACEHOLDER_TECNICA.match(candidato):
+                    continue
+                if len(candidato) > len(trecho):
+                    trecho = candidato
 
         tecnica = utils.normalizar_nome_tecnica(tecnica) or tecnica
+        if not tecnica:
+            continue
 
         registros.append({
             'TÉCNICAS': tecnica,
             'TRECHO DA TRANSCRIÇÃO': trecho,
             'ATITUDE DO CAUSADOR': atitude,
         })
+    return registros
+
+
+def _extrair_tecnicas(tbl: ET.Element) -> pd.DataFrame:
+    """
+    Extrai colunas da tabela de técnicas do .docx.
+    Tolerante a variações de layout (colunas mescladas / ordem diferente).
+    Ignora linhas com placeholder "Escolher um item." (técnica não preenchida).
+    """
+    rows = tbl.findall('./w:tr', NS) or tbl.findall('.//w:tr', NS)
+    registros = _extrair_tecnicas_de_rows(rows)
+
+    # Wrapper com tabela aninhada: tenta as tabelas internas
+    if len(registros) < 2:
+        for nested in tbl.findall('.//w:tbl', NS):
+            nested_rows = nested.findall('./w:tr', NS) or nested.findall('.//w:tr', NS)
+            candidato = _extrair_tecnicas_de_rows(nested_rows)
+            if len(candidato) > len(registros):
+                registros = candidato
 
     return pd.DataFrame(registros)
 
@@ -405,9 +580,9 @@ def processar_apa(file_bytes: bytes) -> dict:
         body = root.find('w:body', NS)
         tabelas = body.findall('.//w:tbl', NS)
 
-        # Âncora = "Transcrição" (qualquer número de item). Técnicas = título próprio.
+        # Âncora = "Transcrição" / "Análise das Técnicas" (qualquer número de item).
         tbl_trans = _encontrar_tabela_transcricao(tabelas)
-        tbl_tec   = _encontrar_tabela_por_titulo(tabelas, 'ANALISE DAS TECNICAS')
+        tbl_tec = _encontrar_tabela_tecnicas(tabelas)
 
         transcricoes = _extrair_transcricoes(tbl_trans) if tbl_trans else {}
         # Fallback: se a seção foi achada mas saiu vazia, tenta demais tabelas
@@ -416,7 +591,7 @@ def processar_apa(file_bytes: bytes) -> dict:
             'causador', 'negociador_principal', 'negociador_secundario'
         )):
             for tbl in tabelas:
-                if tbl is tbl_trans:
+                if tbl is tbl_trans or tbl is tbl_tec:
                     continue
                 candidato = _extrair_transcricoes(tbl)
                 if any(candidato.get(k) for k in (
@@ -426,6 +601,15 @@ def processar_apa(file_bytes: bytes) -> dict:
                     break
 
         tecnicas = _extrair_tecnicas(tbl_tec) if tbl_tec else pd.DataFrame()
+        # Fallback: varrer tabelas até achar linhas válidas de técnicas
+        if tecnicas is None or tecnicas.empty:
+            for tbl in tabelas:
+                if tbl is tbl_trans:
+                    continue
+                candidato = _extrair_tecnicas(tbl)
+                if candidato is not None and not candidato.empty:
+                    tecnicas = candidato
+                    break
 
         return {'transcricoes': transcricoes, 'tecnicas': tecnicas, 'erro': None}
 
