@@ -609,9 +609,9 @@ def _render_envio_tecnicas_docx(apa, df_quali, key_prefix):
 
         sobrescrever_trans = st.checkbox(
             "Sobrescrever transcrições já preenchidas nesta APA",
-            value=False,
+            value=True,
             key=f"chk_overwrite_trans_{key_prefix}",
-            help="Desmarcado: só preenche campos ainda vazios. Marcado: substitui o texto atual.",
+            help="Marcado: substitui o texto atual pelo diálogo extraído do .docx.",
         )
         apply_sig = f"{st.session_state.get(sig_key)}:{sobrescrever_trans}"
         if (

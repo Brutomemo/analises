@@ -28,17 +28,12 @@ NS = {'w': 'http://schemas.openxmlformats.org/wordprocessingml/2006/main'}
 # ============================================================
 
 CORES = {
+    # Vermelhos → causador
     'FF0000': 'causador',
+    'EE0000': 'causador',
     'C00000': 'causador',
     'FF5050': 'causador',
-    # Fundos rosa/vermelho claros (marcação de fala do causador)
-    'FFC7CE': 'causador',
-    'FFC0CB': 'causador',
-    'F4CCCC': 'causador',
-    'F8CBAD': 'causador',
-    'FCE4D6': 'causador',
-    'FFD6D6': 'causador',
-    'FFCCCC': 'causador',
+    'FF6666': 'causador',
     # Azuis/cianos → negociador principal
     '00B0F0': 'negociador_principal',
     '4472C4': 'negociador_principal',
@@ -46,76 +41,57 @@ CORES = {
     '0070C0': 'negociador_principal',
     '00B8FF': 'negociador_principal',
     '17375E': 'negociador_principal',
-    # Fundos azul/ciano claros (marcação de fala do negociador)
-    'BDD7EE': 'negociador_principal',
-    'DDEBF7': 'negociador_principal',
-    'D6EAF8': 'negociador_principal',
-    'CFE2F3': 'negociador_principal',
-    'DEEAF6': 'negociador_principal',
-    '9DC3E6': 'negociador_principal',
     '5B9BD5': 'negociador_principal',
+    '215E99': 'negociador_principal',
     # Verdes → negociador secundário
     '00B050': 'negociador_secundario',
     '70AD47': 'negociador_secundario',
     '375623': 'negociador_secundario',
     '00FF00': 'negociador_secundario',
-    'C6EFCE': 'negociador_secundario',
-    'E2EFDA': 'negociador_secundario',
+    '196B24': 'negociador_secundario',
     # Roxo → 1º interventor
     '7030A0': 'primeiro_interventor',
-    # Preto e sem cor → remover
+    '77206D': 'primeiro_interventor',
+    # Amarelo/laranja (terceiro) e preto → ignorar
+    'FFC000': None,
+    'ED7D31': None,
     '000000': None,
-    'AUTO':   None,
+    '1A1C1E': None,
+    'AUTO': None,
 }
 
 
 def _classificar_cor(hex_color: str) -> str | None:
+    """Classifica papel pela cor de fonte do diálogo (não texto de template)."""
     if not hex_color:
         return None
     hex_upper = hex_color.upper().strip()
     if hex_upper in CORES:
         return CORES[hex_upper]
-    # Fallback por componente RGB (fonte forte OU fundo claro rosa/azul)
     try:
         r = int(hex_upper[0:2], 16)
         g = int(hex_upper[2:4], 16)
         b = int(hex_upper[4:6], 16)
-        # Vermelho / rosa (fonte ou fundo de destaque)
-        if r > 180 and g < 80 and b < 80:
+        # Amarelo / laranja (terceiro) — nunca causador
+        if r > 180 and g > 90 and b < 100:
+            return None
+        # Tons de vermelho → causador
+        if r >= 180 and r > g + 40 and r > b + 40 and g < 120:
             return 'causador'
-        if r > 200 and r >= g + 15 and r >= b + 15:
-            return 'causador'
-        # Azul/ciano (fonte ou fundo de destaque)
-        if b > 150 and r < 80:
+        # Tons de azul / ciano → negociador principal
+        if b >= 140 and b >= r + 30 and g < 220:
             return 'negociador_principal'
-        if b > 100 and g > 100 and r < 60:
+        if b > 100 and g > 100 and r < 80:
             return 'negociador_principal'
-        if b > 180 and b >= r and b >= g - 10 and r < 220:
-            return 'negociador_principal'
-        # Verde dominante
-        if g > 150 and r < 80 and b < 80:
+        # Tons de verde → negociador secundário
+        if g >= 140 and g > r + 30 and g > b + 20:
             return 'negociador_secundario'
-        if g > 180 and g >= r + 15 and g >= b + 15:
-            return 'negociador_secundario'
+        # Roxo
+        if r > 80 and b > 80 and g < 80 and abs(r - b) < 60:
+            return 'primeiro_interventor'
     except (ValueError, IndexError):
         pass
     return None
-
-
-_HIGHLIGHT_PAPEL = {
-    'red': 'causador',
-    'darkred': 'causador',
-    'cyan': 'negociador_principal',
-    'blue': 'negociador_principal',
-    'darkblue': 'negociador_principal',
-    'turquoise': 'negociador_principal',
-    'green': 'negociador_secundario',
-    'darkgreen': 'negociador_secundario',
-    'yellow': None,
-    'white': None,
-    'black': None,
-    'none': None,
-}
 
 
 def _hex_de_elemento_cor(el: ET.Element | None) -> str | None:
@@ -134,80 +110,95 @@ def _hex_de_elemento_cor(el: ET.Element | None) -> str | None:
     return None
 
 
-def _papel_de_rpr(rpr: ET.Element | None) -> str | None:
-    """Classifica papel a partir de rPr (cor de fonte, sombreamento ou highlight)."""
-    if rpr is None:
-        return None
-    hx = _hex_de_elemento_cor(rpr.find('w:color', NS))
-    papel = _classificar_cor(hx) if hx else None
-    if papel:
-        return papel
-    hx = _hex_de_elemento_cor(rpr.find('w:shd', NS))
-    papel = _classificar_cor(hx) if hx else None
-    if papel:
-        return papel
-    # Marcador de destaque do Word (fundo azul/vermelho nas falas)
-    hl = rpr.find('w:highlight', NS)
-    if hl is not None:
-        for k, v in hl.attrib.items():
-            if 'val' in k and v:
-                return _HIGHLIGHT_PAPEL.get(str(v).lower().strip())
-    return None
-
-
 def _papel_do_run(run: ET.Element) -> str | None:
-    return _papel_de_rpr(run.find('w:rPr', NS))
-
-
-def _papel_do_paragrafo(para: ET.Element) -> str | None:
-    """Fallback: sombreamento no parágrafo (fundo rosa/azul da fala)."""
-    ppr = para.find('w:pPr', NS)
-    if ppr is None:
-        return None
-    return _papel_de_rpr(ppr) or _classificar_cor(_hex_de_elemento_cor(ppr.find('w:shd', NS)))
-
-
-def _cor_do_run(run: ET.Element) -> str | None:
-    """Compat: retorna hex quando houver; preferir _papel_do_run na extração."""
+    """Papel pela cor de fonte do run (diálogo APA)."""
     rpr = run.find('w:rPr', NS)
     if rpr is None:
         return None
     hx = _hex_de_elemento_cor(rpr.find('w:color', NS))
-    if hx:
-        return hx
-    return _hex_de_elemento_cor(rpr.find('w:shd', NS))
+    return _classificar_cor(hx) if hx else None
+
+
+def _cor_do_run(run: ET.Element) -> str | None:
+    rpr = run.find('w:rPr', NS)
+    if rpr is None:
+        return None
+    return _hex_de_elemento_cor(rpr.find('w:color', NS))
 
 
 # ============================================================
 # LIMPEZA
 # ============================================================
 
-_RE_TIMESTAMP = re.compile(r'\b\d{1,2}:\d{2}(?::\d{2})?\b')
-_RE_ESPACOS   = re.compile(r'[ \t]{2,}')
-_RE_LEGENDA   = re.compile(
-    r'^(CAUSADOR|NEGOCIADOR PRINCIPAL|NEGOCIADOR SECUND[AÁ]RIO|1[°º]\s*INTERVENTOR)\s*:\s*\S+\s*',
-    re.IGNORECASE
+_RE_TIMESTAMP = re.compile(r'(?:(?<=^)|(?<=\s))\d{1,2}:\d{2}(?::\d{2})?(?=[\s,]|$)')
+_RE_ESPACOS = re.compile(r'[ \t]{2,}')
+_RE_PAPEL_LEGENDA = (
+    r'(?:CAUSADOR|NEGOCIADOR\s+PRINCIPAL|NEGOCIADOR\s+SECUND[AÁ]RIO|'
+    r'(?:1[°º]?|PRIMEIRO)\s*INTERVENTOR|GERENTE|TERCEIRO|V[IÍ]TIMA|'
+    r'COMANDANTE(?:\s+DO\s+INCIDENTE)?)'
 )
-
-_FRAGMENTOS = {'verde', 'azul', 'vermelho', 'roxo', 'amarelo', ',', '–', '-'}
-
-_RE_LEGENDA_COMPLETA = re.compile(
-    r'^(CAUSADOR|NEGOCIADOR PRINCIPAL|NEGOCIADOR SECUND[AÁ]RIO|1[°º]\s*INTERVENTOR|GERENTE|TERCEIRO)\s*[:\-–]\s*\w*\s*$',
-    re.IGNORECASE
+_RE_LEGENDA = re.compile(
+    rf'^{_RE_PAPEL_LEGENDA}\s*[=:\-–]\s*.+$',
+    re.IGNORECASE,
 )
+_RE_LEGENDA_INLINE = re.compile(
+    rf'{_RE_PAPEL_LEGENDA}\s*[=:\-–]\s*'
+    r'(?:AZUL|VERMELHO|VERDE|ROXO|PRETO|LARANJA|AMARELO|CINZA)\b',
+    re.IGNORECASE,
+)
+_RE_LEGENDA_COR_PRIMEIRO = re.compile(
+    r'^(?:AZUL|VERMELHO|VERDE|ROXO|PRETO|LARANJA|AMARELO|CINZA)\s*[=:\-–]\s*'
+    rf'{_RE_PAPEL_LEGENDA}\b.*$',
+    re.IGNORECASE,
+)
+_RE_INSTRUCAO = re.compile(
+    r'(descrever de forma clara|este campo tem como objetivo|'
+    r'justificando a classifica[cç][aã]o|modalidade identificada|'
+    r'inserir registros fotogr[aá]ficos|a equipe dever[aá] transcrever|'
+    r'orienta[cç][oõ]es obrigat[oó]rias|legendas de cores para os interlocutores|'
+    r'destaque de t[eé]cnicas|numera[cç][aã]o sequencial|'
+    r'autorizado pelo cmt a n[aã]o fazer transcri[cç][aã]o|'
+    r'preservar a integridade do conte[uú]do verbalizado|'
+    r'identifica[cç][aã]o do equipamento|informar de qual equipamento|'
+    r'identificar e nomear os arquivos|utilizar realce de texto|'
+    r'trechos inaud[ií]veis devem ser indicados|'
+    r'an[aá]lise d\s*as t[eé]cnicas|item\s*34)',
+    re.IGNORECASE,
+)
+_FRAGMENTOS = {
+    'verde', 'azul', 'vermelho', 'roxo', 'amarelo', 'laranja', 'preto', 'cinza',
+    'verde:', 'azul:', 'vermelho:', 'roxo:', 'amarelo:', 'laranja:', 'preto:', 'cinza:',
+    ',', '–', '-', 'vídeo', 'video', 'áudio', 'audio', 'descrição', 'descricao',
+    'negociador principal', 'negociador secundário', 'negociador secundario',
+    'causador', 'primeiro interventor', '1º interventor', '1° interventor',
+    'gerente', 'terceiro', 'terceiros', 'vítima', 'vitima',
+    'comandante', 'comandante do incidente',
+    'obs', 'obs.', 'la ranja', 'laranja vítima', 'laranja vitima',
+}
+
 
 def _limpar(texto: str) -> str:
-    texto = _RE_TIMESTAMP.sub('', texto)
-    texto = _RE_LEGENDA.sub('', texto)
-    texto = _RE_ESPACOS.sub(' ', texto)
-    texto = texto.strip()
-    if texto.lower() in _FRAGMENTOS:
+    """Remove timestamps, legendas de cor e fragmentos que não são diálogo."""
+    texto = _RE_TIMESTAMP.sub('', texto or '')
+    texto = _RE_LEGENDA_INLINE.sub('', texto)
+    texto = _RE_ESPACOS.sub(' ', texto).strip(' \t-–_|:')
+    if not texto:
         return ''
-    # Remove linhas que são apenas legenda de cor
-    if _RE_LEGENDA_COMPLETA.match(texto):
+    low = texto.lower().strip()
+    if low in _FRAGMENTOS:
         return ''
-    # Remove separadores (linhas de travessão contínuo)
+    if _RE_LEGENDA.match(texto):
+        return ''
+    if _RE_LEGENDA_COR_PRIMEIRO.match(texto):
+        return ''
+    if _RE_INSTRUCAO.search(texto):
+        return ''
     if re.match(r'^[–\-_]{3,}$', texto):
+        return ''
+    if re.match(r'^(?:v[ií]deo|áudio|audio)\s*\d+\s*$', low):
+        return ''
+    # Só underscore / placeholder de seção vazia
+    if re.fullmatch(r'[_.\s]+', texto):
         return ''
     return texto
 
@@ -233,13 +224,36 @@ def _normalizar_texto(texto: str) -> str:
     return (texto or '').upper().translate(mapa)
 
 
+def _linhas_diretas(tbl: ET.Element) -> list:
+    """Linhas diretas da tabela (ignora tabelas aninhadas)."""
+    rows = tbl.findall('./w:tr', NS)
+    return rows if rows else tbl.findall('w:tr', NS)
+
+
+def _texto_celula_sem_aninhada(cell: ET.Element) -> str:
+    """Texto da célula excluindo conteúdo de tabelas aninhadas."""
+    nested_t = set()
+    for nested in cell.findall('.//w:tbl', NS):
+        for t in nested.findall('.//w:t', NS):
+            nested_t.add(t)
+    partes = []
+    for t in cell.findall('.//w:t', NS):
+        if t not in nested_t and t.text:
+            partes.append(t.text)
+    return ''.join(partes)
+
+
+def _texto_linha_direta(row: ET.Element) -> str:
+    """Texto da linha sem descer em tabelas aninhadas."""
+    cells = row.findall('./w:tc', NS) or row.findall('w:tc', NS)
+    return ''.join(_texto_celula_sem_aninhada(c) for c in cells)
+
+
 def _linhas_cabecalho(tbl: ET.Element, max_linhas: int = 5) -> list[str]:
-    rows = tbl.findall('.//w:tr', NS)
+    """Cabeçalho só com linhas diretas — evita misturar Transcrição com Técnicas aninhadas."""
     linhas = []
-    for row in rows[:max_linhas]:
-        linhas.append(_normalizar_texto(
-            ''.join(t.text or '' for t in row.findall('.//w:t', NS))
-        ))
+    for row in _linhas_diretas(tbl)[:max_linhas]:
+        linhas.append(_normalizar_texto(_texto_linha_direta(row)))
     return linhas
 
 
@@ -260,46 +274,45 @@ def _encontrar_tabela_por_titulo(tabelas: list, palavra_chave: str) -> ET.Elemen
 
 def _encontrar_tabela_transcricao(tabelas: list) -> ET.Element | None:
     """
-    Localiza a seção de transcrição integral pela palavra TRANSCRICAO.
+    Localiza a seção de diálogo: 'NN - TRANSCRIÇÃO' / 'TRANSCRIÇÃO INTEGRAL'.
 
-    Independente do número do item na APA. Evita falso positivo da coluna
-    "TRECHO DA TRANSCRIÇÃO" na tabela de técnicas.
+    Usa só linhas diretas (não mistura com tabela de Técnicas aninhada).
+    Nunca retorna a tabela de análise de técnicas.
     """
-    # Título de seção: opcional "NN - " + TRANSCRICAO (+ INTEGRAL...)
     re_titulo = re.compile(
         r'(?:^|\b)\d{0,3}\s*[-–.]?\s*TRANSCRICAO(?:\s+INTEGRAL)?'
     )
     candidatos = []
 
     for idx, tbl in enumerate(tabelas):
-        linhas = _linhas_cabecalho(tbl)
-        if not linhas:
+        # Só as primeiras linhas curtas = título (o corpo do diálogo é enorme e
+        # pode citar "análise das técnicas" no rodapé de instruções).
+        linhas_brutas = _linhas_cabecalho(tbl, max_linhas=4)
+        titulos = [l for l in linhas_brutas if len(l) <= 160]
+        if not titulos:
             continue
 
-        # Descarta tabela de técnicas mesmo que mencione "trecho da transcrição"
-        cabecalho_junto = ' | '.join(linhas)
-        if 'ANALISE DAS TECNICAS' in cabecalho_junto or (
-            'TECNICAS' in linhas[0] and 'TRECHO' in cabecalho_junto
-        ):
+        cab_titulo = ' | '.join(titulos)
+        if 'ANALISE DAS TECNICAS' in cab_titulo:
+            continue
+        if 'TECNICAS' in cab_titulo and 'TEMPO' in cab_titulo and 'ATITUDE' in cab_titulo:
             continue
 
         melhor_score = 0
-        for linha in linhas:
+        for linha in titulos:
             if 'TRANSCRICAO' not in linha:
                 continue
-            # Coluna auxiliar de técnicas, não a seção de falas
             if 'TRECHO DA TRANSCRICAO' in linha and 'INTEGRAL' not in linha:
                 continue
 
             score = 0
             if re_titulo.search(linha):
-                score += 3
+                score += 5
             if 'INTEGRAL' in linha:
-                score += 2
-            if 'TRANSCRICAO' in linha:
+                score += 3
+            if 'VIDEOS' in linha or 'AUDIOS' in linha:
                 score += 1
-            # Títulos de seção costumam ser curtos
-            if len(linha) < 80:
+            if len(linha) < 100:
                 score += 1
             melhor_score = max(melhor_score, score)
 
@@ -307,20 +320,7 @@ def _encontrar_tabela_transcricao(tabelas: list) -> ET.Element | None:
             candidatos.append((melhor_score, idx, tbl))
 
     if not candidatos:
-        # Fallback: TRANSCRICAO de seção, nunca coluna "TRECHO DA TRANSCRICAO"
-        for tbl in tabelas:
-            linhas = _linhas_cabecalho(tbl)
-            cabecalho_junto = ' | '.join(linhas)
-            if 'ANALISE DAS TECNICAS' in cabecalho_junto:
-                continue
-            for linha in linhas:
-                if 'TRANSCRICAO' not in linha:
-                    continue
-                if 'TRECHO DA TRANSCRICAO' in linha and 'INTEGRAL' not in linha:
-                    continue
-                return tbl
         return None
-
     candidatos.sort(key=lambda x: (-x[0], x[1]))
     return candidatos[0][2]
 
@@ -329,7 +329,21 @@ def _encontrar_tabela_transcricao(tabelas: list) -> ET.Element | None:
 # EXTRAÇÃO DAS TRANSCRIÇÕES
 # ============================================================
 
+def _paragrafos_sem_tabela_aninhada(cell: ET.Element) -> list:
+    """Parágrafos da célula que não estão dentro de tabela aninhada."""
+    nested_paras = set()
+    for nested in cell.findall('.//w:tbl', NS):
+        for p in nested.findall('.//w:p', NS):
+            nested_paras.add(p)
+    return [p for p in cell.findall('.//w:p', NS) if p not in nested_paras]
+
+
 def _extrair_transcricoes(tbl: ET.Element) -> dict:
+    """
+    Extrai só o diálogo colorido da seção Transcrição.
+    Vermelho=causador, azul/ciano=negociador principal, verde=secundário.
+    Remove timestamps (00:00) e legendas; ignora tabelas aninhadas (técnicas).
+    """
     falas = {
         'causador': [],
         'negociador_principal': [],
@@ -337,25 +351,23 @@ def _extrair_transcricoes(tbl: ET.Element) -> dict:
         'primeiro_interventor': [],
     }
 
-    for row in tbl.findall('.//w:tr', NS):
-        # Pula a linha de cabeçalho (título da seção — número do item irrelevante)
-        linha_texto = _normalizar_texto(
-            ''.join(t.text or '' for t in row.findall('.//w:t', NS))
-        )
-        if 'TRANSCRICAO' in linha_texto and len(linha_texto) < 80:
-            continue
+    for row in _linhas_diretas(tbl):
+        linha_bruta = _texto_linha_direta(row)
+        linha_texto = _normalizar_texto(linha_bruta)
+        # Pula só linhas de título curtas (o corpo do diálogo é longo e pode
+        # mencionar "análise das técnicas" no rodapé de instruções).
+        if len(linha_texto) <= 160:
+            if 'TRANSCRICAO' in linha_texto or linha_texto.strip() in {'PARTE 2', 'PARTE2'}:
+                continue
+            if 'ANALISE DAS TECNICAS' in linha_texto:
+                continue
+            if 'TECNICAS' in linha_texto and 'TEMPO' in linha_texto:
+                continue
 
-        for cell in row.findall('.//w:tc', NS):
-            # Sombreamento da célula (alguns templates pintam a célula inteira)
-            tc_pr = cell.find('w:tcPr', NS)
-            papel_celula = None
-            if tc_pr is not None:
-                papel_celula = _classificar_cor(_hex_de_elemento_cor(tc_pr.find('w:shd', NS)))
-
-            for para in cell.findall('.//w:p', NS):
-                # Fonte / highlight / sombreamento: herda no parágrafo se o run não trouxer cor
-                papel_atual = _papel_do_paragrafo(para) or papel_celula
-                for run in para.findall('.//w:r', NS):
+        for cell in row.findall('./w:tc', NS) or row.findall('w:tc', NS):
+            papel_atual = None
+            for para in _paragrafos_sem_tabela_aninhada(cell):
+                for run in para.findall('./w:r', NS) or para.findall('.//w:r', NS):
                     texto = ''.join(t.text or '' for t in run.findall('w:t', NS))
                     if not texto.strip():
                         continue
@@ -395,38 +407,36 @@ def _tecnica_valida(tecnica: str) -> bool:
 
 
 def _score_tabela_tecnicas(tbl: ET.Element) -> int:
-    """Pontua tabela candidata a técnicas (evita wrapper com tabela aninhada)."""
+    """Pontua só se o cabeçalho direto indicar a tabela de técnicas."""
     score = 0
-    for linha in _linhas_cabecalho(tbl, max_linhas=8):
+    for linha in _linhas_cabecalho(tbl, max_linhas=6):
         if 'ANALISE DAS TECNICAS' in linha or 'TECNICAS DE NEGOCIACAO' in linha:
-            score += 3
+            score += 8
         if 'TECNICAS' in linha and ('TEMPO' in linha or 'VIDEO' in linha):
-            score += 5
+            score += 6
         if 'TECNICAS' in linha and 'TRECHO' in linha:
             score += 4
         if 'TECNICAS' in linha and 'ATITUDE' in linha:
             score += 3
         if 'EXPLICACAO SOBRE A UTILIZACAO' in linha:
             score += 2
-    # Preferir tabela com várias linhas de dados (não só o título wrapper)
-    n_rows = len(tbl.findall('./w:tr', NS))
-    if n_rows >= 3:
-        score += 2
-    elif n_rows <= 1:
-        score -= 2
+        # Evita tabela de Transcrição / outras seções
+        if 'TRANSCRICAO INTEGRAL' in linha:
+            score -= 20
+        if 'MODALIDADE DO INCIDENTE' in linha:
+            score -= 20
     return score
 
 
 def _encontrar_tabela_tecnicas(tabelas: list) -> ET.Element | None:
     """
-    Localiza a tabela de técnicas em versões diferentes da APA
-    (ex.: '34 - ANÁLISE DAS TÉCNICAS DE NEGOCIAÇÃO EMPREGADAS').
-    Prefere a tabela cujo cabeçalho tem colunas Técnicas/Tempo/Trecho.
+    Localiza a tabela de técnicas (ex.: '34 - ANÁLISE DAS TÉCNICAS...').
+    Só aceita tabelas com título/cabeçalho de técnicas — sem fallback aleatório.
     """
     melhores = []
     for idx, tbl in enumerate(tabelas):
         sc = _score_tabela_tecnicas(tbl)
-        if sc > 0:
+        if sc >= 6:
             melhores.append((sc, -idx, tbl))
     if melhores:
         melhores.sort(reverse=True)
@@ -438,7 +448,7 @@ def _encontrar_tabela_tecnicas(tabelas: list) -> ET.Element | None:
         'TECNICAS EMPREGADAS',
     ):
         tbl = _encontrar_tabela_por_titulo(tabelas, chave)
-        if tbl is not None:
+        if tbl is not None and _score_tabela_tecnicas(tbl) >= 6:
             return tbl
     return None
 
@@ -580,36 +590,12 @@ def processar_apa(file_bytes: bytes) -> dict:
         body = root.find('w:body', NS)
         tabelas = body.findall('.//w:tbl', NS)
 
-        # Âncora = "Transcrição" / "Análise das Técnicas" (qualquer número de item).
+        # Somente seções corretas — sem varrer o documento atrás de texto azul.
         tbl_trans = _encontrar_tabela_transcricao(tabelas)
         tbl_tec = _encontrar_tabela_tecnicas(tabelas)
 
-        transcricoes = _extrair_transcricoes(tbl_trans) if tbl_trans else {}
-        # Fallback: se a seção foi achada mas saiu vazia, tenta demais tabelas
-        # (versões com tabela aninhada / título em célula separada).
-        if not any(transcricoes.get(k) for k in (
-            'causador', 'negociador_principal', 'negociador_secundario'
-        )):
-            for tbl in tabelas:
-                if tbl is tbl_trans or tbl is tbl_tec:
-                    continue
-                candidato = _extrair_transcricoes(tbl)
-                if any(candidato.get(k) for k in (
-                    'causador', 'negociador_principal', 'negociador_secundario'
-                )):
-                    transcricoes = candidato
-                    break
-
-        tecnicas = _extrair_tecnicas(tbl_tec) if tbl_tec else pd.DataFrame()
-        # Fallback: varrer tabelas até achar linhas válidas de técnicas
-        if tecnicas is None or tecnicas.empty:
-            for tbl in tabelas:
-                if tbl is tbl_trans:
-                    continue
-                candidato = _extrair_tecnicas(tbl)
-                if candidato is not None and not candidato.empty:
-                    tecnicas = candidato
-                    break
+        transcricoes = _extrair_transcricoes(tbl_trans) if tbl_trans is not None else {}
+        tecnicas = _extrair_tecnicas(tbl_tec) if tbl_tec is not None else pd.DataFrame()
 
         return {'transcricoes': transcricoes, 'tecnicas': tecnicas, 'erro': None}
 

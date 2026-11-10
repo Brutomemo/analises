@@ -227,7 +227,7 @@ def render_apa(df_quali, df_tec):
         df_quali['ID'] = "APA " + df_quali.index.astype(str)
     df_quali['ID_Busca'] = df_quali['ID'].apply(utils.limpar_id)
 
-    # ── CALENDÁRIO (st.date_input) + datas com ocorrência em amarelo ────
+    # ── SELEÇÃO DE DATA (pills com rolagem; sem chips amarelos / calendário) ────
     col_data_oca = next(
         (c for c in ("Data da ocorrência", "Data", "DATA", "data_ocorrencia") if c in df_quali.columns),
         None,
@@ -244,43 +244,16 @@ def render_apa(df_quali, df_tec):
             datas_com_oca[-1] if datas_com_oca else date.today()
         )
 
-    col_cal, col_todas = st.columns([3, 1])
-    with col_cal:
-        _kwargs_data = {"label": "Data da Ocorrência *", "key": "f_data_visao_seletiva"}
-        if datas_com_oca:
-            _kwargs_data["min_value"] = datas_com_oca[0]
-            _kwargs_data["max_value"] = datas_com_oca[-1]
-        data_visao = st.date_input(**_kwargs_data)
-    with col_todas:
-        st.write("")
-        st.write("")
-        todas_datas = st.checkbox(
-            "Todas as datas",
-            value=True,
-            key="f_todas_datas_visao",
-            help="Desmarque para filtrar pela data do calendário.",
-        )
+    todas_datas = st.checkbox(
+        "Todas as datas",
+        value=True,
+        key="f_todas_datas_visao",
+        help="Marcado: ignora a data selecionada abaixo e mostra todas as ocorrências.",
+    )
 
-    # Identificação amarela das datas com registro (date_input nativo não pinta o popup)
+    data_visao = st.session_state.get("f_data_visao_seletiva")
+
     if datas_com_oca:
-        chips = "".join(
-            (
-                f'<span style="display:inline-block;background:#FFD700;color:#111;'
-                f'border-radius:999px;padding:3px 10px;margin:2px 4px 2px 0;'
-                f'font-size:0.78rem;font-weight:700;">'
-                f'{d.strftime("%d/%m/%Y")}'
-                f'{" · " + str(contagem_dias[d]) if contagem_dias.get(d, 0) > 1 else ""}'
-                f"</span>"
-            )
-            for d in datas_com_oca
-        )
-        st.markdown(
-            f'<div style="margin:0.25rem 0 0.4rem 0;">'
-            f'<span style="color:#FFD700;font-size:0.85rem;font-weight:600;">'
-            f"Datas com ocorrência registrada:</span><br>{chips}</div>",
-            unsafe_allow_html=True,
-        )
-
         opcoes_datas = [d.strftime("%d/%m/%Y") for d in datas_com_oca]
 
         def _on_pill_data_visao():
@@ -294,27 +267,25 @@ def render_apa(df_quali, df_tec):
             st.session_state["f_data_visao_seletiva"] = data_pill
             st.session_state["f_todas_datas_visao"] = False
 
-        st.pills(
-            "Selecionar data com registro",
-            options=opcoes_datas,
-            key="f_pills_datas_visao",
-            help="Atalho: escolhe uma data com APA registrada e aplica o filtro.",
-            on_change=_on_pill_data_visao,
-        )
-        # Releitura após possível on_change
+        # Rótulo fora; container limita ~3 linhas e habilita a seta de rolagem
+        st.markdown("**Selecionar data com registro**")
+        with st.container(height=110, border=False):
+            st.pills(
+                "Selecionar data com registro",
+                options=opcoes_datas,
+                key="f_pills_datas_visao",
+                label_visibility="collapsed",
+                help="Role a lista para ver mais datas. Ao escolher, o filtro da ocorrência é aplicado.",
+                on_change=_on_pill_data_visao,
+            )
         data_visao = st.session_state.get("f_data_visao_seletiva", data_visao)
         todas_datas = st.session_state.get("f_todas_datas_visao", todas_datas)
 
-    if isinstance(data_visao, date) and datas_com_oca:
+    if isinstance(data_visao, date) and datas_com_oca and not todas_datas:
         if data_visao in set(datas_com_oca):
             st.caption(
                 f"✔️ **{data_visao.strftime('%d/%m/%Y')}** tem ocorrência registrada "
                 f"({contagem_dias.get(data_visao, 0)})."
-            )
-        else:
-            st.caption(
-                f"⚠️ **{data_visao.strftime('%d/%m/%Y')}** não possui ocorrência no banco. "
-                "Use uma data marcada em amarelo."
             )
 
     if col_data_oca and not todas_datas and data_visao:
@@ -323,7 +294,7 @@ def render_apa(df_quali, df_tec):
         if n_no_dia == 0:
             st.warning(
                 f"Nenhuma ocorrência em **{data_visao.strftime('%d/%m/%Y')}**. "
-                "Escolha uma data amarela ou marque **Todas as datas**."
+                "Escolha uma data na lista ou marque **Todas as datas**."
             )
         else:
             st.caption(
