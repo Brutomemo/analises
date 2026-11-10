@@ -130,6 +130,7 @@ def _cor_do_run(run: ET.Element) -> str | None:
 # LIMPEZA
 # ============================================================
 
+# Horário de fala no diálogo (ex.: 00:00, 01:41) — removido do texto registrado
 _RE_TIMESTAMP = re.compile(r'(?:(?<=^)|(?<=\s))\d{1,2}:\d{2}(?::\d{2})?(?=[\s,]|$)')
 _RE_ESPACOS = re.compile(r'[ \t]{2,}')
 _RE_PAPEL_LEGENDA = (
@@ -272,52 +273,51 @@ def _encontrar_tabela_por_titulo(tabelas: list, palavra_chave: str) -> ET.Elemen
     return None
 
 
+def _titulo_e_secao_transcricao(linha: str) -> int:
+    """
+    Pontua título de seção de diálogo.
+    Aceita:
+      - 'NN - TRANSCRIÇÃO INTEGRAL DE VÍDEOS E ÁUDIOS'
+      - 'NN - TRANSCRIÇÃO' / 'TRANSCRIÇÃO'
+    Recusa coluna 'TRECHO DA TRANSCRIÇÃO' e tabela de técnicas.
+    """
+    if not linha or len(linha) > 160:
+        return 0
+    if 'TRECHO DA TRANSCRICAO' in linha:
+        return 0
+    if 'ANALISE DAS TECNICAS' in linha:
+        return 0
+    if 'TECNICAS' in linha and ('TEMPO' in linha or 'ATITUDE' in linha):
+        return 0
+
+    # Título completo preferencial
+    if re.search(r'TRANSCRICAO\s+INTEGRAL(?:\s+DE\s+VIDEOS(?:\s+E\s+AUDIOS)?)?', linha):
+        return 20
+    # Título curto: opcional "NN - " + TRANSCRICAO (fim da linha ou só isso)
+    if re.search(r'(?:^|\b)\d{0,3}\s*[-–.]?\s*TRANSCRICAO\s*$', linha):
+        return 12
+    if re.search(r'(?:^|\b)\d{0,3}\s*[-–.]?\s*TRANSCRICAO\b', linha) and 'INTEGRAL' not in linha:
+        # Ex.: "35 – TRANSCRICAO" com pouco texto extra
+        if len(linha) <= 40:
+            return 10
+    return 0
+
+
 def _encontrar_tabela_transcricao(tabelas: list) -> ET.Element | None:
     """
-    Localiza a seção de diálogo: 'NN - TRANSCRIÇÃO' / 'TRANSCRIÇÃO INTEGRAL'.
-
-    Usa só linhas diretas (não mistura com tabela de Técnicas aninhada).
-    Nunca retorna a tabela de análise de técnicas.
+    Localiza somente o bloco de diálogo:
+    'TRANSCRIÇÃO INTEGRAL DE VÍDEOS E ÁUDIOS' ou título 'TRANSCRIÇÃO'.
+    Nunca usa texto azul de outras seções (Modalidade, etc.).
     """
-    re_titulo = re.compile(
-        r'(?:^|\b)\d{0,3}\s*[-–.]?\s*TRANSCRICAO(?:\s+INTEGRAL)?'
-    )
     candidatos = []
-
     for idx, tbl in enumerate(tabelas):
-        # Só as primeiras linhas curtas = título (o corpo do diálogo é enorme e
-        # pode citar "análise das técnicas" no rodapé de instruções).
         linhas_brutas = _linhas_cabecalho(tbl, max_linhas=4)
         titulos = [l for l in linhas_brutas if len(l) <= 160]
-        if not titulos:
-            continue
-
-        cab_titulo = ' | '.join(titulos)
-        if 'ANALISE DAS TECNICAS' in cab_titulo:
-            continue
-        if 'TECNICAS' in cab_titulo and 'TEMPO' in cab_titulo and 'ATITUDE' in cab_titulo:
-            continue
-
-        melhor_score = 0
+        melhor = 0
         for linha in titulos:
-            if 'TRANSCRICAO' not in linha:
-                continue
-            if 'TRECHO DA TRANSCRICAO' in linha and 'INTEGRAL' not in linha:
-                continue
-
-            score = 0
-            if re_titulo.search(linha):
-                score += 5
-            if 'INTEGRAL' in linha:
-                score += 3
-            if 'VIDEOS' in linha or 'AUDIOS' in linha:
-                score += 1
-            if len(linha) < 100:
-                score += 1
-            melhor_score = max(melhor_score, score)
-
-        if melhor_score > 0:
-            candidatos.append((melhor_score, idx, tbl))
+            melhor = max(melhor, _titulo_e_secao_transcricao(linha))
+        if melhor > 0:
+            candidatos.append((melhor, idx, tbl))
 
     if not candidatos:
         return None
@@ -338,11 +338,70 @@ def _paragrafos_sem_tabela_aninhada(cell: ET.Element) -> list:
     return [p for p in cell.findall('.//w:p', NS) if p not in nested_paras]
 
 
+def _texto_paragrafo(para: ET.Element) -> str:
+    return ''.join(t.text or '' for t in para.findall('.//w:t', NS))
+
+
+def _paragrafo_tem_fala_com_horario(texto: str) -> bool:
+    """True só se houver horário de diálogo (00:00 ...) seguido de fala."""
+    if not texto or not texto.strip():
+        return False
+    if _RE_INSTRUCAO.search(texto):
+        return False
+    # Precisa de pelo menos um HH:MM seguido de conteúdo de fala
+    for m in re.finditer(r'\d{1,2}:\d{2}(?::\d{2})?', texto):
+        depois = texto[m.end():].strip()
+        # Ignora "PAUSA" / marcadores sem fala real imediata vazia
+        if not depois:
+            continue
+        # Exige letra (diálogo), não só pontuação
+        if re.search(r'[A-Za-zÀ-ÿ]', depois):
+            return True
+    return False
+
+
+def _extrair_fala_do_paragrafo(para: ET.Element, falas: dict) -> None:
+    """
+    Extrai interlocutores coloridos de um parágrafo que já é linha de diálogo.
+    Ignora o horário (00:00); mantém só a fala.
+    """
+    papel_atual = None
+    buffer = {k: [] for k in falas}
+
+    for run in para.findall('./w:r', NS) or para.findall('.//w:r', NS):
+        texto = ''.join(t.text or '' for t in run.findall('w:t', NS))
+        if not texto:
+            continue
+
+        papel = _papel_do_run(run)
+        if papel:
+            papel_atual = papel
+
+        if not papel_atual or papel_atual not in falas:
+            continue
+
+        # Remove horários deste run; descarta run que era só o horário
+        limpo = _limpar(texto)
+        if limpo:
+            buffer[papel_atual].append(limpo)
+
+    for papel, partes in buffer.items():
+        if not partes:
+            continue
+        junto = _RE_ESPACOS.sub(' ', ' '.join(partes)).strip()
+        if junto:
+            falas[papel].append(junto)
+
+
 def _extrair_transcricoes(tbl: ET.Element) -> dict:
     """
-    Extrai só o diálogo colorido da seção Transcrição.
-    Vermelho=causador, azul/ciano=negociador principal, verde=secundário.
-    Remove timestamps (00:00) e legendas; ignora tabelas aninhadas (técnicas).
+    Extrai somente diálogos da seção Transcrição / Transcrição Integral.
+
+    Regras:
+      - bloco certo (título TRANSCRIÇÃO ou TRANSCRIÇÃO INTEGRAL...)
+      - só falas com registro de hora (ex.: '00:00 Oi Arthur...')
+      - ignora a hora; classifica por cor (vermelho/azul-ciano/verde)
+      - não pega texto azul de outras seções nem legendas/instruções
     """
     falas = {
         'causador': [],
@@ -354,10 +413,10 @@ def _extrair_transcricoes(tbl: ET.Element) -> dict:
     for row in _linhas_diretas(tbl):
         linha_bruta = _texto_linha_direta(row)
         linha_texto = _normalizar_texto(linha_bruta)
-        # Pula só linhas de título curtas (o corpo do diálogo é longo e pode
-        # mencionar "análise das técnicas" no rodapé de instruções).
         if len(linha_texto) <= 160:
-            if 'TRANSCRICAO' in linha_texto or linha_texto.strip() in {'PARTE 2', 'PARTE2'}:
+            if _titulo_e_secao_transcricao(linha_texto) > 0:
+                continue
+            if linha_texto.strip() in {'PARTE 2', 'PARTE2'}:
                 continue
             if 'ANALISE DAS TECNICAS' in linha_texto:
                 continue
@@ -365,21 +424,11 @@ def _extrair_transcricoes(tbl: ET.Element) -> dict:
                 continue
 
         for cell in row.findall('./w:tc', NS) or row.findall('w:tc', NS):
-            papel_atual = None
             for para in _paragrafos_sem_tabela_aninhada(cell):
-                for run in para.findall('./w:r', NS) or para.findall('.//w:r', NS):
-                    texto = ''.join(t.text or '' for t in run.findall('w:t', NS))
-                    if not texto.strip():
-                        continue
-
-                    papel = _papel_do_run(run)
-                    if papel:
-                        papel_atual = papel
-
-                    if papel_atual and papel_atual in falas:
-                        texto_limpo = _limpar(texto)
-                        if texto_limpo:
-                            falas[papel_atual].append(texto_limpo)
+                texto_para = _texto_paragrafo(para)
+                if not _paragrafo_tem_fala_com_horario(texto_para):
+                    continue
+                _extrair_fala_do_paragrafo(para, falas)
 
     return {papel: ' '.join(linhas) for papel, linhas in falas.items()}
 
