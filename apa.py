@@ -214,6 +214,7 @@ def _render_frequencia_tecnicas(df_tec_filtrado, cache_key):
 
 def render_apa(df_quali, df_tec):
     """Renderiza a aba completa de Visão Seletiva (APA)."""
+    from datetime import date as _date
 
     st.markdown("<h5 style='color: #FFD700;'> Seleção e Metadados da Ocorrência</h5>", unsafe_allow_html=True)
 
@@ -224,6 +225,67 @@ def render_apa(df_quali, df_tec):
     if 'ID' not in df_quali.columns:
         df_quali['ID'] = "APA " + df_quali.index.astype(str)
     df_quali['ID_Busca'] = df_quali['ID'].apply(utils.limpar_id)
+
+    # ── CALENDÁRIO (mesmo padrão premium da Entrada de Dados) ───────────
+    col_data_oca = next(
+        (c for c in ("Data da ocorrência", "Data", "DATA", "data_ocorrencia") if c in df_quali.columns),
+        None,
+    )
+    datas_validas = []
+    if col_data_oca:
+        datas_validas = sorted(
+            {
+                d
+                for d in pd.to_datetime(df_quali[col_data_oca], errors="coerce").dt.date.dropna().tolist()
+                if isinstance(d, _date)
+            }
+        )
+
+    if "f_data_visao_seletiva" not in st.session_state:
+        st.session_state["f_data_visao_seletiva"] = (
+            datas_validas[-1] if datas_validas else _date.today()
+        )
+
+    col_cal, col_todas = st.columns([3, 1])
+    with col_cal:
+        _kwargs_data = {
+            "label": "Data da Ocorrência *",
+            "key": "f_data_visao_seletiva",
+        }
+        if datas_validas:
+            _kwargs_data["min_value"] = datas_validas[0]
+            _kwargs_data["max_value"] = datas_validas[-1]
+        data_visao = st.date_input(**_kwargs_data)
+    with col_todas:
+        st.write("")
+        st.write("")
+        todas_datas = st.checkbox(
+            "Todas as datas",
+            value=True,
+            key="f_todas_datas_visao",
+            help="Desmarque para filtrar pela data do calendário.",
+        )
+
+    if col_data_oca and not todas_datas and data_visao:
+        mask_data = pd.to_datetime(df_quali[col_data_oca], errors="coerce").dt.date == data_visao
+        n_no_dia = int(mask_data.sum())
+        if n_no_dia == 0:
+            st.warning(
+                f"Nenhuma ocorrência em **{data_visao.strftime('%d/%m/%Y')}**. "
+                "Escolha outra data ou marque **Todas as datas**."
+            )
+        else:
+            st.caption(
+                f"Filtro de data ativo: **{data_visao.strftime('%d/%m/%Y')}** — "
+                f"{n_no_dia} ocorrência(s)."
+            )
+        df_quali = df_quali.loc[mask_data].copy()
+        # Recalcula colunas auxiliares no recorte filtrado
+        if not df_quali.empty:
+            df_quali['Neg_Limpo'] = df_quali['Negociador Principal'].apply(utils.limpar_valor)
+            df_quali['Tip_Limpa'] = df_quali['Tipologia'].apply(utils.limpar_valor)
+            df_quali['Mod_Limpa'] = df_quali['Modalidade do incidente'].apply(utils.limpar_valor)
+            df_quali['ID_Busca'] = df_quali['ID'].apply(utils.limpar_id)
 
     # ── FILTROS ENCADEADOS BIDIRECIONAIS ────────────────────────────────
     col_fi1, col_fi2, col_fi3 = st.columns(3)

@@ -14,19 +14,12 @@ from sklearn.preprocessing import StandardScaler
 import warnings
 warnings.filterwarnings('ignore')
 
-import calendar as cal_mod
 from collections import Counter
 from datetime import date
 
 import analise
 import ia_estatistica
 import utils
-
-
-_MESES_PT = (
-    "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
-    "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro",
-)
 
 
 def render_toggle_button(
@@ -82,100 +75,178 @@ def _datas_e_contagem_ocorrencias(df):
     return set(contagem.keys()), contagem, col
 
 
-def _avancar_mes(mes_ref: date, delta: int) -> date:
-    y, m = mes_ref.year, mes_ref.month + delta
-    while m < 1:
-        m += 12
-        y -= 1
-    while m > 12:
-        m -= 12
-        y += 1
-    return date(y, m, 1)
-
-
-def _render_calendario_ocorrencias(datas_com_oca, contagem_por_dia, key_prefix="hist_cal"):
+def _render_serie_temporal_filtro(contagem_por_dia, key_prefix="hist_serie"):
     """
-    Calendário mensal clicável.
-    Dias com ocorrência ficam em evidência; clique filtra (toggle) a data em session_state.
+    Gráfico de série temporal (ocorrências por dia), clicável como filtro de data.
+    Clique no ponto/barra seleciona o dia; clique de novo ou Limpar remove o filtro.
     """
-    datas_com_oca = {d for d in (datas_com_oca or set()) if isinstance(d, date)}
     contagem_por_dia = contagem_por_dia or Counter()
+    if not contagem_por_dia:
+        st.info("Sem datas de ocorrência no recorte atual para montar a série temporal.")
+        return
 
-    if "f_cal_mes_historico" not in st.session_state:
-        if datas_com_oca:
-            ultima = max(datas_com_oca)
-            st.session_state["f_cal_mes_historico"] = date(ultima.year, ultima.month, 1)
-        else:
-            hoje = date.today()
-            st.session_state["f_cal_mes_historico"] = date(hoje.year, hoje.month, 1)
+    datas_ord = sorted(contagem_por_dia.keys())
+    df_chart = pd.DataFrame({
+        "Data": datas_ord,
+        "Ocorrências": [contagem_por_dia[d] for d in datas_ord],
+        "Label": [d.strftime("%d/%m/%Y") for d in datas_ord],
+    })
 
-    mes_ref = st.session_state["f_cal_mes_historico"]
     data_sel = st.session_state.get("f_data_historico")
+    cores = [
+        "#FFD700" if (data_sel and d == data_sel) else "#F97A3D"
+        for d in datas_ord
+    ]
+    tamanhos = [
+        14 if (data_sel and d == data_sel) else 9
+        for d in datas_ord
+    ]
 
-    st.markdown("#### Calendário de Ocorrências")
-    st.caption("Dias destacados possuem ocorrência registrada. Clique para filtrar; clique de novo para limpar.")
-
-    c_prev, c_label, c_next, c_clear = st.columns([1, 3, 1, 2])
-    with c_prev:
-        if st.button("◀", key=f"{key_prefix}_prev", use_container_width=True):
-            st.session_state["f_cal_mes_historico"] = _avancar_mes(mes_ref, -1)
-            st.rerun()
-    with c_label:
-        st.markdown(
-            f"<p style='text-align:center;margin:0.4rem 0 0 0;font-weight:600;'>"
-            f"{_MESES_PT[mes_ref.month - 1]} {mes_ref.year}</p>",
-            unsafe_allow_html=True,
+    fig = go.Figure()
+    fig.add_trace(
+        go.Scatter(
+            x=df_chart["Data"],
+            y=df_chart["Ocorrências"],
+            mode="lines+markers",
+            name="Ocorrências",
+            line=dict(color="#F97A3D", width=2.5, shape="spline"),
+            marker=dict(
+                size=tamanhos,
+                color=cores,
+                line=dict(color="#1a1a1a", width=1),
+                symbol="circle",
+            ),
+            fill="tozeroy",
+            fillcolor="rgba(249, 122, 61, 0.18)",
+            customdata=np.stack(
+                [df_chart["Label"], df_chart["Ocorrências"]], axis=-1
+            ),
+            hovertemplate=(
+                "<b>%{customdata[0]}</b><br>"
+                "Ocorrências: <b>%{customdata[1]}</b>"
+                "<extra></extra>"
+            ),
         )
-    with c_next:
-        if st.button("▶", key=f"{key_prefix}_next", use_container_width=True):
-            st.session_state["f_cal_mes_historico"] = _avancar_mes(mes_ref, 1)
-            st.rerun()
-    with c_clear:
-        if st.button("Limpar data", key=f"{key_prefix}_clear", use_container_width=True):
-            st.session_state["f_data_historico"] = None
-            st.rerun()
+    )
+    fig.update_layout(
+        title=dict(
+            text="Série Temporal de Ocorrências",
+            font=dict(color="#FFD700", size=16),
+            x=0.0,
+        ),
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(20,20,20,0.35)",
+        font=dict(color="#EEEEEE"),
+        margin=dict(l=40, r=20, t=50, b=40),
+        height=320,
+        xaxis=dict(
+            title="Data",
+            showgrid=False,
+            zeroline=False,
+            tickformat="%d/%m/%y",
+        ),
+        yaxis=dict(
+            title="Qtd.",
+            showgrid=True,
+            gridcolor="rgba(255,255,255,0.08)",
+            zeroline=False,
+            dtick=1 if df_chart["Ocorrências"].max() <= 8 else None,
+        ),
+        hovermode="x unified",
+    )
 
-    dias_semana = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"]
-    header_cols = st.columns(7)
-    for i, nome in enumerate(dias_semana):
-        header_cols[i].markdown(
-            f"<p style='text-align:center;color:#aaa;margin:0;font-size:0.8rem;'>{nome}</p>",
-            unsafe_allow_html=True,
-        )
+    st.caption(
+        "Clique em um ponto do gráfico para filtrar pelo dia. "
+        "Use **Limpar data** para voltar à série completa."
+    )
 
-    semanas = cal_mod.Calendar(firstweekday=0).monthdayscalendar(mes_ref.year, mes_ref.month)
-    for wi, semana in enumerate(semanas):
-        cols = st.columns(7)
-        for di, dia in enumerate(semana):
-            with cols[di]:
-                if dia == 0:
-                    st.write("")
-                    continue
-                d = date(mes_ref.year, mes_ref.month, dia)
-                tem = d in datas_com_oca
-                sel = data_sel == d
-                n = contagem_por_dia.get(d, 0)
-                if tem:
-                    label = f"{dia} ●" if not sel else f"{dia} ✓"
-                    tipo = "primary" if sel else "secondary"
-                    if st.button(
-                        label,
-                        key=f"{key_prefix}_{d.isoformat()}",
-                        use_container_width=True,
-                        type=tipo,
-                        help=f"{n} ocorrência(s) em {d.strftime('%d/%m/%Y')}",
-                    ):
-                        st.session_state["f_data_historico"] = None if sel else d
-                        # Garante que o mês exibido contém a data clicada
-                        st.session_state["f_cal_mes_historico"] = date(d.year, d.month, 1)
+    col_chart, col_acao = st.columns([5, 1])
+    with col_chart:
+        try:
+            evento = st.plotly_chart(
+                fig,
+                use_container_width=True,
+                on_select="rerun",
+                selection_mode="points",
+                key=f"{key_prefix}_plot",
+            )
+        except TypeError:
+            # Streamlit antigo sem on_select
+            st.plotly_chart(fig, use_container_width=True, key=f"{key_prefix}_plot_fb")
+            evento = None
+
+        if evento is not None:
+            try:
+                pontos = []
+                if hasattr(evento, "selection") and evento.selection is not None:
+                    pontos = evento.selection.get("points", []) or []
+                elif isinstance(evento, dict):
+                    pontos = (evento.get("selection") or {}).get("points") or []
+
+                if pontos:
+                    p0 = pontos[0]
+                    raw_x = p0.get("x")
+                    raw_cd = p0.get("customdata")
+                    data_clicada = None
+                    if raw_cd is not None:
+                        label = raw_cd[0] if isinstance(raw_cd, (list, tuple, np.ndarray)) else raw_cd
+                        try:
+                            data_clicada = pd.to_datetime(str(label), dayfirst=True).date()
+                        except Exception:
+                            data_clicada = None
+                    if data_clicada is None and raw_x is not None:
+                        data_clicada = pd.to_datetime(raw_x).date()
+
+                    # Evita loop: só aplica quando a seleção do gráfico muda
+                    sig = data_clicada.isoformat() if data_clicada else ""
+                    if data_clicada and st.session_state.get(f"{key_prefix}_sel_sig") != sig:
+                        st.session_state[f"{key_prefix}_sel_sig"] = sig
+                        st.session_state["f_data_historico"] = data_clicada
                         st.rerun()
                 else:
-                    st.button(
-                        str(dia),
-                        key=f"{key_prefix}_{d.isoformat()}",
-                        use_container_width=True,
-                        disabled=True,
-                    )
+                    st.session_state[f"{key_prefix}_sel_sig"] = None
+            except Exception:
+                pass
+
+    with col_acao:
+        st.write("")
+        st.write("")
+        if st.button("Limpar data", key=f"{key_prefix}_clear", use_container_width=True):
+            st.session_state["f_data_historico"] = None
+            st.session_state[f"{key_prefix}_sel_sig"] = None
+            st.rerun()
+
+        # Atalho / fallback: lista de dias com ocorrência
+        opcoes = ["(série completa)"] + [d.strftime("%d/%m/%Y") for d in datas_ord]
+        atual = (
+            data_sel.strftime("%d/%m/%Y")
+            if isinstance(data_sel, date) and data_sel in contagem_por_dia
+            else "(série completa)"
+        )
+        # Mantém o select alinhado ao filtro (ex.: clique no gráfico)
+        if st.session_state.get(f"{key_prefix}_select") != atual:
+            st.session_state[f"{key_prefix}_select"] = atual
+
+        def _on_escolha_dia():
+            escolha = st.session_state.get(f"{key_prefix}_select")
+            if escolha == "(série completa)":
+                st.session_state["f_data_historico"] = None
+                st.session_state[f"{key_prefix}_sel_sig"] = None
+            else:
+                try:
+                    alvo = pd.to_datetime(escolha, dayfirst=True).date()
+                except Exception:
+                    return
+                st.session_state["f_data_historico"] = alvo
+                st.session_state[f"{key_prefix}_sel_sig"] = alvo.isoformat()
+
+        st.selectbox(
+            "Dia",
+            opcoes,
+            key=f"{key_prefix}_select",
+            label_visibility="collapsed",
+            on_change=_on_escolha_dia,
+        )
 
     if data_sel:
         n_sel = contagem_por_dia.get(data_sel, 0)
@@ -194,7 +265,7 @@ def render_serie_historica(df_quali):
 
     st.markdown("### Série Histórica - Negociações GATE")
     st.markdown(
-        "<h5 style='color: #f97;'>Filtros por: Negociador, Tipologia, Modalidade e Data (calendário)</h5>",
+        "<h5 style='color: #f97;'>Filtros por: Negociador, Tipologia, Modalidade e Data (série temporal)</h5>",
         unsafe_allow_html=True,
     )
     
@@ -232,17 +303,17 @@ def render_serie_historica(df_quali):
     if filtro_mod_g != "Todas" and 'Mod_Limpa' in df_quali_filt.columns:
         df_quali_filt = df_quali_filt[df_quali_filt['Mod_Limpa'] == filtro_mod_g]
 
-    # Calendário: destaca dias com ocorrência no recorte Neg/Tip/Mod (antes do filtro de data)
-    datas_oca, contagem_dias, col_data_oca = _datas_e_contagem_ocorrencias(df_quali_filt)
+    # Série temporal clicável (filtro de data) — recorte Neg/Tip/Mod
+    _datas_oca, contagem_dias, col_data_oca = _datas_e_contagem_ocorrencias(df_quali_filt)
     st.markdown("---")
-    _render_calendario_ocorrencias(datas_oca, contagem_dias, key_prefix="hist_cal")
+    _render_serie_temporal_filtro(contagem_dias, key_prefix="hist_serie")
 
     data_filtro = st.session_state.get("f_data_historico")
     if data_filtro and col_data_oca:
         datas_serie = pd.to_datetime(df_quali_filt[col_data_oca], errors="coerce").dt.date
         df_quali_filt = df_quali_filt[datas_serie == data_filtro].copy()
     elif data_filtro and not col_data_oca:
-        st.warning("Coluna de data da ocorrência não encontrada — filtro de calendário indisponível.")
+        st.warning("Coluna de data da ocorrência não encontrada — filtro temporal indisponível.")
 
     st.markdown("---")
     col_m1, col_m2, col_m3 = st.columns(3)
