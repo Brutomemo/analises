@@ -19,6 +19,8 @@ import pandas as pd
 import streamlit as st
 from xml.etree import ElementTree as ET
 
+import utils
+
 NS = {'w': 'http://schemas.openxmlformats.org/wordprocessingml/2006/main'}
 
 # ============================================================
@@ -369,6 +371,8 @@ def _extrair_tecnicas(tbl: ET.Element) -> pd.DataFrame:
                 candidato and not _RE_PLACEHOLDER_TECNICA.match(candidato)
             ):
                 trecho = candidato
+
+        tecnica = utils.normalizar_nome_tecnica(tecnica) or tecnica
 
         registros.append({
             'TÉCNICAS': tecnica,

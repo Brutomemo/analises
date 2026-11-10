@@ -5,9 +5,111 @@ Extraído do app.py — Fase 2 da reestruturação.
 """
 
 import re
+import unicodedata
 import pandas as pd
 import streamlit as st
 
+
+# ============================================================
+# NORMALIZAÇÃO DE NOMES DE TÉCNICAS
+# ============================================================
+
+_RE_ESPACOS_TECNICA = re.compile(r"\s+")
+_RE_PLACEHOLDER_TECNICA = re.compile(
+    r"^escolher\s+um\s+item\.?$",
+    re.IGNORECASE | re.DOTALL,
+)
+_STOPWORDS_TECNICA = {
+    "de", "da", "do", "das", "dos", "e", "como", "por", "para", "com",
+    "a", "o", "as", "os", "um", "uma", "em", "no", "na", "nos", "nas",
+}
+
+
+def tecnica_eh_placeholder(nome) -> bool:
+    """True para dropdown vazio do Word ('Escolher um item.')."""
+    if nome is None:
+        return True
+    try:
+        if isinstance(nome, float) and pd.isna(nome):
+            return True
+    except (TypeError, ValueError):
+        pass
+    texto = _RE_ESPACOS_TECNICA.sub(" ", str(nome).replace("\n", " ").strip())
+    return not texto or bool(_RE_PLACEHOLDER_TECNICA.match(texto))
+
+
+def _sem_acentos(texto: str) -> str:
+    return "".join(
+        ch for ch in unicodedata.normalize("NFKD", texto)
+        if not unicodedata.combining(ch)
+    )
+
+
+def _singularizar_token(token: str) -> str:
+    """Singulariza token PT-BR o suficiente para unificar Pergunta(s) Aberta(s), etc."""
+    if not token or token.lower() in _STOPWORDS_TECNICA or len(token) <= 2:
+        return token
+
+    low = token.lower()
+    regras = (
+        ("oes", "ao"),   # sem acento: declaracoes→declaracao / emoçoes já viram oes
+        ("ães", "ão"),
+        ("ões", "ão"),
+        ("ãos", "ão"),
+        ("ais", "al"),
+        ("eis", "el"),
+        ("ois", "ol"),
+        ("ns", "m"),
+    )
+    for suf, rep in regras:
+        if low.endswith(suf) and len(low) > len(suf) + 2:
+            return token[: -len(suf)] + rep
+
+    # plural regular em -s (abertas→aberta, perguntas→pergunta)
+    if low.endswith("s") and not low.endswith(("ss", "us", "is")) and len(low) > 3:
+        return token[:-1]
+    return token
+
+
+def chave_tecnica(nome) -> str:
+    """
+    Chave estável para agrupar variantes:
+    espaços colapsados + minúsculas + sem acento + singular.
+    """
+    if tecnica_eh_placeholder(nome):
+        return ""
+    texto = _RE_ESPACOS_TECNICA.sub(" ", str(nome).replace("\n", " ").strip())
+    texto = _sem_acentos(texto).lower()
+    tokens = [_singularizar_token(t) for t in texto.split(" ") if t]
+    return " ".join(tokens).strip()
+
+
+def normalizar_nome_tecnica(nome) -> str:
+    """
+    Forma canônica legível para gravação/exibição.
+    Ex.: 'perguntas  abertas' → 'Pergunta Aberta'
+    """
+    if tecnica_eh_placeholder(nome):
+        return ""
+    texto = _RE_ESPACOS_TECNICA.sub(" ", str(nome).replace("\n", " ").strip())
+    if not texto:
+        return ""
+
+    tokens_out = []
+    for token in texto.split(" "):
+        sing = _singularizar_token(token)
+        low = sing.lower()
+        if low in _STOPWORDS_TECNICA:
+            tokens_out.append(low)
+        elif sing:
+            tokens_out.append(sing[:1].upper() + sing[1:])
+    return " ".join(tokens_out).strip()
+
+
+def series_tecnica_normalizada(serie: pd.Series) -> pd.Series:
+    """Aplica normalização; placeholders viram NA para sumirem das contagens."""
+    out = serie.map(normalizar_nome_tecnica)
+    return out.replace("", pd.NA)
 
 
 # ============================================================

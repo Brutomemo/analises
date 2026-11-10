@@ -182,11 +182,16 @@ def _render_frequencia_tecnicas(df_tec_filtrado, cache_key):
         st.warning("Técnicas encontradas, mas a coluna 'TÉCNICAS' não foi identificada.")
         return False
 
-    freq_abs = df_tec_filtrado[col_tecnica].value_counts()
-    freq_rel = (df_tec_filtrado[col_tecnica].value_counts(normalize=True) * 100).round(1)
-    df_freq = pd.DataFrame(
-        {"Frequência Absoluta": freq_abs, "Frequência Relativa (%)": freq_rel}
-    ).reset_index().rename(columns={col_tecnica: "Técnica Empregada"})
+    serie_tec = utils.series_tecnica_normalizada(df_tec_filtrado[col_tecnica]).dropna()
+    if serie_tec.empty:
+        st.warning("Nenhuma técnica válida para calcular frequência (placeholders removidos).")
+        return False
+    freq_abs = serie_tec.value_counts()
+    df_freq = pd.DataFrame({
+        "Técnica Empregada": freq_abs.index.astype(str),
+        "Frequência Absoluta": freq_abs.values,
+        "Frequência Relativa (%)": (freq_abs / freq_abs.sum() * 100).round(1).values,
+    })
 
     fig_tree = px.treemap(
         df_freq,
@@ -666,8 +671,12 @@ def render_apa(df_quali, df_tec):
                                         if col_reacao
                                         else None
                                     )
+                                    df_tec_apa["_tecnica_norm"] = utils.series_tecnica_normalizada(
+                                        df_tec_apa[col_tecnica]
+                                    )
+                                    df_tec_apa = df_tec_apa.dropna(subset=["_tecnica_norm"])
                                     resumo = []
-                                    for tecnica, grupo in df_tec_apa.groupby(col_tecnica):
+                                    for tecnica, grupo in df_tec_apa.groupby("_tecnica_norm"):
                                         total = len(grupo)
                                         positivo = (grupo["_reacao_num"] == 1).sum()
                                         neutro = (grupo["_reacao_num"] == 0).sum()
@@ -1123,15 +1132,17 @@ def render_apa(df_quali, df_tec):
                     if not df_tec_filtrado_pdf.empty:
                         col_tecnica = _coluna_tecnica(df_tec_filtrado_pdf)
                         if col_tecnica:
-                            freq_abs = df_tec_filtrado_pdf[col_tecnica].value_counts()
-                            freq_rel = (
-                                df_tec_filtrado_pdf[col_tecnica].value_counts(normalize=True) * 100
-                            ).round(1)
+                            serie_pdf = utils.series_tecnica_normalizada(
+                                df_tec_filtrado_pdf[col_tecnica]
+                            ).dropna()
+                            freq_abs = serie_pdf.value_counts()
                             df_freq_pdf = pd.DataFrame(
                                 {
-                                    "Técnica Empregada": freq_abs.index,
+                                    "Técnica Empregada": freq_abs.index.astype(str),
                                     "Frequência Absoluta": freq_abs.values,
-                                    "Frequência Relativa (%)": freq_rel.values,
+                                    "Frequência Relativa (%)": (
+                                        freq_abs / freq_abs.sum() * 100
+                                    ).round(1).values,
                                 }
                             )
                             tecnicas_da_apa = (

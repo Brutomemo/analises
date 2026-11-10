@@ -552,14 +552,17 @@ def _preparar_payload_tecnica(item: dict[str, Any], apa_id: str) -> dict[str, An
     trecho = item.get("trecho_transcricao") or item.get("TRECHO DA TRANSCRIÇÃO")
     atitude = item.get("atitude_causador", item.get("ATITUDE DO CAUSADOR"))
 
-    if _vazio(tecnica):
-        raise ValueError("Campo TÉCNICAS/tecnica obrigatório.")
+    if _vazio(tecnica) or utils.tecnica_eh_placeholder(tecnica):
+        raise ValueError("Campo TÉCNICAS/tecnica obrigatório ou placeholder inválido.")
+    tecnica_norm = utils.normalizar_nome_tecnica(tecnica)
+    if not tecnica_norm:
+        raise ValueError("Campo TÉCNICAS/tecnica inválido após normalização.")
     if _vazio(trecho):
         trecho = "(trecho nao informado)"
 
     payload: dict[str, Any] = {
         "apa_id": apa_id,
-        "tecnica": str(tecnica).strip(),
+        "tecnica": tecnica_norm,
         "trecho_transcricao": str(trecho).strip(),
     }
 
@@ -684,6 +687,56 @@ def deletar_tecnicas_por_apa(apa_id: Any) -> tuple[int, str | None]:
         return n, None
     except Exception as exc:
         return 0, str(exc)
+
+
+def limpar_e_normalizar_tecnicas() -> dict[str, Any]:
+    """
+    Limpeza em massa:
+    1) remove placeholders 'Escolher um item.'
+    2) renomeia técnicas para a forma canônica (espaços/plural/caixa)
+    """
+    client = get_supabase_client()
+    resp = client.table(TABELA_TECNICAS).select("id,tecnica").execute()
+    rows = resp.data or []
+
+    removidos = 0
+    atualizados = 0
+    inalterados = 0
+    erros: list[str] = []
+
+    for row in rows:
+        reg_id = row.get("id")
+        nome = row.get("tecnica")
+        try:
+            if utils.tecnica_eh_placeholder(nome):
+                client.table(TABELA_TECNICAS).delete().eq("id", reg_id).execute()
+                removidos += 1
+                continue
+
+            canonico = utils.normalizar_nome_tecnica(nome)
+            atual = str(nome or "").strip()
+            if not canonico:
+                client.table(TABELA_TECNICAS).delete().eq("id", reg_id).execute()
+                removidos += 1
+                continue
+            if canonico != atual:
+                client.table(TABELA_TECNICAS).update({"tecnica": canonico}).eq("id", reg_id).execute()
+                atualizados += 1
+            else:
+                inalterados += 1
+        except Exception as exc:
+            erros.append(f"{reg_id}: {exc}")
+
+    if removidos or atualizados:
+        invalidar_cache_completo()
+
+    return {
+        "total": len(rows),
+        "removidos": removidos,
+        "atualizados": atualizados,
+        "inalterados": inalterados,
+        "erros": erros,
+    }
 
 
 def deletar_apa(apa_id: Any) -> tuple[bool, str | None]:

@@ -14,8 +14,19 @@ from sklearn.preprocessing import StandardScaler
 import warnings
 warnings.filterwarnings('ignore')
 
+import calendar as cal_mod
+from collections import Counter
+from datetime import date
+
 import analise
 import ia_estatistica
+import utils
+
+
+_MESES_PT = (
+    "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
+    "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro",
+)
 
 
 def render_toggle_button(
@@ -54,6 +65,126 @@ def somar_tempos_segundos(serie):
     return f"{h:02d}h {m:02d}m"
 
 
+def _coluna_data_ocorrencia(df):
+    return next(
+        (c for c in ("Data da ocorrência", "Data", "DATA", "data_ocorrencia") if c in df.columns),
+        None,
+    )
+
+
+def _datas_e_contagem_ocorrencias(df):
+    """Retorna (set de dates, Counter por date, nome da coluna) a partir do DataFrame."""
+    col = _coluna_data_ocorrencia(df)
+    if not col or df is None or df.empty:
+        return set(), Counter(), col
+    serie = pd.to_datetime(df[col], errors="coerce").dt.date.dropna()
+    contagem = Counter(serie.tolist())
+    return set(contagem.keys()), contagem, col
+
+
+def _avancar_mes(mes_ref: date, delta: int) -> date:
+    y, m = mes_ref.year, mes_ref.month + delta
+    while m < 1:
+        m += 12
+        y -= 1
+    while m > 12:
+        m -= 12
+        y += 1
+    return date(y, m, 1)
+
+
+def _render_calendario_ocorrencias(datas_com_oca, contagem_por_dia, key_prefix="hist_cal"):
+    """
+    Calendário mensal clicável.
+    Dias com ocorrência ficam em evidência; clique filtra (toggle) a data em session_state.
+    """
+    datas_com_oca = {d for d in (datas_com_oca or set()) if isinstance(d, date)}
+    contagem_por_dia = contagem_por_dia or Counter()
+
+    if "f_cal_mes_historico" not in st.session_state:
+        if datas_com_oca:
+            ultima = max(datas_com_oca)
+            st.session_state["f_cal_mes_historico"] = date(ultima.year, ultima.month, 1)
+        else:
+            hoje = date.today()
+            st.session_state["f_cal_mes_historico"] = date(hoje.year, hoje.month, 1)
+
+    mes_ref = st.session_state["f_cal_mes_historico"]
+    data_sel = st.session_state.get("f_data_historico")
+
+    st.markdown("#### Calendário de Ocorrências")
+    st.caption("Dias destacados possuem ocorrência registrada. Clique para filtrar; clique de novo para limpar.")
+
+    c_prev, c_label, c_next, c_clear = st.columns([1, 3, 1, 2])
+    with c_prev:
+        if st.button("◀", key=f"{key_prefix}_prev", use_container_width=True):
+            st.session_state["f_cal_mes_historico"] = _avancar_mes(mes_ref, -1)
+            st.rerun()
+    with c_label:
+        st.markdown(
+            f"<p style='text-align:center;margin:0.4rem 0 0 0;font-weight:600;'>"
+            f"{_MESES_PT[mes_ref.month - 1]} {mes_ref.year}</p>",
+            unsafe_allow_html=True,
+        )
+    with c_next:
+        if st.button("▶", key=f"{key_prefix}_next", use_container_width=True):
+            st.session_state["f_cal_mes_historico"] = _avancar_mes(mes_ref, 1)
+            st.rerun()
+    with c_clear:
+        if st.button("Limpar data", key=f"{key_prefix}_clear", use_container_width=True):
+            st.session_state["f_data_historico"] = None
+            st.rerun()
+
+    dias_semana = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"]
+    header_cols = st.columns(7)
+    for i, nome in enumerate(dias_semana):
+        header_cols[i].markdown(
+            f"<p style='text-align:center;color:#aaa;margin:0;font-size:0.8rem;'>{nome}</p>",
+            unsafe_allow_html=True,
+        )
+
+    semanas = cal_mod.Calendar(firstweekday=0).monthdayscalendar(mes_ref.year, mes_ref.month)
+    for wi, semana in enumerate(semanas):
+        cols = st.columns(7)
+        for di, dia in enumerate(semana):
+            with cols[di]:
+                if dia == 0:
+                    st.write("")
+                    continue
+                d = date(mes_ref.year, mes_ref.month, dia)
+                tem = d in datas_com_oca
+                sel = data_sel == d
+                n = contagem_por_dia.get(d, 0)
+                if tem:
+                    label = f"{dia} ●" if not sel else f"{dia} ✓"
+                    tipo = "primary" if sel else "secondary"
+                    if st.button(
+                        label,
+                        key=f"{key_prefix}_{d.isoformat()}",
+                        use_container_width=True,
+                        type=tipo,
+                        help=f"{n} ocorrência(s) em {d.strftime('%d/%m/%Y')}",
+                    ):
+                        st.session_state["f_data_historico"] = None if sel else d
+                        # Garante que o mês exibido contém a data clicada
+                        st.session_state["f_cal_mes_historico"] = date(d.year, d.month, 1)
+                        st.rerun()
+                else:
+                    st.button(
+                        str(dia),
+                        key=f"{key_prefix}_{d.isoformat()}",
+                        use_container_width=True,
+                        disabled=True,
+                    )
+
+    if data_sel:
+        n_sel = contagem_por_dia.get(data_sel, 0)
+        st.info(
+            f"Filtro de data ativo: **{data_sel.strftime('%d/%m/%Y')}** "
+            f"({n_sel} ocorrência(s) neste dia no recorte atual)."
+        )
+
+
 def render_serie_historica(df_quali):
     """
     ABA 2: SÉRIE HISTÓRICA — PAINEL DE ANÁLISE HISTÓRICA
@@ -62,7 +193,10 @@ def render_serie_historica(df_quali):
     df_tec = st.session_state.get("df_tec", pd.DataFrame())
 
     st.markdown("### Série Histórica - Negociações GATE")
-    st.markdown("<h5 style='color: #f97;'>Filtros por: Negociador, Tipologia e Modalidade do Incidente</h5>", unsafe_allow_html=True)
+    st.markdown(
+        "<h5 style='color: #f97;'>Filtros por: Negociador, Tipologia, Modalidade e Data (calendário)</h5>",
+        unsafe_allow_html=True,
+    )
     
     col_f1, col_f2, col_f3 = st.columns(3)
     with col_f1:
@@ -97,6 +231,18 @@ def render_serie_historica(df_quali):
         df_quali_filt = df_quali_filt[df_quali_filt['Tip_Limpa'] == filtro_tip_g]
     if filtro_mod_g != "Todas" and 'Mod_Limpa' in df_quali_filt.columns:
         df_quali_filt = df_quali_filt[df_quali_filt['Mod_Limpa'] == filtro_mod_g]
+
+    # Calendário: destaca dias com ocorrência no recorte Neg/Tip/Mod (antes do filtro de data)
+    datas_oca, contagem_dias, col_data_oca = _datas_e_contagem_ocorrencias(df_quali_filt)
+    st.markdown("---")
+    _render_calendario_ocorrencias(datas_oca, contagem_dias, key_prefix="hist_cal")
+
+    data_filtro = st.session_state.get("f_data_historico")
+    if data_filtro and col_data_oca:
+        datas_serie = pd.to_datetime(df_quali_filt[col_data_oca], errors="coerce").dt.date
+        df_quali_filt = df_quali_filt[datas_serie == data_filtro].copy()
+    elif data_filtro and not col_data_oca:
+        st.warning("Coluna de data da ocorrência não encontrada — filtro de calendário indisponível.")
 
     st.markdown("---")
     col_m1, col_m2, col_m3 = st.columns(3)
@@ -325,7 +471,9 @@ def render_serie_historica(df_quali):
                 None,
             )
             if col_t:
-                freq_global = df_tec_filt[col_t].value_counts().reset_index()
+                # Unifica variantes (espaços, plural/singular, caixa) e remove placeholders
+                serie_tec = utils.series_tecnica_normalizada(df_tec_filt[col_t]).dropna()
+                freq_global = serie_tec.value_counts().reset_index()
                 freq_global.columns = ["Técnica", "Vezes Utilizada"]
 
                 c_tab, c_tree = st.columns([1, 2])
@@ -401,10 +549,12 @@ def render_serie_historica(df_quali):
 
                     df_ef = df_tec_filt.copy()
                     df_ef['_reacao_num'] = df_ef[col_reacao].apply(normalizar_reacao)
+                    df_ef['_tecnica_norm'] = utils.series_tecnica_normalizada(df_ef[col_tecnica])
+                    df_ef = df_ef.dropna(subset=['_tecnica_norm'])
 
-                    # ── Agrupar por técnica ───────────────────────────────
+                    # ── Agrupar por técnica (nome canônico) ───────────────
                     resumo = []
-                    for tecnica, grupo in df_ef.groupby(col_tecnica):
+                    for tecnica, grupo in df_ef.groupby('_tecnica_norm'):
                         total    = len(grupo)
                         positivo = (grupo['_reacao_num'] == 1).sum()
                         neutro   = (grupo['_reacao_num'] == 0).sum()
