@@ -106,6 +106,25 @@ PERCEPCOES_RECEPTIVIDADE = [
 
 PERCEPCOES = PERCEPCOES_AGRESSIVIDADE
 
+# Nomes exatos das colunas no Supabase / CSV (atenção aos espaços duplos)
+CAMPOS_CHEGADA = {
+    "agr_np": "12 - PERCEPÇÕES DO NEGOCIADOR PRINCIPAL SOBRE A AGRESSIVIDADE DO  CAUSADOR NA CHEGADA À OCORRÊNCIA",
+    "agr_ns": "12 - PERCEPÇÕES DO NEGOCIADOR SECUNDÁRIO SOBRE A AGRESSIVIDADE DO  CAUSADOR NA CHEGADA À OCORRÊNCIA",
+    "agr_nl": "12 - PERCEPÇÕES DO NEGOCIADOR LÍDER SOBRE A AGRESSIVIDADE DO  CAUSADOR NA CHEGADA À OCORRÊNCIA",
+    "rec_np": "13 - PERCEPÇÕES DO NEGOCIADOR PRINCIPAL SOBRE A RECEPTIVIDADE DO  CAUSADOR NA CHEGADA À OCORRÊNCIA",
+    "rec_ns": "13 - PERCEPÇÕES DO NEGOCIADOR SECUNDÁRIO SOBRE A RECEPTIVIDADE DO  CAUSADOR NA CHEGADA À OCORRÊNCIA",
+    "rec_nl": "13 - PERCEPÇÕES DO NEGOCIADOR LÍDER SOBRE A RECEPTIVIDADE DO  CAUSADOR NA CHEGADA À OCORRÊNCIA",
+}
+CAMPOS_ENCERRAMENTO = {
+    "agr_np": "24 - PERCEPÇÕES DO NEGOCIADOR PRINCIPAL SOBRE A AGRESSIVIDADE DO  CAUSADOR NO ENCERRAMENTO DA OCORRÊNCIA",
+    "agr_ns": "24 - PERCEPÇÕES DO NEGOCIADOR SECUNDÁRIO SOBRE A AGRESSIVIDADE DO  CAUSADOR NO ENCERRAMENTO DA OCORRÊNCIA",
+    "agr_nl": "24 - PERCEPÇÕES DO NEGOCIADOR LÍDER SOBRE A AGRESSIVIDADE DO  CAUSADOR NO ENCERRAMENTO DA OCORRÊNCIA",
+    "rec_np": "25 - PERCEPÇÕES DO NEGOCIADOR PRINCIPAL SOBRE A RECEPTIVIDADE DO  CAUSADOR NO ENCERRAMENTO DA OCORRÊNCIA",
+    "rec_ns": "25 - PERCEPÇÕES DO NEGOCIADOR SECUNDÁRIO SOBRE A RECEPTIVIDADE DO  CAUSADOR NO ENCERRAMENTO DA OCORRÊNCIA",
+    "rec_nl": "25 - PERCEPÇÕES DO NEGOCIADOR LÍDER SOBRE A RECEPTIVIDADE DO  CAUSADOR NO ENCERRAMENTO DA OCORRÊNCIA",
+}
+
+
 def _converter_tempo_para_segundos(valor_str):
     """Converte HH:MM para segundos. Retorna None se vazio."""
     if not valor_str or str(valor_str).strip() == "":
@@ -371,6 +390,15 @@ def _texto_campo(val) -> str:
     return texto
 
 
+def _indice_opcao(opcoes, valor, com_vazio=False):
+    """Índice seguro para selectbox a partir do valor atual da APA."""
+    texto = _texto_campo(valor)
+    base = ([""] + list(opcoes)) if com_vazio else list(opcoes)
+    if texto in base:
+        return base.index(texto)
+    return 0
+
+
 def _criar_tecnica_supabase(apa_uuid, payload):
     """Grava uma técnica no Supabase vinculada à APA."""
     return database.criar_tecnica(payload, apa_id=apa_uuid)
@@ -619,8 +647,8 @@ def _render_envio_tecnicas_docx(apa, df_quali, key_prefix):
             and st.session_state.get(applied_key) != apply_sig
             and any(_texto_campo(v) for v in (trans_cache or {}).values())
         ):
-            # Remove chaves vazias/'nan' para o text_area (fora do form) aceitar o texto novo.
-            # Só remove conteúdo existente se o usuário pediu sobrescrever.
+            # Sempre limpa as chaves dos widgets antes de injetar (Streamlit
+            # restaura valor antigo do text_area e bloqueia o texto novo).
             for k in (f"edit_tc_{id_limpo}", f"edit_tp_{id_limpo}", f"edit_ts_{id_limpo}"):
                 atual = _texto_campo(st.session_state.get(k))
                 if sobrescrever_trans or not atual:
@@ -629,7 +657,6 @@ def _render_envio_tecnicas_docx(apa, df_quali, key_prefix):
             aplicados = _aplicar_transcricoes_nos_campos_edit(
                 id_limpo, trans_cache, sobrescrever=sobrescrever_trans
             )
-            # Só marca como aplicado se de fato preencheu algum campo
             campos_ok = any(
                 _texto_campo(st.session_state.get(k))
                 for k in (f"edit_tc_{id_limpo}", f"edit_tp_{id_limpo}", f"edit_ts_{id_limpo}")
@@ -661,6 +688,8 @@ def _render_envio_tecnicas_docx(apa, df_quali, key_prefix):
                             "💾 Transcrições gravadas na APA: "
                             + ", ".join(payload_trans.keys())
                         )
+                        # Recarrega df_quali para os campos refletirem o banco
+                        _invalidar_dados_app()
                     except Exception as exc:
                         st.session_state["_trans_gravadas_msg"] = (
                             f"Transcrições nos campos, mas falha ao gravar: {exc}"
@@ -1168,14 +1197,17 @@ def render(df_quali, df_tec):
                         (f"edit_ts_{id_limpo}", "TRANSCRIÇÃO DO NEGOCIADOR SECUNDÁRIO", "negociador_secundario"),
                     )
                     _trans_cache_ui = st.session_state.get("transcricoes_extraidas_apa") or {}
+                    _sobrescrever_ui = st.session_state.get(f"chk_overwrite_trans_edit_{id_limpo}", True)
                     for _k, _campo, _papel in _mapa_trans_edit:
-                        atual = _texto_campo(st.session_state.get(_k)) if _k in st.session_state else ""
-                        if not atual:
-                            atual = _texto_campo(apa.get(_campo))
-                        # Se o upload extraiu fala e o campo ainda está vazio, injeta agora
-                        # (antes de criar o widget — Streamlit só aceita isso neste momento).
                         extraido = _texto_campo(_trans_cache_ui.get(_papel, ""))
-                        if extraido and not atual:
+                        atual = _texto_campo(st.session_state.get(_k)) if _k in st.session_state else ""
+                        # Com sobrescrever: força o texto extraído (remove valor antigo do widget)
+                        if extraido and _sobrescrever_ui:
+                            st.session_state.pop(_k, None)
+                            atual = extraido
+                        elif not atual:
+                            atual = _texto_campo(apa.get(_campo)) or extraido
+                        elif extraido and not atual:
                             atual = extraido
                         st.session_state[_k] = atual
 
@@ -1195,8 +1227,9 @@ def render(df_quali, df_tec):
                         height=120,
                     )
                     
-                    # FORMULÁRIO DE EDIÇÃO
+                    # FORMULÁRIO DE EDIÇÃO (mesma sequência do Criar, sem editar o nº da APA)
                     st.markdown("### Editar Dados")
+                    st.caption(f"APA **{id_apa}** (número somente leitura)")
                     
                     with st.form(f"form_edit_{id_limpo}", clear_on_submit=False):
                         # Metadados
@@ -1209,32 +1242,232 @@ def render(df_quali, df_tec):
                                 key=f"edit_data_{id_limpo}",
                             )
                         with col2:
-                            modalidade_edit = st.selectbox("Modalidade", [""] + MODALIDADES, index=MODALIDADES.index(apa.get('Modalidade do incidente')) + 1 if apa.get('Modalidade do incidente') in MODALIDADES else 0, key=f"edit_mod_{id_limpo}")
+                            modalidade_edit = st.selectbox(
+                                "Modalidade",
+                                [""] + MODALIDADES,
+                                index=_indice_opcao(MODALIDADES, apa.get('Modalidade do incidente'), com_vazio=True),
+                                key=f"edit_mod_{id_limpo}",
+                            )
                         
                         col3, col4 = st.columns(2)
                         with col3:
-                            tipologia_edit = st.selectbox("Tipologia", [""] + TIPOLOGIAS, index=TIPOLOGIAS.index(apa.get('Tipologia')) + 1 if apa.get('Tipologia') in TIPOLOGIAS else 0, key=f"edit_tip_{id_limpo}")
+                            tipologia_edit = st.selectbox(
+                                "Tipologia",
+                                [""] + TIPOLOGIAS,
+                                index=_indice_opcao(TIPOLOGIAS, apa.get('Tipologia'), com_vazio=True),
+                                key=f"edit_tip_{id_limpo}",
+                            )
                         with col4:
-                            resolucao_edit = st.selectbox("Resolução", [""] + RESOLUCOES, index=RESOLUCOES.index(apa.get('Resolução')) + 1 if apa.get('Resolução') in RESOLUCOES else 0, key=f"edit_res_{id_limpo}")
-                        
-                        motivacao_edit = st.text_area("Motivação", value=apa.get('Motivação', ''), key=f"edit_mot_{id_limpo}", height=80)
+                            forma_transicao_edit = st.selectbox(
+                                "Forma de Transição",
+                                [""] + FORMAS_TRANSICAO,
+                                index=_indice_opcao(FORMAS_TRANSICAO, apa.get('Forma de Transição'), com_vazio=True),
+                                key=f"edit_ft_{id_limpo}",
+                            )
+
+                        motivacao_edit = st.text_area(
+                            "Motivação",
+                            value=_texto_campo(apa.get('Motivação')),
+                            key=f"edit_mot_{id_limpo}",
+                            height=80,
+                        )
+                        resolucao_edit = st.selectbox(
+                            "Resolução",
+                            [""] + RESOLUCOES,
+                            index=_indice_opcao(RESOLUCOES, apa.get('Resolução'), com_vazio=True),
+                            key=f"edit_res_{id_limpo}",
+                        )
                         
                         # Equipe
                         st.markdown("#### Equipe de Negociação")
                         col5, col6 = st.columns(2)
                         with col5:
-                            neg_principal_edit = st.selectbox("Negociador Principal", [""] + NEGOCIADORES, index=NEGOCIADORES.index(apa.get('Negociador Principal')) + 1 if apa.get('Negociador Principal') in NEGOCIADORES else 0, key=f"edit_np_{id_limpo}")
+                            neg_principal_edit = st.selectbox(
+                                "Negociador Principal",
+                                [""] + NEGOCIADORES,
+                                index=_indice_opcao(NEGOCIADORES, apa.get('Negociador Principal'), com_vazio=True),
+                                key=f"edit_np_{id_limpo}",
+                            )
                         with col6:
-                            neg_secundario_edit = st.selectbox("Negociador Secundário", [""] + NEGOCIADORES, index=NEGOCIADORES.index(apa.get('Negociador Secundário')) + 1 if apa.get('Negociador Secundário') in NEGOCIADORES else 0, key=f"edit_ns_{id_limpo}")
+                            neg_secundario_edit = st.selectbox(
+                                "Negociador Secundário",
+                                [""] + NEGOCIADORES,
+                                index=_indice_opcao(NEGOCIADORES, apa.get('Negociador Secundário'), com_vazio=True),
+                                key=f"edit_ns_{id_limpo}",
+                            )
                         
                         col7, col8 = st.columns(2)
                         with col7:
-                            neg_anotador_edit = st.selectbox("Negociador Anotador", [""] + NEGOCIADORES, index=NEGOCIADORES.index(apa.get('Negociador Anotador')) + 1 if apa.get('Negociador Anotador') in NEGOCIADORES else 0, key=f"edit_na_{id_limpo}")
+                            neg_anotador_edit = st.selectbox(
+                                "Negociador Anotador",
+                                [""] + NEGOCIADORES,
+                                index=_indice_opcao(NEGOCIADORES, apa.get('Negociador Anotador'), com_vazio=True),
+                                key=f"edit_na_{id_limpo}",
+                            )
                         with col8:
-                            neg_lider_edit = st.selectbox("Negociador Líder", [""] + NEGOCIADORES, index=NEGOCIADORES.index(apa.get('Negociador Líder')) + 1 if apa.get('Negociador Líder') in NEGOCIADORES else 0, key=f"edit_nl_{id_limpo}")
+                            neg_lider_edit = st.selectbox(
+                                "Negociador Líder",
+                                [""] + NEGOCIADORES,
+                                index=_indice_opcao(NEGOCIADORES, apa.get('Negociador Líder'), com_vazio=True),
+                                key=f"edit_nl_{id_limpo}",
+                            )
+
+                        col_eq5, col_eq6 = st.columns(2)
+                        with col_eq5:
+                            aux_info_edit = st.selectbox(
+                                "Auxiliar de Informações",
+                                [""] + NEGOCIADORES,
+                                index=_indice_opcao(
+                                    NEGOCIADORES, apa.get('Negociador Auxiliar de Informações'), com_vazio=True
+                                ),
+                                key=f"edit_ai_{id_limpo}",
+                            )
+                        with col_eq6:
+                            aux_log_edit = st.selectbox(
+                                "Auxiliar de Logística",
+                                [""] + NEGOCIADORES,
+                                index=_indice_opcao(
+                                    NEGOCIADORES, apa.get('Negociador Auxiliar de Logística'), com_vazio=True
+                                ),
+                                key=f"edit_al_{id_limpo}",
+                            )
+                        prof_saude_edit = st.selectbox(
+                            "Profissional de Saúde Mental",
+                            [""] + SAUDE_MENTAL,
+                            index=_indice_opcao(
+                                SAUDE_MENTAL, apa.get('Profissional de Saúde Mental'), com_vazio=True
+                            ),
+                            key=f"edit_psm_sel_{id_limpo}",
+                        )
+
+                        # Chegada (percepções 12/13)
+                        st.markdown("#### Chegada")
+                        st.markdown("**Negociador Principal**")
+                        c_ch1, c_ch2 = st.columns(2)
+                        with c_ch1:
+                            agr_np_cheg = st.selectbox(
+                                "12 - Agressividade",
+                                PERCEPCOES_AGRESSIVIDADE,
+                                index=_indice_opcao(
+                                    PERCEPCOES_AGRESSIVIDADE, apa.get(CAMPOS_CHEGADA["agr_np"])
+                                ),
+                                key=f"edit_agr_np_ch_{id_limpo}",
+                            )
+                        with c_ch2:
+                            rec_np_cheg = st.selectbox(
+                                "13 - Receptividade",
+                                PERCEPCOES_RECEPTIVIDADE,
+                                index=_indice_opcao(
+                                    PERCEPCOES_RECEPTIVIDADE, apa.get(CAMPOS_CHEGADA["rec_np"])
+                                ),
+                                key=f"edit_rec_np_ch_{id_limpo}",
+                            )
+                        st.markdown("**Negociador Secundário**")
+                        c_ch3, c_ch4 = st.columns(2)
+                        with c_ch3:
+                            agr_ns_cheg = st.selectbox(
+                                "12 - Agressividade",
+                                PERCEPCOES_AGRESSIVIDADE,
+                                index=_indice_opcao(
+                                    PERCEPCOES_AGRESSIVIDADE, apa.get(CAMPOS_CHEGADA["agr_ns"])
+                                ),
+                                key=f"edit_agr_ns_ch_{id_limpo}",
+                            )
+                        with c_ch4:
+                            rec_ns_cheg = st.selectbox(
+                                "13 - Receptividade",
+                                PERCEPCOES_RECEPTIVIDADE,
+                                index=_indice_opcao(
+                                    PERCEPCOES_RECEPTIVIDADE, apa.get(CAMPOS_CHEGADA["rec_ns"])
+                                ),
+                                key=f"edit_rec_ns_ch_{id_limpo}",
+                            )
+                        st.markdown("**Negociador Líder**")
+                        c_ch5, c_ch6 = st.columns(2)
+                        with c_ch5:
+                            agr_nl_cheg = st.selectbox(
+                                "12 - Agressividade",
+                                PERCEPCOES_AGRESSIVIDADE,
+                                index=_indice_opcao(
+                                    PERCEPCOES_AGRESSIVIDADE, apa.get(CAMPOS_CHEGADA["agr_nl"])
+                                ),
+                                key=f"edit_agr_nl_ch_{id_limpo}",
+                            )
+                        with c_ch6:
+                            rec_nl_cheg = st.selectbox(
+                                "13 - Receptividade",
+                                PERCEPCOES_RECEPTIVIDADE,
+                                index=_indice_opcao(
+                                    PERCEPCOES_RECEPTIVIDADE, apa.get(CAMPOS_CHEGADA["rec_nl"])
+                                ),
+                                key=f"edit_rec_nl_ch_{id_limpo}",
+                            )
+
+                        # Encerramento (percepções 24/25)
+                        st.markdown("#### Encerramento")
+                        st.markdown("**Negociador Principal**")
+                        c_en1, c_en2 = st.columns(2)
+                        with c_en1:
+                            agr_np_enc = st.selectbox(
+                                "24 - Agressividade",
+                                PERCEPCOES_AGRESSIVIDADE,
+                                index=_indice_opcao(
+                                    PERCEPCOES_AGRESSIVIDADE, apa.get(CAMPOS_ENCERRAMENTO["agr_np"])
+                                ),
+                                key=f"edit_agr_np_en_{id_limpo}",
+                            )
+                        with c_en2:
+                            rec_np_enc = st.selectbox(
+                                "25 - Receptividade",
+                                PERCEPCOES_RECEPTIVIDADE,
+                                index=_indice_opcao(
+                                    PERCEPCOES_RECEPTIVIDADE, apa.get(CAMPOS_ENCERRAMENTO["rec_np"])
+                                ),
+                                key=f"edit_rec_np_en_{id_limpo}",
+                            )
+                        st.markdown("**Negociador Secundário**")
+                        c_en3, c_en4 = st.columns(2)
+                        with c_en3:
+                            agr_ns_enc = st.selectbox(
+                                "24 - Agressividade",
+                                PERCEPCOES_AGRESSIVIDADE,
+                                index=_indice_opcao(
+                                    PERCEPCOES_AGRESSIVIDADE, apa.get(CAMPOS_ENCERRAMENTO["agr_ns"])
+                                ),
+                                key=f"edit_agr_ns_en_{id_limpo}",
+                            )
+                        with c_en4:
+                            rec_ns_enc = st.selectbox(
+                                "25 - Receptividade",
+                                PERCEPCOES_RECEPTIVIDADE,
+                                index=_indice_opcao(
+                                    PERCEPCOES_RECEPTIVIDADE, apa.get(CAMPOS_ENCERRAMENTO["rec_ns"])
+                                ),
+                                key=f"edit_rec_ns_en_{id_limpo}",
+                            )
+                        st.markdown("**Negociador Líder**")
+                        c_en5, c_en6 = st.columns(2)
+                        with c_en5:
+                            agr_nl_enc = st.selectbox(
+                                "24 - Agressividade",
+                                PERCEPCOES_AGRESSIVIDADE,
+                                index=_indice_opcao(
+                                    PERCEPCOES_AGRESSIVIDADE, apa.get(CAMPOS_ENCERRAMENTO["agr_nl"])
+                                ),
+                                key=f"edit_agr_nl_en_{id_limpo}",
+                            )
+                        with c_en6:
+                            rec_nl_enc = st.selectbox(
+                                "25 - Receptividade",
+                                PERCEPCOES_RECEPTIVIDADE,
+                                index=_indice_opcao(
+                                    PERCEPCOES_RECEPTIVIDADE, apa.get(CAMPOS_ENCERRAMENTO["rec_nl"])
+                                ),
+                                key=f"edit_rec_nl_en_{id_limpo}",
+                            )
                         
                         # Info Adicionais
-                        st.markdown("#### ℹ️ Informações Adicionais")
+                        st.markdown("#### Informações Adicionais")
                         col9, col10 = st.columns(2)
                         with col9:
                             tempo_real_edit = st.text_input(
@@ -1251,74 +1484,84 @@ def render(df_quali, df_tec):
                         
                         col11, col12 = st.columns(2)
                         with col11:
-                            uniforme_edit = st.selectbox("Uniforme Usado", [""] + UNIFORMES, index=UNIFORMES.index(apa.get('Uniforme Usado')) + 1 if apa.get('Uniforme Usado') in UNIFORMES else 0, key=f"edit_unif_{id_limpo}")
+                            uniforme_edit = st.selectbox(
+                                "Uniforme Usado",
+                                [""] + UNIFORMES,
+                                index=_indice_opcao(UNIFORMES, apa.get('Uniforme Usado'), com_vazio=True),
+                                key=f"edit_unif_{id_limpo}",
+                            )
                         with col12:
-                            sexo_edit = st.selectbox("Sexo do Causador", [""] + SEXOS, index=SEXOS.index(apa.get('Sexo do Causador')) + 1 if apa.get('Sexo do Causador') in SEXOS else 0, key=f"edit_sex_{id_limpo}")
+                            sexo_edit = st.selectbox(
+                                "Sexo do Causador",
+                                [""] + SEXOS,
+                                index=_indice_opcao(SEXOS, apa.get('Sexo do Causador'), com_vazio=True),
+                                key=f"edit_sex_{id_limpo}",
+                            )
                         
                         # Funções (em expander para não ficar gigante)
-                        with st.expander(" FUNÇÕES - Clique para Expandir", expanded=False):
+                        with st.expander("Funções — clique para expandir", expanded=False):
                             st.markdown("#### NEGOCIADOR PRINCIPAL")
                             col_f1a, col_f1b = st.columns(2)
                             with col_f1a:
-                                func_np_edit = st.text_area("Descrição", value=apa.get('FUNÇÕES: NEGOCIADOR PRINCIPAL', ''), key=f"edit_func_np_{id_limpo}", height=80)
-                                func_np_problema_edit = st.text_area("Problema Identificado", value=apa.get('FUNÇÕES: NEGOCIADOR PRINCIPAL - PROBLEMA IDENTIFICADO', ''), key=f"edit_func_np_prob_{id_limpo}", height=80)
+                                func_np_edit = st.text_area("Descrição", value=_texto_campo(apa.get('FUNÇÕES: NEGOCIADOR PRINCIPAL')), key=f"edit_func_np_{id_limpo}", height=80)
+                                func_np_problema_edit = st.text_area("Problema Identificado", value=_texto_campo(apa.get('FUNÇÕES: NEGOCIADOR PRINCIPAL - PROBLEMA IDENTIFICADO')), key=f"edit_func_np_prob_{id_limpo}", height=80)
                             with col_f1b:
-                                func_np_acoes_edit = st.text_area("Ações Corretivas", value=apa.get('FUNÇÕES: NEGOCIADOR PRINCIPAL - AÇÕES CORRETIVAS ADOTADAS', ''), key=f"edit_func_np_acao_{id_limpo}", height=80)
-                                func_np_praticas_edit = st.text_area("Práticas Promissoras", value=apa.get('FUNÇÕES: NEGOCIADOR PRINCIPAL - PRÁTICAS PROMISSORAS', ''), key=f"edit_func_np_prat_{id_limpo}", height=80)
+                                func_np_acoes_edit = st.text_area("Ações Corretivas", value=_texto_campo(apa.get('FUNÇÕES: NEGOCIADOR PRINCIPAL - AÇÕES CORRETIVAS ADOTADAS')), key=f"edit_func_np_acao_{id_limpo}", height=80)
+                                func_np_praticas_edit = st.text_area("Práticas Promissoras", value=_texto_campo(apa.get('FUNÇÕES: NEGOCIADOR PRINCIPAL - PRÁTICAS PROMISSORAS')), key=f"edit_func_np_prat_{id_limpo}", height=80)
                             
                             st.markdown("#### NEGOCIADOR SECUNDÁRIO")
                             col_f2a, col_f2b = st.columns(2)
                             with col_f2a:
-                                func_ns_edit = st.text_area("Descrição", value=apa.get('FUNÇÕES: NEGOCIADOR SECUNDÁRIO', ''), key=f"edit_func_ns_{id_limpo}", height=80)
-                                func_ns_problema_edit = st.text_area("Problema Identificado", value=apa.get('FUNÇÕES: NEGOCIADOR SECUNDÁRIO - PROBLEMA IDENTIFICADO', ''), key=f"edit_func_ns_prob_{id_limpo}", height=80)
+                                func_ns_edit = st.text_area("Descrição", value=_texto_campo(apa.get('FUNÇÕES: NEGOCIADOR SECUNDÁRIO')), key=f"edit_func_ns_{id_limpo}", height=80)
+                                func_ns_problema_edit = st.text_area("Problema Identificado", value=_texto_campo(apa.get('FUNÇÕES: NEGOCIADOR SECUNDÁRIO - PROBLEMA IDENTIFICADO')), key=f"edit_func_ns_prob_{id_limpo}", height=80)
                             with col_f2b:
-                                func_ns_acoes_edit = st.text_area("Ações Corretivas", value=apa.get('FUNÇÕES: NEGOCIADOR SECUNDÁRIO - AÇÕES CORRETIVAS ADOTADAS', ''), key=f"edit_func_ns_acao_{id_limpo}", height=80)
-                                func_ns_praticas_edit = st.text_area("Práticas Promissoras", value=apa.get('FUNÇÕES: NEGOCIADOR SECUNDÁRIO - PRÁTICAS PROMISSORAS', ''), key=f"edit_func_ns_prat_{id_limpo}", height=80)
+                                func_ns_acoes_edit = st.text_area("Ações Corretivas", value=_texto_campo(apa.get('FUNÇÕES: NEGOCIADOR SECUNDÁRIO - AÇÕES CORRETIVAS ADOTADAS')), key=f"edit_func_ns_acao_{id_limpo}", height=80)
+                                func_ns_praticas_edit = st.text_area("Práticas Promissoras", value=_texto_campo(apa.get('FUNÇÕES: NEGOCIADOR SECUNDÁRIO - PRÁTICAS PROMISSORAS')), key=f"edit_func_ns_prat_{id_limpo}", height=80)
                             
                             st.markdown("#### NEGOCIADOR ANOTADOR")
                             col_f3a, col_f3b = st.columns(2)
                             with col_f3a:
-                                func_na_edit = st.text_area("Descrição", value=apa.get('FUNÇÕES: NEGOCIADOR ANOTADOR', ''), key=f"edit_func_na_{id_limpo}", height=80)
-                                func_na_problema_edit = st.text_area("Problema Identificado", value=apa.get('FUNÇÕES: NEGOCIADOR ANOTADOR - PROBLEMA IDENTIFICADO', ''), key=f"edit_func_na_prob_{id_limpo}", height=80)
+                                func_na_edit = st.text_area("Descrição", value=_texto_campo(apa.get('FUNÇÕES: NEGOCIADOR ANOTADOR')), key=f"edit_func_na_{id_limpo}", height=80)
+                                func_na_problema_edit = st.text_area("Problema Identificado", value=_texto_campo(apa.get('FUNÇÕES: NEGOCIADOR ANOTADOR - PROBLEMA IDENTIFICADO')), key=f"edit_func_na_prob_{id_limpo}", height=80)
                             with col_f3b:
-                                func_na_acoes_edit = st.text_area("Ações Corretivas", value=apa.get('FUNÇÕES: NEGOCIADOR ANOTADOR - AÇÕES CORRETIVAS ADOTADAS', ''), key=f"edit_func_na_acao_{id_limpo}", height=80)
-                                func_na_praticas_edit = st.text_area("Práticas Promissoras", value=apa.get('FUNÇÕES: NEGOCIADOR ANOTADOR - PRÁTICAS PROMISSORAS', ''), key=f"edit_func_na_prat_{id_limpo}", height=80)
+                                func_na_acoes_edit = st.text_area("Ações Corretivas", value=_texto_campo(apa.get('FUNÇÕES: NEGOCIADOR ANOTADOR - AÇÕES CORRETIVAS ADOTADAS')), key=f"edit_func_na_acao_{id_limpo}", height=80)
+                                func_na_praticas_edit = st.text_area("Práticas Promissoras", value=_texto_campo(apa.get('FUNÇÕES: NEGOCIADOR ANOTADOR - PRÁTICAS PROMISSORAS')), key=f"edit_func_na_prat_{id_limpo}", height=80)
                             
                             st.markdown("#### NEGOCIADOR LÍDER")
                             col_f4a, col_f4b = st.columns(2)
                             with col_f4a:
-                                func_nl_edit = st.text_area("Descrição", value=apa.get('FUNÇÕES: NEGOCIADOR LÍDER', ''), key=f"edit_func_nl_{id_limpo}", height=80)
-                                func_nl_problema_edit = st.text_area("Problema Identificado", value=apa.get('FUNÇÕES: NEGOCIADOR LÍDER - PROBLEMA IDENTIFICADO', ''), key=f"edit_func_nl_prob_{id_limpo}", height=80)
+                                func_nl_edit = st.text_area("Descrição", value=_texto_campo(apa.get('FUNÇÕES: NEGOCIADOR LÍDER')), key=f"edit_func_nl_{id_limpo}", height=80)
+                                func_nl_problema_edit = st.text_area("Problema Identificado", value=_texto_campo(apa.get('FUNÇÕES: NEGOCIADOR LÍDER - PROBLEMA IDENTIFICADO')), key=f"edit_func_nl_prob_{id_limpo}", height=80)
                             with col_f4b:
-                                func_nl_acoes_edit = st.text_area("Ações Corretivas", value=apa.get('FUNÇÕES: NEGOCIADOR LÍDER - AÇÕES CORRETIVAS ADOTADAS', ''), key=f"edit_func_nl_acao_{id_limpo}", height=80)
-                                func_nl_praticas_edit = st.text_area("Práticas Promissoras", value=apa.get('FUNÇÕES: NEGOCIADOR LÍDER - PRÁTICAS PROMISSORAS', ''), key=f"edit_func_nl_prat_{id_limpo}", height=80)
+                                func_nl_acoes_edit = st.text_area("Ações Corretivas", value=_texto_campo(apa.get('FUNÇÕES: NEGOCIADOR LÍDER - AÇÕES CORRETIVAS ADOTADAS')), key=f"edit_func_nl_acao_{id_limpo}", height=80)
+                                func_nl_praticas_edit = st.text_area("Práticas Promissoras", value=_texto_campo(apa.get('FUNÇÕES: NEGOCIADOR LÍDER - PRÁTICAS PROMISSORAS')), key=f"edit_func_nl_prat_{id_limpo}", height=80)
                             
                             st.markdown("#### AUXILIAR DE LOGÍSTICA")
                             col_f5a, col_f5b = st.columns(2)
                             with col_f5a:
-                                func_al_edit = st.text_area("Descrição", value=apa.get('FUNÇÕES: NEGOCIADOR AUXILIAR DE LOGÍSTICA', ''), key=f"edit_func_al_{id_limpo}", height=80)
-                                func_al_problema_edit = st.text_area("Problema Identificado", value=apa.get('FUNÇÕES: AUXILIAR DE LOGÍSTICA - PROBLEMA IDENTIFICADO', ''), key=f"edit_func_al_prob_{id_limpo}", height=80)
+                                func_al_edit = st.text_area("Descrição", value=_texto_campo(apa.get('FUNÇÕES: NEGOCIADOR AUXILIAR DE LOGÍSTICA')), key=f"edit_func_al_{id_limpo}", height=80)
+                                func_al_problema_edit = st.text_area("Problema Identificado", value=_texto_campo(apa.get('FUNÇÕES: AUXILIAR DE LOGÍSTICA - PROBLEMA IDENTIFICADO')), key=f"edit_func_al_prob_{id_limpo}", height=80)
                             with col_f5b:
-                                func_al_acoes_edit = st.text_area("Ações Corretivas", value=apa.get('FUNÇÕES: AUXILIAR DE LOGÍSTICA - AÇÕES CORRETIVAS', ''), key=f"edit_func_al_acao_{id_limpo}", height=80)
-                                func_al_praticas_edit = st.text_area("Práticas Promissoras", value=apa.get('FUNÇÕES: AUXILIAR DE LOGÍSTICA - PRÁTICAS PROMISSORAS', ''), key=f"edit_func_al_prat_{id_limpo}", height=80)
+                                func_al_acoes_edit = st.text_area("Ações Corretivas", value=_texto_campo(apa.get('FUNÇÕES: AUXILIAR DE LOGÍSTICA - AÇÕES CORRETIVAS')), key=f"edit_func_al_acao_{id_limpo}", height=80)
+                                func_al_praticas_edit = st.text_area("Práticas Promissoras", value=_texto_campo(apa.get('FUNÇÕES: AUXILIAR DE LOGÍSTICA - PRÁTICAS PROMISSORAS')), key=f"edit_func_al_prat_{id_limpo}", height=80)
                             
                             st.markdown("#### AUXILIAR DE INFORMAÇÕES")
                             col_f6a, col_f6b = st.columns(2)
                             with col_f6a:
-                                func_ai_edit = st.text_area("Descrição", value=apa.get('FUNÇÕES: NEGOCIADOR AUXILIAR DE INFORMAÇÕES', ''), key=f"edit_func_ai_{id_limpo}", height=80)
-                                func_ai_problema_edit = st.text_area("Problema Identificado", value=apa.get('FUNÇÕES: AUXILIAR DE INFORMAÇÕES - PROBLEMA IDENTIFICADO', ''), key=f"edit_func_ai_prob_{id_limpo}", height=80)
+                                func_ai_edit = st.text_area("Descrição", value=_texto_campo(apa.get('FUNÇÕES: NEGOCIADOR AUXILIAR DE INFORMAÇÕES')), key=f"edit_func_ai_{id_limpo}", height=80)
+                                func_ai_problema_edit = st.text_area("Problema Identificado", value=_texto_campo(apa.get('FUNÇÕES: AUXILIAR DE INFORMAÇÕES - PROBLEMA IDENTIFICADO')), key=f"edit_func_ai_prob_{id_limpo}", height=80)
                             with col_f6b:
-                                func_ai_acoes_edit = st.text_area("Ações Corretivas", value=apa.get('FUNÇÕES: AUXILIAR DE INFORMAÇÕES - AÇÕES CORRETIVAS', ''), key=f"edit_func_ai_acao_{id_limpo}", height=80)
-                                func_ai_praticas_edit = st.text_area("Práticas Promissoras", value=apa.get('FUNÇÕES: AUXILIAR DE INFORMAÇÕES - PRÁTICAS PROMISSORAS', ''), key=f"edit_func_ai_prat_{id_limpo}", height=80)
+                                func_ai_acoes_edit = st.text_area("Ações Corretivas", value=_texto_campo(apa.get('FUNÇÕES: AUXILIAR DE INFORMAÇÕES - AÇÕES CORRETIVAS')), key=f"edit_func_ai_acao_{id_limpo}", height=80)
+                                func_ai_praticas_edit = st.text_area("Práticas Promissoras", value=_texto_campo(apa.get('FUNÇÕES: AUXILIAR DE INFORMAÇÕES - PRÁTICAS PROMISSORAS')), key=f"edit_func_ai_prat_{id_limpo}", height=80)
                             
                             st.markdown("#### PROFISSIONAL DE SAÚDE MENTAL")
                             col_f7a, col_f7b = st.columns(2)
                             with col_f7a:
-                                func_psm_edit = st.text_area("Descrição", value=apa.get('FUNÇÕES: PROFISSIONAL DE SAÚDE MENTAL', ''), key=f"edit_func_psm_{id_limpo}", height=80)
-                                func_psm_problema_edit = st.text_area("Problema Identificado", value=apa.get('FUNÇÕES: PROFISSIONAL DE SAÚDE MENTAL - PROBLEMA IDENTIFICADO', ''), key=f"edit_func_psm_prob_{id_limpo}", height=80)
+                                func_psm_edit = st.text_area("Descrição", value=_texto_campo(apa.get('FUNÇÕES: PROFISSIONAL DE SAÚDE MENTAL')), key=f"edit_func_psm_{id_limpo}", height=80)
+                                func_psm_problema_edit = st.text_area("Problema Identificado", value=_texto_campo(apa.get('FUNÇÕES: PROFISSIONAL DE SAÚDE MENTAL - PROBLEMA IDENTIFICADO')), key=f"edit_func_psm_prob_{id_limpo}", height=80)
                             with col_f7b:
-                                func_psm_acoes_edit = st.text_area("Ações Corretivas", value=apa.get('FUNÇÕES: PROFISSIONAL DE SAÚDE MENTAL - AÇÕES CORRETIVAS ADOTADAS', ''), key=f"edit_func_psm_acao_{id_limpo}", height=80)
-                                func_psm_praticas_edit = st.text_area("Práticas Promissoras", value=apa.get('FUNÇÕES: PROFISSIONAL DE SAÚDE MENTAL - PRÁTICAS PROMISSORAS', ''), key=f"edit_func_psm_prat_{id_limpo}", height=80)
+                                func_psm_acoes_edit = st.text_area("Ações Corretivas", value=_texto_campo(apa.get('FUNÇÕES: PROFISSIONAL DE SAÚDE MENTAL - AÇÕES CORRETIVAS ADOTADAS')), key=f"edit_func_psm_acao_{id_limpo}", height=80)
+                                func_psm_praticas_edit = st.text_area("Práticas Promissoras", value=_texto_campo(apa.get('FUNÇÕES: PROFISSIONAL DE SAÚDE MENTAL - PRÁTICAS PROMISSORAS')), key=f"edit_func_psm_prat_{id_limpo}", height=80)
                         
                         # Botões
                         col_salvar, col_cancelar = st.columns(2)
@@ -1328,17 +1571,33 @@ def render(df_quali, df_tec):
                             btn_cancelar = st.form_submit_button("❌ CANCELAR", use_container_width=True)
                         
                         if btn_salvar:
-                            # Preparar payload de atualização
+                            # Preparar payload de atualização (mesmos campos do Criar, exceto nº da APA)
                             payload_update = {
                                 "Data da ocorrência": data_edit.isoformat() if data_edit else "",
                                 "Modalidade do incidente": modalidade_edit or "",
                                 "Tipologia": tipologia_edit or "",
+                                "Forma de Transição": forma_transicao_edit or "",
                                 "Resolução": resolucao_edit or "",
                                 "Motivação": motivacao_edit or "",
                                 "Negociador Principal": neg_principal_edit or "",
                                 "Negociador Secundário": neg_secundario_edit or "",
                                 "Negociador Anotador": neg_anotador_edit or "",
                                 "Negociador Líder": neg_lider_edit or "",
+                                "Negociador Auxiliar de Informações": aux_info_edit or "",
+                                "Negociador Auxiliar de Logística": aux_log_edit or "",
+                                "Profissional de Saúde Mental": prof_saude_edit or "",
+                                CAMPOS_CHEGADA["agr_np"]: agr_np_cheg,
+                                CAMPOS_CHEGADA["agr_ns"]: agr_ns_cheg,
+                                CAMPOS_CHEGADA["agr_nl"]: agr_nl_cheg,
+                                CAMPOS_CHEGADA["rec_np"]: rec_np_cheg,
+                                CAMPOS_CHEGADA["rec_ns"]: rec_ns_cheg,
+                                CAMPOS_CHEGADA["rec_nl"]: rec_nl_cheg,
+                                CAMPOS_ENCERRAMENTO["agr_np"]: agr_np_enc,
+                                CAMPOS_ENCERRAMENTO["agr_ns"]: agr_ns_enc,
+                                CAMPOS_ENCERRAMENTO["agr_nl"]: agr_nl_enc,
+                                CAMPOS_ENCERRAMENTO["rec_np"]: rec_np_enc,
+                                CAMPOS_ENCERRAMENTO["rec_ns"]: rec_ns_enc,
+                                CAMPOS_ENCERRAMENTO["rec_nl"]: rec_nl_enc,
                                 "TRANSCRIÇÃO DO CAUSADOR": _texto_campo(
                                     st.session_state.get(f"edit_tc_{id_limpo}")
                                 ),
