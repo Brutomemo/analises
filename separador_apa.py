@@ -178,6 +178,8 @@ _RE_TIMESTAMP_QUEBRADO = re.compile(
 _RE_DIGITOS = re.compile(r'\d+')
 _RE_DOIS_PONTOS_SOLTOS = re.compile(r'\s*:\s*')
 _RE_ESPACOS = re.compile(r'[ \t]{2,}')
+# Pontuação numérica órfã após remover dígitos (ex.: "4.826" → "." ; "1,5" → ",")
+_RE_PONTUACAO_NUMERICA_ORFA = re.compile(r'(?:(?<=\s)|^)[.,](?=\s|$)|(?<=\s)[.,](?=\s)')
 # Marcadores em CAIXA ALTA (técnica/seção) — independente da cor do run
 _RE_CAIXA_ALTA_BLOCO = re.compile(
     r'(?<![A-Za-zÀ-ÿ])'
@@ -242,10 +244,26 @@ _FRAGMENTOS = {
 }
 
 
+def _remover_todos_numeros(texto: str) -> str:
+    """
+    Remove TODOS os caracteres numéricos da fala (ASCII e Unicode).
+    Inclui idade, valores, horários fatiados (00, 18, 35) etc.
+    """
+    if not texto:
+        return ''
+    # isdigit() cobre 0-9, fullwidth, sobrescritos e outros Nd
+    texto = ''.join(ch for ch in texto if not ch.isdigit())
+    texto = _RE_DIGITOS.sub('', texto)  # reforço ASCII
+    texto = _RE_DOIS_PONTOS_SOLTOS.sub(' ', texto)
+    texto = _RE_PONTUACAO_NUMERICA_ORFA.sub(' ', texto)
+    texto = _RE_ESPACOS.sub(' ', texto).strip(' \t-–_|:,.')
+    return texto
+
+
 def _texto_run_para_buffer(texto: str) -> str:
     """
-    Texto bruto do run para o buffer do interlocutor.
-    Não limpa horário aqui (evita deixar pedaços '00' / '18'); a limpeza é no parágrafo juntado.
+    Texto do run para o buffer do interlocutor.
+    Já descarta CAIXA ALTA/legendas e remove dígitos do run.
     """
     texto = (texto or '').strip()
     if not texto:
@@ -273,6 +291,10 @@ def _texto_run_para_buffer(texto: str) -> str:
         return ''
     if re.fullmatch(r'[_.\s]+', texto):
         return ''
+    # Números nunca entram no buffer (horário, idade, valores…)
+    texto = _remover_todos_numeros(texto)
+    if not texto or re.fullmatch(r'[\s.:\-–,]+', texto):
+        return ''
     return texto
 
 
@@ -284,9 +306,9 @@ def _limpar(texto: str) -> str:
 def _limpar_transcricao_final(texto: str) -> str:
     """
     Limpeza no texto JÁ JUNTADO do interlocutor:
-      1) horários completos e quebrados
-      2) todos os dígitos (contorna runs fatiados do Word)
-      3) marcadores em CAIXA ALTA (sem depender de cor)
+      1) marcadores em CAIXA ALTA (sem depender de cor)
+      2) horários completos e quebrados
+      3) TODOS os dígitos (garantia final)
     """
     texto = texto or ''
     texto = _RE_MARCADORES_CONHECIDOS.sub('', texto)
@@ -294,11 +316,7 @@ def _limpar_transcricao_final(texto: str) -> str:
     texto = _RE_TIMESTAMP.sub('', texto)
     texto = _RE_TIMESTAMP_QUALQUER.sub('', texto)
     texto = _RE_TIMESTAMP_QUEBRADO.sub('', texto)
-    # Garante remoção de qualquer número remanescente (00, 18, 4.826, etc.)
-    texto = _RE_DIGITOS.sub('', texto)
-    # Dois-pontos sobrados de horário viram espaço
-    texto = _RE_DOIS_PONTOS_SOLTOS.sub(' ', texto)
-    texto = _RE_ESPACOS.sub(' ', texto).strip(' \t-–_|:,.')
+    texto = _remover_todos_numeros(texto)
     return texto
 
 
@@ -761,6 +779,11 @@ def processar_apa(file_bytes: bytes) -> dict:
         tbl_tec = _encontrar_tabela_tecnicas(tabelas)
 
         transcricoes = _extrair_transcricoes(tbl_trans) if tbl_trans is not None else {}
+        # Garantia final: nenhum dígito sobra na fala entregue ao app
+        transcricoes = {
+            papel: _remover_todos_numeros(texto)
+            for papel, texto in (transcricoes or {}).items()
+        }
         tecnicas = _extrair_tecnicas(tbl_tec) if tbl_tec is not None else pd.DataFrame()
 
         return {'transcricoes': transcricoes, 'tecnicas': tecnicas, 'erro': None}
