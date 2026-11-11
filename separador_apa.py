@@ -126,13 +126,55 @@ def _cor_do_run(run: ET.Element) -> str | None:
     return _hex_de_elemento_cor(rpr.find('w:color', NS))
 
 
+def _eh_cor_preta(hx: str | None) -> bool:
+    """True para preto explícito / quase preto (marcadores de técnica na APA)."""
+    if not hx:
+        return False
+    hx = hx.upper().strip()
+    if hx in {'000000', '1A1C1E', '0D0D0D', '212121', 'AUTO'}:
+        return True
+    try:
+        r, g, b = int(hx[0:2], 16), int(hx[2:4], 16), int(hx[4:6], 16)
+    except (ValueError, IndexError):
+        return False
+    return r < 45 and g < 45 and b < 45
+
+
+def _eh_marcador_caixa_alta(texto: str) -> bool:
+    """
+    Marcadores de técnica / seção em CAIXA ALTA
+    (ex.: PERGUNTAS ABERTAS, VIDEO 1 PRINCIPAL, INTRODUÇÃO DE ASSUNTO).
+    """
+    t = (texto or '').strip().strip('()[]{}')
+    if len(t) < 3:
+        return False
+    letras = [c for c in t if c.isalpha()]
+    if len(letras) < 3:
+        return False
+    maius = sum(1 for c in letras if c.isupper())
+    return (maius / len(letras)) >= 0.85
+
+
 # ============================================================
 # LIMPEZA
 # ============================================================
 
-# Horário de fala no diálogo (ex.: 00:00, 01:41) — removido do texto registrado
-_RE_TIMESTAMP = re.compile(r'(?:(?<=^)|(?<=\s))\d{1,2}:\d{2}(?::\d{2})?(?=[\s,]|$)')
+# Horário de fala no diálogo (ex.: 00:00, 01:41, 00:13:20) — removido do texto registrado.
+# Não remove valores da fala (ex.: 4.826 reais).
+_RE_TIMESTAMP = re.compile(
+    r'(?:(?<=^)|(?<=\s)|(?<=\n))\d{1,2}:\d{2}(?::\d{2})?(?=\s|[A-Za-zÀ-ÿ,.!?;:\)]|$)'
+)
+_RE_TIMESTAMP_QUALQUER = re.compile(r'\b\d{1,2}:\d{2}(?::\d{2})?\b')
+# Horário / contador só no início da linha (após \n) — não aplica a runs soltos com valores
+_RE_NUM_INICIO_LINHA = re.compile(r'(?m)^\s*\d{1,2}:\d{2}(?::\d{2})?\s*')
 _RE_ESPACOS = re.compile(r'[ \t]{2,}')
+# Sequências em CAIXA ALTA remanescentes (marcadores pretos que vazaram)
+_RE_CAIXA_ALTA_BLOCO = re.compile(
+    r'(?<![A-Za-zÀ-ÿ])'
+    r'[A-ZÁÉÍÓÚÂÊÔÃÕÇ]{3,}'
+    r'(?:\s+(?:\d+|[A-ZÁÉÍÓÚÂÊÔÃÕÇ]{2,})){0,10}'
+    r'(?![A-Za-zÀ-ÿ])'
+)
 _RE_PAPEL_LEGENDA = (
     r'(?:CAUSADOR|NEGOCIADOR\s+PRINCIPAL|NEGOCIADOR\s+SECUND[AÁ]RIO|'
     r'(?:1[°º]?|PRIMEIRO)\s*INTERVENTOR|GERENTE|TERCEIRO|V[IÍ]TIMA|'
@@ -179,9 +221,15 @@ _FRAGMENTOS = {
 
 
 def _limpar(texto: str) -> str:
-    """Remove timestamps, legendas de cor e fragmentos que não são diálogo."""
-    texto = _RE_TIMESTAMP.sub('', texto or '')
+    """Remove timestamps, legendas e fragmentos que não são diálogo (preserva valores na fala)."""
+    texto = texto or ''
+    texto = _RE_TIMESTAMP.sub('', texto)
+    texto = _RE_TIMESTAMP_QUALQUER.sub('', texto)
     texto = _RE_LEGENDA_INLINE.sub('', texto)
+    # Marcadores em CAIXA ALTA (técnica/seção) que tenham sobrado no mesmo run
+    if _eh_marcador_caixa_alta(texto):
+        return ''
+    texto = _RE_CAIXA_ALTA_BLOCO.sub('', texto)
     texto = _RE_ESPACOS.sub(' ', texto).strip(' \t-–_|:')
     if not texto:
         return ''
@@ -201,6 +249,19 @@ def _limpar(texto: str) -> str:
     # Só underscore / placeholder de seção vazia
     if re.fullmatch(r'[_.\s]+', texto):
         return ''
+    # Run que ficou só com horário / dígitos de tempo
+    if re.fullmatch(r'\d{1,2}(:\d{2}){1,2}', texto.strip()):
+        return ''
+    return texto
+
+
+def _limpar_transcricao_final(texto: str) -> str:
+    """Passagem final na fala já agrupada: remove horários e blocos em CAIXA ALTA."""
+    texto = texto or ''
+    texto = _RE_TIMESTAMP_QUALQUER.sub('', texto)
+    texto = _RE_NUM_INICIO_LINHA.sub('', texto)
+    texto = _RE_CAIXA_ALTA_BLOCO.sub('', texto)
+    texto = _RE_ESPACOS.sub(' ', texto).strip(' \t-–_|:')
     return texto
 
 
@@ -363,7 +424,7 @@ def _paragrafo_tem_fala_com_horario(texto: str) -> bool:
 def _extrair_fala_do_paragrafo(para: ET.Element, falas: dict) -> None:
     """
     Extrai interlocutores coloridos de um parágrafo que já é linha de diálogo.
-    Ignora o horário (00:00); mantém só a fala.
+    Ignora horário/números iniciais; ignora texto preto e marcadores em CAIXA ALTA.
     """
     papel_atual = None
     buffer = {k: [] for k in falas}
@@ -373,14 +434,24 @@ def _extrair_fala_do_paragrafo(para: ET.Element, falas: dict) -> None:
         if not texto:
             continue
 
+        hx = _cor_do_run(run)
         papel = _papel_do_run(run)
+
+        # Preto (marcadores/técnicas): nunca entra na fala e não “contamina” o papel atual
+        if _eh_cor_preta(hx):
+            continue
+
+        # CAIXA ALTA sem cor de diálogo = marcador (PERGUNTAS ABERTAS, VIDEO 1 PRINCIPAL…)
+        if _eh_marcador_caixa_alta(texto) and papel is None:
+            continue
+
         if papel:
             papel_atual = papel
 
         if not papel_atual or papel_atual not in falas:
             continue
 
-        # Remove horários deste run; descarta run que era só o horário
+        # Remove horários deste run; descarta run que era só o horário / marcador
         limpo = _limpar(texto)
         if limpo:
             buffer[papel_atual].append(limpo)
@@ -388,7 +459,7 @@ def _extrair_fala_do_paragrafo(para: ET.Element, falas: dict) -> None:
     for papel, partes in buffer.items():
         if not partes:
             continue
-        junto = _RE_ESPACOS.sub(' ', ' '.join(partes)).strip()
+        junto = _limpar_transcricao_final(_RE_ESPACOS.sub(' ', ' '.join(partes)).strip())
         if junto:
             falas[papel].append(junto)
 
@@ -399,8 +470,9 @@ def _extrair_transcricoes(tbl: ET.Element) -> dict:
 
     Regras:
       - bloco certo (título TRANSCRIÇÃO ou TRANSCRIÇÃO INTEGRAL...)
-      - só falas com registro de hora (ex.: '00:00 Oi Arthur...')
-      - ignora a hora; classifica por cor (vermelho/azul-ciano/verde)
+      - só falas com registro de hora (ex.: '00:00 Oi Arthur...') — a hora só detecta a linha
+      - ignora a hora/números iniciais; classifica por cor (vermelho/azul-ciano/verde)
+      - ignora texto preto e marcadores em CAIXA ALTA
       - não pega texto azul de outras seções nem legendas/instruções
     """
     falas = {
@@ -430,7 +502,10 @@ def _extrair_transcricoes(tbl: ET.Element) -> dict:
                     continue
                 _extrair_fala_do_paragrafo(para, falas)
 
-    return {papel: ' '.join(linhas) for papel, linhas in falas.items()}
+    return {
+        papel: _limpar_transcricao_final(' '.join(linhas))
+        for papel, linhas in falas.items()
+    }
 
 
 # ============================================================
@@ -738,11 +813,6 @@ def render_separador():
 
         # Salvar no session_state para uso posterior
         st.session_state['tecnicas_extraidas_apa'] = df_tec
-
-        st.info(
-            "✅ Técnicas prontas. "
-            "Use o botão abaixo para enviá-las ao Airtable vinculadas a uma APA."
-        )
 
     # Aviso se nada foi extraído
     total_palavras = sum(len(trans.get(c, '').split()) for c in tabs_chaves)
