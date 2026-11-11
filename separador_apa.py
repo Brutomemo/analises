@@ -320,6 +320,11 @@ def _limpar_transcricao_final(texto: str) -> str:
     return texto
 
 
+def limpar_texto_transcricao(texto: str) -> str:
+    """API pública: sanitiza fala para UI/DB (sem números nem marcadores em CAIXA ALTA)."""
+    return _limpar_transcricao_final(texto or '')
+
+
 # ============================================================
 # LOCALIZAR TABELA POR TÍTULO
 # ============================================================
@@ -834,8 +839,13 @@ def render_separador():
         st.error(f"❌ Erro ao processar: {resultado['erro']}")
         return
 
-    trans = resultado['transcricoes']
+    trans = {
+        papel: limpar_texto_transcricao(texto)
+        for papel, texto in (resultado.get('transcricoes') or {}).items()
+    }
     df_tec = resultado['tecnicas']
+    # Disponibiliza para o formulário Criar / Editar (já sem números)
+    st.session_state['transcricoes_extraidas_apa'] = trans
 
     # ── TRANSCRIÇÕES ──────────────────────────────────────────
     st.markdown("---")

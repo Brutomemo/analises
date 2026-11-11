@@ -341,6 +341,10 @@ def _invalidar_dados_app():
     st.session_state.pop("df_tec", None)
     st.session_state.pop("status_q", None)
     st.session_state.pop("status_t", None)
+    # Libera seeds/widgets de transcrição para a próxima tela refletir o DB limpo
+    for key in list(st.session_state.keys()):
+        if key.startswith("_trans_seeded_") or key.startswith("edit_trans_"):
+            st.session_state.pop(key, None)
 
 
 def _resolver_record_id_apa(apa, df_quali=None):
@@ -481,6 +485,11 @@ def _inserir_tecnicas_extraidas(
     return sucesso_count, erro_count, detalhes_erros
 
 
+def _sanitizar_transcricao(texto) -> str:
+    """Remove números/horários/CAIXA ALTA de qualquer fala (DB, upload ou widget)."""
+    return separador_apa.limpar_texto_transcricao(_texto_campo(texto))
+
+
 def _aplicar_transcricoes_nos_campos_edit(id_limpo, transcricoes, sobrescrever=False):
     """
     Preenche os text_area de edição com falas extraídas do .docx.
@@ -498,7 +507,7 @@ def _aplicar_transcricoes_nos_campos_edit(id_limpo, transcricoes, sobrescrever=F
     }
     aplicados = {}
     for papel, key in mapa.items():
-        novo = _texto_campo((transcricoes or {}).get(papel, ""))
+        novo = _sanitizar_transcricao((transcricoes or {}).get(papel, ""))
         if not novo:
             continue
         atual = _texto_campo(st.session_state.get(key, ""))
@@ -941,6 +950,23 @@ def render(df_quali, df_tec):
         with tab_trans:
             separador_apa.render_separador()
             st.markdown("---")
+            # Injeta fala sanitizada (sem números) nos campos do formulário Criar
+            _trans_criar = st.session_state.get("transcricoes_extraidas_apa") or {}
+            for _papel, _nome_key in (
+                ("causador", "c_trans_causador"),
+                ("negociador_principal", "c_trans_principal"),
+                ("negociador_secundario", "c_trans_secundario"),
+            ):
+                _k_criar = _criar_key(_nome_key)
+                _limpo = _sanitizar_transcricao(_trans_criar.get(_papel, ""))
+                _atual = _texto_campo(st.session_state.get(_k_criar)) if _k_criar in st.session_state else ""
+                if _limpo and (
+                    not _atual
+                    or _atual != _sanitizar_transcricao(_atual)
+                    or any(ch.isdigit() for ch in _atual)
+                ):
+                    st.session_state.pop(_k_criar, None)
+                    st.session_state[_k_criar] = _limpo
             trans_causador = st.text_area("Transcrição do Causador", placeholder="...", height=100, key=_criar_key("c_trans_causador"))
             trans_principal = st.text_area("Transcrição do Negociador Principal", placeholder="...", height=100, key=_criar_key("c_trans_principal"))
             trans_secundario = st.text_area("Transcrição do Negociador Secundário", placeholder="...", height=100, key=_criar_key("c_trans_secundario"))
@@ -1045,9 +1071,9 @@ def render(df_quali, df_tec):
                                     "25 - PERCEPÇÕES DO NEGOCIADOR PRINCIPAL SOBRE A RECEPTIVIDADE DO  CAUSADOR NO ENCERRAMENTO DA OCORRÊNCIA": rec_principal_enc,
                                     "25 - PERCEPÇÕES DO NEGOCIADOR SECUNDÁRIO SOBRE A RECEPTIVIDADE DO  CAUSADOR NO ENCERRAMENTO DA OCORRÊNCIA": rec_secundario_enc,
                                     "25 - PERCEPÇÕES DO NEGOCIADOR LÍDER SOBRE A RECEPTIVIDADE DO  CAUSADOR NO ENCERRAMENTO DA OCORRÊNCIA": rec_lider_enc,
-                                    "TRANSCRIÇÃO DO CAUSADOR": trans_causador or "",
-                                    "TRANSCRIÇÃO DO NEGOCIADOR PRINCIPAL": trans_principal or "",
-                                    "TRANSCRIÇÃO DO NEGOCIADOR SECUNDÁRIO": trans_secundario or "",
+                                    "TRANSCRIÇÃO DO CAUSADOR": _sanitizar_transcricao(trans_causador),
+                                    "TRANSCRIÇÃO DO NEGOCIADOR PRINCIPAL": _sanitizar_transcricao(trans_principal),
+                                    "TRANSCRIÇÃO DO NEGOCIADOR SECUNDÁRIO": _sanitizar_transcricao(trans_secundario),
                                     **_payload_funcoes_criar(),
                                     "Tempo de Negociação Real": tempo_real or "",
                                     "Tempo de Negociação Tática": tempo_tatica or "",
@@ -1098,6 +1124,11 @@ def render(df_quali, df_tec):
         def _on_edit_data_change():
             st.session_state['_edit_data_ativo'] = st.session_state['vis_data_busca_tab3']
             st.session_state.pop('_edit_registro_key', None)
+            # Não misturar extração da aba Criar / upload anterior com o DB desta APA
+            st.session_state.pop('transcricoes_extraidas_apa', None)
+            for key in list(st.session_state.keys()):
+                if key.startswith("_trans_seeded_") or key.startswith("edit_trans_"):
+                    st.session_state.pop(key, None)
 
         if 'vis_data_busca_tab3' not in st.session_state:
             st.session_state['vis_data_busca_tab3'] = st.session_state.get('_edit_data_ativo', date.today())
@@ -1127,6 +1158,10 @@ def render(df_quali, df_tec):
         if btn_buscar and data_busca:
             st.session_state['_edit_data_ativo'] = data_busca
             st.session_state.pop('_edit_registro_key', None)
+            st.session_state.pop('transcricoes_extraidas_apa', None)
+            for key in list(st.session_state.keys()):
+                if key.startswith("_trans_seeded_") or key.startswith("edit_trans_"):
+                    st.session_state.pop(key, None)
 
         data_ativa = st.session_state.get('_edit_data_ativo')
 
@@ -1201,8 +1236,9 @@ def render(df_quali, df_tec):
                     
                     st.markdown("---")
 
-                    # Hidrata session_state das transcrições ANTES dos widgets
-                    # (fora do form para o upload .docx conseguir injetar texto).
+                    # Hidrata session_state das transcrições ANTES dos widgets.
+                    # 1ª carga: Supabase limpo. Depois: preserva edição do usuário.
+                    # Upload com overwrite: injeta extração. Sessão suja residual: só remove dígitos/CAIXA ALTA.
                     _mapa_trans_edit = (
                         (f"edit_trans_c_{id_limpo}", "TRANSCRIÇÃO DO CAUSADOR", "causador"),
                         (f"edit_trans_p_{id_limpo}", "TRANSCRIÇÃO DO NEGOCIADOR PRINCIPAL", "negociador_principal"),
@@ -1210,28 +1246,37 @@ def render(df_quali, df_tec):
                     )
                     _trans_cache_ui = st.session_state.get("transcricoes_extraidas_apa") or {}
                     _chk_overwrite = f"chk_overwrite_trans_edit_{id_limpo}"
-                    _sobrescrever_ui = bool(st.session_state.get(_chk_overwrite, False))
+                    _tem_upload_ativo = bool(st.session_state.get(f"_docx_sig_edit_{id_limpo}"))
+                    _sobrescrever_ui = bool(
+                        _tem_upload_ativo and st.session_state.get(_chk_overwrite, False)
+                    )
                     _seed_key = f"_trans_seeded_{id_limpo}"
+                    _ja_seeded = bool(st.session_state.get(_seed_key))
 
                     def _injetar_trans_widget(chave_widget: str, texto: str) -> None:
                         """Pop + set: Streamlit ignora assignment se a key do widget já veio vazia do browser."""
-                        texto = _texto_campo(texto)
+                        texto = _sanitizar_transcricao(texto)
                         st.session_state.pop(chave_widget, None)
                         st.session_state[chave_widget] = texto
 
                     for _k, _campo, _papel in _mapa_trans_edit:
-                        db_val = _texto_campo(apa.get(_campo))
-                        extraido = _texto_campo(_trans_cache_ui.get(_papel, ""))
+                        db_val = _sanitizar_transcricao(apa.get(_campo))
+                        extraido = _sanitizar_transcricao(_trans_cache_ui.get(_papel, ""))
                         atual = _texto_campo(st.session_state.get(_k)) if _k in st.session_state else ""
+                        atual_limpo = _sanitizar_transcricao(atual)
 
                         if extraido and _sobrescrever_ui:
-                            _injetar_trans_widget(_k, extraido)
-                        elif (not st.session_state.get(_seed_key)) or (not atual):
-                            preenchimento = db_val or extraido
-                            if preenchimento and preenchimento != atual:
-                                _injetar_trans_widget(_k, preenchimento)
-                            elif _k not in st.session_state:
-                                st.session_state[_k] = ""
+                            if extraido != atual:
+                                _injetar_trans_widget(_k, extraido)
+                        elif not _ja_seeded:
+                            # Fonte de verdade na 1ª hidratação = DB (já limpo no Supabase)
+                            _injetar_trans_widget(_k, db_val or extraido or "")
+                        elif atual and atual != atual_limpo:
+                            # Seed antigo sujo na sessão: limpa sem descartar o texto
+                            _injetar_trans_widget(_k, atual_limpo)
+                        elif _k not in st.session_state:
+                            st.session_state[_k] = db_val or ""
+
                     st.session_state[_seed_key] = True
 
                     # EDIÇÃO (sem st.form: text_area de transcrição precisa refletir session_state)
@@ -1650,13 +1695,13 @@ def render(df_quali, df_tec):
                             CAMPOS_ENCERRAMENTO["rec_np"]: rec_np_enc,
                             CAMPOS_ENCERRAMENTO["rec_ns"]: rec_ns_enc,
                             CAMPOS_ENCERRAMENTO["rec_nl"]: rec_nl_enc,
-                            "TRANSCRIÇÃO DO CAUSADOR": _texto_campo(
+                            "TRANSCRIÇÃO DO CAUSADOR": _sanitizar_transcricao(
                                 st.session_state.get(f"edit_trans_c_{id_limpo}")
                             ),
-                            "TRANSCRIÇÃO DO NEGOCIADOR PRINCIPAL": _texto_campo(
+                            "TRANSCRIÇÃO DO NEGOCIADOR PRINCIPAL": _sanitizar_transcricao(
                                 st.session_state.get(f"edit_trans_p_{id_limpo}")
                             ),
-                            "TRANSCRIÇÃO DO NEGOCIADOR SECUNDÁRIO": _texto_campo(
+                            "TRANSCRIÇÃO DO NEGOCIADOR SECUNDÁRIO": _sanitizar_transcricao(
                                 st.session_state.get(f"edit_trans_s_{id_limpo}")
                             ),
                             "Tempo de Negociação Real": tempo_real_edit or "",
