@@ -10,6 +10,11 @@ Cores mapeadas:
   7030A0 → 1º Interventor (roxo) — incluído como opção
   000000 → Técnicas/marcadores em preto — REMOVIDOS
   FFC000 → Terceiro (amarelo) — ignorado por padrão
+
+Limpeza da fala (após juntar o parágrafo):
+  - remove horários completos e fragmentados (00 18 35, 00:2 5 40…)
+  - remove todos os dígitos
+  - remove marcadores em CAIXA ALTA (independente da cor)
 """
 
 import re
@@ -159,21 +164,38 @@ def _eh_marcador_caixa_alta(texto: str) -> bool:
 # LIMPEZA
 # ============================================================
 
-# Horário de fala no diálogo (ex.: 00:00, 01:41, 00:13:20) — removido do texto registrado.
-# Não remove valores da fala (ex.: 4.826 reais).
+# Horário completo (ainda usado na detecção de linha e limpeza preliminar).
 _RE_TIMESTAMP = re.compile(
     r'(?:(?<=^)|(?<=\s)|(?<=\n))\d{1,2}:\d{2}(?::\d{2})?(?=\s|[A-Za-zÀ-ÿ,.!?;:\)]|$)'
 )
 _RE_TIMESTAMP_QUALQUER = re.compile(r'\b\d{1,2}:\d{2}(?::\d{2})?\b')
-# Horário / contador só no início da linha (após \n) — não aplica a runs soltos com valores
-_RE_NUM_INICIO_LINHA = re.compile(r'(?m)^\s*\d{1,2}:\d{2}(?::\d{2})?\s*')
+# Horário quebrado pelo Word em vários runs: "00 18 35", "00:2 5 40", "00 17 4 3"
+_RE_TIMESTAMP_QUEBRADO = re.compile(
+    r'(?:(?<=^)|(?<=\s))'
+    r'\d{1,2}(?:\s*[:.]?\s*\d{1,2}){1,4}'
+    r'(?=\s|[A-Za-zÀ-ÿ,.!?;:]|$)'
+)
+_RE_DIGITOS = re.compile(r'\d+')
+_RE_DOIS_PONTOS_SOLTOS = re.compile(r'\s*:\s*')
 _RE_ESPACOS = re.compile(r'[ \t]{2,}')
-# Sequências em CAIXA ALTA remanescentes (marcadores pretos que vazaram)
+# Marcadores em CAIXA ALTA (técnica/seção) — independente da cor do run
 _RE_CAIXA_ALTA_BLOCO = re.compile(
     r'(?<![A-Za-zÀ-ÿ])'
     r'[A-ZÁÉÍÓÚÂÊÔÃÕÇ]{3,}'
     r'(?:\s+(?:\d+|[A-ZÁÉÍÓÚÂÊÔÃÕÇ]{2,})){0,10}'
     r'(?![A-Za-zÀ-ÿ])'
+)
+_RE_MARCADORES_CONHECIDOS = re.compile(
+    r'\b(?:'
+    r'PERGUNTAS?\s+ABERTAS?|'
+    r'PERGUNTAS?\s+FECHADAS?|'
+    r'DESCONSTRU[CÇ][AÃ]O|'
+    r'INTRODU[CÇ][AÃ]O\s+DE\s+ASSUNTO|'
+    r'PRIMAZIA(?:\s+POR\s+TERCEIROS)?|'
+    r'V[IÍ]DEO\s+\d+\s+PRINCIPAL|'
+    r'PAUSA'
+    r')\b',
+    re.IGNORECASE,
 )
 _RE_PAPEL_LEGENDA = (
     r'(?:CAUSADOR|NEGOCIADOR\s+PRINCIPAL|NEGOCIADOR\s+SECUND[AÁ]RIO|'
@@ -220,18 +242,21 @@ _FRAGMENTOS = {
 }
 
 
-def _limpar(texto: str) -> str:
-    """Remove timestamps, legendas e fragmentos que não são diálogo (preserva valores na fala)."""
-    texto = texto or ''
-    texto = _RE_TIMESTAMP.sub('', texto)
-    texto = _RE_TIMESTAMP_QUALQUER.sub('', texto)
-    texto = _RE_LEGENDA_INLINE.sub('', texto)
-    # Marcadores em CAIXA ALTA (técnica/seção) que tenham sobrado no mesmo run
+def _texto_run_para_buffer(texto: str) -> str:
+    """
+    Texto bruto do run para o buffer do interlocutor.
+    Não limpa horário aqui (evita deixar pedaços '00' / '18'); a limpeza é no parágrafo juntado.
+    """
+    texto = (texto or '').strip()
+    if not texto:
+        return ''
+    # CAIXA ALTA = marcador de técnica/seção — ignora independente da cor
     if _eh_marcador_caixa_alta(texto):
         return ''
-    texto = _RE_CAIXA_ALTA_BLOCO.sub('', texto)
-    texto = _RE_ESPACOS.sub(' ', texto).strip(' \t-–_|:')
-    if not texto:
+    if _RE_MARCADORES_CONHECIDOS.fullmatch(texto.strip('()[]{}')):
+        return ''
+    texto = _RE_LEGENDA_INLINE.sub('', texto)
+    if not texto.strip():
         return ''
     low = texto.lower().strip()
     if low in _FRAGMENTOS:
@@ -246,22 +271,34 @@ def _limpar(texto: str) -> str:
         return ''
     if re.match(r'^(?:v[ií]deo|áudio|audio)\s*\d+\s*$', low):
         return ''
-    # Só underscore / placeholder de seção vazia
     if re.fullmatch(r'[_.\s]+', texto):
-        return ''
-    # Run que ficou só com horário / dígitos de tempo
-    if re.fullmatch(r'\d{1,2}(:\d{2}){1,2}', texto.strip()):
         return ''
     return texto
 
 
+def _limpar(texto: str) -> str:
+    """Compat: limpeza leve de um trecho isolado (legendas/marcadores)."""
+    return _texto_run_para_buffer(texto)
+
+
 def _limpar_transcricao_final(texto: str) -> str:
-    """Passagem final na fala já agrupada: remove horários e blocos em CAIXA ALTA."""
+    """
+    Limpeza no texto JÁ JUNTADO do interlocutor:
+      1) horários completos e quebrados
+      2) todos os dígitos (contorna runs fatiados do Word)
+      3) marcadores em CAIXA ALTA (sem depender de cor)
+    """
     texto = texto or ''
-    texto = _RE_TIMESTAMP_QUALQUER.sub('', texto)
-    texto = _RE_NUM_INICIO_LINHA.sub('', texto)
+    texto = _RE_MARCADORES_CONHECIDOS.sub('', texto)
     texto = _RE_CAIXA_ALTA_BLOCO.sub('', texto)
-    texto = _RE_ESPACOS.sub(' ', texto).strip(' \t-–_|:')
+    texto = _RE_TIMESTAMP.sub('', texto)
+    texto = _RE_TIMESTAMP_QUALQUER.sub('', texto)
+    texto = _RE_TIMESTAMP_QUEBRADO.sub('', texto)
+    # Garante remoção de qualquer número remanescente (00, 18, 4.826, etc.)
+    texto = _RE_DIGITOS.sub('', texto)
+    # Dois-pontos sobrados de horário viram espaço
+    texto = _RE_DOIS_PONTOS_SOLTOS.sub(' ', texto)
+    texto = _RE_ESPACOS.sub(' ', texto).strip(' \t-–_|:,.')
     return texto
 
 
@@ -424,7 +461,12 @@ def _paragrafo_tem_fala_com_horario(texto: str) -> bool:
 def _extrair_fala_do_paragrafo(para: ET.Element, falas: dict) -> None:
     """
     Extrai interlocutores coloridos de um parágrafo que já é linha de diálogo.
-    Ignora horário/números iniciais; ignora texto preto e marcadores em CAIXA ALTA.
+
+    Fluxo:
+      1) classifica por cor (algoritmo existente)
+      2) ignora preto e CAIXA ALTA (marcadores), independente da cor
+      3) junta o texto do parágrafo por interlocutor
+      4) limpa horário/números/CAIXA ALTA só no texto juntado
     """
     papel_atual = None
     buffer = {k: [] for k in falas}
@@ -437,12 +479,12 @@ def _extrair_fala_do_paragrafo(para: ET.Element, falas: dict) -> None:
         hx = _cor_do_run(run)
         papel = _papel_do_run(run)
 
-        # Preto (marcadores/técnicas): nunca entra na fala e não “contamina” o papel atual
+        # Preto: marcador/técnica — não entra e não altera o papel atual
         if _eh_cor_preta(hx):
             continue
 
-        # CAIXA ALTA sem cor de diálogo = marcador (PERGUNTAS ABERTAS, VIDEO 1 PRINCIPAL…)
-        if _eh_marcador_caixa_alta(texto) and papel is None:
+        # CAIXA ALTA = marcador (mesmo se herdou azul/vermelho)
+        if _eh_marcador_caixa_alta(texto):
             continue
 
         if papel:
@@ -451,14 +493,14 @@ def _extrair_fala_do_paragrafo(para: ET.Element, falas: dict) -> None:
         if not papel_atual or papel_atual not in falas:
             continue
 
-        # Remove horários deste run; descarta run que era só o horário / marcador
-        limpo = _limpar(texto)
-        if limpo:
-            buffer[papel_atual].append(limpo)
+        bruto = _texto_run_para_buffer(texto)
+        if bruto:
+            buffer[papel_atual].append(bruto)
 
     for papel, partes in buffer.items():
         if not partes:
             continue
+        # Junta primeiro; só então remove horários fatiados / dígitos / CAIXA ALTA
         junto = _limpar_transcricao_final(_RE_ESPACOS.sub(' ', ' '.join(partes)).strip())
         if junto:
             falas[papel].append(junto)
@@ -471,8 +513,8 @@ def _extrair_transcricoes(tbl: ET.Element) -> dict:
     Regras:
       - bloco certo (título TRANSCRIÇÃO ou TRANSCRIÇÃO INTEGRAL...)
       - só falas com registro de hora (ex.: '00:00 Oi Arthur...') — a hora só detecta a linha
-      - ignora a hora/números iniciais; classifica por cor (vermelho/azul-ciano/verde)
-      - ignora texto preto e marcadores em CAIXA ALTA
+      - classifica por cor (vermelho/azul-ciano/verde)
+      - no texto juntado: remove horários/números e marcadores em CAIXA ALTA
       - não pega texto azul de outras seções nem legendas/instruções
     """
     falas = {
