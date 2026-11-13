@@ -52,39 +52,39 @@ RESOLUCOES = [
 ]
 
 NEGOCIADORES = [
-    "Cap PM Pavão",
-    "Ten PM Cupka",
-    "Ten PM Carolina",
-    "Ten PM Giovanna",
-    "Sub Ten PM Silva",
-    "Sgt PM Vanessa",
-    "Sgt PM Penna",
-    "Sgt PM Cabral",
-    "Sgt PM Ketlin",
-    "Sgt PM Juliana",
-    "Cb PM Edson",
-    "Cb PM Bastos",
-    "Cb PM Marcos",
-    "Cb PM Gabriel",
-    "Cb PM Pinheiro",
-    "Cb PM Felipe",
-    "Cb PM Lima",
-    "Cb PM Luiz",
-    "Cb PM Gustavo",
-    "Cb PM Helena",
-    "Cb PM Stefany",
-    "Sd PM Santim", 
-    "Sd PM Krapp",
-    "Sd PM Granso",
-    "Sd PM Marquiori",
-    "Sd PM Fortunato"
+    "Pavão",
+    "Cupka",
+    "Carolina",
+    "Giovanna",
+    "Silva",
+    "Vanessa",
+    "Penna",
+    "Cabral",
+    "Ketlin",
+    "Juliana",
+    "Edson",
+    "Bastos",
+    "Marcos",
+    "Gabriel",
+    "Pinheiro",
+    "Felipe",
+    "Lima",
+    "Luiz",
+    "Gustavo",
+    "Helena",
+    "Stefany",
+    "Santim", 
+    "Krapp",
+    "Granso",
+    "Marquiori",
+    "Fortunato"
 
 ]
 
 SAUDE_MENTAL = [
-    "Sub Ten PM Silva",
-    "Cb PM Edson",
-    "Cb PM Felipe"    
+    "Silva",
+    "Edson",
+    "Felipe"    
 ]
 
 UNIFORMES = [
