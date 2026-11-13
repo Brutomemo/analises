@@ -123,6 +123,24 @@ def limpar_valor(val):
     return str(val) if pd.notna(val) else "N/D"
 
 
+_RE_POSTO_GRADUACAO = re.compile(
+    r"^\s*(?:(?:1|2|3)[º°o]?\s*)?"
+    r"(?:Cel|Ten[\s-]*Cel|Maj|Cap|Ten|Sub[\s-]*Ten|ST|Sgt|Cb|Sd|Asp(?:\s+Of)?|Al(?:\s+Of)?)"
+    r"(?:\s+(?:1|2)[ªa]\s*Cl)?"
+    r"(?:\s+PM)?\s+",
+    re.IGNORECASE,
+)
+
+
+def limpar_nome_negociador(val) -> str:
+    """Remove posto/graduação (ex.: 'Cb PM Bastos' -> 'Bastos') mantendo apenas o nome."""
+    texto = limpar_valor(val).strip()
+    if not texto or texto == "N/D":
+        return "N/D"
+    nome = _RE_POSTO_GRADUACAO.sub("", texto).strip()
+    return nome or texto
+
+
 def limpar_id(v):
     """Remove sufixo .0 e normaliza IDs."""
     if isinstance(v, list) and len(v) > 0:

@@ -219,7 +219,7 @@ def render_apa(df_quali, df_tec):
 
     st.markdown("<h5 style='color: #FFD700;'> Seleção e Metadados da Ocorrência</h5>", unsafe_allow_html=True)
 
-    df_quali['Neg_Limpo'] = df_quali['Negociador Principal'].apply(utils.limpar_valor)
+    df_quali['Neg_Limpo'] = df_quali['Negociador Principal'].apply(utils.limpar_nome_negociador)
     df_quali['Tip_Limpa'] = df_quali['Tipologia'].apply(utils.limpar_valor)
     df_quali['Mod_Limpa'] = df_quali['Modalidade do incidente'].apply(utils.limpar_valor)
 
@@ -303,7 +303,7 @@ def render_apa(df_quali, df_tec):
             )
         df_quali = df_quali.loc[mask_data].copy()
         if not df_quali.empty:
-            df_quali['Neg_Limpo'] = df_quali['Negociador Principal'].apply(utils.limpar_valor)
+            df_quali['Neg_Limpo'] = df_quali['Negociador Principal'].apply(utils.limpar_nome_negociador)
             df_quali['Tip_Limpa'] = df_quali['Tipologia'].apply(utils.limpar_valor)
             df_quali['Mod_Limpa'] = df_quali['Modalidade do incidente'].apply(utils.limpar_valor)
             df_quali['ID_Busca'] = df_quali['ID'].apply(utils.limpar_id)
