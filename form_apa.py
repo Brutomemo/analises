@@ -573,6 +573,8 @@ def _limpar_formulario_criar():
             or key.startswith("uploader_apa")
         ):
             st.session_state.pop(key, None)
+    st.session_state.pop("id_apa_criado", None)
+    st.session_state.pop("_record_id_apa_criado", None)
     _limpar_cache_tecnicas_docx()
     st.session_state["_criar_apa_form_rev"] = _criar_form_rev() + 1
 
@@ -957,6 +959,51 @@ def render(df_quali, df_tec):
         # ─── TRANSCRIÇÕES ───
         with tab_trans:
             separador_apa.render_separador()
+            df_tec_criar = st.session_state.get("tecnicas_extraidas_apa")
+            if df_tec_criar is not None and not getattr(df_tec_criar, "empty", True):
+                id_criado = st.session_state.get("id_apa_criado")
+                rec_criado = st.session_state.get("_record_id_apa_criado")
+                rotulo_reg_tec = (
+                    f"✔️ Registrar {len(df_tec_criar)} Técnicas Extraídas em {id_criado}"
+                    if id_criado
+                    else f"✔️ Registrar {len(df_tec_criar)} Técnicas Extraídas"
+                )
+                if st.button(
+                    rotulo_reg_tec,
+                    key=_criar_key("c_btn_registrar_tec"),
+                    use_container_width=True,
+                    type="secondary",
+                ):
+                    if id_criado:
+                        with st.spinner(f"💾 Gravando {len(df_tec_criar)} técnicas..."):
+                            progress = st.progress(0)
+                            sucesso_t, erros_t, detalhes_t = _inserir_tecnicas_extraidas(
+                                df_tec_criar,
+                                {"ID": id_criado, "Airtable_Record_ID": rec_criado},
+                                df_quali=df_quali,
+                                progress_bar=progress,
+                                substituir=True,
+                            )
+                            progress.empty()
+                        if erros_t == 0:
+                            _invalidar_dados_app()
+                            st.success(
+                                f"✅ {sucesso_t} técnica(s) registrada(s) na APA **{id_criado}**!"
+                            )
+                        else:
+                            st.warning(f"⚠️ {sucesso_t} enviadas, {erros_t} com erro.")
+                            with st.expander("Detalhes dos erros", expanded=True):
+                                for msg_err in detalhes_t[:20]:
+                                    st.write(f"- {msg_err}")
+                    else:
+                        st.session_state[_criar_key("c_tec_pendente_registro")] = True
+
+                if not id_criado and st.session_state.get(_criar_key("c_tec_pendente_registro")):
+                    st.success(
+                        f"✅ {len(df_tec_criar)} técnica(s) confirmada(s) para registro! "
+                        "Ao finalizar na aba **Info Adicionais** e clicar em **✅ CRIAR REGISTRO DE APA**, "
+                        "elas serão gravadas automaticamente no Supabase."
+                    )
             st.markdown("---")
             # Injeta fala sanitizada (sem números) nos campos do formulário Criar
             _trans_criar = st.session_state.get("transcricoes_extraidas_apa") or {}
@@ -1097,17 +1144,42 @@ def render(df_quali, df_tec):
 
                                 if id_apa:
                                     st.session_state.id_apa_criado = id_apa
-                                    _invalidar_dados_app()
-                                    st.session_state.pop(_criar_key("c_confirmar_nova_apa_duplicada"), None)
                                     rec_novo = resultado.get("record_id") if isinstance(resultado, dict) else None
+                                    st.session_state["_record_id_apa_criado"] = rec_novo
+                                    st.session_state.pop(_criar_key("c_confirmar_nova_apa_duplicada"), None)
                                     msg = f"✅ NOVO registro criado: **{st.session_state.id_apa_criado}**"
                                     if rec_novo:
                                         msg += f" (`{rec_novo}`)"
                                     st.success(msg)
-                                    st.caption(
-                                        "Este é um ID novo no Supabase. "
-                                        "Para enviar técnicas, use **Visualizar & Editar** e selecione esta APA."
-                                    )
+
+                                    df_tec_pendente = st.session_state.get("tecnicas_extraidas_apa")
+                                    if (
+                                        st.session_state.pop(_criar_key("c_tec_pendente_registro"), False)
+                                        and df_tec_pendente is not None
+                                        and not getattr(df_tec_pendente, "empty", True)
+                                    ):
+                                        sucesso_t, erros_t, detalhes_t = _inserir_tecnicas_extraidas(
+                                            df_tec_pendente,
+                                            {"ID": id_apa, "Airtable_Record_ID": rec_novo},
+                                            df_quali=df_quali,
+                                            substituir=True,
+                                        )
+                                        if erros_t == 0:
+                                            st.success(
+                                                f"✅ {sucesso_t} técnica(s) registrada(s) automaticamente em **{id_apa}**!"
+                                            )
+                                        else:
+                                            st.warning(
+                                                f"⚠️ Técnicas: {sucesso_t} registradas, {erros_t} com erro."
+                                            )
+                                            for msg_err in detalhes_t[:10]:
+                                                st.write(f"- {msg_err}")
+                                    else:
+                                        st.caption(
+                                            "Este é um ID novo no Supabase. "
+                                            "Para enviar técnicas, use **Visualizar & Editar** e selecione esta APA."
+                                        )
+                                    _invalidar_dados_app()
                                 else:
                                     st.error(f"❌ Falha ao criar APA: {erro or 'Erro desconhecido.'}")
 
