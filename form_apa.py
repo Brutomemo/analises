@@ -17,13 +17,14 @@ import utils
 
 
 # ════════════════════════════════════════════════════════════
-# OPÇÕES (EXATAS DO AIRTABLE)
+# VARIAVEIS COM FILTRO DE DADOS
 # ════════════════════════════════════════════════════════════
 
 MODALIDADES = [
     "Ocorrência com refém",
     "Pessoa armada com propósito suicida",
     "Pessoa com propósito suicida com terceiro em risco",
+    "Criminoso embarricado com propósito suicida",
     "Pessoa embarricada",
     "Pessoa em surto (embarricada ou não)",
     "Criminoso com propósito suicida",
@@ -54,33 +55,40 @@ NEGOCIADORES = [
     "Cap PM Pavão",
     "Ten PM Cupka",
     "Ten PM Carolina",
+    "Ten PM Giovanna",
     "Sub Ten PM Silva",
     "Sgt PM Vanessa",
     "Sgt PM Penna",
     "Sgt PM Cabral",
     "Sgt PM Ketlin",
+    "Sgt PM Juliana",
     "Cb PM Edson",
     "Cb PM Bastos",
+    "Cb PM Marcos",
     "Cb PM Gabriel",
-    "Cb PM Helena",
+    "Cb PM Pinheiro",
+    "Cb PM Felipe",
+    "Cb PM Lima",
     "Cb PM Luiz",
     "Cb PM Gustavo",
-    "Sd PM Stefany",
-    "Sd PM Santim",
-    "Sd PM Lima",
+    "Cb PM Helena",
+    "Cb PM Stefany",
+    "Sd PM Santim", 
     "Sd PM Krapp",
     "Sd PM Granso",
-    "Sd PM Samara"
+    "Sd PM Marquiori",
+    "Sd PM Fortunato"
+
 ]
 
 SAUDE_MENTAL = [
     "Sub Ten PM Silva",
-    "Cb PM Edson"    
+    "Cb PM Edson",
+    "Cb PM Felipe"    
 ]
 
 UNIFORMES = [
     "Combat Shirt azul escura",
-    "Camiseta Polo azul claro",
     "Paisano"
 ]
 
